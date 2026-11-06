@@ -62,7 +62,7 @@ function wpbar_user(): ?array
 {
     global $pdo;
     if (empty($_SESSION['user_id']) || !isset($pdo)) return null;
-    $st = $pdo->prepare('SELECT id, username, role, status FROM users WHERE id = ?');
+    $st = $pdo->prepare('SELECT id, username, role, status, permissions FROM users WHERE id = ?');
     $st->execute([$_SESSION['user_id']]);
     $u = $st->fetch(PDO::FETCH_ASSOC);
     if (!$u || $u['status'] !== 'active' || !in_array($u['role'], ['admin', 'editor', 'author'], true)) return null;
@@ -82,6 +82,8 @@ function wpbar_html(array $ctx = []): string
     $isAdmin = $u['role'] === 'admin';
     $isEditor = $u['role'] === 'editor';
     $inAdmin = ($ctx['kind'] ?? '') === 'admin';
+    if (!function_exists('ci_can')) require_once __DIR__ . '/institute.php';
+    $ci = ci_can($u);
     $root = $_SERVER['DOCUMENT_ROOT'] ?? '';
     $has = fn(string $href) => is_file($root . parse_url($href, PHP_URL_PATH));
     $keep = fn(array $items) => array_values(array_filter($items, fn($i) => !empty($i[3]) && $has($i[2])));
@@ -90,6 +92,9 @@ function wpbar_html(array $ctx = []): string
     // 1. Menu (the slot of the WordPress logo)
     $main = $keep([
         ['dk-dashboard', 'Dashboard', '/admin/dashboard.php', true],
+        ['dk-students', 'Students', '/admin/students.php', $ci],
+        ['dk-fees', 'Fees & Dues', '/admin/ci-fees.php', $ci],
+        ['dk-blog-dash', 'Blog Dashboard', '/admin/blog-dashboard.php', true],
         ['dk-analytics', 'Analytics', '/admin/analytics.php', admin_can('analytics.view_basic')],
         ['dk-seo', 'SEO', '/admin/seo.php', $isAdmin],
     ]);
@@ -108,6 +113,8 @@ function wpbar_html(array $ctx = []): string
     } else {
         $sitePrimary = $keep([
             ['dashboard', 'Dashboard', '/admin/dashboard.php', true],
+            ['dk-students', 'Students', '/admin/students.php', $ci],
+            ['dk-blog-dash', 'Blog Dashboard', '/admin/blog-dashboard.php', true],
             ['dk-posts', 'Posts', '/admin/blogs-manager.php', true],
             ['dk-pages', 'Pages', '/admin/pages-list.php', $isAdmin || $isEditor],
             ['dk-categories', 'Categories', '/admin/categories-manager.php', admin_can('blogs.manage_categories')],
@@ -137,6 +144,7 @@ function wpbar_html(array $ctx = []): string
 
     // 6. + New
     $new = $keep([
+        ['new-student', 'Student', '/admin/student-edit.php', $ci],
         ['new-post', 'Post', '/admin/post-manager.php', admin_can('blogs.create')],
         ['new-media', 'Media', '/admin/file-manager.php', admin_can('files.access_file_manager')],
         ['new-page', 'Page', '/admin/page-editor.php', $isAdmin || $isEditor],

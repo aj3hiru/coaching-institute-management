@@ -54,10 +54,28 @@ function admin_shell_nav(): array
         return ($allowed && $has($href)) ? ['label' => $label, 'href' => $href, 'icon' => $icon] : null;
     };
     $sub = fn(array $items) => array_values(array_filter($items));
+    require_once ($_SERVER['DOCUMENT_ROOT'] ?? '') . '/includes/institute.php';
+    $ci = ci_can(['role' => admin_shell_user()['role'], 'permissions' => json_encode(admin_shell_user()['permissions'] ?: new stdClass())]);
     $groups = [
         ['label' => 'Main', 'items' => [
             ['label' => 'Dashboard', 'href' => '/admin/dashboard.php', 'icon' => 'fa-home'],
-            ['label' => 'Posts', 'href' => '/admin/blogs-manager.php', 'icon' => 'fa-newspaper', 'open' => true, 'items' => $sub([
+        ]],
+        ['label' => 'Institute', 'items' => $ci ? [
+            ['label' => 'Students', 'href' => '/admin/students.php', 'icon' => 'fa-user-graduate', 'open' => true, 'items' => $sub([
+                $link(true, 'All Students', '/admin/students.php', 'fa-list'),
+                $link(true, 'Add Student', '/admin/student-edit.php', 'fa-user-plus'),
+            ])],
+            $link(true, 'Batches', '/admin/ci-batches.php', 'fa-layer-group'),
+            $link(true, 'Courses', '/admin/ci-courses.php', 'fa-book-open'),
+            ['label' => 'Fees & Dues', 'href' => '/admin/ci-fees.php', 'icon' => 'fa-indian-rupee-sign', 'items' => $sub([
+                $link(true, 'Fee Payments', '/admin/ci-fees.php', 'fa-receipt'),
+                $link(true, 'Dues', '/admin/ci-fees.php?tab=dues', 'fa-hourglass-half'),
+            ])],
+            $link(true, 'Sessions & Classes', '/admin/ci-setup.php', 'fa-calendar-alt'),
+        ] : []],
+        ['label' => 'Blog', 'items' => [
+            $link(true, 'Blog Dashboard', '/admin/blog-dashboard.php', 'fa-gauge'),
+            ['label' => 'Posts', 'href' => '/admin/blogs-manager.php', 'icon' => 'fa-newspaper', 'items' => $sub([
                 ['label' => 'All Posts', 'href' => '/admin/blogs-manager.php', 'icon' => 'fa-list'],
                 $link(admin_can('blogs.create'), 'Add Post', '/admin/post-manager.php', 'fa-plus'),
                 $link(admin_can('blogs.manage_categories'), 'Categories', '/admin/categories-manager.php', 'fa-folder'),
@@ -70,9 +88,6 @@ function admin_shell_nav(): array
             ])],
             $link(admin_can('files.access_file_manager'), 'File Manager', '/admin/file-manager.php', 'fa-images'),
             $link(admin_can('analytics.view_basic'), 'Analytics', '/admin/analytics.php', 'fa-chart-line'),
-        ]],
-        ['label' => 'Site', 'items' => [
-            $link($isAdmin, 'Customize', '/admin/customize.php', 'fa-palette'),
             $isAdmin ? ['label' => 'SEO', 'href' => '/admin/seo.php', 'icon' => 'fa-search', 'items' => [
                 ['label' => 'Dashboard', 'href' => '/admin/seo.php', 'icon' => 'fa-gauge'],
                 ['label' => 'General Settings', 'href' => '/admin/seo.php?view=general', 'icon' => 'fa-sliders-h'],
@@ -83,14 +98,17 @@ function admin_shell_nav(): array
                 ['label' => 'SEO Analyzer', 'href' => '/admin/seo.php?view=analyzer', 'icon' => 'fa-magnifying-glass-chart'],
                 ['label' => 'Status & Tools', 'href' => '/admin/seo.php?view=status', 'icon' => 'fa-toolbox'],
             ]] : null,
+            $link($isAdmin, 'Ad Inserter', '/admin/ad-inserter.php', 'fa-ad'),
+            $link($isAdmin, 'Code Snippets', '/admin/code-snippets.php', 'fa-code'),
+        ]],
+        ['label' => 'Site', 'items' => [
+            $link($isAdmin, 'Customize', '/admin/customize.php', 'fa-palette'),
             ['label' => 'Settings', 'href' => '#', 'icon' => 'fa-cogs', 'items' => $sub([
                 $link($isAdmin, 'General', '/admin/general-settings.php', 'fa-sliders-h'),
                 $link($isAdmin, 'Performance', '/admin/performance-settings.php', 'fa-tachometer-alt'),
-                $link($isAdmin, 'Code Snippets', '/admin/code-snippets.php', 'fa-code'),
             ])],
             admin_can('push_notifications.send') ? ['label' => 'Push Notifications', 'href' => '/push_notifications/push-manager.php', 'icon' => 'fa-bell'] : null, // delivery logs are inside the page (History)
             ($isAdmin || $isEditor) && $has('/admin/contact-messages.php') ? ['label' => 'Contact Messages', 'href' => '/admin/contact-messages.php', 'icon' => 'fa-envelope', 'badge' => admin_shell_unread()] : null,
-            $link($isAdmin, 'Ad Inserter', '/admin/ad-inserter.php', 'fa-ad'),
         ]],
         ['label' => 'Admin', 'items' => [
             $link(admin_can('users.create'), 'Users', '/admin/user-manager.php', 'fa-user'),
