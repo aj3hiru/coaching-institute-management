@@ -2,13 +2,15 @@
 // Sessions & Classes — academic sessions (e.g. 2026-27, one is "current") and the list of classes used in the student form.
 require_once __DIR__ . '/components/guard.php';
 require_once INCLUDES_PATH . '/institute.php';
-$me = ci_page_start($pdo);
+$me = ci_page_start($pdo, ["sessions", "classes"]);
 $tab = ($_GET['tab'] ?? '') === 'classes' ? 'classes' : 'sessions';
+if (!ci_perm($me, $tab)) $tab = $tab === 'classes' ? 'sessions' : 'classes'; // only the part the user may manage
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_check();
     $a = (string)($_POST['action'] ?? '');
     $id = (int)($_POST['id'] ?? 0);
+    if ((str_starts_with($a, 'session') && !ci_perm($me, 'sessions')) || (str_starts_with($a, 'class') && !ci_perm($me, 'classes'))) { http_response_code(403); exit('Access Denied'); }
     try {
         if ($a === 'session_save') {
             $name = trim((string)($_POST['name'] ?? ''));
@@ -66,7 +68,7 @@ $ec = $tab === 'classes' && $edit ? (array_values(array_filter($classes, fn($s) 
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="robots" content="noindex, nofollow">
 <title>Sessions &amp; Classes - <?= ci_e(edu_site_name()) ?></title>
-<?php admin_shell_head(); ci_head(); ?>
+<?php admin_shell_head(); ci_head(); ci_report_assets(); ?>
 </head>
 <body>
 <?php admin_shell_open('Sessions &amp; Classes', 'Academic sessions and the class list used in the student form'); ?>
@@ -90,9 +92,9 @@ $ec = $tab === 'classes' && $edit ? (array_values(array_filter($classes, fn($s) 
 <tr><td><b><?= ci_e($s['name']) ?></b></td><td class="ci-muted"><?= ci_date($s['start_date']) ?> – <?= ci_date($s['end_date']) ?></td>
 <td class="ci-num"><?= (int)$s['batches'] ?></td><td class="ci-num"><?= (int)$s['students'] ?></td>
 <td><?= $s['is_current'] ? '<span class="ci-badge ci-b-green">Current</span>' : '' ?></td>
-<td><div class="ci-row-actions"><a href="?edit=<?= (int)$s['id'] ?>">Edit</a>
-<?php if (!$s['is_current']): ?><form method="post"><?= csrf_field() ?><input type="hidden" name="action" value="session_current"><input type="hidden" name="id" value="<?= (int)$s['id'] ?>"><button type="submit">Make current</button></form><?php endif; ?>
-<?php if (!$s['batches'] && !$s['students']): ?><form method="post" onsubmit="return confirm('Delete session <?= ci_e(addslashes($s['name'])) ?>?')"><?= csrf_field() ?><input type="hidden" name="action" value="session_delete"><input type="hidden" name="id" value="<?= (int)$s['id'] ?>"><button type="submit" class="ci-del">Delete</button></form><?php endif; ?>
+<td><div class="ci-icos"><?= ci_ico('edit', '?edit=' . (int)$s['id'], 'Edit session') ?>
+<?php if (!$s['is_current']): ?><?= ci_post_ico('flag', 'Make this the current session', ['action' => 'session_current', 'id' => $s['id']]) ?><?php endif; ?>
+<?php if (!$s['batches'] && !$s['students']): ?><?= ci_post_ico('trash', 'Delete session', ['action' => 'session_delete', 'id' => $s['id']], 'Delete session ' . $s['name'] . '?') ?><?php endif; ?>
 </div></td></tr>
 <?php endforeach; ?>
 </tbody></table></div></div>
@@ -105,12 +107,12 @@ $ec = $tab === 'classes' && $edit ? (array_values(array_filter($classes, fn($s) 
   <div class="ci-f"><button class="ci-btn" type="submit"><i class="fas fa-check"></i> <?= $ec ? 'Save' : 'Add class' ?></button></div>
 </form></div></div>
 <div class="ci-card"><div class="ci-card-b ci-p0 ci-table-wrap"><table class="ci-table">
-<thead><tr><th>#</th><th>Class</th><th class="ci-num">Students</th><th></th></tr></thead><tbody>
+<thead><tr><th>#</th><th>Class</th><th class="ci-num">Students</th><th>Action</th></tr></thead><tbody>
 <?php if (!$classes): ?><tr><td colspan="4" class="ci-empty">No classes yet.</td></tr><?php endif; ?>
 <?php foreach ($classes as $c): ?>
 <tr><td class="ci-muted"><?= (int)$c['sort'] ?></td><td><b><?= ci_e($c['name']) ?></b></td><td class="ci-num"><?= (int)$c['students'] ?></td>
-<td><div class="ci-row-actions"><a href="?tab=classes&amp;edit=<?= (int)$c['id'] ?>">Edit</a>
-<?php if (!$c['students']): ?><form method="post" onsubmit="return confirm('Delete class <?= ci_e(addslashes($c['name'])) ?>?')"><?= csrf_field() ?><input type="hidden" name="action" value="class_delete"><input type="hidden" name="id" value="<?= (int)$c['id'] ?>"><button type="submit" class="ci-del">Delete</button></form><?php endif; ?>
+<td><div class="ci-icos"><?= ci_ico('edit', '?tab=classes&edit=' . (int)$c['id'], 'Edit class') ?><?= ci_ico('pdf', null, 'Class report (PDF)', 'button', ' data-report="class" data-id="' . (int)$c['id'] . '"') ?>
+<?php if (!$c['students']): ?><?= ci_post_ico('trash', 'Delete class', ['action' => 'class_delete', 'id' => $c['id']], 'Delete class ' . $c['name'] . '?') ?><?php endif; ?>
 </div></td></tr>
 <?php endforeach; ?>
 </tbody></table></div></div>

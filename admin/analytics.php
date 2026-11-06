@@ -9,7 +9,7 @@ if (!admin_can('analytics.view_basic')) { http_response_code(403); exit('Access 
 ea_tables($pdo);
 
 $scope = null;
-if ($me['role'] === 'author') {
+if ($me['role'] !== 'admin' && !admin_can('blogs.edit_all')) { // own-posts users: analytics of their own posts only
     $st = $pdo->prepare("SELECT p.id FROM posts p JOIN authors a ON a.id = p.author_id WHERE a.user_id = ?");
     $st->execute([(int)$me['id']]);
     $scope = array_map('intval', $st->fetchAll(PDO::FETCH_COLUMN));

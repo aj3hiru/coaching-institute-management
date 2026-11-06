@@ -1,7 +1,8 @@
 <?php
 require_once __DIR__ . '/components/guard.php';
 require_once INCLUDES_PATH . '/ads.php';
-admin_guard(['admin']);
+$__adMe = admin_guard(['admin', 'editor', 'author']);
+if ($__adMe['role'] !== 'admin' && !admin_can('ads.manage_ads')) { http_response_code(403); exit('Access Denied'); } // Users → Blogs → Ads
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_check();

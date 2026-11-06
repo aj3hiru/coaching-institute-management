@@ -30,6 +30,7 @@ require_once INCLUDES_PATH . '/seo.php';
 // SECTION 3: AUTH CHECK
 // ============================================================
 $me = admin_guard(['admin', 'editor', 'author']);
+if (!admin_blog_access()) { http_response_code(403); exit('Access Denied'); } // Users → Blogs → No access
 $canSeo = $me['role'] === 'admin' || (edu_seo_module('role_manager') ? seo_opt('role_' . $me['role'] . '_seo') === '1' : true) || !edu_seo_advanced();
 // "Has this focus keyword been used before?" check for the SEO panel
 if (isset($_GET['kwcheck'])) {

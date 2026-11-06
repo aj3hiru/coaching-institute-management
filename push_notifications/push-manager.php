@@ -10,8 +10,9 @@ if (!admin_can('push_notifications.send')) { http_response_code(403); exit('Acce
 
 $pdo = edu_push_db();
 $isAdmin = admin_shell_user()['role'] === 'admin';
+$pushAdv = $isAdmin || admin_can('push_notifications.advanced');
 $tabs = ['send' => ['fa-paper-plane', 'Send'], 'reports' => ['fa-chart-simple', 'Reports'], 'history' => ['fa-clock-rotate-left', 'History']];
-if ($isAdmin) $tabs['settings'] = ['fa-gear', 'Settings'];
+if ($pushAdv) $tabs['settings'] = ['fa-gear', 'Settings'];
 $tab = ['analytics' => 'reports', 'segments' => 'history'][$_GET['tab'] ?? ''] ?? ($_GET['tab'] ?? '');
 if (!isset($tabs[$tab])) $tab = 'send';
 
@@ -37,7 +38,7 @@ $hp = max(1, (int)($_GET['hp'] ?? 1));
 $hPages = max(1, (int)ceil($campCount / 25));
 $campaigns = $pdo->query("SELECT * FROM push_campaigns ORDER BY id DESC LIMIT 25 OFFSET " . (($hp - 1) * 25))->fetchAll(PDO::FETCH_ASSOC);
 $allSubs = (int)$pdo->query("SELECT COUNT(*) FROM push_subscriptions")->fetchColumn();
-$keySets = $isAdmin ? $pdo->query("SELECT k.id, k.public_key, k.active, k.created_at, COUNT(s.id) n FROM push_keys k LEFT JOIN push_subscriptions s ON s.key_id = k.id GROUP BY k.id ORDER BY k.active DESC, k.id DESC")->fetchAll(PDO::FETCH_ASSOC) : [];
+$keySets = $pushAdv ? $pdo->query("SELECT k.id, k.public_key, k.active, k.created_at, COUNT(s.id) n FROM push_keys k LEFT JOIN push_subscriptions s ON s.key_id = k.id GROUP BY k.id ORDER BY k.active DESC, k.id DESC")->fetchAll(PDO::FETCH_ASSOC) : [];
 
 $prefill = null;
 if (!empty($_GET['post'])) {
@@ -310,7 +311,7 @@ tr.px-camp{cursor:pointer}tr.px-camp:hover td{background:#fafafa}tr.px-camp.open
     </div>
   </div>
 
-  <?php if ($isAdmin): ?>
+  <?php if ($pushAdv): ?>
   <!-- ===== Settings ===== -->
   <div class="pn-pane" data-pane="settings">
     <div class="px-set">

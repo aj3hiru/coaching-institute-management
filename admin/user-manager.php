@@ -11,7 +11,7 @@ const UM_PERMS = [
     'dashboard_access' => 'Dashboard Access',
     'blogs' => ['create' => 'Create', 'edit_own' => 'Edit Own', 'edit_all' => 'Edit All', 'delete_own' => 'Delete Own', 'delete_all' => 'Delete All', 'publish' => 'Publish', 'unpublish' => 'Unpublish', 'schedule' => 'Schedule', 'feature' => 'Feature', 'manage_categories' => 'Categories', 'manage_tags' => 'Tags', 'manage_comments' => 'Comments', 'view_drafts' => 'View Drafts', 'manage_seo' => 'Manage SEO'],
     'media' => ['upload' => 'Upload', 'delete' => 'Delete', 'manage_all' => 'Manage All'],
-    'push_notifications' => ['send' => 'Send', 'schedule' => 'Schedule', 'manage_templates' => 'Templates'],
+    'push_notifications' => ['send' => 'Send', 'schedule' => 'Schedule', 'manage_templates' => 'Templates', 'advanced' => 'Advanced (keys, import / export)'],
     'users' => ['create' => 'Create', 'edit' => 'Edit', 'delete' => 'Delete', 'suspend' => 'Suspend', 'change_roles' => 'Change Roles', 'manage_permissions' => 'Manage Permissions'],
     'authors' => ['create' => 'Create', 'edit' => 'Edit', 'delete' => 'Delete', 'approve' => 'Approve', 'feature' => 'Feature'],
     'analytics' => ['view_basic' => 'Basic Analytics', 'view_advanced' => 'Advanced Analytics'],
@@ -20,6 +20,7 @@ const UM_PERMS = [
     'pages' => ['create' => 'Create', 'edit' => 'Edit', 'delete' => 'Delete'],
     'files' => ['access_file_manager' => 'File Manager'],
     'security' => ['view_logs' => 'View Logs', 'manage_blacklist' => 'Blacklist', 'manage_recaptcha' => 'reCAPTCHA'],
+    'institute' => ['add_student' => 'Add student', 'edit_student' => 'Edit student', 'batches' => 'Manage batches', 'courses' => 'Manage courses', 'fees' => 'Manage fee & dues', 'sessions' => 'Manage sessions', 'classes' => 'Manage classes'],
 ];
 const UM_ICONS = ['dashboard_access' => 'fa-tachometer-alt', 'blogs' => 'fa-blog', 'media' => 'fa-photo-video', 'push_notifications' => 'fa-bell', 'users' => 'fa-users', 'authors' => 'fa-feather-alt', 'analytics' => 'fa-chart-bar', 'ads' => 'fa-ad', 'settings' => 'fa-cog', 'pages' => 'fa-file-alt', 'files' => 'fa-folder', 'security' => 'fa-shield-alt'];
 
@@ -44,15 +45,35 @@ function um_role_perms(string $role): array
     return $p;
 }
 
-/** Permissions ticked in the form's "Advance Access" panel. */
+/**
+ * Permissions from the form's simple "Advance Access" panel, turned into the stored permission keys:
+ *   Blog: none / own (add + edit own posts, own media, own analytics) / all (every post, media, page, SEO, all analytics); + Ads
+ *   Push notifications: send; advanced (keys, import / export)
+ *   Institute: add student, edit student, batches, courses, fee & dues, sessions, classes
+ * Everything else (users, settings, security …) stays with admins. The dashboard is always available.
+ */
 function um_perms_from_post(): array
 {
-    $in = $_POST['permissions'] ?? [];
     $out = [];
-    foreach (UM_PERMS as $k => $v) {
-        if (is_array($v)) foreach ($v as $s => $_) $out[$k][$s] = !empty($in[$k][$s]);
-        else $out[$k] = !empty($in[$k]);
+    foreach (UM_PERMS as $k => $v) $out[$k] = is_array($v) ? array_fill_keys(array_keys($v), false) : false;
+    $out['dashboard_access'] = true;
+    $blog = in_array($_POST['p_blog'] ?? '', ['own', 'all'], true) ? $_POST['p_blog'] : 'none';
+    if ($blog !== 'none') {
+        foreach (['create', 'edit_own', 'delete_own', 'view_drafts', 'publish', 'unpublish', 'schedule'] as $k) $out['blogs'][$k] = true;
+        $out['media']['upload'] = $out['media']['delete'] = true;
+        $out['files']['access_file_manager'] = true;
+        $out['analytics']['view_basic'] = true;
     }
+    if ($blog === 'all') {
+        foreach ($out['blogs'] as $k => $_) $out['blogs'][$k] = true;
+        $out['media']['manage_all'] = true;
+        $out['analytics']['view_advanced'] = true;
+        $out['pages'] = ['create' => true, 'edit' => true, 'delete' => true];
+    }
+    if (!empty($_POST['p_ads'])) $out['ads'] = ['manage_ads' => true, 'view_revenue' => true];
+    if (!empty($_POST['p_push']) || !empty($_POST['p_push_adv'])) { $out['push_notifications']['send'] = $out['push_notifications']['schedule'] = true; }
+    if (!empty($_POST['p_push_adv'])) { $out['push_notifications']['manage_templates'] = $out['push_notifications']['advanced'] = true; }
+    foreach (array_keys(UM_PERMS['institute']) as $k) $out['institute'][$k] = !empty($_POST['p_inst'][$k]);
     return $out;
 }
 
@@ -73,8 +94,8 @@ function um_unique_slug(PDO $pdo, string $slug, int $exceptId): string
 }
 
 $roleOptions = $isAdmin
-    ? ['author' => 'Author — writes and manages only their own posts', 'editor' => 'Editor — manages all posts, media and pages', 'admin' => 'Admin — full access to everything']
-    : ['author' => 'Author — writes and manages only their own posts'];
+    ? ['author' => 'Author', 'editor' => 'Editor', 'admin' => 'Admin']
+    : ['author' => 'Author'];
 
 // ─── Save / delete ────────────────────────────────────────────────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -331,7 +352,7 @@ foreach ($rows as $r) {
           <div class="form-group"><label>Email <span class="req">*</span></label><input type="email" name="email" class="form-control" required placeholder="name@example.com"></div>
           <div class="form-group"><label id="umPassLabel">Password <span class="req">*</span></label><span class="pwd-field"><input type="password" name="password" class="form-control" minlength="8" autocomplete="new-password" placeholder="At least 8 characters"><button type="button" class="pwd-field-toggle" onclick="UM.eye(this)" aria-label="Show password"><i class="fas fa-eye"></i></button></span></div>
           <div class="form-group"><label>Role</label><select name="role" class="form-control" onchange="UM.applyRole(this.value)"><?php foreach ($roleOptions as $k => $l): ?><option value="<?= $k ?>"><?= $esc($l) ?></option><?php endforeach; ?></select></div>
-          <div class="form-group"><label>Status</label><select name="status" class="form-control"><option value="active">Active — can sign in</option><option value="pending">Pending — cannot sign in yet</option><option value="suspended">Suspended — blocked</option></select><div class="um-hint" id="umSelfHint" hidden>You cannot change your own role or status.</div></div>
+          <div class="form-group"><label>Status</label><select name="status" class="form-control"><option value="active">Active</option><option value="pending">Pending</option><option value="suspended">Suspended</option></select><div class="um-hint" id="umSelfHint" hidden>You cannot change your own role or status.</div></div>
         </div>
 
         <div class="form-section-title" style="margin-top:1rem"><i class="fas fa-id-card"></i> Author Profile <span style="font-size:.72rem;font-weight:400;color:var(--gray-500)">— shown on posts and on the author page</span></div>
@@ -371,23 +392,21 @@ foreach ($rows as $r) {
         <?php if ($isAdmin): ?>
         <div id="umPermBox">
         <div class="form-section-title"><i class="fas fa-shield-alt"></i> Permissions</div>
-        <div class="role-summary">
-          <div class="rs-head"><i class="fas fa-info-circle" style="color:#4f46e5;margin-right:6px"></i>Permissions are set automatically by role — open "Advance Access" below to customize</div>
-          <div><strong>Admin</strong> — full control of everything (posts, users, settings, analytics).</div>
-          <div><strong>Editor</strong> — can create/edit/delete <em>all</em> posts, manage comments/categories/tags, and view analytics.</div>
-          <div><strong>Author</strong> — can create posts and can only edit/delete their <em>own</em> posts.</div>
-        </div>
         <div class="adv-toggle" role="button" tabindex="0" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')"><span><i class="fas fa-shield-alt"></i> Advance Access</span><i class="fas fa-chevron-down chev"></i></div>
         <div class="adv-panel"><div class="perm-panel">
-          <?php foreach (UM_PERMS as $k => $v): ?>
-            <?php if (!is_array($v)): ?>
-            <div class="perm-group"><div class="perm-grid"><label class="perm-item"><input type="checkbox" name="permissions[<?= $k ?>]" data-perm="<?= $k ?>" value="1"> <i class="fas <?= UM_ICONS[$k] ?>" style="font-size:.7rem;margin-right:.2rem"></i> <?= $esc($v) ?></label></div></div>
-            <?php else: ?>
-            <div class="perm-group"><div class="perm-group-title"><i class="fas <?= UM_ICONS[$k] ?>"></i> <?= $esc(ucwords(str_replace('_', ' ', $k))) ?></div><div class="perm-grid">
-              <?php foreach ($v as $s => $l): ?><label class="perm-item"><input type="checkbox" name="permissions[<?= $k ?>][<?= $s ?>]" data-perm="<?= $k ?>.<?= $s ?>" value="1"> <?= $esc($l) ?></label><?php endforeach; ?>
-            </div></div>
-            <?php endif; ?>
-          <?php endforeach; ?>
+          <div class="perm-group"><div class="perm-group-title"><i class="fas fa-blog"></i> Blogs</div><div class="perm-grid">
+            <label class="perm-item"><input type="radio" name="p_blog" value="none" data-simple="blog"> No access</label>
+            <label class="perm-item"><input type="radio" name="p_blog" value="own" data-simple="blog"> Add / edit own posts <small>(own media &amp; own analytics)</small></label>
+            <label class="perm-item"><input type="radio" name="p_blog" value="all" data-simple="blog"> All posts <small>(all media, pages, SEO &amp; site analytics)</small></label>
+            <label class="perm-item"><input type="checkbox" name="p_ads" value="1" data-simple="ads"> Ads (Ad Inserter)</label>
+          </div></div>
+          <div class="perm-group"><div class="perm-group-title"><i class="fas fa-bell"></i> Push Notifications</div><div class="perm-grid">
+            <label class="perm-item"><input type="checkbox" name="p_push" value="1" data-simple="push"> Send push</label>
+            <label class="perm-item"><input type="checkbox" name="p_push_adv" value="1" data-simple="push_adv"> Advanced <small>(change keys, import / export)</small></label>
+          </div></div>
+          <div class="perm-group"><div class="perm-group-title"><i class="fas fa-user-graduate"></i> Institute Management</div><div class="perm-grid">
+            <?php foreach (UM_PERMS['institute'] as $k => $l): ?><label class="perm-item"><input type="checkbox" name="p_inst[<?= $k ?>]" value="1" data-simple="inst.<?= $k ?>"> <?= $esc($l) ?></label><?php endforeach; ?>
+          </div></div>
         </div></div>
         </div>
         <?php endif; ?>
@@ -419,13 +438,21 @@ window.UM = (function () {
   var m = document.getElementById('umModal'), f = document.getElementById('umForm'), permBox = document.getElementById('umPermBox');
   document.body.appendChild(m); document.body.appendChild(document.getElementById('umDel'));
   function setPerms(p) {
-    f.querySelectorAll('[data-perm]').forEach(function (c) {
-      var path = c.dataset.perm.split('.'), v = p[path[0]];
-      if (path.length > 1) v = v && v[path[1]];
-      c.checked = !!v; c.closest('.perm-item').classList.toggle('checked', c.checked);
+    p = p || {};
+    var g = function (a, b) { return !!(p[a] && p[a][b]); };
+    var blog = g('blogs', 'edit_all') ? 'all' : (g('blogs', 'create') || g('blogs', 'edit_own') ? 'own' : 'none');
+    f.querySelectorAll('[data-simple]').forEach(function (c) {
+      var k = c.dataset.simple, on;
+      if (k === 'blog') on = c.value === blog;
+      else if (k === 'ads') on = g('ads', 'manage_ads');
+      else if (k === 'push') on = g('push_notifications', 'send');
+      else if (k === 'push_adv') on = g('push_notifications', 'advanced');
+      else if (k.indexOf('inst.') === 0) on = g('institute', k.slice(5));
+      c.checked = !!on;
     });
+    f.querySelectorAll('[data-simple]').forEach(function (c) { c.closest('.perm-item').classList.toggle('checked', c.checked); });
   }
-  f.addEventListener('change', function (e) { if (e.target.matches('[data-perm]')) e.target.closest('.perm-item').classList.toggle('checked', e.target.checked); });
+  f.addEventListener('change', function (e) { if (e.target.matches('[data-simple]')) f.querySelectorAll('[data-simple]').forEach(function (c) { c.closest('.perm-item').classList.toggle('checked', c.checked); }); });
   function slugify(s) { return (s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''); }
   function slugPrev() { document.getElementById('umSlugPrev').textContent = slugify(f.slug.value) || slugify(f.name.value) || slugify(f.username.value) || '…'; }
   ['slug', 'name', 'username'].forEach(function (n) { f[n].addEventListener('input', slugPrev); });

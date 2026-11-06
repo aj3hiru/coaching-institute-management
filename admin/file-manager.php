@@ -8,6 +8,8 @@ require_once INCLUDES_PATH . '/media.php';
 $me = admin_guard(['admin', 'editor', 'author']);
 if (!admin_can('files.access_file_manager') && !admin_can('media.upload')) { http_response_code(403); exit('Access Denied'); }
 $canDelete = admin_can('media.delete') || $me['role'] === 'admin';
+// without "Manage All" a user sees and deletes only the files they uploaded
+$ownMedia = $me['role'] !== 'admin' && !admin_can('media.manage_all');
 edu_media_columns($pdo);
 
 function fm_json(array $d): void
@@ -46,6 +48,7 @@ if ($ajax === 'list') {
     $pdf = "(m.file_type = 'pdf' OR m.file_path LIKE '%.pdf')";
     $where = [];
     $args = [];
+    if ($ownMedia) { $where[] = 'm.uploaded_by = ?'; $args[] = (int)$me['id']; }
     if ($type === 'image') $where[] = $img;
     elseif ($type === 'pdf') $where[] = $pdf;
     elseif ($type === 'media') $where[] = "m.file_type IN ('video','audio')";
@@ -66,7 +69,7 @@ if ($ajax === 'list') {
             'name' => basename($m['file_path']), 'ext' => strtoupper(pathinfo($m['file_path'], PATHINFO_EXTENSION)), 'title' => (string)$m['title'], 'alt' => (string)$m['alt_text'],
             'caption' => (string)$m['caption'], 'description' => (string)$m['description'], 'date' => $m['uploaded_at'] ? date('j M Y, g:i a', strtotime($m['uploaded_at'])) : '', 'by' => (string)$m['username']];
     }
-    $c = $pdo->query("SELECT COUNT(*) total, SUM(file_type IN ('image','banner') OR file_path REGEXP '\\\\.(webp|jpe?g|png|gif|avif|svg|ico)$') images, SUM(file_type = 'pdf' OR file_path LIKE '%.pdf') pdfs, SUM(file_type IN ('video','audio')) media FROM media")->fetch(PDO::FETCH_ASSOC);
+    $c = $pdo->query("SELECT COUNT(*) total, SUM(file_type IN ('image','banner') OR file_path REGEXP '\\\\.(webp|jpe?g|png|gif|avif|svg|ico)$') images, SUM(file_type = 'pdf' OR file_path LIKE '%.pdf') pdfs, SUM(file_type IN ('video','audio')) media FROM media" . ($ownMedia ? ' WHERE uploaded_by = ' . (int)$me['id'] : ''))->fetch(PDO::FETCH_ASSOC);
     $c = array_map('intval', $c);
     $c['documents'] = $c['total'] - $c['images'] - $c['pdfs'] - $c['media'];
     fm_json(['items' => $items, 'total' => $total, 'page' => $page, 'pages' => max(1, (int)ceil($total / $per)), 'counts' => $c]);
@@ -94,7 +97,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!$canDelete) fm_json(['ok' => false, 'error' => 'You may not delete files.']);
         $ids = array_values(array_filter(array_map('intval', (array)($_POST['ids'] ?? []))));
         if (!$ids) fm_json(['ok' => false, 'error' => 'Nothing selected.']);
-        $rows = $pdo->query("SELECT * FROM media WHERE id IN (" . implode(',', $ids) . ")")->fetchAll(PDO::FETCH_ASSOC);
+        $rows = $pdo->query("SELECT * FROM media WHERE id IN (" . implode(',', $ids) . ")" . ($ownMedia ? ' AND uploaded_by = ' . (int)$me['id'] : ''))->fetchAll(PDO::FETCH_ASSOC);
         $n = 0;
         foreach ($rows as $m) {
             // Files can be shared between rows (e.g. imported copies) — only remove them from disk when no other row uses them.

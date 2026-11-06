@@ -6,7 +6,7 @@
 // any amount) are added from the student's profile → Collect fee.
 require_once __DIR__ . '/components/guard.php';
 require_once INCLUDES_PATH . '/institute.php';
-$me = ci_page_start($pdo);
+$me = ci_page_start($pdo, [!empty($_GET['id']) || !empty($_POST['id']) ? 'edit_student' : 'add_student']);
 $L = ci_lists($pdo);
 $curSession = ci_current_session($pdo);
 
@@ -40,14 +40,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'name' => $in('name'), 'father_name' => $in('father_name'), 'mother_name' => $in('mother_name'),
         'dob' => ci_clean_date($_POST['dob'] ?? ''), 'gender' => in_array($_POST['gender'] ?? '', ['Male', 'Female', 'Other'], true) ? $_POST['gender'] : null,
         'mobile' => $in('mobile', 20), 'alt_mobile' => $in('alt_mobile', 20), 'email' => $in('email'),
-        'address' => $in('address', 500), 'city' => $in('city', 100), 'state' => $in('state', 100), 'pincode' => $in('pincode', 10),
-        // class and school are no longer on the form: an existing student keeps what was saved before
-        'class_id' => $student['class_id'] ?? null, 'school' => $student['school'] ?? null,
+        'address' => $in('address', 500), 'city' => $student['city'] ?? null, 'state' => $in('state', 100), 'pincode' => $in('pincode', 10),
+        // class is on the form (it filters the courses); school / city are no longer asked — kept as saved before
+        'class_id' => isset($L['classes'][(int)($_POST['class_id'] ?? 0)]) ? (int)$_POST['class_id'] : null, 'school' => $student['school'] ?? null,
         'admission_date' => ci_clean_date($_POST['admission_date'] ?? '') ?: date('Y-m-d'),
         'status' => in_array($_POST['status'] ?? '', ['active', 'left', 'completed'], true) ? $_POST['status'] : 'active',
         'notes' => $in('notes', 2000), 'photo' => $student['photo'] ?? null, 'reg_no' => $student['reg_no'] ?? '',
     ];
     if ($form['name'] === '') $errors[] = 'Enter the student name.';
+    if (!$form['class_id'] && $L['classes']) $errors[] = 'Choose the class.';
     $mob = ci_mobile($form['mobile']);
     if ($mob === '') $errors[] = 'Enter a valid 10-digit mobile number.'; else $form['mobile'] = $mob;
     if ($form['alt_mobile'] !== '') { $alt = ci_mobile($form['alt_mobile']); if ($alt === '') $errors[] = 'The alternate mobile number is not valid.'; else $form['alt_mobile'] = $alt; }
@@ -75,7 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // the course's own fee (kept from enrolment for an existing row of the same course)
         $list = ($eid && (int)$known[$eid]['course_id'] === $c) ? (float)$known[$eid]['fee'] : (float)$L['courses'][$c]['fee'];
         $final = trim((string)($_POST['e_final'][$i] ?? '')) === '' ? $list : ci_amount($_POST['e_final'][$i]);
-        $status = $eid ? (in_array($_POST['e_status'][$i] ?? '', ['active', 'completed', 'dropped'], true) ? $_POST['e_status'][$i] : 'active') : 'active';
+        $status = $eid ? (in_array($_POST['e_status'][$i] ?? '', ['active', 'completed', 'left', 'dropped'], true) ? $_POST['e_status'][$i] : 'active') : 'active';
         $pay = $eid ? 0 : ci_amount($_POST['e_pay'][$i] ?? 0);
         $method = isset(CI_METHODS[$_POST['e_method'][$i] ?? '']) ? $_POST['e_method'][$i] : 'Cash';
         $paid = $eid ? (float)$known[$eid]['paid'] : 0;
@@ -122,6 +123,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $oldPhoto = $form['photo'] ?? null;
             if ($newPhoto) $form['photo'] = $newPhoto;
             elseif (!empty($_POST['photo_remove'])) $form['photo'] = null;
+            if ($student && (int)($student['class_id'] ?? 0) !== (int)$form['class_id']) {
+                $pdo->prepare("INSERT INTO ci_class_history (student_id, from_class, to_class, session_id, changed_on, note, created_by) VALUES (?,?,?,?,?,?,?)")
+                    ->execute([$id, $student['class_id'] ?: null, $form['class_id'], $curSession, date('Y-m-d'), 'Changed in Edit Student', (int)$me['id']]);
+            }
+            if ($form['status'] === 'left' && ($student['status'] ?? '') !== 'left') $pdo->prepare("UPDATE ci_students SET left_on = CURDATE() WHERE id = ?")->execute([$id]);
+            $leftNow = $form['status'] === 'left' && ($student['status'] ?? '') !== 'left';
+            if ($form['status'] !== 'left') $pdo->prepare("UPDATE ci_students SET left_on = NULL WHERE id = ?")->execute([$id]);
             $pdo->prepare("UPDATE ci_students SET name=?, father_name=?, mother_name=?, dob=?, gender=?, mobile=?, alt_mobile=?, email=?, address=?, city=?, state=?, pincode=?,
                 class_id=?, school=?, photo=?, status=?, admission_date=?, notes=? WHERE id=?")->execute([
                 $form['name'], $form['father_name'] ?: null, $form['mother_name'] ?: null, $form['dob'], $form['gender'], $form['mobile'], $form['alt_mobile'] ?: null,
@@ -138,8 +146,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($r['remove']) continue;
                 if ($eid) {
                     $due = $r['type'] === 'installment' ? ($r['due_date'] ?? $known[$eid]['due_date']) : null;
-                    $pdo->prepare("UPDATE ci_enrollments SET course_id=?, batch_id=?, session_id=?, fee=?, discount=?, fee_type=?, due_date=?, status=? WHERE id=? AND student_id=?")
-                        ->execute([$r['course_id'], $r['batch_id'], $r['session_id'], $r['fee'], $r['discount'], $r['type'], $due, $r['status'], $eid, $id]);
+                    $pdo->prepare("UPDATE ci_enrollments SET course_id=?, batch_id=?, session_id=?, fee=?, discount=?, fee_type=?, due_date=?, status=?,
+                        ended_on = CASE WHEN ? = 'active' THEN NULL WHEN status <> ? OR ended_on IS NULL THEN CURDATE() ELSE ended_on END WHERE id=? AND student_id=?")
+                        ->execute([$r['course_id'], $r['batch_id'], $r['session_id'], $r['fee'], $r['discount'], $r['type'], $due, $r['status'], $r['status'], $r['status'], $eid, $id]);
                     ci_plan_clear($pdo, $eid); // no automatic kists any more: one course fee, paid in any number of parts
                 } else {
                     $pdo->prepare("INSERT INTO ci_enrollments (student_id, course_id, batch_id, session_id, fee, discount, fee_type, due_date, enrolled_on, status) VALUES (?,?,?,?,?,?,?,?,?,?)")
@@ -153,6 +162,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 }
             }
+            if ($leftNow) $pdo->prepare("UPDATE ci_enrollments SET status = 'left', ended_on = CURDATE() WHERE student_id = ? AND status = 'active'")->execute([$id]);
             $pdo->commit();
             if ($oldPhoto && $oldPhoto !== $form['photo']) ci_delete_photo($oldPhoto); // only after the save went through
             admin_log('ci_student', ($student ? 'Updated' : 'Added') . " student {$form['reg_no']} {$form['name']}");
@@ -191,14 +201,14 @@ $rowHtml = function (array $r, int $idx) use ($L): string {
     $type = ($r['type'] ?? 'full') === 'installment' ? 'installment' : 'full';
     $num = fn($v) => $v === null || $v === '' ? '' : rtrim(rtrim(number_format((float)$v, 2, '.', ''), '0'), '.');
     $h = '<div class="ci-enr-row ci-fee-row" data-paid="' . $paid . '" data-new="' . ($id ? 0 : 1) . '"><input type="hidden" name="e_id[]" value="' . $id . '">';
-    $h .= '<div class="ci-f"><label>Course <span class="ci-req">*</span></label><select name="e_course[]" class="ci-course"><option value="">Choose course…</option>';
+    $h .= '<div class="ci-f"><label>Course <span class="ci-req">*</span></label><select name="e_course[]" class="ci-course" data-search><option value="">Choose course…</option>';
     foreach ($L['courses'] as $cid => $c) {
         $sel = (int)($r['course_id'] ?? 0) === $cid;
         if ($c['status'] !== 'active' && !$sel) continue;
-        $h .= '<option value="' . $cid . '" data-fee="' . (float)$c['fee'] . '"' . ($sel ? ' selected' : '') . '>' . ci_e($c['name']) . ' — ' . ci_money0($c['fee']) . '</option>';
+        $h .= '<option value="' . $cid . '" data-fee="' . (float)$c['fee'] . '" data-class="' . (int)$c['class_id'] . '"' . ($sel ? ' selected' : '') . '>' . ci_e($c['name']) . ' — ' . ci_money0($c['fee']) . '</option>';
     }
     $h .= '</select></div>';
-    $h .= '<div class="ci-f"><label>Batch</label><select name="e_batch[]" class="ci-batch" data-val="' . (int)($r['batch_id'] ?? 0) . '"><option value="">Choose the course first</option></select></div>';
+    $h .= '<div class="ci-f"><label>Batch</label><select name="e_batch[]" class="ci-batch" data-search data-val="' . (int)($r['batch_id'] ?? 0) . '"><option value="">Choose the course first</option></select></div>';
     $h .= '<div class="ci-f"><label>Fee plan</label><select name="e_type[]" class="ci-type"><option value="full"' . ($type === 'full' ? ' selected' : '') . '>Final fee (one time)</option><option value="installment"' . ($type === 'installment' ? ' selected' : '') . '>Installment</option></select></div>';
     $h .= '<div class="ci-f"><label>Fee for this student (₹)</label><input name="e_final[]" class="ci-final" type="number" min="0" step="0.01" value="' . ci_e($num($r['final'] ?? null)) . '" data-list="' . ci_e($num($r['list'] ?? null)) . '"><span class="ci-hint ci-disc-note"></span></div>';
     if ($id) $h .= '<div class="ci-enr-x"></div>';
@@ -215,7 +225,7 @@ $rowHtml = function (array $r, int $idx) use ($L): string {
     $h .= '<div class="ci-f ci-due-f"><label>Next due date</label><input name="e_due[]" type="date" value="' . ci_e($r['due_date'] ?? '') . '"><span class="ci-hint">when the next installment is expected</span></div>';
     if ($id) {
         $h .= '<div class="ci-f"><label>Status</label><select name="e_status[]">';
-        foreach (['active' => 'Active', 'completed' => 'Completed', 'dropped' => 'Dropped'] as $k => $l) $h .= '<option value="' . $k . '"' . (($r['status'] ?? '') === $k ? ' selected' : '') . '>' . $l . '</option>';
+        foreach (['active' => 'Active', 'completed' => 'Completed', 'left' => 'Left (fee due stays)', 'dropped' => 'Dropped (no fee)'] as $k => $l) $h .= '<option value="' . $k . '"' . (($r['status'] ?? '') === $k ? ' selected' : '') . '>' . $l . '</option>';
         $h .= '</select>';
         if ($paid <= 0) $h .= '<label class="ci-chk"><input type="checkbox" name="e_remove[' . $idx . ']" value="1"' . (!empty($r['remove']) ? ' checked' : '') . '> Remove this course</label>';
         $h .= '</div>';
@@ -246,13 +256,13 @@ $v = fn($k) => ci_e($form[$k] ?? '');
 <?php if ($errors): ?><div class="ci-alert ci-alert-err"><b>Please fix:</b><ul style="margin:6px 0 0 18px;padding:0"><?php foreach (array_unique($errors) as $e): ?><li><?= ci_e($e) ?></li><?php endforeach; ?></ul></div><?php endif; ?>
 <?php if (!$L['courses']): ?><div class="ci-alert ci-alert-err">There are no courses yet. <a href="/admin/ci-courses.php?new=1">Add a course</a> first, then come back.</div><?php endif; ?>
 
-<form method="post" enctype="multipart/form-data" id="ci-student-form" novalidate>
+<form method="post" enctype="multipart/form-data" id="ci-student-form" class="ci-float" novalidate>
 <?= csrf_field() ?><input type="hidden" name="id" value="<?= (int)$id ?>">
 
 <div class="ci-card"><div class="ci-card-h"><h3>Student details</h3><?php if ($student): ?><span class="ci-muted">Reg. no. <b><?= ci_e($student['reg_no']) ?></b></span><?php endif; ?></div><div class="ci-card-b">
   <div class="ci-photo" style="margin-bottom:16px">
-    <?= ci_avatar($form, 84) ?>
-    <div class="ci-f"><label>Photo</label><input type="file" name="photo" accept="image/jpeg,image/png,image/webp" style="height:auto;padding:6px"><span class="ci-hint">JPG, PNG or WebP, up to 3 MB.</span>
+    <span class="ci-photo-prev" id="ci-photo-prev"><?= ci_avatar($form, 84) ?></span>
+    <div class="ci-f ci-nofloat"><label>Photo</label><input type="file" name="photo" id="ci-photo-in" accept="image/jpeg,image/png,image/webp" style="height:auto;padding:6px"><span class="ci-hint">JPG, PNG or WebP, up to 3 MB.</span>
     <?php if (!empty($form['photo'])): ?><label class="ci-chk"><input type="checkbox" name="photo_remove" value="1"> Remove photo</label><?php endif; ?></div>
   </div>
   <div class="ci-grid3">
@@ -263,14 +273,14 @@ $v = fn($k) => ci_e($form[$k] ?? '');
     <div class="ci-f"><label>Alternate mobile</label><input name="alt_mobile" inputmode="numeric" maxlength="15" placeholder="parent / guardian" value="<?= $v('alt_mobile') ?>"></div>
     <div class="ci-f"><label>Email</label><input type="email" name="email" maxlength="150" value="<?= $v('email') ?>"></div>
     <div class="ci-f"><label>Date of birth</label><input type="date" name="dob" max="<?= date('Y-m-d') ?>" value="<?= $v('dob') ?>"></div>
-    <div class="ci-f"><label>Gender</label><select name="gender"><option value="">—</option><?php foreach (['Male', 'Female', 'Other'] as $g): ?><option <?= ($form['gender'] ?? '') === $g ? 'selected' : '' ?>><?= $g ?></option><?php endforeach; ?></select></div>
+    <div class="ci-f"><label>Gender</label><select name="gender"><option value=""></option><?php foreach (['Male', 'Female', 'Other'] as $g): ?><option <?= ($form['gender'] ?? '') === $g ? 'selected' : '' ?>><?= $g ?></option><?php endforeach; ?></select></div>
+    <div class="ci-f"><label>Class <span class="ci-req">*</span></label><select name="class_id" id="ci-class"><option value=""></option><?php foreach ($L['classes'] as $cid => $cn): ?><option value="<?= $cid ?>" <?= (int)($form['class_id'] ?? 0) === $cid ? 'selected' : '' ?>><?= ci_e($cn) ?></option><?php endforeach; ?></select></div>
     <div class="ci-f"><label>Admission date</label><input type="date" name="admission_date" value="<?= $v('admission_date') ?>"></div>
     <div class="ci-f"><label>Status</label><select name="status"><?php foreach (['active' => 'Active', 'completed' => 'Completed', 'left' => 'Left'] as $k => $l): ?><option value="<?= $k ?>" <?= ($form['status'] ?? 'active') === $k ? 'selected' : '' ?>><?= $l ?></option><?php endforeach; ?></select></div>
   </div>
   <div class="ci-sec" style="margin-top:18px">Address</div>
   <div class="ci-grid4">
-    <div class="ci-f" style="grid-column:span 2"><label>Address</label><input name="address" maxlength="500" value="<?= $v('address') ?>"></div>
-    <div class="ci-f"><label>City / Village</label><input name="city" maxlength="100" value="<?= $v('city') ?>"></div>
+    <div class="ci-f" style="grid-column:span 2"><label>Address (village / city)</label><input name="address" maxlength="500" value="<?= $v('address') ?>"></div>
     <div class="ci-f"><label>State</label><input name="state" maxlength="100" value="<?= $v('state') ?>"></div>
     <div class="ci-f"><label>PIN code</label><input name="pincode" inputmode="numeric" maxlength="6" value="<?= $v('pincode') ?>"></div>
   </div>
@@ -344,11 +354,46 @@ $v = fn($k) => ci_e($form[$k] ?? '');
     if (!init) setFee(row);
     else { if (fin.value === '' && courseFee(row) !== null) setFee(row); else sum(row); }
   }
+  // class → only that class's courses (courses without a class always show)
+  var cls = document.getElementById('ci-class');
+  // the student's class's courses come first (in their own group); every other course stays below
+  function classFilter(row) {
+    var k = cls ? cls.value : '', sel = row.querySelector('.ci-course'), keep = sel.value;
+    var opts = [].slice.call(sel.querySelectorAll('option')).filter(function (o) { return o.value; });
+    sel.querySelectorAll('optgroup').forEach(function (g) { g.remove(); });
+    var mine = opts.filter(function (o) { return k && o.dataset.class === k; }), rest = opts.filter(function (o) { return !(k && o.dataset.class === k); });
+    if (mine.length) {
+      var cn = cls.options[cls.selectedIndex].text, g1 = document.createElement('optgroup'), g2 = document.createElement('optgroup');
+      g1.label = 'Class ' + cn + ' courses'; g2.label = 'Other courses';
+      mine.forEach(function (o) { g1.appendChild(o); }); rest.forEach(function (o) { g2.appendChild(o); });
+      sel.appendChild(g1); if (rest.length) sel.appendChild(g2);
+    } else rest.forEach(function (o) { sel.appendChild(o); });
+    sel.value = keep;
+  }
+  if (cls) cls.addEventListener('change', function () {
+    rows.querySelectorAll('.ci-enr-row').forEach(function (r) {
+      var c = r.querySelector('.ci-course'), o = c.options[c.selectedIndex];
+      classFilter(r);
+    });
+  });
+  var _wire = wire; wire = function (row, init) { classFilter(row); _wire(row, init); row.querySelector('.ci-course').addEventListener('change', function () { var o = this.options[this.selectedIndex]; if (cls && !cls.value && o && o.dataset.class && o.dataset.class !== '0') { cls.value = o.dataset.class; cls.dispatchEvent(new Event('change', { bubbles: true })); } }); };
   rows.querySelectorAll('.ci-enr-row').forEach(function (r) { wire(r, true); });
+  // photo: show the chosen picture at once
+  var pin = document.getElementById('ci-photo-in'), prev = document.getElementById('ci-photo-prev');
+  if (pin && prev) pin.addEventListener('change', function () {
+    var f = pin.files && pin.files[0];
+    if (!f) return;
+    if (!/^image\/(jpeg|png|webp)$/.test(f.type)) { alert('Please choose a JPG, PNG or WebP image.'); pin.value = ''; return; }
+    if (f.size > 3 * 1024 * 1024) { alert('The photo is larger than 3 MB.'); pin.value = ''; return; }
+    var url = URL.createObjectURL(f);
+    prev.innerHTML = '<img class="ci-av" src="' + url + '" alt="" style="width:84px;height:84px">';
+  });
   document.getElementById('ci-add-row').addEventListener('click', function () {
     var n = document.getElementById('ci-row-tpl').content.firstElementChild.cloneNode(true);
     rows.insertBefore(n, rows.querySelector('p')); wire(n, false);
   });
+  // ?addcourse=1 (from the students list): open a new course row straight away
+  if (/[?&]addcourse=1/.test(location.search)) { document.getElementById('ci-add-row').click(); var nr = rows.querySelectorAll('.ci-enr-row'); nr = nr[nr.length - 1]; if (nr) { nr.scrollIntoView({ block: 'center' }); setTimeout(function () { nr.querySelector('.ci-course').focus(); }, 300); } }
 })();
 </script>
 </body>

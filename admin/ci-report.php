@@ -1,0 +1,156 @@
+<?php
+// Data for the PDF reports (assets/js/ci-report.js draws them): ?type=student|course|batch|class&id=N
+// Returns one generic document: title, number, two info boxes, tables, notes. Students who left or dropped are listed
+// with that status and the date, so a course/batch report shows who left in between.
+require_once __DIR__ . '/components/guard.php';
+require_once INCLUDES_PATH . '/institute.php';
+$me = ci_page_start($pdo);
+header('Content-Type: application/json; charset=utf-8');
+$type = (string)($_GET['type'] ?? '');
+$id = (int)($_GET['id'] ?? 0);
+$out = fn(array $d) => exit(json_encode($d + ['institute' => ci_institute(), 'generated' => date('d M Y, h:i A'), 'viewer' => ['name' => $me['username'], 'role' => $me['role']]], JSON_UNESCAPED_UNICODE));
+$fail = function (string $m) { http_response_code(404); exit(json_encode(['error' => $m])); };
+$rs = fn($n) => 'Rs. ' . number_format((float)$n, 2);
+$d = fn($v) => $v ? date('d M Y', strtotime($v)) : '-';
+$st = fn(string $s, ?string $on = null) => ['active' => 'Active', 'completed' => 'Completed', 'left' => 'Left', 'dropped' => 'Dropped', 'inactive' => 'Inactive'][$s] ?? ucfirst($s);
+$withDate = fn(string $s, ?string $on) => $st($s) . (in_array($s, ['left', 'dropped', 'completed'], true) && $on ? ' (' . date('d M Y', strtotime($on)) . ')' : '');
+
+/** Students of one course / batch / class as table rows + totals. */
+$studentRows = function (string $where, array $args, bool $showBatch) use ($pdo, $rs, $d, $withDate) {
+    $q = $pdo->prepare("SELECT s.reg_no, s.name, s.mobile, s.status AS sstatus, s.left_on, e.status, e.ended_on, e.enrolled_on, e.fee, e.discount, e.fee_type,
+        b.name AS batch_name, c.name AS course_name, " . CI_PAID_SQL . " AS paid, " . CI_DUE_SQL . " AS due
+        FROM ci_enrollments e JOIN ci_students s ON s.id = e.student_id LEFT JOIN ci_batches b ON b.id = e.batch_id LEFT JOIN ci_courses c ON c.id = e.course_id
+        WHERE $where ORDER BY e.status = 'active' DESC, s.name");
+    $q->execute($args);
+    $rows = [];
+    $t = ['n' => 0, 'active' => 0, 'left' => 0, 'completed' => 0, 'fee' => 0, 'paid' => 0, 'due' => 0];
+    foreach ($q as $r) {
+        $net = $r['status'] === 'dropped' ? 0 : (float)$r['fee'] - (float)$r['discount'];
+        $status = $r['sstatus'] === 'left' && $r['status'] !== 'completed' ? $withDate('left', $r['left_on'] ?: $r['ended_on']) : $withDate($r['status'], $r['ended_on']);
+        $row = [$r['reg_no'], $r['name'], $r['mobile']];
+        if ($showBatch) $row[] = $r['batch_name'] ?: '-';
+        array_push($row, $d($r['enrolled_on']), $status, $rs($net), $rs($r['paid']), $rs($r['due']));
+        $rows[] = $row;
+        $t['n']++;
+        if ($r['status'] === 'active' && $r['sstatus'] !== 'left') $t['active']++;
+        if ($r['sstatus'] === 'left' || in_array($r['status'], ['left', 'dropped'], true)) $t['left']++;
+        if ($r['status'] === 'completed') $t['completed']++;
+        $t['fee'] += $net; $t['paid'] += (float)$r['paid']; $t['due'] += (float)$r['due'];
+    }
+    return [$rows, $t];
+};
+$studentHead = fn(bool $b) => array_merge(['Reg. No.', 'Student', 'Mobile'], $b ? ['Batch'] : [], ['Joined', 'Status', 'Fee', 'Paid', 'Due']);
+$moneyCols = fn(bool $b) => $b ? [7, 8, 9] : [6, 7, 8];
+$summary = fn(array $t) => [['Students (all time)', (string)$t['n']], ['Studying now', (string)$t['active']], ['Completed', (string)$t['completed']], ['Left / dropped in between', (string)$t['left']],
+    ['Total fee (after discounts)', $rs($t['fee'])], ['Fee collected', $rs($t['paid'])], ['Fee still due', $rs($t['due'])]];
+
+if ($type === 'student') {
+    $q = $pdo->prepare("SELECT s.*, c.name AS class_name FROM ci_students s LEFT JOIN ci_classes c ON c.id = s.class_id WHERE s.id = ?");
+    $q->execute([$id]);
+    $s = $q->fetch(PDO::FETCH_ASSOC) ?: $fail('Student not found');
+    $enr = ci_enrollments($pdo, $id);
+    $tot = ci_student_totals($pdo, $id);
+    $cRows = array_map(fn($e) => [$e['course_name'] ?? '-', $e['batch_name'] ?: '-', $e['session_name'] ?: '-', ($e['fee_type'] ?? 'full') === 'installment' ? 'Installment' : 'Final fee',
+        $rs($e['fee']), (float)$e['discount'] > 0 ? $rs($e['discount']) : '-', $rs($e['status'] === 'dropped' ? 0 : (float)$e['fee'] - (float)$e['discount']), $rs($e['paid']), $rs($e['due']), $withDate($e['status'], $e['ended_on'] ?? null)], $enr);
+    $pq = $pdo->prepare("SELECT p.*, c.name AS course_name FROM ci_payments p LEFT JOIN ci_enrollments e ON e.id = p.enrollment_id LEFT JOIN ci_courses c ON c.id = e.course_id WHERE p.student_id = ? ORDER BY p.paid_on, p.id");
+    $pq->execute([$id]);
+    $pays = $pq->fetchAll(PDO::FETCH_ASSOC);
+    $hq = $pdo->prepare("SELECT h.changed_on, a.name f, b.name t, h.note FROM ci_class_history h LEFT JOIN ci_classes a ON a.id = h.from_class LEFT JOIN ci_classes b ON b.id = h.to_class WHERE h.student_id = ? ORDER BY h.changed_on, h.id");
+    $hq->execute([$id]);
+    $hist = $hq->fetchAll(PDO::FETCH_ASSOC);
+    $notes = [$s['name'] . ' has ' . count($enr) . ' course(s): total fee ' . $rs($tot['net']) . ', paid ' . $rs($tot['paid']) . ' in ' . count($pays) . ' payment(s), due ' . $rs($tot['due']) . '.'];
+    foreach ($enr as $e) if ((float)$e['due'] > 0.004 && $e['due_date']) $notes[] = ($e['course_name'] ?? 'Course') . ': ' . $rs($e['due']) . ' due' . ($e['due_date'] < date('Y-m-d') ? ' - due date ' . $d($e['due_date']) . ' has passed.' : ' by ' . $d($e['due_date']) . '.');
+    if ($s['status'] === 'left') $notes[] = 'The student left' . ($s['left_on'] ? ' on ' . $d($s['left_on']) : '') . '.';
+    $out(['title' => 'STUDENT REPORT', 'subtitle' => 'Student record and fee statement', 'no' => 'SR-' . $s['reg_no'], 'file' => 'student-report_' . $s['reg_no'],
+        'boxes' => [
+            ['head' => 'STUDENT', 'rows' => [['Name', $s['name']], ['Reg. No.', $s['reg_no']], ["Father's name", $s['father_name'] ?: '-'], ['Mobile', $s['mobile'] . ($s['alt_mobile'] ? ', ' . $s['alt_mobile'] : '')], ['Address', trim(implode(', ', array_filter([$s['address'], $s['city'], $s['state'], $s['pincode']]))) ?: '-']]],
+            ['head' => 'DETAILS', 'rows' => [['Class', $s['class_name'] ?: '-'], ['Admission', $d($s['admission_date'])], ['Status', $withDate($s['status'], $s['left_on'])], ['Date of birth', $d($s['dob'])], ['Email', $s['email'] ?: '-']]],
+        ],
+        'sections' => array_values(array_filter([
+            ['title' => 'Summary of Fee', 'head' => ['Description', 'Amount'], 'body' => [['Total fee (after discounts)', $rs($tot['net'])], ['Paid', $rs($tot['paid'])]], 'foot' => [['Balance due', $rs($tot['due'])]], 'right' => [1], 'w' => [1 => 140]],
+            ['title' => 'Courses', 'right_text' => count($enr) . ' course(s)', 'head' => ['Course', 'Batch', 'Session', 'Plan', 'Course fee', 'Discount', 'Fee', 'Paid', 'Due', 'Status'], 'body' => $cRows, 'right' => [4, 5, 6, 7, 8], 'small' => true],
+            ['title' => 'Payments', 'right_text' => count($pays) . ' receipt(s)', 'head' => ['No.', 'Date', 'Receipt', 'Course', 'Paid by', 'Amount'],
+                'body' => array_map(fn($p, $i) => [$i + 1, $d($p['paid_on']), $p['receipt_no'], $p['course_name'] ?? '-', CI_METHODS[$p['method']] ?? $p['method'], $rs($p['amount'])], $pays, array_keys($pays)),
+                'foot' => $pays ? [['', '', '', '', 'Total', $rs($tot['paid'])]] : null, 'right' => [5], 'empty' => 'No payments yet.'],
+            $hist ? ['title' => 'Class History', 'head' => ['Date', 'From class', 'To class', 'Note'], 'body' => array_map(fn($h) => [$d($h['changed_on']), $h['f'] ?: '-', $h['t'] ?: '-', $h['note'] ?: '-'], $hist)] : null,
+        ])),
+        'notes' => $notes]);
+}
+
+if ($type === 'course' || $type === 'batch') {
+    if ($type === 'course') {
+        $q = $pdo->prepare("SELECT c.*, k.name AS class_name FROM ci_courses c LEFT JOIN ci_classes k ON k.id = c.class_id WHERE c.id = ?");
+        $q->execute([$id]);
+        $c = $q->fetch(PDO::FETCH_ASSOC) ?: $fail('Course not found');
+        [$rows, $t] = $studentRows('e.course_id = ?', [$id], true);
+        $bq = $pdo->prepare("SELECT b.name, b.timing, b.days, b.teacher, b.status, b.start_date, b.end_date, se.name AS session_name,
+            (SELECT COUNT(*) FROM ci_enrollments e WHERE e.batch_id = b.id AND e.status = 'active') act, (SELECT COUNT(*) FROM ci_enrollments e WHERE e.batch_id = b.id) alln
+            FROM ci_batches b LEFT JOIN ci_sessions se ON se.id = b.session_id WHERE b.course_id = ? ORDER BY b.status = 'active' DESC, b.name");
+        $bq->execute([$id]);
+        $bat = $bq->fetchAll(PDO::FETCH_ASSOC);
+        $out(['title' => 'COURSE REPORT', 'subtitle' => 'Course, batches, students and fee', 'no' => 'CR-' . str_pad((string)$id, 4, '0', STR_PAD_LEFT), 'file' => 'course-report_' . $c['name'],
+            'boxes' => [
+                ['head' => 'COURSE', 'rows' => [['Course', $c['name']], ['Class', $c['class_name'] ?: '-'], ['Course fee', $rs($c['fee'])], ['Duration', $c['duration'] ?: '-'], ['Status', $st($c['status'])]]],
+                ['head' => 'FIGURES', 'rows' => [['Batches', (string)count($bat)], ['Students', (string)$t['n']], ['Studying now', (string)$t['active']], ['Left in between', (string)$t['left']], ['Fee due', $rs($t['due'])]]],
+            ],
+            'sections' => [
+                ['title' => 'Summary of Figures', 'head' => ['Description', 'Value'], 'body' => $summary($t), 'right' => [1], 'w' => [1 => 140]],
+                ['title' => 'Batches', 'right_text' => count($bat) . ' batch(es)', 'head' => ['Batch', 'Timing', 'Session', 'Teacher', 'Students now', 'All time', 'Status'],
+                    'body' => array_map(fn($b) => [$b['name'], trim(($b['timing'] ?? '') . ($b['days'] ? ' ' . $b['days'] : '')) ?: '-', $b['session_name'] ?: '-', $b['teacher'] ?: '-', (string)$b['act'], (string)$b['alln'], $st($b['status'])], $bat), 'right' => [4, 5], 'empty' => 'No batches.'],
+                ['title' => 'Students', 'right_text' => $t['n'] . ' student(s)', 'head' => $studentHead(true), 'body' => $rows, 'right' => $moneyCols(true), 'small' => true,
+                    'foot' => $rows ? [['', 'Total', '', '', '', '', $rs($t['fee']), $rs($t['paid']), $rs($t['due'])]] : null, 'empty' => 'No students yet.'],
+            ],
+            'notes' => [$c['name'] . ': ' . $t['n'] . ' student(s) in ' . count($bat) . ' batch(es); ' . $t['active'] . ' studying now, ' . $t['completed'] . ' completed, ' . $t['left'] . ' left or dropped in between.',
+                'Fee: ' . $rs($t['fee']) . ' in total, ' . $rs($t['paid']) . ' collected, ' . $rs($t['due']) . ' still due.']]);
+    }
+    $q = $pdo->prepare("SELECT b.*, c.name AS course_name, c.fee AS course_fee, se.name AS session_name FROM ci_batches b LEFT JOIN ci_courses c ON c.id = b.course_id LEFT JOIN ci_sessions se ON se.id = b.session_id WHERE b.id = ?");
+    $q->execute([$id]);
+    $b = $q->fetch(PDO::FETCH_ASSOC) ?: $fail('Batch not found');
+    [$rows, $t] = $studentRows('e.batch_id = ?', [$id], false);
+    $out(['title' => 'BATCH REPORT', 'subtitle' => 'Batch students and fee', 'no' => 'BR-' . str_pad((string)$id, 4, '0', STR_PAD_LEFT), 'file' => 'batch-report_' . $b['name'],
+        'boxes' => [
+            ['head' => 'BATCH', 'rows' => [['Batch', $b['name']], ['Course', $b['course_name'] ?: '-'], ['Timing', trim(($b['timing'] ?? '') . ($b['days'] ? ' ' . $b['days'] : '')) ?: '-'], ['Teacher', $b['teacher'] ?: '-'], ['Status', $st($b['status'])]]],
+            ['head' => 'DETAILS', 'rows' => [['Session', $b['session_name'] ?: '-'], ['Runs', $d($b['start_date']) . ' to ' . $d($b['end_date'])], ['Seats', $b['capacity'] ? (string)$b['capacity'] : 'No limit'], ['Course fee', $rs($b['course_fee'])], ['Studying now', (string)$t['active']]]],
+        ],
+        'sections' => [
+            ['title' => 'Summary of Figures', 'head' => ['Description', 'Value'], 'body' => $summary($t), 'right' => [1], 'w' => [1 => 140]],
+            ['title' => 'Students', 'right_text' => $t['n'] . ' student(s)', 'head' => $studentHead(false), 'body' => $rows, 'right' => $moneyCols(false), 'small' => true,
+                'foot' => $rows ? [['', 'Total', '', '', '', $rs($t['fee']), $rs($t['paid']), $rs($t['due'])]] : null, 'empty' => 'No students yet.'],
+        ],
+        'notes' => [$b['name'] . ' (' . ($b['course_name'] ?: 'course') . '): ' . $t['n'] . ' student(s); ' . $t['active'] . ' studying now, ' . $t['completed'] . ' completed, ' . $t['left'] . ' left or dropped in between.',
+            'Fee: ' . $rs($t['fee']) . ' in total, ' . $rs($t['paid']) . ' collected, ' . $rs($t['due']) . ' still due.']]);
+}
+
+if ($type === 'class') {
+    $q = $pdo->prepare("SELECT * FROM ci_classes WHERE id = ?");
+    $q->execute([$id]);
+    $k = $q->fetch(PDO::FETCH_ASSOC) ?: $fail('Class not found');
+    $sq = $pdo->prepare("SELECT s.*, (SELECT GROUP_CONCAT(c.name SEPARATOR ', ') FROM ci_enrollments e JOIN ci_courses c ON c.id = e.course_id WHERE e.student_id = s.id AND e.status = 'active') AS courses,
+        (SELECT COALESCE(SUM(CASE WHEN e.status = 'dropped' THEN 0 ELSE e.fee - e.discount END),0) FROM ci_enrollments e WHERE e.student_id = s.id) AS net,
+        (SELECT COALESCE(SUM(p.amount),0) FROM ci_payments p WHERE p.student_id = s.id) AS paid,
+        (SELECT COALESCE(SUM(" . CI_DUE_SQL . "),0) FROM ci_enrollments e WHERE e.student_id = s.id) AS due
+        FROM ci_students s WHERE s.class_id = ? ORDER BY s.status = 'active' DESC, s.name");
+    $sq->execute([$id]);
+    $rows = [];
+    $t = ['n' => 0, 'active' => 0, 'left' => 0, 'fee' => 0, 'paid' => 0, 'due' => 0];
+    foreach ($sq as $r) {
+        $rows[] = [$r['reg_no'], $r['name'], $r['mobile'], $r['courses'] ?: '-', $withDate($r['status'], $r['left_on']), $rs($r['net']), $rs($r['paid']), $rs($r['due'])];
+        $t['n']++; $t['active'] += $r['status'] === 'active'; $t['left'] += $r['status'] === 'left';
+        $t['fee'] += (float)$r['net']; $t['paid'] += (float)$r['paid']; $t['due'] += (float)$r['due'];
+    }
+    $cq = $pdo->prepare("SELECT name, fee, status FROM ci_courses WHERE class_id = ? ORDER BY name");
+    $cq->execute([$id]);
+    $courses = $cq->fetchAll(PDO::FETCH_ASSOC);
+    $out(['title' => 'CLASS REPORT', 'subtitle' => 'Students of the class and their fee', 'no' => 'CL-' . preg_replace('/[^A-Za-z0-9]/', '', $k['name']), 'file' => 'class-report_' . $k['name'],
+        'boxes' => [
+            ['head' => 'CLASS', 'rows' => [['Class', $k['name']], ['Courses', (string)count($courses)], ['Students', (string)$t['n']], ['Studying now', (string)$t['active']], ['Left', (string)$t['left']]]],
+            ['head' => 'FEE', 'rows' => [['Total fee', $rs($t['fee'])], ['Collected', $rs($t['paid'])], ['Due', $rs($t['due'])], ['Session', $pdo->query("SELECT name FROM ci_sessions WHERE is_current = 1 LIMIT 1")->fetchColumn() ?: '-']]],
+        ],
+        'sections' => [
+            ['title' => 'Courses of this Class', 'head' => ['Course', 'Course fee', 'Status'], 'body' => array_map(fn($c) => [$c['name'], $rs($c['fee']), $st($c['status'])], $courses), 'right' => [1], 'empty' => 'No courses linked to this class.'],
+            ['title' => 'Students', 'right_text' => $t['n'] . ' student(s)', 'head' => ['Reg. No.', 'Student', 'Mobile', 'Courses', 'Status', 'Fee', 'Paid', 'Due'], 'body' => $rows, 'right' => [5, 6, 7], 'small' => true,
+                'foot' => $rows ? [['', 'Total', '', '', '', $rs($t['fee']), $rs($t['paid']), $rs($t['due'])]] : null, 'empty' => 'No students in this class.'],
+        ],
+        'notes' => ['Class ' . $k['name'] . ': ' . $t['n'] . ' student(s), ' . $t['active'] . ' studying now, ' . $t['left'] . ' left.', 'Fee: ' . $rs($t['fee']) . ' in total, ' . $rs($t['paid']) . ' collected, ' . $rs($t['due']) . ' still due.']]);
+}
+$fail('Unknown report');

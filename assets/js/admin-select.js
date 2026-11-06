@@ -116,7 +116,7 @@
     pop.setAttribute('role', 'listbox');
     var count = 0;
     [].forEach.call(s.options, function (o) { if (!o.hidden) count++; });
-    if (count > 8) {
+    if (count > 8 || s.hasAttribute('data-search')) {
       q = document.createElement('input');
       q.type = 'text'; q.className = 'dk-q'; q.placeholder = 'Search…'; q.autocomplete = 'off'; q.setAttribute('aria-label', 'Search options');
       q.addEventListener('input', build);

@@ -25,6 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $a = (string)($_POST['action'] ?? '');
     $eid = (int)($_POST['enrollment_id'] ?? 0);
     if ($a === 'pay') {
+        if (!ci_perm($me, 'fees')) { http_response_code(403); exit('Access Denied'); }
         $e = $ownEnr($eid);
         $res = $e ? ci_add_payment($pdo, $eid, ci_amount($_POST['amount'] ?? 0), (string)($_POST['method'] ?? 'Cash'), ci_clean_date($_POST['paid_on'] ?? ''), trim((string)($_POST['note'] ?? '')), (int)$me['id'])
             : "Choose one of this student's courses.";
@@ -34,6 +35,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         admin_log('ci_payment', 'Fee ' . ci_money(ci_amount($_POST['amount'] ?? 0)) . " from {$s['reg_no']} {$s['name']} ({$res[1]})");
         admin_flash('Fee saved. Receipt ' . $res[1] . '.');
         header("Location: /admin/student-view.php?id=$id&receipt=" . $res[0] . '#payments');
+        exit;
+    }
+    if ($a === 'promote' && ci_perm($me, 'edit_student')) {
+        $to = (int)($_POST['to_class'] ?? 0);
+        $ok = $pdo->prepare("SELECT COUNT(*) FROM ci_classes WHERE id = ?"); $ok->execute([$to]);
+        if (!$to || !(int)$ok->fetchColumn() || $to === (int)$s['class_id']) { admin_flash('Choose the new class.', 'error'); header('Location: ' . $back()); exit; }
+        $pdo->beginTransaction();
+        $pdo->prepare("INSERT INTO ci_class_history (student_id, from_class, to_class, session_id, changed_on, note, created_by) VALUES (?,?,?,?,?,?,?)")
+            ->execute([$id, $s['class_id'] ?: null, $to, ci_current_session($pdo), ci_clean_date($_POST['on'] ?? '') ?: date('Y-m-d'), mb_substr(trim((string)($_POST['note'] ?? '')), 0, 250) ?: null, (int)$me['id']]);
+        $pdo->prepare("UPDATE ci_students SET class_id = ? WHERE id = ?")->execute([$to, $id]);
+        // the old class's courses can be closed as completed — they stay in the record with any fee still due
+        if (!empty($_POST['close_old'])) $pdo->prepare("UPDATE ci_enrollments SET status = 'completed', ended_on = CURDATE() WHERE student_id = ? AND status = 'active'")->execute([$id]);
+        $pdo->commit();
+        admin_log('ci_promote', "Moved {$s['reg_no']} to class #$to");
+        admin_flash('Class changed. The earlier courses and their fees are kept. Add the new class\'s course now.');
+        header('Location: /admin/student-edit.php?id=' . $id . '&addcourse=1');
         exit;
     }
     if ($a === 'pay_delete' && $me['role'] === 'admin') {
@@ -49,11 +66,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header('Location: ' . $back('payments'));
         exit;
     }
-    if ($a === 'delete' && in_array($me['role'], ['admin', 'editor'], true)) {
+    if ($a === 'delete' && ci_perm($me, 'edit_student')) {
         $n = (int)$pdo->query("SELECT COUNT(*) FROM ci_payments WHERE student_id = $id")->fetchColumn();
         if ($n) { admin_flash('This student has fee payments, so they cannot be deleted. Set the status to Left instead.', 'error'); header('Location: ' . $back()); exit; }
         $pdo->beginTransaction();
         $pdo->prepare("DELETE i FROM ci_installments i JOIN ci_enrollments e ON e.id = i.enrollment_id WHERE e.student_id = ?")->execute([$id]);
+        $pdo->prepare("DELETE FROM ci_class_history WHERE student_id = ?")->execute([$id]);
         $pdo->prepare("DELETE FROM ci_enrollments WHERE student_id = ?")->execute([$id]);
         $pdo->prepare("DELETE FROM ci_students WHERE id = ?")->execute([$id]);
         $pdo->commit();
@@ -73,6 +91,11 @@ $tq = $pdo->prepare("SELECT b.id, b.teacher, b.days FROM ci_batches b JOIN ci_en
 $tq->execute([$id]);
 $batchInfo = $tq->fetchAll(PDO::FETCH_UNIQUE | PDO::FETCH_ASSOC);
 $tot = ci_student_totals($pdo, $id);
+$hq = $pdo->prepare("SELECT h.*, a.name AS from_name, b.name AS to_name, se.name AS session_name, u.username FROM ci_class_history h LEFT JOIN ci_classes a ON a.id = h.from_class
+    LEFT JOIN ci_classes b ON b.id = h.to_class LEFT JOIN ci_sessions se ON se.id = h.session_id LEFT JOIN users u ON u.id = h.created_by WHERE h.student_id = ? ORDER BY h.changed_on DESC, h.id DESC");
+$hq->execute([$id]);
+$history = $hq->fetchAll(PDO::FETCH_ASSOC);
+$classes = ci_lists($pdo)['classes'];
 $late = 0.0;
 $next = null;
 $byEnr = [];
@@ -111,7 +134,7 @@ $tel = fn(?string $m) => $m ? '<a href="tel:' . ci_e($m) . '">' . ci_e($m) . '</
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="robots" content="noindex, nofollow">
 <title><?= ci_e($s['name']) ?> - <?= ci_e(edu_site_name()) ?></title>
-<?php admin_shell_head(); ci_head(); ?>
+<?php admin_shell_head(); ci_head(); ci_report_assets(); ?>
 </head>
 <body>
 <?php admin_shell_open('Student Profile', ci_e($s['reg_no'] . ' · ' . $s['name'])); ?>
@@ -134,11 +157,12 @@ $tel = fn(?string $m) => $m ? '<a href="tel:' . ci_e($m) . '">' . ci_e($m) . '</
     </div>
   </div>
   <div class="ci-actions ci-noprint">
-    <?php if ($s['mobile']): ?><a class="ci-btn ci-ghost ci-icon" href="tel:<?= ci_e($s['mobile']) ?>" title="Call"><i class="fas fa-phone"></i></a><?php endif; ?>
-    <?php if ($wa): ?><a class="ci-btn ci-ghost ci-icon ci-wa" href="<?= ci_e($wa) ?>" target="_blank" rel="noopener" title="WhatsApp (fee reminder)"><i class="fab fa-whatsapp"></i></a><?php endif; ?>
-    <?php if ($payable): ?><button type="button" class="ci-btn" data-collect="<?= (int)$payable[0]['id'] ?>"><i class="fas fa-indian-rupee-sign"></i> Collect Fee</button><?php endif; ?>
-    <a class="ci-btn ci-ghost" href="/admin/student-edit.php?id=<?= $id ?>"><i class="fas fa-pen"></i> Edit</a>
-    <?php if (!$pays && in_array($me['role'], ['admin', 'editor'], true)): ?><form method="post" onsubmit="return confirm('Delete student <?= ci_e(addslashes($s['name'])) ?>? This cannot be undone.')"><?= csrf_field() ?><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="<?= $id ?>"><button class="ci-btn ci-danger ci-icon" type="submit" title="Delete student"><i class="fas fa-trash"></i></button></form><?php endif; ?>
+    <?php if ($s['mobile']): ?><?= ci_ico('phone', 'tel:' . $s['mobile'], 'Call') ?><?php endif; ?>
+    <?php if ($wa): ?><a class="ci-ico ci-ico-ok" href="<?= ci_e($wa) ?>" target="_blank" rel="noopener" title="WhatsApp (fee reminder)" aria-label="WhatsApp"><i class="fab fa-whatsapp" style="font-size:16px"></i></a><?php endif; ?>
+    <?= ci_ico('pdf', null, 'Student report (PDF)', 'button', ' data-report="student" data-id="' . $id . '"') ?>
+    <?php if (ci_perm($me, 'edit_student')): ?><?= ci_ico('edit', '/admin/student-edit.php?id=' . $id, 'Edit student') ?><a class="ci-btn ci-ghost" href="/admin/student-edit.php?id=<?= $id ?>&amp;addcourse=1"><?= ci_svg('book-plus') ?> Add to course / batch</a><?php endif; ?>
+    <?php if (!$pays && ci_perm($me, 'edit_student')): ?><?= ci_post_ico('trash', 'Delete student', ['action' => 'delete', 'id' => $id], 'Delete student ' . $s['name'] . '? This cannot be undone.') ?><?php endif; ?>
+    <?php if ($payable && ci_perm($me, 'fees')): ?><button type="button" class="ci-btn" data-collect="<?= (int)$payable[0]['id'] ?>"><i class="fas fa-indian-rupee-sign"></i> Collect Fee</button><?php endif; ?>
   </div>
 </div></div>
 
@@ -178,6 +202,11 @@ $tel = fn(?string $m) => $m ? '<a href="tel:' . ci_e($m) . '">' . ci_e($m) . '</
       'Added' => ci_e(date('d M Y, h:i A', strtotime($s['created_at']))) . ($s['added_by'] ? ' by ' . ci_e($s['added_by']) : ''),
   ]) ?></dl></div></div>
 </div>
+<div class="ci-card"><div class="ci-card-h"><h3>Class history</h3><?php if (ci_perm($me, 'edit_student')): ?><a class="ci-btn ci-ghost ci-sm ci-noprint" href="/admin/student-edit.php?id=<?= $id ?>&amp;addcourse=1"><?= ci_svg('book-plus') ?> Add to course / batch</a><?php endif; ?></div><div class="ci-card-b ci-p0 ci-table-wrap"><table class="ci-table">
+<thead><tr><th>Date</th><th>From class</th><th>To class</th><th>Session</th><th>Note</th></tr></thead><tbody>
+<?php if (!$history): ?><tr><td colspan="5" class="ci-empty">In <?= ci_e($s['class_name'] ?? '—') ?> since admission (<?= ci_date($s['admission_date']) ?>). A class change made in Edit Student is listed here; earlier courses and fees stay as they are.</td></tr><?php endif; ?>
+<?php foreach ($history as $h): ?><tr><td><?= ci_date($h['changed_on']) ?></td><td><?= ci_e($h['from_name'] ?? '—') ?></td><td><b><?= ci_e($h['to_name'] ?? '—') ?></b></td><td class="ci-muted"><?= ci_e($h['session_name'] ?? '—') ?></td><td class="ci-muted"><?= ci_e($h['note'] ?? '') ?><?= $h['username'] ? ' <small>by ' . ci_e($h['username']) . '</small>' : '' ?></td></tr><?php endforeach; ?>
+</tbody></table></div></div>
 <?php if ($s['notes']): ?><div class="ci-card"><div class="ci-card-h"><h3>Notes</h3></div><div class="ci-card-b"><?= nl2br(ci_e($s['notes'])) ?></div></div><?php endif; ?>
 </section>
 
@@ -188,8 +217,8 @@ $tel = fn(?string $m) => $m ? '<a href="tel:' . ci_e($m) . '">' . ci_e($m) . '</
   <div class="ci-card-h"><div><h3><?= ci_e($e['course_name'] ?? '—') ?> <span class="ci-badge <?= $inst ? 'ci-b-blue' : 'ci-b-violet' ?>"><?= $inst ? 'Installment' : 'Final fee' ?></span> <?= $e['status'] !== 'active' ? ci_status_badge($e['status']) : '' ?></h3>
     <small class="ci-muted"><?= ci_e(implode(' · ', array_filter([$e['batch_name'] ? 'Batch ' . $e['batch_name'] : 'No batch', $e['timing'], $bi['days'] ?? '', ($bi['teacher'] ?? '') ? 'Teacher ' . $bi['teacher'] : '', $e['session_name'] ? 'Session ' . $e['session_name'] : '']))) ?></small></div>
     <div class="ci-actions ci-noprint">
-      <?php if (!$dropped && (float)$e['due'] > 0.004): ?><button type="button" class="ci-btn ci-sm" data-collect="<?= $eid ?>"><i class="fas fa-indian-rupee-sign"></i> Collect<?= $inst ? ' installment' : ' fee' ?></button><?php endif; ?>
-      <a class="ci-btn ci-ghost ci-sm" href="/admin/student-edit.php?id=<?= $id ?>"><i class="fas fa-pen"></i> Change fee</a>
+      <?php if (!$dropped && (float)$e['due'] > 0.004 && ci_perm($me, 'fees')): ?><button type="button" class="ci-btn ci-sm" data-collect="<?= $eid ?>"><i class="fas fa-indian-rupee-sign"></i> Collect<?= $inst ? ' installment' : ' fee' ?></button><?php endif; ?>
+      <?php if (ci_perm($me, 'edit_student')): ?><?= ci_ico('edit', '/admin/student-edit.php?id=' . $id, 'Change course / fee') ?><?php endif; ?>
     </div>
   </div>
   <div class="ci-card-b">
@@ -205,7 +234,7 @@ $tel = fn(?string $m) => $m ? '<a href="tel:' . ci_e($m) . '">' . ci_e($m) . '</
     <div class="ci-table-wrap"><table class="ci-table ci-plan">
       <thead><tr><th><?= $inst ? 'Installment' : '#' ?></th><th>Date</th><th>Receipt</th><th>Paid by</th><th class="ci-num">Amount</th><th class="ci-noprint"></th></tr></thead><tbody>
       <?php if (!$ep): ?><tr><td colspan="6" class="ci-empty">Nothing paid yet for this course.</td></tr><?php endif; ?>
-      <?php foreach ($ep as $p): ?><tr><td><b><?= $inst ? 'Installment ' . $p['no'] : $p['no'] ?></b></td><td><?= ci_date($p['paid_on']) ?></td><td><?= ci_e($p['receipt_no']) ?></td><td><?= ci_e(CI_METHODS[$p['method']] ?? $p['method']) ?></td><td class="ci-num"><b class="ci-g"><?= ci_money($p['amount']) ?></b></td><td class="ci-noprint"><a href="/admin/ci-receipt.php?id=<?= (int)$p['id'] ?>" target="_blank">Receipt</a></td></tr><?php endforeach; ?>
+      <?php foreach ($ep as $p): ?><tr><td><b><?= $inst ? 'Installment ' . $p['no'] : $p['no'] ?></b></td><td><?= ci_date($p['paid_on']) ?></td><td><?= ci_e($p['receipt_no']) ?></td><td><?= ci_e(CI_METHODS[$p['method']] ?? $p['method']) ?></td><td class="ci-num"><b class="ci-g"><?= ci_money($p['amount']) ?></b></td><td class="ci-noprint"><a class="ci-ico" href="/admin/ci-receipt.php?id=<?= (int)$p['id'] ?>" target="_blank" title="Print receipt" aria-label="Print receipt"><?= ci_svg('print') ?></a></td></tr><?php endforeach; ?>
       </tbody></table></div>
   </div>
 </div>
@@ -221,8 +250,8 @@ $tel = fn(?string $m) => $m ? '<a href="tel:' . ci_e($m) . '">' . ci_e($m) . '</
 <tr<?= (int)$p['id'] === $newReceipt ? ' class="ci-hl"' : '' ?>><td><?= ci_date($p['paid_on']) ?></td><td><b><?= ci_e($p['receipt_no']) ?></b></td><td><?= ci_e($p['course_name'] ?? '—') ?></td>
 <td><?= ci_e(CI_METHODS[$p['method']] ?? $p['method']) ?></td><td class="ci-muted"><?= ci_e($p['note'] ?? '') ?><?= $p['username'] ? '<small style="display:block">by ' . ci_e($p['username']) . '</small>' : '' ?></td>
 <td class="ci-num"><b class="ci-g"><?= ci_money($p['amount']) ?></b></td><td class="ci-num"><?= ci_money($p['balance']) ?></td>
-<td class="ci-noprint"><div class="ci-row-actions"><a href="/admin/ci-receipt.php?id=<?= (int)$p['id'] ?>" target="_blank">Receipt</a>
-<?php if ($me['role'] === 'admin'): ?><form method="post" onsubmit="return confirm('Delete payment <?= ci_e($p['receipt_no']) ?>? The due goes up again.')"><?= csrf_field() ?><input type="hidden" name="action" value="pay_delete"><input type="hidden" name="id" value="<?= $id ?>"><input type="hidden" name="payment_id" value="<?= (int)$p['id'] ?>"><button type="submit" class="ci-del">Delete</button></form><?php endif; ?>
+<td class="ci-noprint"><div class="ci-icos"><a class="ci-ico" href="/admin/ci-receipt.php?id=<?= (int)$p['id'] ?>" target="_blank" title="Print receipt" aria-label="Print receipt"><?= ci_svg('print') ?></a>
+<?php if ($me['role'] === 'admin'): ?><?= ci_post_ico('trash', 'Delete payment', ['action' => 'pay_delete', 'id' => $id, 'payment_id' => $p['id']], 'Delete payment ' . $p['receipt_no'] . '? The due goes up again.') ?><?php endif; ?>
 </div></td></tr>
 <?php endforeach; ?>
 <?php if ($pays): ?><tr class="ci-total-row"><td colspan="5">Total paid</td><td class="ci-num"><?= ci_money($tot['paid']) ?></td><td class="ci-num"><?= ci_money($tot['due']) ?></td><td class="ci-noprint"></td></tr><?php endif; ?>
@@ -265,6 +294,9 @@ $tel = fn(?string $m) => $m ? '<a href="tel:' . ci_e($m) . '">' . ci_e($m) . '</
   show((location.hash || '#overview').slice(1));
   window.addEventListener('hashchange', function () { show(location.hash.slice(1)); });
 
+  // simple modals (promote)
+  document.querySelectorAll('[data-open]').forEach(function (b) { b.addEventListener('click', function () { var md = document.getElementById(b.dataset.open); if (md) { md.hidden = false; document.body.style.overflow = 'hidden'; } }); });
+  document.querySelectorAll('.ci-modal').forEach(function (md) { if (md.id === 'ci-collect') return; md.addEventListener('click', function (e) { if (e.target === md || e.target.closest('[data-close]')) { md.hidden = true; document.body.style.overflow = ''; } }); });
   // collect fee box
   var m = document.getElementById('ci-collect');
   if (m) {

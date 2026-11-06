@@ -1,5 +1,5 @@
 /* Coaching institute pages (students, batches, courses, fees, setup, dashboard) */
-.ci{--ci-b:#e5e7eb;--ci-mut:#6b7280;--ci-acc:var(--primary,#4a3369)}
+:root,.ci{--ci-b:#e5e7eb;--ci-mut:#6b7280;--ci-acc:var(--primary,#4a3369)}
 .ci *{box-sizing:border-box}
 .ci-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 0 14px}
 .ci-head h2{margin:0;font-size:20px;font-weight:700;color:#111827}
@@ -154,3 +154,36 @@ details.ci-more>summary::-webkit-details-marker{display:none}
   .ci-pane[hidden]{display:block!important}
   .ci-card{break-inside:avoid}
 }
+/* no "*" marks on labels */
+.ci-req{display:none!important}
+/* floating labels: the label sits on the field's top border; inside the field while it is empty */
+.ci-float .ci-f{position:relative}
+.ci-float .ci-f>label:first-child{position:absolute;left:8px;top:19px;transform:translateY(-50%);z-index:1;padding:0 5px;background:#fff;color:#6b7280;font-size:14px;font-weight:500;line-height:1.1;pointer-events:none;transition:top .15s,font-size .15s,color .15s;max-width:calc(100% - 40px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ci-float .ci-f.is-up>label:first-child,.ci-float .ci-f.is-focus>label:first-child{top:0;font-size:11.5px;font-weight:600;color:#4b5563}
+.ci-float .ci-f.is-focus>label:first-child{color:var(--ci-acc)}
+.ci-float .ci-f.ci-ta>label:first-child{top:18px}
+.ci-float .ci-f.ci-ta.is-up>label:first-child,.ci-float .ci-f.ci-ta.is-focus>label:first-child{top:0}
+.ci-float .ci-f:not(.is-focus) input::placeholder,.ci-float .ci-f:not(.is-focus) textarea::placeholder{color:transparent}
+.ci-float .ci-f.ci-nofloat>label:first-child{position:static;transform:none;padding:0;background:none;font-size:12.5px;font-weight:600;color:#374151}
+.ci-float .ci-enr-row{background:#fff}
+.ci-float .ci-grid3,.ci-float .ci-grid4,.ci-float .ci-enr-row{row-gap:18px}
+.ci-float .ci-enr-row{padding-top:18px}
+.ci-photo-prev{display:inline-flex}
+.ci-row-sum{flex-direction:row;flex-wrap:wrap;gap:14px;font-size:13px;color:#374151}
+.ci-row-sum:empty{display:none}
+/* icon actions */
+.ci-icos{display:flex;gap:6px;align-items:center;flex-wrap:nowrap}
+.ci-ico-form{display:inline-flex;margin:0}
+.ci-ico{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;padding:0;border:1px solid #d1d5db;background:#fff;color:#374151!important;cursor:pointer;text-decoration:none!important;flex:0 0 auto;font:inherit}
+.ci-ico:hover{border-color:var(--ci-acc);color:var(--ci-acc)!important;background:#faf8fd}
+.ci-ico-danger{color:#b91c1c!important}
+.ci-ico-danger:hover{border-color:#dc2626;background:#fef2f2;color:#b91c1c!important}
+.ci-ico-ok{color:#047857!important}
+.ci-ico-ok:hover{border-color:#059669;background:#ecfdf5;color:#047857!important}
+.ci-ico svg{display:block}
+.ci-show{display:flex;align-items:center;gap:8px;font-size:13.5px}
+.ci-show label{font-weight:600;color:#374151}
+.ci-show select{height:34px;min-width:90px;border:1px solid #d1d5db;background:#fff;padding:0 10px;font:inherit}
+.ci-due-cell{display:flex;align-items:center;justify-content:flex-end;gap:8px}
+.ci-top-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+@media (max-width:700px){.ci-top-actions .ci-btn{height:32px;padding:0 10px;font-size:12.5px}}

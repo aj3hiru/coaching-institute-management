@@ -3,7 +3,7 @@
 //              Dues: who still has to pay, per course/batch, with the next due date (late ones marked).
 require_once __DIR__ . '/components/guard.php';
 require_once INCLUDES_PATH . '/institute.php';
-$me = ci_page_start($pdo);
+$me = ci_page_start($pdo, ["fees"]);
 $L = ci_lists($pdo);
 $tab = ($_GET['tab'] ?? '') === 'dues' ? 'dues' : 'payments';
 $q = trim((string)($_GET['q'] ?? ''));
@@ -109,7 +109,7 @@ $qs = function (array $over = []) {
 <td><div class="ci-person"><?= ci_avatar($r, 30) ?><div><a href="/admin/student-view.php?id=<?= (int)$r['student_id'] ?>"><?= ci_e($r['name']) ?></a><small><?= ci_e($r['reg_no']) ?> · <?= ci_e($r['mobile']) ?></small></div></div></td>
 <td><?= ci_e($r['course_name'] ?? '—') ?><?= $r['batch_name'] ? '<small class="ci-muted" style="display:block">' . ci_e($r['batch_name']) . '</small>' : '' ?></td>
 <td><?= ci_e(CI_METHODS[$r['method']] ?? $r['method']) ?><?= $r['note'] ? '<small class="ci-muted" style="display:block">' . ci_e($r['note']) . '</small>' : '' ?></td>
-<td class="ci-num"><b><?= ci_money($r['amount']) ?></b></td><td><a href="/admin/ci-receipt.php?id=<?= (int)$r['id'] ?>" target="_blank" class="ci-btn ci-ghost ci-sm"><i class="fas fa-print"></i></a></td></tr>
+<td class="ci-num"><b><?= ci_money($r['amount']) ?></b></td><td><a href="/admin/ci-receipt.php?id=<?= (int)$r['id'] ?>" target="_blank" class="ci-ico" title="Print receipt" aria-label="Print receipt"><?= ci_svg('print') ?></a></td></tr>
 <?php endforeach; ?>
 <?php if ($rows): ?><tr class="ci-total-row"><td colspan="5">Total</td><td class="ci-num"><?= ci_money($sum) ?></td><td></td></tr><?php endif; ?>
 </tbody></table></div></div>
@@ -128,7 +128,7 @@ $qs = function (array $over = []) {
 <td class="ci-num"><?= ci_money0((float)$r['fee'] - (float)$r['discount']) ?></td><td class="ci-num"><?= ci_money0($r['paid']) ?></td>
 <td class="ci-num"><b style="color:#b91c1c"><?= ci_money0($r['due']) ?></b></td>
 <td><?= $r['due_date'] ? ($lateRow ? '<span class="ci-badge ci-b-amber">' . ci_date($r['due_date']) . '</span>' : ci_date($r['due_date'])) : '<span class="ci-muted">—</span>' ?></td>
-<td><a class="ci-btn ci-sm" href="/admin/student-view.php?id=<?= (int)$r['sid'] ?>#pay">Collect</a></td></tr>
+<td><?= ci_ico('rupee', '/admin/student-view.php?id=' . (int)$r['sid'] . '&collect=1#fee', 'Collect fee') ?></td></tr>
 <?php endforeach; ?>
 <?php if ($rows): ?><tr class="ci-total-row"><td colspan="4">Total due</td><td class="ci-num"><?= ci_money($sum) ?></td><td colspan="2"></td></tr><?php endif; ?>
 </tbody></table></div></div>

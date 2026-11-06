@@ -43,6 +43,12 @@ function admin_can(string $path): bool
     return !empty($v);
 }
 
+/** May the user use the blog part (posts, blog dashboard)? Admins always; others with Blogs → own or all. */
+function admin_blog_access(): bool
+{
+    return admin_shell_user()['role'] === 'admin' || admin_can('blogs.create') || admin_can('blogs.edit_own') || admin_can('blogs.edit_all');
+}
+
 function admin_shell_nav(): array
 {
     $root = $_SERVER['DOCUMENT_ROOT'] ?? '';
@@ -55,33 +61,37 @@ function admin_shell_nav(): array
     };
     $sub = fn(array $items) => array_values(array_filter($items));
     require_once ($_SERVER['DOCUMENT_ROOT'] ?? '') . '/includes/institute.php';
-    $ci = ci_can(['role' => admin_shell_user()['role'], 'permissions' => json_encode(admin_shell_user()['permissions'] ?: new stdClass())]);
+    $cu = ['role' => admin_shell_user()['role'], 'permissions' => admin_shell_user()['permissions'] ?: []];
+    $ci = ci_can($cu);
+    $cp = fn(string $k) => ci_perm($cu, $k);
+    $blogOn = admin_blog_access(); // Users → Blogs: own or all (not "No access")
     $groups = [
         ['label' => 'Main', 'items' => [
             ['label' => 'Dashboard', 'href' => '/admin/dashboard.php', 'icon' => 'fa-home'],
         ]],
         ['label' => 'Institute', 'items' => $ci ? [
-            ['label' => 'Students', 'href' => '/admin/students.php', 'icon' => 'fa-user-graduate', 'open' => true, 'items' => $sub([
+            ['label' => 'Students', 'href' => '/admin/students.php', 'icon' => 'fa-user-graduate', 'items' => $sub([
                 $link(true, 'All Students', '/admin/students.php', 'fa-list'),
-                $link(true, 'Add Student', '/admin/student-edit.php', 'fa-user-plus'),
+                $link($cp('add_student'), 'Add Student', '/admin/student-edit.php', 'fa-user-plus'),
             ])],
-            $link(true, 'Batches', '/admin/ci-batches.php', 'fa-layer-group'),
-            $link(true, 'Courses', '/admin/ci-courses.php', 'fa-book-open'),
-            ['label' => 'Fees & Dues', 'href' => '/admin/ci-fees.php', 'icon' => 'fa-indian-rupee-sign', 'items' => $sub([
+            $link($cp('batches'), 'Batches', '/admin/ci-batches.php', 'fa-layer-group'),
+            $link($cp('courses'), 'Courses', '/admin/ci-courses.php', 'fa-book-open'),
+            $cp('fees') ? ['label' => 'Fees & Dues', 'href' => '/admin/ci-fees.php', 'icon' => 'fa-indian-rupee-sign', 'items' => $sub([
                 $link(true, 'Fee Payments', '/admin/ci-fees.php', 'fa-receipt'),
                 $link(true, 'Dues', '/admin/ci-fees.php?tab=dues', 'fa-hourglass-half'),
-            ])],
-            $link(true, 'Sessions & Classes', '/admin/ci-setup.php', 'fa-calendar-alt'),
+            ])] : null,
+            $link($cp('sessions') || $cp('classes'), 'Sessions & Classes', '/admin/ci-setup.php', 'fa-calendar-alt'),
+            $link(true, 'Reports', '/admin/ci-reports.php', 'fa-file-pdf'),
         ] : []],
-        ['label' => 'Blog', 'items' => [
-            $link(true, 'Blog Dashboard', '/admin/blog-dashboard.php', 'fa-gauge'),
-            ['label' => 'Posts', 'href' => '/admin/blogs-manager.php', 'icon' => 'fa-newspaper', 'items' => $sub([
+        ['label' => 'Blog', 'collapsible' => true, 'items' => [
+            $link($blogOn, 'Blog Dashboard', '/admin/blog-dashboard.php', 'fa-gauge'),
+            $blogOn ? ['label' => 'Posts', 'href' => '/admin/blogs-manager.php', 'icon' => 'fa-newspaper', 'items' => $sub([
                 ['label' => 'All Posts', 'href' => '/admin/blogs-manager.php', 'icon' => 'fa-list'],
                 $link(admin_can('blogs.create'), 'Add Post', '/admin/post-manager.php', 'fa-plus'),
                 $link(admin_can('blogs.manage_categories'), 'Categories', '/admin/categories-manager.php', 'fa-folder'),
                 $link(admin_can('blogs.manage_tags'), 'Tags', '/admin/tag-manager.php', 'fa-tags'),
                 $link(admin_can('blogs.manage_comments'), 'Comments', '/admin/comments-manager.php', 'fa-comments'),
-            ])],
+            ])] : null,
             ['label' => 'Pages', 'href' => '/admin/pages-list.php', 'icon' => 'fa-file', 'items' => $sub([
                 $link($isAdmin || $isEditor, 'All Pages', '/admin/pages-list.php', 'fa-list'),
                 $link($isAdmin || $isEditor, 'Add Page', '/admin/page-editor.php', 'fa-plus'),
@@ -98,7 +108,7 @@ function admin_shell_nav(): array
                 ['label' => 'SEO Analyzer', 'href' => '/admin/seo.php?view=analyzer', 'icon' => 'fa-magnifying-glass-chart'],
                 ['label' => 'Status & Tools', 'href' => '/admin/seo.php?view=status', 'icon' => 'fa-toolbox'],
             ]] : null,
-            $link($isAdmin, 'Ad Inserter', '/admin/ad-inserter.php', 'fa-ad'),
+            $link($isAdmin || admin_can('ads.manage_ads'), 'Ad Inserter', '/admin/ad-inserter.php', 'fa-ad'),
             $link($isAdmin, 'Code Snippets', '/admin/code-snippets.php', 'fa-code'),
         ]],
         ['label' => 'Site', 'items' => [
@@ -135,7 +145,7 @@ function admin_shell_nav(): array
             if (isset($it['items']) && !$it['items']) continue;
             $items[] = $it;
         }
-        if ($items) $out[] = ['label' => $g['label'], 'items' => $items];
+        if ($items) $out[] = ['label' => $g['label'], 'items' => $items, 'collapsible' => !empty($g['collapsible'])];
     }
     return $out;
 }
@@ -187,6 +197,7 @@ function admin_shell_head(): void
     $root = $_SERVER['DOCUMENT_ROOT'] ?? '';
     echo '<link rel="stylesheet" href="/assets/css/admin-flat.css?v=' . (@filemtime($root . '/assets/css/admin-flat.css') ?: 1) . '">' . "\n";
     echo '<script src="/assets/js/admin-select.js?v=' . (@filemtime($root . '/assets/js/admin-select.js') ?: 1) . '" defer></script>' . "\n";
+    echo '<script src="/assets/js/admin-display.js?v=' . (@filemtime($root . '/assets/js/admin-display.js') ?: 1) . '" defer></script>' . "\n";
 }
 
 function admin_shell_icon(string $name): string
@@ -223,8 +234,15 @@ function admin_shell_sidebar(): void
   </div>
   <nav class="sb-nav" id="admSbNav">
     <?php foreach (admin_shell_nav() as $g): ?>
-    <div class="sb-section">
-      <div class="sb-title"><?= htmlspecialchars($g['label']) ?></div>
+    <?php
+      $gid = 'sbg_' . strtolower(preg_replace('/[^a-z0-9]+/i', '_', $g['label']));
+      $gActive = false;
+      foreach ($g['items'] as $gi) { if (!$gi) continue; $gActive = $gActive || admin_shell_is_active($gi['href']); foreach ($gi['items'] ?? [] as $gs) $gActive = $gActive || admin_shell_is_active($gs['href']); }
+      $gCol = !empty($g['collapsible']);
+    ?>
+    <div class="sb-section<?= $gCol ? ' sb-collapsible' . ($gActive ? ' open' : '') : '' ?>" id="<?= $gid ?>">
+      <?php if ($gCol): ?><button type="button" class="sb-title sb-title-btn" aria-expanded="<?= $gActive ? 'true' : 'false' ?>" onclick="admShell.group('<?= $gid ?>')"><?= htmlspecialchars($g['label']) ?><i class="fas fa-chevron-down"></i></button><div class="sb-group-body"><?php else: ?>
+      <div class="sb-title"><?= htmlspecialchars($g['label']) ?></div><?php endif; ?>
       <?php foreach ($g['items'] as $it):
         if (!empty($it['items'])):
           $id = 'nav_' . strtolower(preg_replace('/[^a-z0-9]+/i', '_', $it['label']));
@@ -250,6 +268,7 @@ function admin_shell_sidebar(): void
       <?php else: ?>
       <a class="sb-link<?= admin_shell_is_active($it['href']) ? ' active' : '' ?>" href="<?= $it['href'] ?>"><span class="sb-icon"><i class="fas <?= $it['icon'] ?>"></i></span><?= htmlspecialchars($it['label']) ?><?php if (!empty($it['badge'])): ?><span class="sb-badge" title="<?= (int)$it['badge'] ?> unread"><?= $it['badge'] > 99 ? '99+' : (int)$it['badge'] ?></span><?php endif; ?></a>
       <?php endif; endforeach; ?>
+      <?php if ($gCol): ?></div><?php endif; ?>
     </div>
     <?php endforeach; ?>
   </nav>
@@ -274,7 +293,7 @@ function admin_shell_open(string $title, string $subtitle = '', string $navRight
       <span class="sitename-mob"><?php if ($logo): ?><img src="<?= htmlspecialchars($logo) ?>" alt="" class="sb-logo sb-logo-mob"><?php else: ?><span class="sb-sitename"><?= htmlspecialchars($site) ?></span><?php endif; ?></span>
       <div class="page-heading"><h1><?= $title ?></h1><?php if ($subtitle !== ''): ?><p><?= $subtitle ?></p><?php endif; ?></div>
     </div>
-    <div class="nav-right"><?= $navRight ?></div>
+    <div class="nav-right"><?= $navRight ?><div class="dsp-wrap"><button type="button" class="dsp-btn" id="dspBtn" aria-haspopup="true" aria-expanded="false" title="Display options: show or hide parts of this page"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg><span class="dsp-lbl">Display options</span><span class="dsp-count" id="dspCount" hidden></span></button><div class="dsp-panel" id="dspPanel" hidden></div></div></div>
   </header>
   <div class="content-wrapper">
     <?php
@@ -295,14 +314,16 @@ window.admShell = {
     const sub = box.querySelector('.sb-submenu'), chev = box.querySelector('.sb-chev');
     const open = !sub.classList.contains('open');
     sub.classList.toggle('open', open); chev.classList.toggle('open', open);
-    try { localStorage.setItem(id, open ? '1' : '0'); } catch (e) {}
+  },
+  group(id) {
+    const g = document.getElementById(id); if (!g) return;
+    const open = !g.classList.contains('open');
+    g.classList.toggle('open', open);
+    const b = g.querySelector('.sb-title-btn'); if (b) b.setAttribute('aria-expanded', open ? 'true' : 'false');
   },
 };
-// Restore saved open/closed submenus (a submenu containing the current page always stays open) and the sidebar scroll.
-document.querySelectorAll('[data-submenu]').forEach(function (box) {
-  if (box.dataset.force === '1') return;
-  try { var v = localStorage.getItem(box.dataset.submenu); if (v !== null) { var o = v === '1'; box.querySelector('.sb-submenu').classList.toggle('open', o); box.querySelector('.sb-chev').classList.toggle('open', o); } } catch (e) {}
-});
+// Menus open only for the page you are on: after a refresh every other menu starts closed (nothing is remembered).
+try { Object.keys(localStorage).forEach(function (k) { if (/^nav_/.test(k)) localStorage.removeItem(k); }); } catch (e) {}
 (function () { var n = document.getElementById('admSbNav'); if (!n) return; try { n.scrollTop = +sessionStorage.getItem('adm_sb_scroll') || 0; } catch (e) {} n.addEventListener('scroll', function () { try { sessionStorage.setItem('adm_sb_scroll', n.scrollTop); } catch (e) {} }); })();
 </script>
     <?php

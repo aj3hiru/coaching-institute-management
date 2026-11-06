@@ -2,7 +2,7 @@
 // Batches — a group of students of one course in one session, with timing, days, teacher and seats. The fee belongs to the course (Courses page), not to the batch.
 require_once __DIR__ . '/components/guard.php';
 require_once INCLUDES_PATH . '/institute.php';
-$me = ci_page_start($pdo);
+$me = ci_page_start($pdo, ["batches"]);
 $L = ci_lists($pdo);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -37,6 +37,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             admin_log('ci_batch', "Saved batch $name");
             admin_flash('Batch saved.');
+        } elseif ($a === 'complete' && $id) {
+            $n = ci_complete_batch($pdo, $id);
+            admin_log('ci_batch', "Completed batch #$id");
+            admin_flash('Batch completed' . ($n ? " ($n students' course marked completed; their dues stay)" : '') . '.');
         } elseif ($a === 'delete' && $id) {
             $used = (int)$pdo->query("SELECT COUNT(*) FROM ci_enrollments WHERE batch_id = $id")->fetchColumn();
             if ($used) throw new RuntimeException('This batch has students. Mark it Completed or Inactive instead of deleting.');
@@ -64,7 +68,14 @@ $st = $pdo->prepare("SELECT b.*, c.name AS course_name, c.fee AS course_fee, s.n
     FROM ci_batches b LEFT JOIN ci_courses c ON c.id = b.course_id LEFT JOIN ci_sessions s ON s.id = b.session_id
     WHERE " . implode(' AND ', $where) . " ORDER BY b.status = 'active' DESC, b.start_date DESC, b.name");
 $st->execute($args);
-$batches = $st->fetchAll(PDO::FETCH_ASSOC);
+$all = $st->fetchAll(PDO::FETCH_ASSOC);
+// rows per page: 10 (default), 20, 50 or all
+$per = in_array($_GET['per'] ?? '', ['10', '20', '50', 'all'], true) ? $_GET['per'] : '10';
+$total = count($all);
+$pages = $per === 'all' ? 1 : max(1, (int)ceil($total / (int)$per));
+$page = min($pages, max(1, (int)($_GET['page'] ?? 1)));
+$batches = $per === 'all' ? $all : array_slice($all, ($page - 1) * (int)$per, (int)$per);
+$qs = fn(array $o = []) => http_build_query(array_merge(['course' => $fCourse, 'session' => $fSession, 'status' => $fStatus, 'per' => $per], $o));
 
 $edit = (int)($_GET['edit'] ?? 0);
 $eb = null;
@@ -77,13 +88,13 @@ $curSession = ci_current_session($pdo);
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="robots" content="noindex, nofollow">
 <title>Batches - <?= ci_e(edu_site_name()) ?></title>
-<?php admin_shell_head(); ci_head(); ?>
+<?php admin_shell_head(); ci_head(); ci_report_assets(); ?>
 </head>
 <body>
 <?php admin_shell_open('Batches', 'Groups of students per course and session, with timing and seats'); ?>
 <div class="ci">
 <?= admin_flash() ?>
-<div class="ci-head"><div><h2>Batches</h2><div class="ci-sub"><?= count($batches) ?> shown</div></div>
+<div class="ci-head"><div class="ci-show"><label for="ci-per">Show</label><select id="ci-per" onchange="location.href='?<?= ci_e($qs(['per' => '__P__', 'page' => 1])) ?>'.replace('__P__', this.value)"><?php foreach (['10' => '10', '20' => '20', '50' => '50', 'all' => 'All'] as $k => $l): ?><option value="<?= $k ?>" <?= $per === $k ? 'selected' : '' ?>><?= $l ?></option><?php endforeach; ?></select><span class="ci-muted">of <?= $total ?></span></div>
 <div class="ci-actions"><?php if (!$open): ?><a class="ci-btn" href="?new=1"><i class="fas fa-plus"></i> New Batch</a><?php endif; ?></div></div>
 
 <?php if (!$L['courses']): ?><div class="ci-alert ci-alert-err">Add a course first: <a href="/admin/ci-courses.php?new=1">Courses → Add Course</a>.</div><?php endif; ?>
@@ -115,21 +126,25 @@ $curSession = ci_current_session($pdo);
 </form></div></div>
 
 <div class="ci-card"><div class="ci-card-b ci-p0 ci-table-wrap"><table class="ci-table">
-<thead><tr><th>Batch</th><th>Course</th><th>Session</th><th>Timing</th><th class="ci-num">Course fee</th><th class="ci-num">Students</th><th class="ci-num">Due</th><th>Status</th><th></th></tr></thead><tbody>
+<thead><tr><th>Batch</th><th>Course</th><th>Timing</th><th>Session</th><th class="ci-num">Course fee</th><th class="ci-num">Students</th><th class="ci-num">Due</th><th>Status</th><th>Action</th></tr></thead><tbody>
 <?php if (!$batches): ?><tr><td colspan="9" class="ci-empty">No batches for these filters.</td></tr><?php endif; ?>
 <?php foreach ($batches as $b): $fee = $b['course_fee']; ?>
 <tr><td><b><?= ci_e($b['name']) ?></b><?php if ($b['teacher']): ?><small class="ci-muted" style="display:block"><?= ci_e($b['teacher']) ?></small><?php endif; ?></td>
-<td><?= ci_e($b['course_name'] ?? '—') ?></td><td class="ci-muted"><?= ci_e($b['session_name'] ?? '—') ?></td>
-<td class="ci-muted"><?= ci_e(trim(($b['timing'] ?? '') . ' ' . ($b['days'] ? '· ' . $b['days'] : '')) ?: '—') ?></td>
+<td><?= ci_e($b['course_name'] ?? '—') ?></td>
+<td class="ci-muted"><?= ci_e(trim(($b['timing'] ?? '') . ' ' . ($b['days'] ? '· ' . $b['days'] : '')) ?: '—') ?></td><td class="ci-muted"><?= ci_e($b['session_name'] ?? '—') ?></td>
 <td class="ci-num"><?= ci_money0($fee) ?></td>
 <td class="ci-num"><a href="/admin/students.php?batch=<?= (int)$b['id'] ?>"><?= (int)$b['students'] ?></a><?= $b['capacity'] ? ' <span class="ci-muted">/ ' . (int)$b['capacity'] . '</span>' : '' ?></td>
 <td class="ci-num"><?= (float)$b['due'] > 0 ? '<span style="color:#b91c1c">' . ci_money0($b['due']) . '</span>' : '—' ?></td>
 <td><?= ci_status_badge($b['status']) ?></td>
-<td><div class="ci-row-actions"><a href="?edit=<?= (int)$b['id'] ?>">Edit</a><a href="/admin/student-edit.php?batch=<?= (int)$b['id'] ?>">Add student</a>
-<?php if (!(int)$pdo->query("SELECT COUNT(*) FROM ci_enrollments WHERE batch_id = " . (int)$b['id'])->fetchColumn()): ?><form method="post" onsubmit="return confirm('Delete batch <?= ci_e(addslashes($b['name'])) ?>?')"><?= csrf_field() ?><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="<?= (int)$b['id'] ?>"><button type="submit" class="ci-del">Delete</button></form><?php endif; ?>
+<td><div class="ci-icos"><?= ci_ico('edit', '?edit=' . (int)$b['id'], 'Edit batch') ?><?php if ($b['status'] === 'active'): ?><?= ci_ico('user-plus', '/admin/student-edit.php?batch=' . (int)$b['id'], 'Add student to this batch') ?><?php endif; ?><?= ci_ico('pdf', null, 'PDF report', 'button', ' data-report="batch" data-id="' . (int)$b['id'] . '"') ?>
+<?php if ($b['status'] === 'active'): ?><?= ci_post_ico('check', 'Mark batch completed', ['action' => 'complete', 'id' => $b['id']], 'Complete batch ' . $b['name'] . '? Its students\' course in this batch is marked completed (dues stay).') ?><?php endif; ?>
+<?php if (!(int)$pdo->query("SELECT COUNT(*) FROM ci_enrollments WHERE batch_id = " . (int)$b['id'])->fetchColumn()): ?><?= ci_post_ico('trash', 'Delete batch', ['action' => 'delete', 'id' => $b['id']], 'Delete batch ' . $b['name'] . '?') ?><?php endif; ?>
 </div></td></tr>
 <?php endforeach; ?>
-</tbody></table></div></div>
+</tbody></table></div>
+<?php if ($pages > 1): ?><div class="ci-pager"><span>Page <?= $page ?> of <?= $pages ?></span><div class="ci-pg">
+<?php for ($i = 1; $i <= $pages; $i++): ?><?= $i === $page ? '<span class="on">' . $i . '</span>' : '<a href="?' . ci_e($qs(['page' => $i])) . '">' . $i . '</a>' ?><?php endfor; ?>
+</div></div><?php endif; ?></div>
 </div>
 <?php admin_shell_close(); ?>
 </body>

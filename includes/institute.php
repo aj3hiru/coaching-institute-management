@@ -63,6 +63,14 @@ function ci_tables(PDO $pdo): void
     // added later: a course can belong to a class (the enrollment form then offers the class's courses first)
     if (!$pdo->query("SHOW COLUMNS FROM ci_courses LIKE 'class_id'")->fetch()) $pdo->exec("ALTER TABLE ci_courses ADD COLUMN class_id INT UNSIGNED NULL AFTER code");
     // added later: how the student pays a course — 'full' (final fee, one time) or 'installment' (any amount, any number of times)
+    // class changes (promotion 6th → 7th …): the old courses and their fees stay as they are
+    $pdo->exec("CREATE TABLE IF NOT EXISTS ci_class_history (
+        id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, student_id INT UNSIGNED NOT NULL, from_class INT UNSIGNED NULL, to_class INT UNSIGNED NULL,
+        session_id INT UNSIGNED NULL, changed_on DATE NOT NULL, note VARCHAR(255) NULL, created_by INT NULL,
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, KEY k_student (student_id)) $opt");
+    // when a student left / a course ended (shown in course & batch reports)
+    if (!$pdo->query("SHOW COLUMNS FROM ci_students LIKE 'left_on'")->fetch()) $pdo->exec("ALTER TABLE ci_students ADD COLUMN left_on DATE NULL AFTER admission_date");
+    if (!$pdo->query("SHOW COLUMNS FROM ci_enrollments LIKE 'ended_on'")->fetch()) $pdo->exec("ALTER TABLE ci_enrollments ADD COLUMN ended_on DATE NULL AFTER enrolled_on");
     if (!$pdo->query("SHOW COLUMNS FROM ci_enrollments LIKE 'fee_type'")->fetch()) $pdo->exec("ALTER TABLE ci_enrollments ADD COLUMN fee_type VARCHAR(12) NOT NULL DEFAULT 'full' AFTER discount");
     // a fresh install gets the current academic session and a starter list of classes (both editable in Setup)
     if (!(int)$pdo->query("SELECT COUNT(*) FROM ci_sessions")->fetchColumn()) {
@@ -77,12 +85,22 @@ function ci_tables(PDO $pdo): void
     }
 }
 
-/** Who may use the institute pages: admins, editors, or users given the "institute" permission. */
+/** Institute permissions (Users → Advance Access → Institute). Admins have all of them. */
+define('CI_PERMS', ['add_student' => 'Add student', 'edit_student' => 'Edit student', 'batches' => 'Manage batches', 'courses' => 'Manage courses',
+    'fees' => 'Manage fee & dues', 'sessions' => 'Manage sessions', 'classes' => 'Manage classes']);
+
+function ci_perm(array $u, string $key): bool
+{
+    if (($u['role'] ?? '') === 'admin') return true;
+    $p = is_array($u['permissions'] ?? null) ? $u['permissions'] : (json_decode((string)($u['permissions'] ?? '{}'), true) ?: []);
+    return !empty($p['institute'][$key]);
+}
+
+/** May the user open the institute section at all (any one institute permission)? */
 function ci_can(array $u): bool
 {
-    if (in_array($u['role'] ?? '', ['admin', 'editor'], true)) return true;
-    $p = json_decode($u['permissions'] ?? '{}', true) ?: [];
-    return !empty($p['institute']['manage']);
+    foreach (array_keys(CI_PERMS) as $k) if (ci_perm($u, $k)) return true;
+    return false;
 }
 
 function ci_money($n): string
@@ -438,15 +456,84 @@ function ci_head(): void
 {
     $v = @filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/institute.css') ?: 1;
     echo '<link rel="stylesheet" href="/assets/css/institute.css?v=' . $v . '">' . "\n";
+    echo '<script src="/assets/js/ci-ui.js?v=' . (@filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/ci-ui.js') ?: 1) . '" defer></script>' . "\n";
 }
 
-/** Opens an institute admin page: guard + tables. Returns the user. */
-function ci_page_start(PDO $pdo): array
+/** Opens an institute admin page: guard + tables. $need = permissions of which the user needs at least one (none = any). */
+function ci_page_start(PDO $pdo, array $need = []): array
 {
     $me = admin_guard(['admin', 'editor', 'author']);
-    if (!ci_can($me)) { http_response_code(403); exit('Access Denied'); }
+    $ok = $need ? (bool)array_filter($need, fn($k) => ci_perm($me, $k)) : ci_can($me);
+    if (!$ok) { http_response_code(403); exit('Access Denied'); }
     ci_tables($pdo);
     return $me;
+}
+
+/** Batch finished: the batch and its students' active courses in it become "completed" (dues stay as they are). */
+function ci_complete_batch(PDO $pdo, int $bid): int
+{
+    $pdo->prepare("UPDATE ci_batches SET status = 'completed', end_date = COALESCE(end_date, CURDATE()) WHERE id = ?")->execute([$bid]);
+    $st = $pdo->prepare("UPDATE ci_enrollments SET status = 'completed', ended_on = CURDATE() WHERE batch_id = ? AND status = 'active'");
+    $st->execute([$bid]);
+    return $st->rowCount();
+}
+
+/** Course finished: the course, every batch of it and every active enrollment in it become "completed". */
+function ci_complete_course(PDO $pdo, int $cid): void
+{
+    $pdo->prepare("UPDATE ci_courses SET status = 'completed' WHERE id = ?")->execute([$cid]);
+    $b = $pdo->prepare("SELECT id FROM ci_batches WHERE course_id = ? AND status <> 'completed'");
+    $b->execute([$cid]);
+    foreach ($b->fetchAll(PDO::FETCH_COLUMN) as $bid) ci_complete_batch($pdo, (int)$bid);
+    $pdo->prepare("UPDATE ci_enrollments SET status = 'completed', ended_on = CURDATE() WHERE course_id = ? AND status = 'active'")->execute([$cid]);
+}
+
+/** Small square icon button/link: ci_ico('edit', '/url', 'Edit') or ci_ico('trash', null, 'Delete', 'submit'). */
+function ci_svg(string $n): string
+{
+    static $p = [
+        'edit' => '<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+        'trash' => '<path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/>',
+        'eye' => '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',
+        'user-plus' => '<path d="M15 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/>',
+        'book-plus' => '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/><path d="M12 7v6M9 10h6"/>',
+        'check' => '<path d="M20 6 9 17l-5-5"/>',
+        'flag' => '<path d="M4 22V4"/><path d="M4 4h13l-2 4 2 4H4"/>',
+        'pdf' => '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 15h6M9 18h4"/>',
+        'rupee' => '<path d="M6 3h12M6 8h12M6 13l8.5 8M6 13h3a5 5 0 0 0 0-10"/>',
+        'receipt' => '<path d="M4 2v20l3-2 3 2 3-2 3 2 3-2 1 .7V2l-1 .7-3-2-3 2-3-2-3 2-3-2z"/><path d="M8 7h8M8 11h8M8 15h5"/>',
+        'logout' => '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>',
+        'up' => '<path d="M12 19V5"/><path d="m5 12 7-7 7 7"/>',
+        'print' => '<path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/>',
+        'whatsapp' => '<path d="M3 21l1.7-5A8.5 8.5 0 1 1 8 19.3z"/>',
+        'phone' => '<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/>',
+    ];
+    return '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' . ($p[$n] ?? '') . '</svg>';
+}
+
+function ci_ico(string $icon, ?string $href, string $label, string $kind = 'link', string $extra = ''): string
+{
+    $cls = 'ci-ico' . ($icon === 'trash' || $icon === 'logout' ? ' ci-ico-danger' : '') . ($icon === 'check' || $icon === 'rupee' ? ' ci-ico-ok' : '');
+    $a = ' title="' . ci_e($label) . '" aria-label="' . ci_e($label) . '" class="' . $cls . '"' . $extra;
+    if ($kind === 'submit') return '<button type="submit"' . $a . '>' . ci_svg($icon) . '</button>';
+    if ($kind === 'button') return '<button type="button"' . $a . '>' . ci_svg($icon) . '</button>';
+    return '<a href="' . ci_e((string)$href) . '"' . $a . '>' . ci_svg($icon) . '</a>';
+}
+
+/** A one-button POST form (with CSRF and an optional confirm text). */
+function ci_post_ico(string $icon, string $label, array $fields, string $confirm = '', string $action = ''): string
+{
+    $h = '<form method="post"' . ($action !== '' ? ' action="' . ci_e($action) . '"' : '') . ' class="ci-ico-form"' . ($confirm !== '' ? ' onsubmit="return confirm(' . ci_e(json_encode($confirm)) . ')"' : '') . '>' . csrf_field();
+    foreach ($fields as $k => $v) $h .= '<input type="hidden" name="' . ci_e($k) . '" value="' . ci_e($v) . '">';
+    return $h . ci_ico($icon, null, $label, 'submit') . '</form>';
+}
+
+/** Script tags for the PDF reports (jsPDF + AutoTable + the report layout). */
+function ci_report_assets(): void
+{
+    $v = @filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/js/ci-report.js') ?: 1;
+    echo '<script src="/assets/js/vendor/jspdf.umd.min.js" defer></script><script src="/assets/js/vendor/jspdf.plugin.autotable.min.js" defer></script>'
+        . '<script src="/assets/js/ci-report.js?v=' . $v . '" defer></script>' . "\n";
 }
 
 }

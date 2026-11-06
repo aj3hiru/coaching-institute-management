@@ -3,6 +3,7 @@
 require_once __DIR__ . '/components/guard.php';
 require_once INCLUDES_PATH . '/stats.php';
 $me = admin_guard(['admin', 'editor', 'author']);
+if (!admin_blog_access()) { http_response_code(403); exit('Access Denied'); } // Users → Blogs → No access
 $perm = json_decode($me['permissions'] ?? '{}', true) ?: [];
 if ($me['role'] !== 'admin' && empty($perm['dashboard_access'])) { http_response_code(403); exit('Access Denied'); }
 edu_stats_tables($pdo);

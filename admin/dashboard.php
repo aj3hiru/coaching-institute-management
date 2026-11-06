@@ -4,7 +4,18 @@
 require_once __DIR__ . '/components/guard.php';
 require_once INCLUDES_PATH . '/institute.php';
 $me = admin_guard(['admin', 'editor', 'author']);
-if (!ci_can($me)) { header('Location: /admin/blog-dashboard.php'); exit; }
+if (!ci_can($me)) {
+    if (admin_blog_access()) { header('Location: /admin/blog-dashboard.php'); exit; }
+    // no institute and no blog access: a plain welcome page (no figures)
+    echo '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Dashboard</title>';
+    admin_shell_head();
+    echo '</head><body>';
+    admin_shell_open('Dashboard', date('l, F j, Y'));
+    echo '<div class="card" style="padding:1.5rem">Welcome, ' . htmlspecialchars($me['username']) . '. Use the menu on the left.</div>';
+    admin_shell_close();
+    echo '</body></html>';
+    exit;
+}
 ci_tables($pdo);
 
 $one = fn(string $sql, array $a = []) => (function () use ($pdo, $sql, $a) { $s = $pdo->prepare($sql); $s->execute($a); return $s->fetchColumn(); })();
@@ -28,12 +39,6 @@ $upcoming = $pdo->query("SELECT e.id, e.due_date, s.id AS sid, s.name, s.mobile,
     WHERE e.status <> 'dropped' AND " . CI_DUE_SQL . " > 0.004 ORDER BY (e.due_date IS NULL), e.due_date, due DESC LIMIT 8")->fetchAll(PDO::FETCH_ASSOC);
 $batches = $pdo->query("SELECT b.id, b.name, b.timing, b.capacity, c.name AS course_name, (SELECT COUNT(*) FROM ci_enrollments e WHERE e.batch_id = b.id AND e.status = 'active') AS n
     FROM ci_batches b LEFT JOIN ci_courses c ON c.id = b.course_id WHERE b.status = 'active' ORDER BY n DESC, b.name LIMIT 8")->fetchAll(PDO::FETCH_ASSOC);
-$months = [];
-for ($i = 5; $i >= 0; $i--) $months[date('Y-m', strtotime("first day of -$i month"))] = 0;
-foreach ($pdo->query("SELECT DATE_FORMAT(paid_on, '%Y-%m') m, SUM(amount) v FROM ci_payments WHERE paid_on >= '" . array_key_first($months) . "-01' GROUP BY m") as $r) {
-    if (isset($months[$r['m']])) $months[$r['m']] = (float)$r['v'];
-}
-$max = max($months) ?: 1;
 $empty = !$stats['active'] && !$stats['courses'] && !$stats['batches'];
 ?>
 <!DOCTYPE html>
@@ -45,11 +50,12 @@ $empty = !$stats['active'] && !$stats['courses'] && !$stats['batches'];
 <style>.ci-bars{display:flex;align-items:flex-end;gap:12px;height:170px;padding:8px 4px 0}.ci-bars div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:6px}.ci-bars span.v{font-size:11.5px;color:#6b7280;white-space:nowrap}.ci-bars i{display:block;width:100%;max-width:46px;background:#4a3369;border-radius:3px 3px 0 0;min-height:2px}.ci-bars small{font-size:12px;color:#6b7280}.ci-list{list-style:none;margin:0;padding:0}.ci-list li{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 16px;border-bottom:1px solid #f1f2f4}.ci-list li:last-child{border-bottom:0}.ci-list .r{text-align:right;white-space:nowrap}.ci-meter{height:6px;background:#f1f2f4;border-radius:3px;overflow:hidden;margin-top:6px;width:120px}.ci-meter i{display:block;height:100%;background:#4a3369}</style>
 </head>
 <body>
-<?php admin_shell_open('Dashboard', date('l, F j, Y') . ' — ' . ci_e(edu_site_name())); ?>
+<?php admin_shell_open('Dashboard', date('l, F j, Y'), '<div class="ci-top-actions">'
+    . (ci_perm($me, 'add_student') ? '<a class="ci-btn" href="/admin/student-edit.php"><i class="fas fa-user-plus"></i> Add Student</a>' : '')
+    . (ci_perm($me, 'fees') ? '<a class="ci-btn ci-ghost" href="/admin/ci-fees.php?tab=dues"><i class="fas fa-indian-rupee-sign"></i> Collect Fee</a>' : '')
+    . (ci_perm($me, 'batches') ? '<a class="ci-btn ci-ghost" href="/admin/ci-batches.php?new=1"><i class="fas fa-layer-group"></i> New Batch</a>' : '') . '</div>'); ?>
 <div class="ci">
 <?= admin_flash() ?>
-<div class="ci-head"><div><h2>Institute overview</h2><div class="ci-sub">Students, batches and fees at a glance</div></div>
-<div class="ci-actions"><a class="ci-btn" href="/admin/student-edit.php"><i class="fas fa-user-plus"></i> Add Student</a><a class="ci-btn ci-ghost" href="/admin/ci-fees.php?tab=dues"><i class="fas fa-indian-rupee-sign"></i> Collect Fee</a><a class="ci-btn ci-ghost" href="/admin/ci-batches.php?new=1"><i class="fas fa-layer-group"></i> New Batch</a></div></div>
 
 <?php if ($empty): ?>
 <div class="ci-card"><div class="ci-card-b"><b>Getting started</b><ol style="margin:8px 0 0 18px;padding:0;line-height:1.9">
@@ -73,15 +79,15 @@ $empty = !$stats['active'] && !$stats['courses'] && !$stats['batches'];
 <div class="ci-grid2">
   <div class="ci-card"><div class="ci-card-h"><h3>New admissions</h3><a href="/admin/students.php?status=all">All students</a></div><div class="ci-card-b ci-p0"><ul class="ci-list">
     <?php if (!$recentStudents): ?><li class="ci-muted">No students yet.</li><?php endif; ?>
-    <?php foreach ($recentStudents as $s): ?><li><div class="ci-person"><?= ci_avatar($s, 34) ?><div><a href="/admin/student-view.php?id=<?= (int)$s['id'] ?>"><?= ci_e($s['name']) ?></a><small><?= ci_e($s['reg_no']) ?><?= $s['courses'] ? ' · ' . ci_e($s['courses']) : '' ?></small></div></div><span class="r ci-muted"><?= ci_date($s['admission_date']) ?></span></li><?php endforeach; ?>
+    <?php foreach ($recentStudents as $s): ?><li><div class="ci-person"><div><a href="/admin/student-view.php?id=<?= (int)$s['id'] ?>"><?= ci_e($s['name']) ?></a><small><?= $s['courses'] ? ci_e($s['courses']) : '&nbsp;' ?></small></div></div><span class="r ci-muted"><?= ci_date($s['admission_date']) ?></span></li><?php endforeach; ?>
   </ul></div></div>
   <div class="ci-card"><div class="ci-card-h"><h3>Recent payments</h3><a href="/admin/ci-fees.php">All payments</a></div><div class="ci-card-b ci-p0"><ul class="ci-list">
     <?php if (!$recentPays): ?><li class="ci-muted">No payments yet.</li><?php endif; ?>
-    <?php foreach ($recentPays as $p): ?><li><div class="ci-person"><?= ci_avatar($p, 34) ?><div><a href="/admin/student-view.php?id=<?= (int)$p['student_id'] ?>"><?= ci_e($p['name']) ?></a><small><?= ci_e($p['receipt_no']) ?> · <?= ci_date($p['paid_on']) ?> · <?= ci_e(CI_METHODS[$p['method']] ?? $p['method']) ?></small></div></div><span class="r"><b><?= ci_money0($p['amount']) ?></b><br><a href="/admin/ci-receipt.php?id=<?= (int)$p['id'] ?>" target="_blank" style="font-size:12px">Receipt</a></span></li><?php endforeach; ?>
+    <?php foreach ($recentPays as $p): ?><li><div class="ci-person"><div><a href="/admin/student-view.php?id=<?= (int)$p['student_id'] ?>"><?= ci_e($p['name']) ?></a><small><?= ci_date($p['paid_on']) ?> · <?= ci_e(CI_METHODS[$p['method']] ?? $p['method']) ?></small></div></div><span class="r"><b><?= ci_money0($p['amount']) ?></b><br><a class="ci-ico" href="/admin/ci-receipt.php?id=<?= (int)$p['id'] ?>" target="_blank" title="Print receipt" aria-label="Print receipt" style="width:26px;height:26px;margin-top:3px"><?= ci_svg('print') ?></a></span></li><?php endforeach; ?>
   </ul></div></div>
   <div class="ci-card"><div class="ci-card-h"><h3>Fee to collect</h3><a href="/admin/ci-fees.php?tab=dues">All dues</a></div><div class="ci-card-b ci-p0"><ul class="ci-list">
     <?php if (!$upcoming): ?><li class="ci-muted">No dues. Everyone has paid.</li><?php endif; ?>
-    <?php foreach ($upcoming as $u): $late = $u['due_date'] && $u['due_date'] < $today; ?><li><div class="ci-person"><?= ci_avatar($u, 34) ?><div><a href="/admin/student-view.php?id=<?= (int)$u['sid'] ?>#pay"><?= ci_e($u['name']) ?></a><small><?= ci_e($u['course_name']) ?> · <a href="tel:<?= ci_e($u['mobile']) ?>"><?= ci_e($u['mobile']) ?></a></small></div></div><span class="r"><b style="color:#b91c1c"><?= ci_money0($u['due']) ?></b><br><?= $u['due_date'] ? ($late ? '<span class="ci-badge ci-b-amber">' . ci_date($u['due_date']) . '</span>' : '<small class="ci-muted">' . ci_date($u['due_date']) . '</small>') : '' ?></span></li><?php endforeach; ?>
+    <?php foreach ($upcoming as $u): $late = $u['due_date'] && $u['due_date'] < $today; ?><li><div class="ci-person"><div><a href="/admin/student-view.php?id=<?= (int)$u['sid'] ?>#pay"><?= ci_e($u['name']) ?></a><small><?= ci_e($u['course_name']) ?> · <a href="tel:<?= ci_e($u['mobile']) ?>"><?= ci_e($u['mobile']) ?></a></small></div></div><span class="r"><b style="color:#b91c1c"><?= ci_money0($u['due']) ?></b><br><?= $u['due_date'] ? ($late ? '<span class="ci-badge ci-b-amber">' . ci_date($u['due_date']) . '</span>' : '<small class="ci-muted">' . ci_date($u['due_date']) . '</small>') : '' ?></span></li><?php endforeach; ?>
   </ul></div></div>
   <div class="ci-card"><div class="ci-card-h"><h3>Batches</h3><a href="/admin/ci-batches.php">All batches</a></div><div class="ci-card-b ci-p0"><ul class="ci-list">
     <?php if (!$batches): ?><li class="ci-muted">No active batches.</li><?php endif; ?>
@@ -90,9 +96,6 @@ $empty = !$stats['active'] && !$stats['courses'] && !$stats['batches'];
   </ul></div></div>
 </div>
 
-<div class="ci-card"><div class="ci-card-h"><h3>Fee collected · last 6 months</h3></div><div class="ci-card-b"><div class="ci-bars">
-  <?php foreach ($months as $m => $v): ?><div><span class="v"><?= $v ? ci_money0($v) : '' ?></span><i style="height:<?= round($v / $max * 120) ?>px"></i><small><?= date('M', strtotime("$m-01")) ?></small></div><?php endforeach; ?>
-</div></div></div>
 </div>
 <?php admin_shell_close(); ?>
 </body>

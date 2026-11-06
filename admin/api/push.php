@@ -9,6 +9,7 @@ if (!admin_can('push_notifications.send')) { http_response_code(403); header('Co
 
 $action = $_GET['action'] ?? $_POST['action'] ?? '';
 $isAdmin = admin_shell_user()['role'] === 'admin';
+$pushAdv = $isAdmin || admin_can('push_notifications.advanced'); // Users → Push notifications → Advanced (keys, import / export, settings)
 function push_out(array $d, int $code = 200): void
 {
     http_response_code($code);
@@ -48,7 +49,7 @@ try {
         push_out(edu_push_delivery_log((int)($_GET['id'] ?? 0)));
     }
     if ($action === 'export') {
-        push_admin_only($isAdmin);
+        push_admin_only($pushAdv);
         $data = edu_push_export();
         admin_log('push_export', 'Exported push keys and ' . count($data['subscribers']) . ' subscribers');
         header('Content-Type: application/json; charset=utf-8');
@@ -123,7 +124,7 @@ try {
             admin_log('push_history_clear', 'Cleared the push history (' . count($ids) . ' notifications)');
             push_out(['ok' => true, 'removed' => count($ids)]);
         case 'settings':
-            push_admin_only($isAdmin);
+            push_admin_only($pushAdv);
             $icon = trim((string)($_POST['icon'] ?? ''));
             if ($icon !== '' && !preg_match('#^(/|https?://)\S+$#', $icon)) push_out(['error' => 'The icon must be an image address.'], 400);
             edu_settings_save('push', [
@@ -135,14 +136,14 @@ try {
             admin_log('push_settings', 'Updated push notification settings');
             push_out(['ok' => true]);
         case 'reset_keys':
-            push_admin_only($isAdmin);
+            push_admin_only($pushAdv);
             if (($_POST['confirm'] ?? '') !== 'RESET') push_out(['error' => 'Type RESET to confirm.'], 400);
             $n = (int)$pdo->query("SELECT COUNT(*) FROM push_subscriptions")->fetchColumn();
             $pub = edu_push_reset_keys();
             admin_log('push_keys_reset', "Reset push keys; erased old keys and $n subscribers");
             push_out(['ok' => true, 'public_key' => $pub, 'removed' => $n]);
         case 'import':
-            push_admin_only($isAdmin);
+            push_admin_only($pushAdv);
             $f = $_FILES['file'] ?? null;
             if (!$f || ($f['error'] ?? 1) !== UPLOAD_ERR_OK) push_out(['error' => 'Please choose an export file.'], 400);
             if ($f['size'] > 50 * 1024 * 1024) push_out(['error' => 'The file is too large (max 50 MB).'], 400);
