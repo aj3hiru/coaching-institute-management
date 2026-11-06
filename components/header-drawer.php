@@ -1,6 +1,18 @@
 <?php
 // Search overlay, menu button and the slide-in mobile menu — shared by the racing and the school-style header (components/header.php).
 ?>
+<?php if (!empty($__school)): ?><style>
+/* the same school-style brand at the top of the phone menu */
+.mnav-top.nb-mnav-top-school{height:auto!important;min-height:72px;padding:0 8px 0 0!important;align-items:stretch!important}
+.mnav-top.nb-mnav-top-school .mnav-close{align-self:center;flex:0 0 auto}
+.mnav-brand.nb-mnav-school{position:relative;isolation:isolate;display:flex;align-items:center;gap:8px;flex:1 1 auto;min-width:0;width:auto!important;max-width:none!important;height:auto!important;padding:9px 42px 9px 14px;text-decoration:none;color:inherit}
+.nb-mnav-school::before{content:"";position:absolute;inset:0 10px 0 0;z-index:-1;background:rgba(240,174,113,.43);clip-path:polygon(0 0,100% 0,97% 45%,100% 100%,0 100%)}
+.nb-mnav-school::after{content:"";position:absolute;bottom:0;right:4px;width:30px;height:55%;z-index:-1;background:#f02801;clip-path:polygon(35% 0,0 100%,20% 100%)}
+.nb-mnav-school .nb-emblem{display:block;width:38px!important;height:44px!important;flex:0 0 auto}
+.nb-mnav-school .nb-sb-school{display:flex;flex-direction:column;align-items:flex-start;text-align:left;line-height:1.12;min-width:0}
+.nb-mnav-school .site-title{font-family:Poppins,Roboto,Arial,sans-serif;font-weight:700;font-size:17px;color:#9e1b32!important;white-space:nowrap}
+.nb-mnav-school .nb-brand-line{margin-top:3px;font-family:Roboto,Arial,sans-serif;font-size:11px;font-weight:500;letter-spacing:0;text-transform:none;color:#1a1a1a!important;white-space:normal}
+</style><?php endif; ?>
 <?php if (th_on('h_search')): ?>
   <div class="edu-hsearch" id="eduHSearch" hidden>
     <form role="search" method="get" action="/search" class="edu-hsearch-form">
@@ -15,8 +27,8 @@
       <button type="button" class="nb-burger" id="menuToggle" aria-label="Open menu" aria-expanded="false" aria-controls="nb-drawer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
       <div class="mnav-overlay" id="overlay" role="presentation"></div>
       <aside id="nb-drawer" class="mnav nb-drawer" aria-label="Mobile menu" aria-hidden="true" inert>
-        <div class="mnav-top">
-          <a href="/" class="mnav-brand"><?= $__logo ?></a>
+        <div class="mnav-top<?= !empty($__school) ? ' nb-mnav-top-school' : '' ?>">
+          <a href="/" class="mnav-brand<?= !empty($__school) ? ' nb-mnav-school' : '' ?>"><?= $__logo . (!empty($__school) ? $__brandText : '') ?></a>
           <button type="button" class="mnav-close" id="closeBtn" aria-label="Close menu"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
         </div>
         <?php
