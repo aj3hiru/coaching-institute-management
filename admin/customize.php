@@ -203,7 +203,7 @@ const PANELS = [
       ['range', 'g.logo_w', 'Logo width', { min: 40, max: 400, unit: 'px', hint: 'The height follows the logo’s own shape.' }],
     ]],
     ['Header Brand', [
-      ['select', 'id_brand_style', 'Header brand style', { options: [['logo', 'Logo (with title / tagline as set above)'], ['school', 'School style: round emblem + big name + address']] }],
+      ['select', 'id_brand_style', 'Header brand style', { options: [['logo', 'Logo (with title / tagline as set above)'], ['school', 'School style brand in this header: emblem + name + address on a tinted panel'], ['school_full', 'Full school layout: top bar + brand panel + menu beside it']] }],
       ['media', 'id_brand_emblem', 'Emblem (round logo)', { hint: 'School style only. Empty = the built-in DK Academy emblem. Square image works best.' }],
       ['text', 'id_header_title', 'Name in the header', { hint: 'School style only. Empty = the Site Title.' }],
       ['text', 'id_header_line', 'Line under the name', { hint: 'School style only, e.g. the address. Empty = the address in General Settings.' }],

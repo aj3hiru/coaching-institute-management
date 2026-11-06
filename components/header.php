@@ -64,7 +64,9 @@ $__brandText = (!th_on('id_hide_title') || (!th_on('id_hide_tagline') && $__tagl
         . (!th_on('id_hide_tagline') && $__tagline !== '' ? '<span class="site-tagline">' . htmlspecialchars($__tagline) . '</span>' : '') . '</span>'
     : '';
 // School-style brand (Customize → Site Identity → Header Brand): round emblem, the name in big letters, the address under it
-$__school = (string)th('id_brand_style', 'logo') === 'school';
+$__bstyle = (string)th('id_brand_style', 'logo');
+$__school = in_array($__bstyle, ['school', 'school_full'], true);
+$__schoolFull = $__bstyle === 'school_full'; // the whole header in the school layout (top bar + menu beside the brand)
 if ($__school) {
     $__emb = trim((string)th('id_brand_emblem')) ?: '/assets/images/dk-academy-emblem.svg';
     $__bt = trim((string)th('id_header_title')) ?: edu_site_name();
@@ -82,7 +84,32 @@ if ($__school) {
         $__subOn = th_on('h_sub') && ($__subUrl !== '' || $__pushOn);
         $__userIco = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>';
 ?>
-<?php if ($__school): include __DIR__ . '/header-school.php'; else: ?>
+<?php if ($__school && !$__schoolFull): ?>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@700&family=Roboto:wght@500&display=swap">
+<style>
+/* School-style brand in the middle of the normal header: tinted panel with a notched right edge and a red stripe */
+.nb-hr-top{position:relative}
+.nb-hr-brand .nb-brand-link.nb-brand-school{position:relative;isolation:isolate;align-self:stretch;margin:-14px 0;padding:10px 64px 10px 22px;gap:10px;text-decoration:none;color:inherit}
+.nb-brand-school::before{content:"";position:absolute;inset:0 12px 0 0;z-index:-1;background:rgba(240,174,113,.43);clip-path:polygon(0 0,100% 0,97% 45%,100% 100%,0 100%)}
+.nb-brand-school::after{content:"";position:absolute;bottom:0;right:7px;width:40px;height:55%;z-index:-1;background:#f02801;clip-path:polygon(50% 0,0 100%,25% 100%)}
+.nb-brand-school .nb-emblem{display:block;width:52px;height:60px;flex:0 0 auto}
+.nb-hr-brand .nb-sb-school{display:flex;flex-direction:column;align-items:flex-start;text-align:left;line-height:1.1;min-width:0}
+.nb-sb-school .site-title{font-family:Poppins,Roboto,Arial,sans-serif;font-weight:700;font-size:26px;letter-spacing:-.005em;color:#9e1b32!important;white-space:nowrap}
+.nb-sb-school .nb-brand-line{margin-top:4px;font-family:Roboto,Arial,sans-serif;font-size:16px;font-weight:500;letter-spacing:0;text-transform:none;color:#1a1a1a!important;white-space:nowrap}
+@media (max-width:980px){
+  .nb-hr-brand .nb-brand-link.nb-brand-school{margin:-10px 0 -10px -14px;padding:8px 44px 8px 14px;gap:8px}
+  .nb-brand-school::after{right:4px;width:30px;clip-path:polygon(35% 0,0 100%,20% 100%)}
+  .nb-brand-school .nb-emblem{width:40px;height:46px}
+  .nb-sb-school .site-title{font-size:18px}
+  .nb-sb-school .nb-brand-line{font-size:11.5px;margin-top:3px;white-space:normal}
+  /* phones: room for the brand — no search icon and no Subscribe button in the bar (both stay in the menu) */
+  .nb-h-racing .nb-hr-act .nb-search-icon,.nb-h-racing .nb-hr-act .nb-hr-sub{display:none!important}
+}
+@media (max-width:400px){.nb-brand-school .nb-emblem{width:36px;height:42px}.nb-sb-school .site-title{font-size:16.5px}.nb-sb-school .nb-brand-line{font-size:10.5px}}
+</style>
+<?php endif; ?>
+<?php if ($__schoolFull): include __DIR__ . '/header-school.php'; else: ?>
 <header class="nb-header nb-h-racing" id="site-navigation">
   <div class="nb-hr-top">
     <nav class="nb-hr-soc" aria-label="Social networks"<?= th_on('h_socials') ? '' : ' style="visibility:hidden"' ?>>
