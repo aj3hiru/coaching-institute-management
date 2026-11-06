@@ -46,3 +46,12 @@ body:has(#wpadminbar){margin-top:var(--wp-admin--admin-bar--height,32px)!importa
 @media screen and (max-width:782px){#wpadminbar .quicklinks .menupop ul li .ab-item,#wpadminbar .quicklinks .menupop ul li a{font-size:14px!important;padding:9px 14px!important}#wpadminbar .menupop .ab-sub-wrapper{min-width:0}}
 /* dropdown sits flush under the toolbar: no coloured top line */
 #wpadminbar .menupop .ab-sub-wrapper,#wpadminbar #wp-admin-bar-my-account>.ab-sub-wrapper{border-top:0!important;margin-top:0!important;top:100%}
+/* phones / tablets: an open menu drawer (admin sidebar or the site's menu) sits above the admin bar, so its top is never hidden */
+@media (max-width:1023px){
+  #sidebarOverlay.active,#overlay.mnav-overlay.open{z-index:100000!important}
+  #sidebar.open,#nb-drawer.open{z-index:100001!important}
+}
+/* the site's menu lives inside the header (its own layer), so while it is open the admin bar steps aside */
+@media (max-width:1023px){
+  body:has(#nb-drawer.open) #wpadminbar{visibility:hidden}
+}
