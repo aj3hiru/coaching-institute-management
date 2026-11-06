@@ -3,9 +3,9 @@
 ?>
 <?php if (!empty($__school)): ?><style>
 /* the same school-style brand at the top of the phone menu */
-.mnav-top.nb-mnav-top-school{height:auto!important;min-height:72px;padding:0 8px 0 0!important;align-items:stretch!important}
+.mnav-top.nb-mnav-top-school{height:auto!important;min-height:66px;padding:6px 8px 6px 0!important;align-items:stretch!important}
 .mnav-top.nb-mnav-top-school .mnav-close{align-self:center;flex:0 0 auto}
-.mnav-brand.nb-mnav-school{position:relative;isolation:isolate;display:flex;align-items:center;gap:8px;flex:1 1 auto;min-width:0;width:auto!important;max-width:none!important;height:auto!important;padding:9px 42px 9px 14px;text-decoration:none;color:inherit}
+.mnav-brand.nb-mnav-school{position:relative;isolation:isolate;display:flex;align-items:center;gap:8px;flex:1 1 auto;min-width:0;width:auto!important;max-width:none!important;height:auto!important;padding:5px 42px 5px 14px;text-decoration:none;color:inherit}
 .nb-mnav-school::before{content:"";position:absolute;inset:0 10px 0 0;z-index:-1;background:rgba(240,174,113,.43);clip-path:polygon(0 0,100% 0,97% 45%,100% 100%,0 100%)}
 .nb-mnav-school::after{content:"";position:absolute;bottom:0;right:4px;width:30px;height:55%;z-index:-1;background:#f02801;clip-path:polygon(35% 0,0 100%,20% 100%)}
 .nb-mnav-school .nb-emblem{display:block;width:38px!important;height:44px!important;flex:0 0 auto}
