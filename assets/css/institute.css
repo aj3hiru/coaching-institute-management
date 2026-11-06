@@ -187,3 +187,35 @@ details.ci-more>summary::-webkit-details-marker{display:none}
 .ci-due-cell{display:flex;align-items:center;justify-content:flex-end;gap:8px}
 .ci-top-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
 @media (max-width:700px){.ci-top-actions .ci-btn{height:32px;padding:0 10px;font-size:12.5px}}
+/* course rows: every box the same height; bins line up with the fields */
+.ci-fee-row{align-items:start}
+.ci-fee-row .ci-f>input,.ci-fee-row .ci-f>select,.ci-fee-row .ci-plan-note{height:38px}
+.ci-fee-row .ci-plan-note{display:flex;align-items:center;padding:0 10px;gap:4px;white-space:nowrap;overflow:hidden}
+.ci-fee-row>.ci-ico,.ci-fee-row>.ci-enr-x{width:38px;height:38px;grid-column:5;grid-row:1}
+.ci-enr-rm input{position:absolute;opacity:0;pointer-events:none}
+.ci-enr-rm:has(input:checked){background:#dc2626;color:#fff!important;border-color:#dc2626}
+.ci-fee-row.is-removing{opacity:.55}
+.ci-fee-row.is-removing .ci-enr-rm{opacity:1}
+.ci-fee-row .ci-paybox{grid-column:span 2}
+.ci-row-sum{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:#374151;padding-top:2px}
+.ci-row-sum:empty{display:none}
+@media (max-width:900px){.ci-fee-row>.ci-ico,.ci-fee-row>.ci-enr-x{grid-column:auto;grid-row:auto}.ci-fee-row .ci-paybox{grid-column:1/-1}}
+/* payment rows */
+.ci-pays{display:flex;flex-direction:column;gap:6px}
+.ci-pays-h{display:flex;align-items:center;justify-content:space-between;font-size:12.5px;font-weight:600;color:#374151}
+.ci-pays-add{height:24px;padding:0 9px;border:1px solid var(--ci-acc);background:#faf8fd;color:var(--ci-acc);font:600 12px inherit;font-family:inherit;cursor:pointer}
+.ci-pays-add:hover{background:var(--ci-acc);color:#fff}
+.ci-pay-row{display:grid;grid-template-columns:minmax(110px,40%) 1fr 38px;gap:6px}
+.ci-pay-row select,.ci-pay-row input{width:100%;height:38px;border:1px solid #d1d5db;background:#fff;padding:0 10px;font:inherit;font-size:14px;color:#111827}
+.ci-pay-amt{position:relative;display:block}
+.ci-pay-amt i{position:absolute;left:10px;top:50%;transform:translateY(-50%);font-style:normal;color:#6b7280;font-size:13px;pointer-events:none}
+.ci-pay-amt input{padding-left:22px}
+.ci-pay-row .ci-ico{width:38px;height:38px}
+.ci-pay-row .ci-ico:disabled{opacity:.35;cursor:not-allowed}
+.ci-pays-total{font-size:12.5px;font-weight:700;color:#111827;text-align:right}
+.ci-pays-total:empty{display:none}
+.ci-head-show{margin:0 0 10px}
+.ci-head-show .ci-sub{font-size:13.5px;color:#374151;font-weight:600}
+.ci-table td.ci-nw{white-space:nowrap}
+.ci-pay-a::-webkit-inner-spin-button,.ci-pay-a::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.ci-pay-a{-moz-appearance:textfield;appearance:textfield}

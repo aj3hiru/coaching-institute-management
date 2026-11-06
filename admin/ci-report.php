@@ -70,7 +70,7 @@ if ($type === 'student') {
             ['title' => 'Summary of Fee', 'head' => ['Description', 'Amount'], 'body' => [['Total fee (after discounts)', $rs($tot['net'])], ['Paid', $rs($tot['paid'])]], 'foot' => [['Balance due', $rs($tot['due'])]], 'right' => [1], 'w' => [1 => 140]],
             ['title' => 'Courses', 'right_text' => count($enr) . ' course(s)', 'head' => ['Course', 'Batch', 'Session', 'Plan', 'Course fee', 'Discount', 'Fee', 'Paid', 'Due', 'Status'], 'body' => $cRows, 'right' => [4, 5, 6, 7, 8], 'small' => true],
             ['title' => 'Payments', 'right_text' => count($pays) . ' receipt(s)', 'head' => ['No.', 'Date', 'Receipt', 'Course', 'Paid by', 'Amount'],
-                'body' => array_map(fn($p, $i) => [$i + 1, $d($p['paid_on']), $p['receipt_no'], $p['course_name'] ?? '-', CI_METHODS[$p['method']] ?? $p['method'], $rs($p['amount'])], $pays, array_keys($pays)),
+                'body' => array_map(fn($p, $i) => [$i + 1, $d($p['paid_on']), $p['receipt_no'], $p['course_name'] ?? '-', ci_pay_mode($p), $rs($p['amount'])], $pays, array_keys($pays)),
                 'foot' => $pays ? [['', '', '', '', 'Total', $rs($tot['paid'])]] : null, 'right' => [5], 'empty' => 'No payments yet.'],
             $hist ? ['title' => 'Class History', 'head' => ['Date', 'From class', 'To class', 'Note'], 'body' => array_map(fn($h) => [$d($h['changed_on']), $h['f'] ?: '-', $h['t'] ?: '-', $h['note'] ?: '-'], $hist)] : null,
         ])),

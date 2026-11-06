@@ -139,3 +139,26 @@
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 })();
+/* Hover labels for icon buttons: a small label in the theme colour just under the mouse (replaces the browser's own tooltip). */
+(function () {
+  var tip = null, cur = null;
+  var SEL = '.ci-ico, [data-tip], .btn-action[title], .pn-icon[title], .dsp-btn';
+  function show(el, x, y) {
+    var t = el.getAttribute('data-tip') || el.getAttribute('title') || el.getAttribute('aria-label');
+    if (!t) return;
+    if (el.hasAttribute('title')) { el.setAttribute('data-tip', el.getAttribute('title')); el.removeAttribute('title'); }
+    if (!tip) { tip = document.createElement('div'); tip.className = 'dk-tip'; tip.setAttribute('role', 'tooltip'); document.body.appendChild(tip); }
+    tip.textContent = t; tip.hidden = false; cur = el; move(x, y);
+  }
+  function move(x, y) {
+    if (!tip || tip.hidden) return;
+    var w = tip.offsetWidth, h = tip.offsetHeight, vw = document.documentElement.clientWidth, vh = window.innerHeight;
+    var left = Math.max(6, Math.min(x - w / 2, vw - w - 6)), top = y + 18;
+    if (top + h > vh - 6) top = y - h - 12;
+    tip.style.left = left + 'px'; tip.style.top = top + 'px';
+  }
+  function hide() { if (tip) tip.hidden = true; cur = null; }
+  document.addEventListener('mouseover', function (e) { var el = e.target.closest && e.target.closest(SEL); if (el && el !== cur) show(el, e.clientX, e.clientY); else if (!el && cur) hide(); }, { passive: true });
+  document.addEventListener('mousemove', function (e) { if (cur) { if (!cur.contains(e.target)) hide(); else move(e.clientX, e.clientY); } }, { passive: true });
+  ['mousedown', 'scroll', 'keydown'].forEach(function (ev) { document.addEventListener(ev, hide, true); });
+})();

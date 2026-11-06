@@ -19,7 +19,7 @@ if ($tab === 'payments') {
     $method = isset(CI_METHODS[$_GET['method'] ?? '']) ? $_GET['method'] : '';
     $w = ['p.paid_on BETWEEN ? AND ?'];
     $a = [$from, $to];
-    if ($method) { $w[] = 'p.method = ?'; $a[] = $method; }
+    if ($method) { $w[] = '(p.method = ? OR p.parts LIKE ?)'; $a[] = $method; $a[] = '%"m":"' . $method . '"%'; }
     if ($fCourse) { $w[] = 'e.course_id = ?'; $a[] = $fCourse; }
     if ($fBatch) { $w[] = 'e.batch_id = ?'; $a[] = $fBatch; }
     if ($fSession) { $w[] = 'e.session_id = ?'; $a[] = $fSession; }
@@ -33,11 +33,11 @@ if ($tab === 'payments') {
     $rows = $st->fetchAll(PDO::FETCH_ASSOC);
     if ($csv) {
         ci_csv("fee-payments-$from-to-$to.csv", ['Receipt', 'Date', 'Reg. no.', 'Student', 'Mobile', 'Course', 'Batch', 'Paid by', 'Amount', 'Note', 'Entered by'],
-            array_map(fn($r) => [$r['receipt_no'], $r['paid_on'], $r['reg_no'], $r['name'], $r['mobile'], $r['course_name'], $r['batch_name'], CI_METHODS[$r['method']] ?? $r['method'],
+            array_map(fn($r) => [$r['receipt_no'], $r['paid_on'], $r['reg_no'], $r['name'], $r['mobile'], $r['course_name'], $r['batch_name'], ci_pay_mode($r),
                 number_format((float)$r['amount'], 2, '.', ''), $r['note'], $r['username']], $rows));
     }
     $byMethod = [];
-    foreach ($rows as $r) $byMethod[$r['method']] = ($byMethod[$r['method']] ?? 0) + (float)$r['amount'];
+    foreach ($rows as $r) foreach (ci_pay_split($r) as $m => $v) $byMethod[$m] = ($byMethod[$m] ?? 0) + $v; // split payments counted per mode
     $sum = array_sum($byMethod);
 } else {
     $late = !empty($_GET['late']);
@@ -108,7 +108,7 @@ $qs = function (array $over = []) {
 <tr><td><b><?= ci_e($r['receipt_no']) ?></b></td><td><?= ci_date($r['paid_on']) ?></td>
 <td><div class="ci-person"><?= ci_avatar($r, 30) ?><div><a href="/admin/student-view.php?id=<?= (int)$r['student_id'] ?>"><?= ci_e($r['name']) ?></a><small><?= ci_e($r['reg_no']) ?> · <?= ci_e($r['mobile']) ?></small></div></div></td>
 <td><?= ci_e($r['course_name'] ?? '—') ?><?= $r['batch_name'] ? '<small class="ci-muted" style="display:block">' . ci_e($r['batch_name']) . '</small>' : '' ?></td>
-<td><?= ci_e(CI_METHODS[$r['method']] ?? $r['method']) ?><?= $r['note'] ? '<small class="ci-muted" style="display:block">' . ci_e($r['note']) . '</small>' : '' ?></td>
+<td><?= ci_e(ci_pay_mode($r)) ?><?= $r['note'] ? '<small class="ci-muted" style="display:block">' . ci_e($r['note']) . '</small>' : '' ?></td>
 <td class="ci-num"><b><?= ci_money($r['amount']) ?></b></td><td><a href="/admin/ci-receipt.php?id=<?= (int)$r['id'] ?>" target="_blank" class="ci-ico" title="Print receipt" aria-label="Print receipt"><?= ci_svg('print') ?></a></td></tr>
 <?php endforeach; ?>
 <?php if ($rows): ?><tr class="ci-total-row"><td colspan="5">Total</td><td class="ci-num"><?= ci_money($sum) ?></td><td></td></tr><?php endif; ?>

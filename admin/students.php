@@ -119,11 +119,10 @@ $filtered = $f['q'] !== '' || $f['class'] || $f['course'] || $f['batch'] || $f['
 <?php admin_shell_head(); ci_head(); ci_report_assets(); ?>
 </head>
 <body>
-<?php admin_shell_open('Students', 'All students with search and filters'); ?>
+<?php admin_shell_open('Students', 'All students with search and filters', '<div class="ci-top-actions"><button type="button" class="ci-btn ci-ghost" data-report="students" data-src="/admin/students.php?' . ci_e($qs(['export' => 'json'])) . '"><i class="fas fa-file-pdf"></i> Export PDF</button>'
+    . (ci_perm($me, 'add_student') ? '<a class="ci-btn" href="/admin/student-edit.php"><i class="fas fa-user-plus"></i> Add Student</a>' : '') . '</div>'); ?>
 <div class="ci">
 <?= admin_flash() ?>
-<div class="ci-head"><div><h2>Students</h2><div class="ci-sub"><?= number_format($total) ?> found<?= $totalDue > 0 ? ' · due ' . ci_money0($totalDue) : '' ?></div></div>
-<div class="ci-actions"><button type="button" class="ci-btn ci-ghost" data-report="students" data-src="/admin/students.php?<?= ci_e($qs(['export' => 'json'])) ?>"><i class="fas fa-file-pdf"></i> Export PDF</button><a class="ci-btn" href="/admin/student-edit.php"><i class="fas fa-user-plus"></i> Add Student</a></div></div>
 
 <div class="ci-card"><div class="ci-card-b"><form method="get" class="ci-filters" id="ci-filter">
   <div class="ci-f" style="grid-column:span 2"><label>Search</label><input name="q" value="<?= ci_e($f['q']) ?>" placeholder="Name, mobile, reg. no., father's name, email"></div>
@@ -140,6 +139,7 @@ $filtered = $f['q'] !== '' || $f['class'] || $f['course'] || $f['batch'] || $f['
   <div class="ci-fbtn"><button class="ci-btn" type="submit"><i class="fas fa-filter"></i> Filter</button><?php if ($filtered): ?><a class="ci-btn ci-ghost" href="/admin/students.php">Clear</a><?php endif; ?></div>
 </form></div></div>
 
+<div class="ci-head ci-head-show"><div class="ci-sub"><?= number_format($total) ?> found<?= $totalDue > 0 ? ' · due ' . ci_money0($totalDue) : '' ?></div></div>
 <div class="ci-card"><div class="ci-card-b ci-p0 ci-table-wrap"><table class="ci-table">
 <thead><tr><th>Student</th><th>Mobile</th><th>Class</th><th>Courses / batches</th><th>Admission</th><th class="ci-num">Fee due</th><th>Action</th></tr></thead><tbody>
 <?php if (!$students): ?><tr><td colspan="7" class="ci-empty"><?= $filtered ? 'No students match these filters.' : 'No students yet. <a href="/admin/student-edit.php">Add the first student</a>.' ?></td></tr><?php endif; ?>
@@ -148,7 +148,7 @@ $filtered = $f['q'] !== '' || $f['class'] || $f['course'] || $f['batch'] || $f['
 <td><a href="tel:<?= ci_e($s['mobile']) ?>"><?= ci_e($s['mobile']) ?></a></td>
 <td><?= ci_e($s['class_name'] ?? '—') ?></td>
 <td><?php $cs = array_filter(explode('||', (string)$s['courses'])); echo $cs ? implode('<br>', array_map('ci_e', $cs)) : '<span class="ci-muted">—</span>'; ?></td>
-<td class="ci-muted"><?= ci_date($s['admission_date']) ?></td>
+<td class="ci-muted ci-nw"><?= ci_date($s['admission_date']) ?></td>
 <td class="ci-num"><div class="ci-due-cell"><?php if ((float)$s['due'] > 0.004): ?><b class="ci-r"><?= ci_money0($s['due']) ?></b><?= $s['overdue'] ? ' <span class="ci-badge ci-b-amber">Late</span>' : '' ?><?php if (ci_perm($me, 'fees')): ?><?= ci_ico('rupee', '/admin/student-view.php?id=' . $sid . '&collect=1#fee', 'Collect fee') ?><?php endif; ?><?php elseif ((float)$s['net'] > 0): ?><span class="ci-badge ci-b-green">Paid</span><?php else: ?><span class="ci-muted">—</span><?php endif; ?></div></td>
 <td><div class="ci-icos">
 <?php if (ci_perm($me, 'edit_student')): ?><?= ci_ico('edit', '/admin/student-edit.php?id=' . $sid, 'Edit student') ?><?= ci_ico('book-plus', '/admin/student-edit.php?id=' . $sid . '&addcourse=1', 'Add to course / batch') ?>

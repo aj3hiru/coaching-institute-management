@@ -56,11 +56,9 @@ $open = $ec || isset($_GET["new"]) || (!$courses && $fStatus === "active");
 <?php admin_shell_head(); ci_head(); ci_report_assets(); ?>
 </head>
 <body>
-<?php admin_shell_open('Courses', 'Courses the institute teaches, with their total fee'); ?>
+<?php admin_shell_open('Courses', 'Courses the institute teaches, with their total fee', $open ? '' : '<a class="ci-btn" href="?new=1"><i class="fas fa-plus"></i> Add Course</a>'); ?>
 <div class="ci">
 <?= admin_flash() ?>
-<div class="ci-head"><div class="ci-show"><label for="ci-cst">Status</label><select id="ci-cst" onchange="location.href='?status='+this.value"><?php foreach (['active' => 'Active', 'completed' => 'Completed', 'inactive' => 'Inactive', 'all' => 'All'] as $k => $l): ?><option value="<?= $k ?>" <?= $fStatus === $k ? 'selected' : '' ?>><?= $l ?></option><?php endforeach; ?></select><span class="ci-muted"><?= count($courses) ?> courses</span></div>
-<div class="ci-actions"><?php if (!$open): ?><a class="ci-btn" href="?new=1"><i class="fas fa-plus"></i> Add Course</a><?php endif; ?></div></div>
 
 <?php if ($open): ?>
 <div class="ci-card"><div class="ci-card-h"><h3><?= $ec ? 'Edit course' : 'Add a course' ?></h3><?php if ($courses): ?><a href="/admin/ci-courses.php">Cancel</a><?php endif; ?></div><div class="ci-card-b">
@@ -77,6 +75,7 @@ $open = $ec || isset($_GET["new"]) || (!$courses && $fStatus === "active");
 </form></div></div>
 <?php endif; ?>
 
+<div class="ci-head ci-head-show"><div class="ci-show"><label for="ci-cst">Status</label><select id="ci-cst" onchange="location.href='?status='+this.value"><?php foreach (['active' => 'Active', 'completed' => 'Completed', 'inactive' => 'Inactive', 'all' => 'All'] as $k => $l): ?><option value="<?= $k ?>" <?= $fStatus === $k ? 'selected' : '' ?>><?= $l ?></option><?php endforeach; ?></select><span class="ci-muted"><?= count($courses) ?> courses</span></div></div>
 <div class="ci-card"><div class="ci-card-b ci-p0 ci-table-wrap"><table class="ci-table">
 <thead><tr><th>Course</th><th>Class</th><th>Duration</th><th class="ci-num">Fee</th><th class="ci-num">Batches</th><th class="ci-num">Students</th><th class="ci-num">Due</th><th>Status</th><th>Action</th></tr></thead><tbody>
 <?php if (!$courses): ?><tr><td colspan="9" class="ci-empty">No courses yet. Add your first course above.</td></tr><?php endif; ?>

@@ -71,6 +71,8 @@ function ci_tables(PDO $pdo): void
     // when a student left / a course ended (shown in course & batch reports)
     if (!$pdo->query("SHOW COLUMNS FROM ci_students LIKE 'left_on'")->fetch()) $pdo->exec("ALTER TABLE ci_students ADD COLUMN left_on DATE NULL AFTER admission_date");
     if (!$pdo->query("SHOW COLUMNS FROM ci_enrollments LIKE 'ended_on'")->fetch()) $pdo->exec("ALTER TABLE ci_enrollments ADD COLUMN ended_on DATE NULL AFTER enrolled_on");
+    // split payments (part Cash + part UPI …): one receipt, its parts as JSON [{"m":"Cash","a":3000},…]
+    if (!$pdo->query("SHOW COLUMNS FROM ci_payments LIKE 'parts'")->fetch()) $pdo->exec("ALTER TABLE ci_payments ADD COLUMN parts TEXT NULL AFTER method");
     if (!$pdo->query("SHOW COLUMNS FROM ci_enrollments LIKE 'fee_type'")->fetch()) $pdo->exec("ALTER TABLE ci_enrollments ADD COLUMN fee_type VARCHAR(12) NOT NULL DEFAULT 'full' AFTER discount");
     // a fresh install gets the current academic session and a starter list of classes (both editable in Setup)
     if (!(int)$pdo->query("SELECT COUNT(*) FROM ci_sessions")->fetchColumn()) {
@@ -193,8 +195,64 @@ function ci_enrollments(PDO $pdo, int $sid): array
 }
 
 /** Records a payment (never more than the enrollment's due). Returns [payment id, receipt no] or an error text. */
-function ci_add_payment(PDO $pdo, int $enrollmentId, float $amount, string $method, ?string $date, string $note, int $userId)
+/**
+ * Payment rows posted from a form: $methods[] and $amounts[] → [[method, amount], …] (empty / zero rows dropped).
+ * A method that appears twice is added up.
+ */
+function ci_parts_from_post(array $methods, array $amounts): array
 {
+    $out = [];
+    foreach ($amounts as $i => $a) {
+        $a = ci_amount($a);
+        if ($a <= 0) continue;
+        $m = (string)($methods[$i] ?? 'Cash');
+        if (!isset(CI_METHODS[$m])) $m = 'Cash';
+        $out[$m] = round(($out[$m] ?? 0) + $a, 2);
+    }
+    return array_map(fn($m, $a) => [$m, $a], array_keys($out), array_values($out));
+}
+
+/** Payment rows (mode + amount, "+ Add" for a split payment, like the shop's billing screen). JS: assets/js/ci-ui.js */
+function ci_pays_html(string $nameM, string $nameA, array $parts = [], string $label = 'Paying now'): string
+{
+    if (!$parts) $parts = [['Cash', '']];
+    $h = '<div class="ci-pays" data-pays><div class="ci-pays-h"><span class="ci-pays-l">' . ci_e($label) . '</span><button type="button" class="ci-pays-add" title="Split the payment over another mode">+ Add</button></div>';
+    foreach ($parts as [$m, $a]) {
+        $h .= '<div class="ci-pay-row"><select name="' . ci_e($nameM) . '" aria-label="Payment mode">';
+        foreach (CI_METHODS as $k => $l) $h .= '<option value="' . $k . '"' . ($m === $k ? ' selected' : '') . '>' . $l . '</option>';
+        $h .= '</select><span class="ci-pay-amt"><i>₹</i><input type="number" name="' . ci_e($nameA) . '" class="ci-pay-a" min="0" step="0.01" placeholder="Amount" value="' . ci_e($a === '' || $a === null ? '' : rtrim(rtrim(number_format((float)$a, 2, '.', ''), '0'), '.')) . '"></span>'
+            . '<button type="button" class="ci-ico ci-ico-danger ci-pay-del" title="Remove this payment row" aria-label="Remove this payment row">' . ci_svg('trash') . '</button></div>';
+    }
+    return $h . '<div class="ci-pays-total"></div></div>';
+}
+
+/** "Cash" or, for a split payment, "Cash ₹3,000 + UPI ₹2,000". */
+function ci_pay_mode(array $p, bool $money = true): string
+{
+    $parts = json_decode((string)($p['parts'] ?? ''), true);
+    if (is_array($parts) && count($parts) > 1) return implode(' + ', array_map(fn($x) => (CI_METHODS[$x['m']] ?? $x['m']) . ($money ? ' ' . ci_money0($x['a']) : ''), $parts));
+    return CI_METHODS[$p['method'] ?? ''] ?? (string)($p['method'] ?? '');
+}
+
+/** Amount per payment method of one payment row (split payments counted per part). */
+function ci_pay_split(array $p): array
+{
+    $parts = json_decode((string)($p['parts'] ?? ''), true);
+    if (is_array($parts) && $parts) { $o = []; foreach ($parts as $x) $o[$x['m']] = ($o[$x['m']] ?? 0) + (float)$x['a']; return $o; }
+    return [(string)$p['method'] => (float)$p['amount']];
+}
+
+/** Records one payment; $method may be an array of [method, amount] parts (split payment) — then $amount is their total. */
+function ci_add_payment(PDO $pdo, int $enrollmentId, float $amount, $method, ?string $date, string $note, int $userId)
+{
+    $parts = null;
+    if (is_array($method)) {
+        $parts = $method;
+        if (!$parts) return 'Enter the amount received.';
+        $amount = round(array_sum(array_column($parts, 1)), 2);
+        $method = count($parts) > 1 ? 'Split' : $parts[0][0];
+        $parts = count($parts) > 1 ? json_encode(array_map(fn($x) => ['m' => $x[0], 'a' => $x[1]], $parts)) : null;
+    }
     $st = $pdo->prepare("SELECT e.*, " . CI_DUE_SQL . " AS due FROM ci_enrollments e WHERE e.id = ?");
     $st->execute([$enrollmentId]);
     $e = $st->fetch(PDO::FETCH_ASSOC);
@@ -203,12 +261,12 @@ function ci_add_payment(PDO $pdo, int $enrollmentId, float $amount, string $meth
     if ($e['status'] === 'dropped') return 'This enrollment is dropped; no fee can be taken for it.';
     if ($amount > (float)$e['due'] + 0.004) return 'Amount is more than the due (' . ci_money($e['due']) . ').';
     if ($date && $date > date('Y-m-d')) return 'The payment date cannot be in the future.';
-    if (!isset(CI_METHODS[$method])) $method = 'Cash';
+    if ($method !== 'Split' && !isset(CI_METHODS[$method])) $method = 'Cash';
     for ($try = 0; $try < 3; $try++) {
         $no = ci_next_no($pdo, 'ci_payments', 'receipt_no', CI_RECEIPT_PREFIX, 6);
         try {
-            $pdo->prepare("INSERT INTO ci_payments (student_id, enrollment_id, amount, method, receipt_no, paid_on, note, created_by) VALUES (?,?,?,?,?,?,?,?)")
-                ->execute([(int)$e['student_id'], $enrollmentId, $amount, $method, $no, $date ?: date('Y-m-d'), mb_substr($note, 0, 250), $userId]);
+            $pdo->prepare("INSERT INTO ci_payments (student_id, enrollment_id, amount, method, parts, receipt_no, paid_on, note, created_by) VALUES (?,?,?,?,?,?,?,?,?)")
+                ->execute([(int)$e['student_id'], $enrollmentId, $amount, $method, $parts, $no, $date ?: date('Y-m-d'), mb_substr($note, 0, 250), $userId]);
             $pid = (int)$pdo->lastInsertId();
             ci_sync_due($pdo, $enrollmentId);
             return [$pid, $no];

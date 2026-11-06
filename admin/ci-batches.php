@@ -91,11 +91,9 @@ $curSession = ci_current_session($pdo);
 <?php admin_shell_head(); ci_head(); ci_report_assets(); ?>
 </head>
 <body>
-<?php admin_shell_open('Batches', 'Groups of students per course and session, with timing and seats'); ?>
+<?php admin_shell_open('Batches', 'Groups of students per course and session, with timing and seats', $open || !ci_perm($me, 'batches') ? '' : '<a class="ci-btn" href="?new=1"><i class="fas fa-plus"></i> New Batch</a>'); ?>
 <div class="ci">
 <?= admin_flash() ?>
-<div class="ci-head"><div class="ci-show"><label for="ci-per">Show</label><select id="ci-per" onchange="location.href='?<?= ci_e($qs(['per' => '__P__', 'page' => 1])) ?>'.replace('__P__', this.value)"><?php foreach (['10' => '10', '20' => '20', '50' => '50', 'all' => 'All'] as $k => $l): ?><option value="<?= $k ?>" <?= $per === $k ? 'selected' : '' ?>><?= $l ?></option><?php endforeach; ?></select><span class="ci-muted">of <?= $total ?></span></div>
-<div class="ci-actions"><?php if (!$open): ?><a class="ci-btn" href="?new=1"><i class="fas fa-plus"></i> New Batch</a><?php endif; ?></div></div>
 
 <?php if (!$L['courses']): ?><div class="ci-alert ci-alert-err">Add a course first: <a href="/admin/ci-courses.php?new=1">Courses → Add Course</a>.</div><?php endif; ?>
 
@@ -118,20 +116,21 @@ $curSession = ci_current_session($pdo);
 </form></div></div>
 <?php endif; ?>
 
+
 <div class="ci-card"><div class="ci-card-b"><form method="get" class="ci-filters">
   <div class="ci-f"><label>Course</label><select name="course"><option value="0">All courses</option><?php foreach ($L['courses'] as $cid => $c): ?><option value="<?= $cid ?>" <?= $fCourse === $cid ? 'selected' : '' ?>><?= ci_e($c['name']) ?></option><?php endforeach; ?></select></div>
   <div class="ci-f"><label>Session</label><select name="session"><option value="0">All sessions</option><?php foreach ($L['sessions'] as $sid => $sn): ?><option value="<?= $sid ?>" <?= $fSession === $sid ? 'selected' : '' ?>><?= ci_e($sn) ?></option><?php endforeach; ?></select></div>
   <div class="ci-f"><label>Status</label><select name="status"><?php foreach (['active' => 'Active', 'completed' => 'Completed', 'inactive' => 'Inactive', 'all' => 'All'] as $k => $l): ?><option value="<?= $k ?>" <?= $fStatus === $k ? 'selected' : '' ?>><?= $l ?></option><?php endforeach; ?></select></div>
   <div class="ci-fbtn"><button class="ci-btn" type="submit"><i class="fas fa-filter"></i> Filter</button><a class="ci-btn ci-ghost" href="/admin/ci-batches.php?session=0&amp;status=all">Reset</a></div>
 </form></div></div>
-
+<div class="ci-head ci-head-show"><div class="ci-show"><label for="ci-per">Show</label><select id="ci-per" onchange="location.href='?<?= ci_e($qs(['per' => '__P__', 'page' => 1])) ?>'.replace('__P__', this.value)"><?php foreach (['10' => '10', '20' => '20', '50' => '50', 'all' => 'All'] as $k => $l): ?><option value="<?= $k ?>" <?= $per === $k ? 'selected' : '' ?>><?= $l ?></option><?php endforeach; ?></select><span class="ci-muted">of <?= $total ?></span></div></div>
 <div class="ci-card"><div class="ci-card-b ci-p0 ci-table-wrap"><table class="ci-table">
 <thead><tr><th>Batch</th><th>Course</th><th>Timing</th><th>Session</th><th class="ci-num">Course fee</th><th class="ci-num">Students</th><th class="ci-num">Due</th><th>Status</th><th>Action</th></tr></thead><tbody>
 <?php if (!$batches): ?><tr><td colspan="9" class="ci-empty">No batches for these filters.</td></tr><?php endif; ?>
 <?php foreach ($batches as $b): $fee = $b['course_fee']; ?>
 <tr><td><b><?= ci_e($b['name']) ?></b><?php if ($b['teacher']): ?><small class="ci-muted" style="display:block"><?= ci_e($b['teacher']) ?></small><?php endif; ?></td>
 <td><?= ci_e($b['course_name'] ?? '—') ?></td>
-<td class="ci-muted"><?= ci_e(trim(($b['timing'] ?? '') . ' ' . ($b['days'] ? '· ' . $b['days'] : '')) ?: '—') ?></td><td class="ci-muted"><?= ci_e($b['session_name'] ?? '—') ?></td>
+<td class="ci-muted"><?= ci_e(trim(($b['timing'] ?? '') . ' ' . ($b['days'] ? '· ' . $b['days'] : '')) ?: '—') ?></td><td class="ci-muted ci-nw"><?= ci_e($b['session_name'] ?? '—') ?></td>
 <td class="ci-num"><?= ci_money0($fee) ?></td>
 <td class="ci-num"><a href="/admin/students.php?batch=<?= (int)$b['id'] ?>"><?= (int)$b['students'] ?></a><?= $b['capacity'] ? ' <span class="ci-muted">/ ' . (int)$b['capacity'] . '</span>' : '' ?></td>
 <td class="ci-num"><?= (float)$b['due'] > 0 ? '<span style="color:#b91c1c">' . ci_money0($b['due']) . '</span>' : '—' ?></td>

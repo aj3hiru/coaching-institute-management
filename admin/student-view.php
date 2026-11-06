@@ -27,12 +27,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($a === 'pay') {
         if (!ci_perm($me, 'fees')) { http_response_code(403); exit('Access Denied'); }
         $e = $ownEnr($eid);
-        $res = $e ? ci_add_payment($pdo, $eid, ci_amount($_POST['amount'] ?? 0), (string)($_POST['method'] ?? 'Cash'), ci_clean_date($_POST['paid_on'] ?? ''), trim((string)($_POST['note'] ?? '')), (int)$me['id'])
+        $parts = ci_parts_from_post((array)($_POST['pm'] ?? []), (array)($_POST['pa'] ?? [])); // one or more modes (split payment)
+        $res = $e ? ($parts ? ci_add_payment($pdo, $eid, 0, $parts, ci_clean_date($_POST['paid_on'] ?? ''), trim((string)($_POST['note'] ?? '')), (int)$me['id']) : 'Enter the amount received.')
             : "Choose one of this student's courses.";
         if (is_string($res)) { admin_flash($res, 'error'); header('Location: ' . $back('fee')); exit; }
         // the next due date is typed by hand when some fee is still left (empty = none)
         $pdo->prepare("UPDATE ci_enrollments SET due_date = ? WHERE id = ?")->execute([ci_clean_date($_POST['next_due'] ?? ''), $eid]);
-        admin_log('ci_payment', 'Fee ' . ci_money(ci_amount($_POST['amount'] ?? 0)) . " from {$s['reg_no']} {$s['name']} ({$res[1]})");
+        admin_log('ci_payment', 'Fee ' . ci_money(array_sum(array_column($parts, 1))) . " from {$s['reg_no']} {$s['name']} ({$res[1]})");
         admin_flash('Fee saved. Receipt ' . $res[1] . '.');
         header("Location: /admin/student-view.php?id=$id&receipt=" . $res[0] . '#payments');
         exit;
@@ -234,7 +235,7 @@ $tel = fn(?string $m) => $m ? '<a href="tel:' . ci_e($m) . '">' . ci_e($m) . '</
     <div class="ci-table-wrap"><table class="ci-table ci-plan">
       <thead><tr><th><?= $inst ? 'Installment' : '#' ?></th><th>Date</th><th>Receipt</th><th>Paid by</th><th class="ci-num">Amount</th><th class="ci-noprint"></th></tr></thead><tbody>
       <?php if (!$ep): ?><tr><td colspan="6" class="ci-empty">Nothing paid yet for this course.</td></tr><?php endif; ?>
-      <?php foreach ($ep as $p): ?><tr><td><b><?= $inst ? 'Installment ' . $p['no'] : $p['no'] ?></b></td><td><?= ci_date($p['paid_on']) ?></td><td><?= ci_e($p['receipt_no']) ?></td><td><?= ci_e(CI_METHODS[$p['method']] ?? $p['method']) ?></td><td class="ci-num"><b class="ci-g"><?= ci_money($p['amount']) ?></b></td><td class="ci-noprint"><a class="ci-ico" href="/admin/ci-receipt.php?id=<?= (int)$p['id'] ?>" target="_blank" title="Print receipt" aria-label="Print receipt"><?= ci_svg('print') ?></a></td></tr><?php endforeach; ?>
+      <?php foreach ($ep as $p): ?><tr><td><b><?= $inst ? 'Installment ' . $p['no'] : $p['no'] ?></b></td><td><?= ci_date($p['paid_on']) ?></td><td><?= ci_e($p['receipt_no']) ?></td><td><?= ci_e(ci_pay_mode($p)) ?></td><td class="ci-num"><b class="ci-g"><?= ci_money($p['amount']) ?></b></td><td class="ci-noprint"><a class="ci-ico" href="/admin/ci-receipt.php?id=<?= (int)$p['id'] ?>" target="_blank" title="Print receipt" aria-label="Print receipt"><?= ci_svg('print') ?></a></td></tr><?php endforeach; ?>
       </tbody></table></div>
   </div>
 </div>
@@ -248,7 +249,7 @@ $tel = fn(?string $m) => $m ? '<a href="tel:' . ci_e($m) . '">' . ci_e($m) . '</
 <?php if (!$pays): ?><tr><td colspan="8" class="ci-empty">No payments yet.</td></tr><?php endif; ?>
 <?php foreach ($pays as $p): ?>
 <tr<?= (int)$p['id'] === $newReceipt ? ' class="ci-hl"' : '' ?>><td><?= ci_date($p['paid_on']) ?></td><td><b><?= ci_e($p['receipt_no']) ?></b></td><td><?= ci_e($p['course_name'] ?? '—') ?></td>
-<td><?= ci_e(CI_METHODS[$p['method']] ?? $p['method']) ?></td><td class="ci-muted"><?= ci_e($p['note'] ?? '') ?><?= $p['username'] ? '<small style="display:block">by ' . ci_e($p['username']) . '</small>' : '' ?></td>
+<td><?= ci_e(ci_pay_mode($p)) ?></td><td class="ci-muted"><?= ci_e($p['note'] ?? '') ?><?= $p['username'] ? '<small style="display:block">by ' . ci_e($p['username']) . '</small>' : '' ?></td>
 <td class="ci-num"><b class="ci-g"><?= ci_money($p['amount']) ?></b></td><td class="ci-num"><?= ci_money($p['balance']) ?></td>
 <td class="ci-noprint"><div class="ci-icos"><a class="ci-ico" href="/admin/ci-receipt.php?id=<?= (int)$p['id'] ?>" target="_blank" title="Print receipt" aria-label="Print receipt"><?= ci_svg('print') ?></a>
 <?php if ($me['role'] === 'admin'): ?><?= ci_post_ico('trash', 'Delete payment', ['action' => 'pay_delete', 'id' => $id, 'payment_id' => $p['id']], 'Delete payment ' . $p['receipt_no'] . '? The due goes up again.') ?><?php endif; ?>
@@ -267,8 +268,7 @@ $tel = fn(?string $m) => $m ? '<a href="tel:' . ci_e($m) . '">' . ci_e($m) . '</
     <?php endforeach; ?></select></div>
     <div class="ci-chips" id="ci-chips"></div>
     <div class="ci-grid2" style="gap:12px;margin-top:12px">
-      <div class="ci-f"><label>Amount (₹) <span class="ci-req">*</span></label><input type="number" name="amount" id="ci-pay-amt" min="1" step="0.01" required></div>
-      <div class="ci-f"><label>Paid by</label><select name="method"><?php foreach (CI_METHODS as $k => $l): ?><option value="<?= $k ?>"><?= $l ?></option><?php endforeach; ?></select></div>
+      <div class="ci-f ci-nofloat" style="grid-column:1/-1"><?= ci_pays_html('pm[]', 'pa[]', [], 'Amount received') ?></div>
       <div class="ci-f"><label>Date</label><input type="date" name="paid_on" value="<?= date('Y-m-d') ?>" max="<?= date('Y-m-d') ?>"></div>
       <div class="ci-f" id="ci-nd"><label>Next due date</label><input type="date" name="next_due"><span class="ci-hint">if some fee is still left</span></div>
     </div>
@@ -300,20 +300,22 @@ $tel = fn(?string $m) => $m ? '<a href="tel:' . ci_e($m) . '">' . ci_e($m) . '</
   // collect fee box
   var m = document.getElementById('ci-collect');
   if (m) {
-    var f = document.getElementById('ci-pay-for'), amt = document.getElementById('ci-pay-amt'), chips = document.getElementById('ci-chips'), nd = document.getElementById('ci-nd'), info = document.getElementById('ci-pay-info');
+    var f = document.getElementById('ci-pay-for'), amtFirst = function () { return m.querySelector('.ci-pay-a'); }, chips = document.getElementById('ci-chips'), nd = document.getElementById('ci-nd'), info = document.getElementById('ci-pay-info');
     var note = m.querySelector('[name=note]');
     var refresh = function () {
       var o = f.options[f.selectedIndex], due = +o.dataset.due, inst = o.dataset.inst === '1', n = +o.dataset.n;
       chips.innerHTML = '<button type="button" class="ci-chip" data-v="' + due + '">Full due · ' + inr(due) + '</button>';
-      amt.max = due;
-      amt.value = inst ? '' : due;          // installment: type what the student gives now
+      // one payment row again, filled with the due (installment: empty — type what the student gives now)
+      m.querySelectorAll('.ci-pay-row').forEach(function (r, k) { if (k) r.remove(); });
+      amtFirst().value = inst ? '' : due;
+      m.querySelector('[data-pays]').dispatchEvent(new Event('input', { bubbles: true }));
       note.value = inst ? 'Installment ' + n : '';
       nd.style.display = '';
       info.textContent = inst ? 'Installment ' + n + ': enter any amount up to the due (' + inr(due) + '). Pay again later for the rest.' : 'Any amount up to the due can be paid.';
     };
-    chips.addEventListener('click', function (e) { var b = e.target.closest('.ci-chip'); if (b) amt.value = b.dataset.v; });
+    chips.addEventListener('click', function (e) { var b = e.target.closest('.ci-chip'); if (b) { m.querySelectorAll('.ci-pay-row').forEach(function (r, k) { if (k) r.remove(); }); amtFirst().value = b.dataset.v; m.querySelector('[data-pays]').dispatchEvent(new Event('input', { bubbles: true })); } });
     f.addEventListener('change', refresh);
-    var open = function (eid) { if (eid) { f.value = eid; } refresh(); m.hidden = false; document.body.style.overflow = 'hidden'; setTimeout(function () { amt.focus(); amt.select(); }, 30); };
+    var open = function (eid) { if (eid) { f.value = eid; } refresh(); m.hidden = false; document.body.style.overflow = 'hidden'; setTimeout(function () { var a = amtFirst(); a.focus(); a.select(); }, 30); };
     var close = function () { m.hidden = true; document.body.style.overflow = ''; };
     document.querySelectorAll('[data-collect]').forEach(function (b) { b.addEventListener('click', function () { open(b.dataset.collect); }); });
     m.addEventListener('click', function (e) { if (e.target === m || e.target.closest('[data-close]')) close(); });

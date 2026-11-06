@@ -118,7 +118,7 @@ table.lines{width:100%;border-collapse:collapse;font-size:13px;border:1px solid 
       <tr><td>Course</td><td><?= ci_e($r['course_name'] ?? '—') ?></td></tr>
       <?php if ($r['batch_name']): ?><tr><td>Batch</td><td><?= ci_e(implode(' · ', array_filter([$r['batch_name'], $r['timing']]))) ?></td></tr><?php endif; ?>
       <tr><td>Fee plan</td><td><?= $isInst ? 'Installment ' . (int)$instNo : 'Final fee (one time)' ?></td></tr>
-      <tr><td>Payment mode</td><td><?= ci_e(CI_METHODS[$r['method']] ?? $r['method']) ?></td></tr>
+      <tr><td>Payment mode</td><td><?= ci_e(ci_pay_mode($r)) ?></td></tr>
     </table></div>
   </div>
   <table class="lines">
@@ -157,7 +157,7 @@ table.lines{width:100%;border-collapse:collapse;font-size:13px;border:1px solid 
     <tr><td>Fee payable</td><td class="r"><?= ci_money($net) ?></td></tr>
     <tr><td>Paid earlier</td><td class="r"><?= ci_money($paidBefore) ?></td></tr>
     <tr class="big"><td>PAID NOW</td><td class="r"><?= ci_money($r['amount']) ?></td></tr>
-    <tr><td>Mode</td><td class="r"><?= ci_e(CI_METHODS[$r['method']] ?? $r['method']) ?></td></tr>
+    <tr><td>Mode</td><td class="r"><?= ci_e(ci_pay_mode($r)) ?></td></tr>
     <tr><td><b>Balance due</b></td><td class="r"><b><?= ci_money($dueAfter) ?></b></td></tr>
   </table>
   <hr><p><?= ci_e(ci_words((float)$r['amount'])) ?></p><hr>
