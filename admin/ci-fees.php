@@ -79,6 +79,7 @@ $qs = function (array $over = []) {
 <?php admin_shell_open('Fees &amp; Dues', 'Fee received and fee still to come'); ?>
 <div class="ci">
 <?= admin_flash() ?>
+<?php if ((int)($_GET['paid'] ?? 0)): ?><div class="ci-alert ci-alert-ok"><i class="fas fa-receipt"></i> <a href="/admin/ci-receipt.php?id=<?= (int)$_GET['paid'] ?>" target="_blank"><b>Print receipt</b></a></div><?php endif; ?>
 <div class="ci-tabs"><a href="/admin/ci-fees.php" class="<?= $tab === 'payments' ? 'on' : '' ?>">Fee Payments</a><a href="?tab=dues" class="<?= $tab === 'dues' ? 'on' : '' ?>">Dues</a></div>
 
 <div class="ci-card"><div class="ci-card-b"><form method="get" class="ci-filters">
@@ -128,12 +129,13 @@ $qs = function (array $over = []) {
 <td class="ci-num"><?= ci_money0((float)$r['fee'] - (float)$r['discount']) ?></td><td class="ci-num"><?= ci_money0($r['paid']) ?></td>
 <td class="ci-num"><b style="color:#b91c1c"><?= ci_money0($r['due']) ?></b></td>
 <td><?= $r['due_date'] ? ($lateRow ? '<span class="ci-badge ci-b-amber">' . ci_date($r['due_date']) . '</span>' : ci_date($r['due_date'])) : '<span class="ci-muted">—</span>' ?></td>
-<td><?= ci_ico('rupee', '/admin/student-view.php?id=' . (int)$r['sid'] . '&collect=1#fee', 'Collect fee') ?></td></tr>
+<td><?= ci_ico('rupee', null, 'Collect fee', 'button', ' data-collect-sid="' . (int)$r['sid'] . '" data-eid="' . (int)$r['id'] . '"') ?></td></tr>
 <?php endforeach; ?>
 <?php if ($rows): ?><tr class="ci-total-row"><td colspan="4">Total due</td><td class="ci-num"><?= ci_money($sum) ?></td><td colspan="2"></td></tr><?php endif; ?>
 </tbody></table></div></div>
 <?php endif; ?>
 </div>
+<?php require __DIR__ . '/components/ci-modals.php'; ?>
 <?php admin_shell_close(); ?>
 </body>
 </html>

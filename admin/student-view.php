@@ -12,6 +12,16 @@ $q->execute([$id]);
 $s = $q->fetch(PDO::FETCH_ASSOC);
 if (!$s) { admin_flash('Student not found.', 'error'); header('Location: /admin/students.php'); exit; }
 $back = fn(string $tab = '') => "/admin/student-view.php?id=$id" . ($tab ? "#$tab" : '');
+// popups on list pages post here with back = that page; go back there after saving
+$listBack = (string)($_POST['back'] ?? '');
+$listBack = preg_match('#^/admin/[\w\-./]*\.php(\?[^\s<>"]*)?$#', $listBack) ? $listBack : '';
+$toList = function (string $msg, ?int $paid = null) use ($listBack) {
+    $u = preg_replace('/([?&])(paid|ok)=[^&]*/', '$1', $listBack);
+    $u = rtrim(str_replace(['?&', '&&'], ['?', '&'], $u), '?&');
+    admin_flash($msg);
+    header('Location: ' . $u . (str_contains($u, '?') ? '&' : '?') . ($paid ? 'paid=' . $paid : 'ok=1'));
+    exit;
+};
 
 /** The enrollment, only when it belongs to this student. */
 $ownEnr = function (int $eid) use ($pdo, $id): ?array {
@@ -30,10 +40,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $parts = ci_parts_from_post((array)($_POST['pm'] ?? []), (array)($_POST['pa'] ?? [])); // one or more modes (split payment)
         $res = $e ? ($parts ? ci_add_payment($pdo, $eid, 0, $parts, ci_clean_date($_POST['paid_on'] ?? ''), trim((string)($_POST['note'] ?? '')), (int)$me['id']) : 'Enter the amount received.')
             : "Choose one of this student's courses.";
-        if (is_string($res)) { admin_flash($res, 'error'); header('Location: ' . $back('fee')); exit; }
+        if (is_string($res)) { admin_flash($res, 'error'); header('Location: ' . ($listBack ?: $back('fee'))); exit; }
         // the next due date is typed by hand when some fee is still left (empty = none)
         $pdo->prepare("UPDATE ci_enrollments SET due_date = ? WHERE id = ?")->execute([ci_clean_date($_POST['next_due'] ?? ''), $eid]);
         admin_log('ci_payment', 'Fee ' . ci_money(array_sum(array_column($parts, 1))) . " from {$s['reg_no']} {$s['name']} ({$res[1]})");
+        if ($listBack) $toList('Fee saved for ' . $s['name'] . ' (' . $res[1] . ').', $res[0]);
         header("Location: /admin/student-view.php?id=$id&receipt=" . $res[0] . '#payments');
         exit;
     }
@@ -59,9 +70,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $pdo->beginTransaction();
         $res = ci_enroll($pdo, $id, (int)($_POST['course_id'] ?? 0), (int)($_POST['batch_id'] ?? 0) ?: null, (string)($_POST['fee_type'] ?? 'full'),
             $fin === '' ? null : ci_amount($fin), ci_clean_date($_POST['due'] ?? ''), $parts, date('Y-m-d'), (int)$me['id']);
-        if (is_string($res)) { $pdo->rollBack(); admin_flash($res, 'error'); header('Location: ' . $back()); exit; }
+        if (is_string($res)) { $pdo->rollBack(); admin_flash($res, 'error'); header('Location: ' . ($listBack ?: $back())); exit; }
         $pdo->commit();
         admin_log('ci_enroll', "Added {$s['reg_no']} to course #" . (int)$_POST['course_id']);
+        if ($listBack) $toList($s['name'] . ' added to the course' . ($res[1] ? ' and the payment saved.' : '.'), $res[1]);
         if (!$res[1]) admin_flash('Course added.'); // with a payment the page shows "Payment saved — Print receipt"
         header("Location: /admin/student-view.php?id=$id" . ($res[1] ? '&receipt=' . $res[1] : ''));
         exit;

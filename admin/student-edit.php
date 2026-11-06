@@ -211,8 +211,8 @@ $rowHtml = function (array $r, int $idx) use ($L): string {
     $h .= '<div class="ci-ec-h"><div class="ci-ec-t"><span class="ci-ec-ico">' . ci_svg('book-plus') . '</span><div><b class="ci-ec-name">' . ci_e($cname ?: 'New course') . '</b><small class="ci-ec-sub">'
         . ci_e(implode(' · ', array_filter([$bname ? 'Batch ' . $bname : ($id ? 'No batch' : ''), $id ? ($type === 'installment' ? 'Installment' : 'Final fee') : '', $id && ($r['status'] ?? 'active') !== 'active' ? ucfirst($r['status']) : '']))) . '</small></div></div><div class="ci-icos">';
     if ($id) $h .= '<button type="button" class="ci-ico ci-ec-edit" title="' . ($locked ? 'Change this course' : 'Lock') . '" aria-label="Change this course">' . ci_svg('edit') . '</button>';
-    if (!$id) $h .= '<button type="button" class="ci-ico ci-ico-danger ci-enr-del" title="Remove this course" aria-label="Remove this course">' . ci_svg('trash') . '</button>';
-    elseif ($paid <= 0) $h .= '<label class="ci-ico ci-ico-danger ci-enr-rm" title="Remove this course (no fee paid yet)"><input type="checkbox" name="e_remove[' . $idx . ']" value="1"' . (!empty($r['remove']) ? ' checked' : '') . '>' . ci_svg('trash') . '</label>';
+    if (!$id) $h .= '<button type="button" class="ci-ico ci-ico-danger ci-enr-del" aria-label="Remove this course">' . ci_svg('trash') . '</button>';
+    elseif ($paid <= 0) $h .= '<label class="ci-ico ci-ico-danger ci-enr-rm" aria-label="Remove this course (no fee paid yet)"><input type="checkbox" name="e_remove[' . $idx . ']" value="1"' . (!empty($r['remove']) ? ' checked' : '') . '>' . ci_svg('trash') . '</label>';
     $h .= '</div></div>';
     // body: the fields
     $h .= '<div class="ci-ec-b">';

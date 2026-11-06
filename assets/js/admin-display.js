@@ -142,7 +142,8 @@
 /* Hover labels for icon buttons: a small label in the theme colour just under the mouse (replaces the browser's own tooltip). */
 (function () {
   var tip = null, cur = null;
-  var SEL = '.ci-ico, [data-tip], .btn-action[title], .pn-icon[title], .dsp-btn';
+  // only the icon buttons of table Action columns (not the delete bin, not other buttons)
+  var SEL = 'td .ci-ico:not([data-i="trash"]), td .btn-action[title]:not(.btn-delete)';
   function show(el, x, y) {
     var t = el.getAttribute('data-tip') || el.getAttribute('title') || el.getAttribute('aria-label');
     if (!t) return;

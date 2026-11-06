@@ -13,8 +13,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // their running courses end as "left" — the fee still due on them stays visible
         $pdo->prepare("UPDATE ci_enrollments SET status = 'left', ended_on = CURDATE() WHERE student_id = ? AND status = 'active'")->execute([$sid]);
         admin_log('ci_student', "Marked student #$sid as left");
-        admin_flash('Student marked as Left. Any fee still due stays on their record and in the dues list.');
-    }
+        $nm = $pdo->prepare("SELECT name FROM ci_students WHERE id = ?"); $nm->execute([$sid]);
+        $msg = ($nm->fetchColumn() ?: 'The student') . ' is marked as Left. Any fee still due stays on the record.';
+        if (($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'fetch') { header('Content-Type: application/json'); exit(json_encode(['ok' => true, 'msg' => $msg])); }
+        admin_flash($msg);
+    } elseif (($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'fetch') { header('Content-Type: application/json'); exit(json_encode(['ok' => false, 'msg' => 'Not allowed.'])); }
     header('Location: /admin/students.php' . (($_POST['back'] ?? '') !== '' ? '?' . preg_replace('/[^\w=&%.\-+]/', '', (string)$_POST['back']) : ''));
     exit;
 }
@@ -123,6 +126,7 @@ $filtered = $f['q'] !== '' || $f['class'] || $f['course'] || $f['batch'] || $f['
     . (ci_perm($me, 'add_student') ? '<a class="ci-btn" href="/admin/student-edit.php"><i class="fas fa-user-plus"></i> Add Student</a>' : '') . '</div>'); ?>
 <div class="ci">
 <?= admin_flash() ?>
+<?php if ((int)($_GET['paid'] ?? 0)): ?><div class="ci-alert ci-alert-ok"><i class="fas fa-receipt"></i> <a href="/admin/ci-receipt.php?id=<?= (int)$_GET['paid'] ?>" target="_blank"><b>Print receipt</b></a></div><?php endif; ?>
 
 <div class="ci-card"><div class="ci-card-b"><form method="get" class="ci-filters" id="ci-filter">
   <div class="ci-f" style="grid-column:span 2"><label>Search</label><input name="q" value="<?= ci_e($f['q']) ?>" placeholder="Name, mobile, reg. no., father's name, email"></div>
@@ -149,10 +153,10 @@ $filtered = $f['q'] !== '' || $f['class'] || $f['course'] || $f['batch'] || $f['
 <td><?= ci_e($s['class_name'] ?? '—') ?></td>
 <td><?php $cs = array_filter(explode('||', (string)$s['courses'])); echo $cs ? implode('<br>', array_map('ci_e', $cs)) : '<span class="ci-muted">—</span>'; ?></td>
 <td class="ci-muted ci-nw"><?= ci_date($s['admission_date']) ?></td>
-<td class="ci-num"><div class="ci-due-cell"><?php if ((float)$s['due'] > 0.004): ?><b class="ci-r"><?= ci_money0($s['due']) ?></b><?= $s['overdue'] ? ' <span class="ci-badge ci-b-amber">Late</span>' : '' ?><?php if (ci_perm($me, 'fees')): ?><?= ci_ico('rupee', '/admin/student-view.php?id=' . $sid . '&collect=1#fee', 'Collect fee') ?><?php endif; ?><?php elseif ((float)$s['net'] > 0): ?><span class="ci-badge ci-b-green">Paid</span><?php else: ?><span class="ci-muted">—</span><?php endif; ?></div></td>
+<td class="ci-num"><div class="ci-due-cell"><?php if ((float)$s['due'] > 0.004): ?><b class="ci-r"><?= ci_money0($s['due']) ?></b><?= $s['overdue'] ? ' <span class="ci-badge ci-b-amber">Late</span>' : '' ?><?php if (ci_perm($me, 'fees')): ?><?= ci_ico('rupee', null, 'Collect fee', 'button', ' data-collect-sid="' . $sid . '"') ?><?php endif; ?><?php elseif ((float)$s['net'] > 0): ?><span class="ci-badge ci-b-green">Paid</span><?php else: ?><span class="ci-muted">—</span><?php endif; ?></div></td>
 <td><div class="ci-icos">
-<?php if (ci_perm($me, 'edit_student')): ?><?= ci_ico('edit', '/admin/student-edit.php?id=' . $sid, 'Edit student') ?><?= ci_ico('book-plus', '/admin/student-view.php?id=' . $sid . '&addcourse=1', 'Add to course / batch') ?>
-<?php if ($s['status'] !== 'left'): ?><?= ci_post_ico('logout', 'Mark as left', ['action' => 'left', 'id' => $sid, 'back' => $back], 'Mark ' . $s['name'] . ' as Left? Their running courses end as Left; any fee still due stays on the record.') ?><?php else: ?><span class="ci-badge ci-b-grey">Left</span><?php endif; ?>
+<?php if (ci_perm($me, 'edit_student')): ?><?= ci_ico('edit', '/admin/student-edit.php?id=' . $sid, 'Edit student') ?><?= ci_ico('book-plus', null, 'Add to course / batch', 'button', ' data-addc-sid="' . $sid . '"') ?>
+<?php if ($s['status'] !== 'left'): ?><span class="ci-left-slot"><?= str_replace('class="ci-ico-form"', 'class="ci-ico-form" data-ajax="left"', ci_post_ico('logout', 'Mark as left', ['action' => 'left', 'id' => $sid, 'back' => $back], 'Mark ' . $s['name'] . ' as Left? Their running courses end as Left; any fee still due stays on the record.')) ?></span><?php else: ?><span class="ci-badge ci-b-grey">Left</span><?php endif; ?>
 <?php else: ?><?= ci_ico('eye', '/admin/student-view.php?id=' . $sid, 'Open profile') ?><?php endif; ?>
 </div></td></tr>
 <?php endforeach; ?>
@@ -162,12 +166,27 @@ $filtered = $f['q'] !== '' || $f['class'] || $f['course'] || $f['batch'] || $f['
 </div></div><?php endif; ?>
 </div>
 </div>
+<?php require __DIR__ . '/components/ci-modals.php'; ?>
 <?php admin_shell_close(); ?>
 <script>
 (function () {
   var c = document.getElementById('ci-f-course'), b = document.getElementById('ci-f-batch');
   function sync() { var v = c.value; [].forEach.call(b.options, function (o) { if (!o.dataset.c) return; o.hidden = v !== '0' && o.dataset.c !== v; if (o.hidden && o.selected) b.value = '0'; }); }
   c.addEventListener('change', sync); sync();
+  // Mark as left — right here, without leaving the page
+  document.addEventListener('submit', function (e) {
+    var f = e.target.closest('form[data-ajax="left"]'); if (!f) return;
+    e.preventDefault(); e.stopPropagation();
+    if (f.onsubmit && f.onsubmit.call(f, e) === false) return; // the "Mark … as Left?" question
+    var btn = f.querySelector('button'); btn.disabled = true;
+    fetch(location.pathname, { method: 'POST', body: new FormData(f), credentials: 'same-origin', headers: { 'X-Requested-With': 'fetch' } })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d.ok) { btn.disabled = false; ciToast(d.msg || 'Could not mark as left.', false); return; }
+        var slot = f.closest('.ci-left-slot'); slot.outerHTML = '<span class="ci-badge ci-b-grey">Left</span>';
+        ciToast(d.msg);
+      }).catch(function () { btn.disabled = false; ciToast('Could not mark as left. Please try again.', false); });
+  }, true);
 })();
 </script>
 </body>

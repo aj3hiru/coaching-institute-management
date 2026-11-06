@@ -221,7 +221,7 @@ function ci_pays_html(string $nameM, string $nameA, array $parts = [], string $l
         $h .= '<div class="ci-pay-row"><select name="' . ci_e($nameM) . '" aria-label="Payment mode">';
         foreach (CI_METHODS as $k => $l) $h .= '<option value="' . $k . '"' . ($m === $k ? ' selected' : '') . '>' . $l . '</option>';
         $h .= '</select><span class="ci-pay-amt"><i>₹</i><input type="number" name="' . ci_e($nameA) . '" class="ci-pay-a" min="0" step="0.01" placeholder="Amount" value="' . ci_e($a === '' || $a === null ? '' : rtrim(rtrim(number_format((float)$a, 2, '.', ''), '0'), '.')) . '"></span>'
-            . '<button type="button" class="ci-ico ci-ico-danger ci-pay-del" title="Remove this payment row" aria-label="Remove this payment row">' . ci_svg('trash') . '</button></div>';
+            . '<button type="button" class="ci-ico ci-ico-danger ci-pay-del" aria-label="Remove this payment row">' . ci_svg('trash') . '</button></div>';
     }
     return $h . '<div class="ci-pays-total"></div></div>';
 }
@@ -617,7 +617,8 @@ function ci_svg(string $n): string
 function ci_ico(string $icon, ?string $href, string $label, string $kind = 'link', string $extra = ''): string
 {
     $cls = 'ci-ico' . ($icon === 'trash' || $icon === 'logout' ? ' ci-ico-danger' : '') . ($icon === 'check' || $icon === 'rupee' ? ' ci-ico-ok' : '');
-    $a = ' title="' . ci_e($label) . '" aria-label="' . ci_e($label) . '" class="' . $cls . '"' . $extra;
+    // delete needs no hover label (the bin says it); every other icon gets one
+    $a = ($icon === 'trash' ? '' : ' title="' . ci_e($label) . '"') . ' aria-label="' . ci_e($label) . '" data-i="' . $icon . '" class="' . $cls . '"' . $extra;
     if ($kind === 'submit') return '<button type="submit"' . $a . '>' . ci_svg($icon) . '</button>';
     if ($kind === 'button') return '<button type="button"' . $a . '>' . ci_svg($icon) . '</button>';
     return '<a href="' . ci_e((string)$href) . '"' . $a . '>' . ci_svg($icon) . '</a>';
