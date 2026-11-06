@@ -103,7 +103,6 @@ $filtered = $f['q'] !== '' || $f['class'] || $f['course'] || $f['batch'] || $f['
 
 <div class="ci-card"><div class="ci-card-b"><form method="get" class="ci-filters" id="ci-filter">
   <div class="ci-f" style="grid-column:span 2"><label>Search</label><input name="q" value="<?= ci_e($f['q']) ?>" placeholder="Name, mobile, reg. no., father's name, email"></div>
-  <div class="ci-f"><label>Class</label><select name="class"><option value="0">All classes</option><?php foreach ($L['classes'] as $id => $n): ?><option value="<?= $id ?>" <?= $f['class'] === $id ? 'selected' : '' ?>><?= ci_e($n) ?></option><?php endforeach; ?></select></div>
   <div class="ci-f"><label>Course</label><select name="course" id="ci-f-course"><option value="0">All courses</option><?php foreach ($L['courses'] as $id => $c): ?><option value="<?= $id ?>" <?= $f['course'] === $id ? 'selected' : '' ?>><?= ci_e($c['name']) ?></option><?php endforeach; ?></select></div>
   <div class="ci-f"><label>Batch</label><select name="batch" id="ci-f-batch"><option value="0">All batches</option><?php foreach ($L['batches'] as $id => $b): ?><option value="<?= $id ?>" data-c="<?= (int)$b['course_id'] ?>" <?= $f['batch'] === $id ? 'selected' : '' ?>><?= ci_e($b['name'] . ($b['timing'] ? ' · ' . $b['timing'] : '')) ?></option><?php endforeach; ?></select></div>
   <div class="ci-f"><label>Session</label><select name="session"><option value="0">All sessions</option><?php foreach ($L['sessions'] as $id => $n): ?><option value="<?= $id ?>" <?= $f['session'] === $id ? 'selected' : '' ?>><?= ci_e($n) ?></option><?php endforeach; ?></select></div>
@@ -117,12 +116,11 @@ $filtered = $f['q'] !== '' || $f['class'] || $f['course'] || $f['batch'] || $f['
 </form></div></div>
 
 <div class="ci-card"><div class="ci-card-b ci-p0 ci-table-wrap"><table class="ci-table">
-<thead><tr><th>Student</th><th>Mobile</th><th>Class</th><th>Courses / batches</th><th>Admission</th><th>Fee</th><th>Status</th></tr></thead><tbody>
-<?php if (!$students): ?><tr><td colspan="7" class="ci-empty"><?= $filtered ? 'No students match these filters.' : 'No students yet. <a href="/admin/student-edit.php">Add the first student</a>.' ?></td></tr><?php endif; ?>
+<thead><tr><th>Student</th><th>Mobile</th><th>Courses / batches</th><th>Admission</th><th>Fee</th><th>Status</th></tr></thead><tbody>
+<?php if (!$students): ?><tr><td colspan="6" class="ci-empty"><?= $filtered ? 'No students match these filters.' : 'No students yet. <a href="/admin/student-edit.php">Add the first student</a>.' ?></td></tr><?php endif; ?>
 <?php foreach ($students as $s): ?>
 <tr><td><div class="ci-person"><?= ci_avatar($s, 36) ?><div><a href="/admin/student-view.php?id=<?= (int)$s['id'] ?>"><?= ci_e($s['name']) ?></a><small><?= ci_e($s['reg_no']) ?><?= $s['father_name'] ? ' · ' . ci_e($s['father_name']) : '' ?></small></div></div></td>
 <td><a href="tel:<?= ci_e($s['mobile']) ?>"><?= ci_e($s['mobile']) ?></a><?= $s['alt_mobile'] ? '<small class="ci-muted" style="display:block">' . ci_e($s['alt_mobile']) . '</small>' : '' ?></td>
-<td><?= ci_e($s['class_name'] ?? '—') ?></td>
 <td><?php $cs = array_filter(explode('||', (string)$s['courses'])); echo $cs ? implode('<br>', array_map('ci_e', $cs)) : '<span class="ci-muted">—</span>'; ?></td>
 <td class="ci-muted"><?= ci_date($s['admission_date']) ?><?= $s['city'] ? '<small style="display:block">' . ci_e($s['city']) . '</small>' : '' ?></td>
 <td><?= ci_fee_badge((float)$s['due'], (float)$s['net']) ?><?= $s['overdue'] ? ' <span class="ci-badge ci-b-amber">Late</span>' : '' ?></td>

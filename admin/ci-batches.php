@@ -1,5 +1,5 @@
 <?php
-// Batches — a group of students of one course in one session, with timing, days, teacher, seats and (optionally) its own fee.
+// Batches — a group of students of one course in one session, with timing, days, teacher and seats. The fee belongs to the course (Courses page), not to the batch.
 require_once __DIR__ . '/components/guard.php';
 require_once INCLUDES_PATH . '/institute.php';
 $me = ci_page_start($pdo);
@@ -20,7 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $start = ci_clean_date($_POST['start_date'] ?? '');
             $end = ci_clean_date($_POST['end_date'] ?? '');
             if ($start && $end && $end < $start) throw new RuntimeException('The end date is before the start date.');
-            $fee = trim((string)($_POST['fee'] ?? '')) === '' ? null : ci_amount($_POST['fee']);
+            $fee = null; // batches have no fee of their own: the course fee is used
             $cap = trim((string)($_POST['capacity'] ?? '')) === '' ? null : max(0, (int)$_POST['capacity']);
             $status = in_array($_POST['status'] ?? '', ['active', 'completed', 'inactive'], true) ? $_POST['status'] : 'active';
             $vals = [$name, $course, $session, trim((string)($_POST['timing'] ?? '')) ?: null, trim((string)($_POST['days'] ?? '')) ?: null, $start, $end, $cap, $fee,
@@ -102,7 +102,6 @@ $curSession = ci_current_session($pdo);
   <div class="ci-f"><label>Seats</label><input type="number" name="capacity" min="0" placeholder="no limit" value="<?= ci_e($eb['capacity'] ?? '') ?>"></div>
   <div class="ci-f"><label>Starts</label><input type="date" name="start_date" value="<?= ci_e($eb['start_date'] ?? '') ?>"></div>
   <div class="ci-f"><label>Ends</label><input type="date" name="end_date" value="<?= ci_e($eb['end_date'] ?? '') ?>"></div>
-  <div class="ci-f"><label>Batch fee (₹)</label><input type="number" name="fee" min="0" step="0.01" placeholder="course fee" value="<?= ci_e(isset($eb['fee']) ? (float)$eb['fee'] : '') ?>"><span class="ci-hint">Empty = the course fee.</span></div>
 </div>
 <div style="margin-top:14px"><button class="ci-btn" type="submit"><i class="fas fa-check"></i> <?= $eb ? 'Save batch' : 'Create batch' ?></button></div>
 </form></div></div>
@@ -116,9 +115,9 @@ $curSession = ci_current_session($pdo);
 </form></div></div>
 
 <div class="ci-card"><div class="ci-card-b ci-p0 ci-table-wrap"><table class="ci-table">
-<thead><tr><th>Batch</th><th>Course</th><th>Session</th><th>Timing</th><th class="ci-num">Fee</th><th class="ci-num">Students</th><th class="ci-num">Due</th><th>Status</th><th></th></tr></thead><tbody>
+<thead><tr><th>Batch</th><th>Course</th><th>Session</th><th>Timing</th><th class="ci-num">Course fee</th><th class="ci-num">Students</th><th class="ci-num">Due</th><th>Status</th><th></th></tr></thead><tbody>
 <?php if (!$batches): ?><tr><td colspan="9" class="ci-empty">No batches for these filters.</td></tr><?php endif; ?>
-<?php foreach ($batches as $b): $fee = $b['fee'] !== null ? $b['fee'] : $b['course_fee']; ?>
+<?php foreach ($batches as $b): $fee = $b['course_fee']; ?>
 <tr><td><b><?= ci_e($b['name']) ?></b><?php if ($b['teacher']): ?><small class="ci-muted" style="display:block"><?= ci_e($b['teacher']) ?></small><?php endif; ?></td>
 <td><?= ci_e($b['course_name'] ?? '—') ?></td><td class="ci-muted"><?= ci_e($b['session_name'] ?? '—') ?></td>
 <td class="ci-muted"><?= ci_e(trim(($b['timing'] ?? '') . ' ' . ($b['days'] ? '· ' . $b['days'] : '')) ?: '—') ?></td>

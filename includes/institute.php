@@ -62,6 +62,8 @@ function ci_tables(PDO $pdo): void
         KEY k_enrollment (enrollment_id), KEY k_due (due_date)) $opt");
     // added later: a course can belong to a class (the enrollment form then offers the class's courses first)
     if (!$pdo->query("SHOW COLUMNS FROM ci_courses LIKE 'class_id'")->fetch()) $pdo->exec("ALTER TABLE ci_courses ADD COLUMN class_id INT UNSIGNED NULL AFTER code");
+    // added later: how the student pays a course — 'full' (final fee, one time) or 'installment' (any amount, any number of times)
+    if (!$pdo->query("SHOW COLUMNS FROM ci_enrollments LIKE 'fee_type'")->fetch()) $pdo->exec("ALTER TABLE ci_enrollments ADD COLUMN fee_type VARCHAR(12) NOT NULL DEFAULT 'full' AFTER discount");
     // a fresh install gets the current academic session and a starter list of classes (both editable in Setup)
     if (!(int)$pdo->query("SELECT COUNT(*) FROM ci_sessions")->fetchColumn()) {
         $y = (int)date('Y');

@@ -5,16 +5,18 @@ require_once INCLUDES_PATH . '/institute.php';
 $me = ci_page_start($pdo);
 $id = (int)($_GET['id'] ?? 0);
 $q = $pdo->prepare("SELECT p.*, s.name, s.reg_no, s.father_name, s.mobile, s.address, s.city, c.name AS course_name, b.name AS batch_name, b.timing, se.name AS session_name,
-    e.fee, e.discount, e.due_date, e.status AS estatus, u.username
+    e.fee, e.discount, e.fee_type, e.due_date, e.status AS estatus, u.username
     FROM ci_payments p JOIN ci_students s ON s.id = p.student_id LEFT JOIN ci_enrollments e ON e.id = p.enrollment_id LEFT JOIN ci_courses c ON c.id = e.course_id
     LEFT JOIN ci_batches b ON b.id = e.batch_id LEFT JOIN ci_sessions se ON se.id = e.session_id LEFT JOIN users u ON u.id = p.created_by WHERE p.id = ?");
 $q->execute([$id]);
 $r = $q->fetch(PDO::FETCH_ASSOC);
 if (!$r) { http_response_code(404); exit('Receipt not found.'); }
 // totals of this enrollment up to (and including) this receipt
-$pq = $pdo->prepare("SELECT COALESCE(SUM(amount),0) FROM ci_payments WHERE enrollment_id = ? AND (paid_on < ? OR (paid_on = ? AND id <= ?))");
+$pq = $pdo->prepare("SELECT COALESCE(SUM(amount),0), COUNT(*) FROM ci_payments WHERE enrollment_id = ? AND (paid_on < ? OR (paid_on = ? AND id <= ?))");
 $pq->execute([$r['enrollment_id'], $r['paid_on'], $r['paid_on'], $r['id']]);
-$paidTill = (float)$pq->fetchColumn();
+[$paidTill, $instNo] = $pq->fetch(PDO::FETCH_NUM);
+$paidTill = (float)$paidTill;
+$isInst = ($r['fee_type'] ?? 'full') === 'installment';
 $net = (float)$r['fee'] - (float)$r['discount'];
 $dueAfter = max(0, $net - $paidTill);
 $inst = ci_institute();
@@ -90,11 +92,14 @@ td:first-child{color:#6b7280;width:38%}
     <tr><td>Course</td><td><?= ci_e($r['course_name'] ?? '—') ?></td></tr>
     <?php if ($r['batch_name']): ?><tr><td>Batch</td><td><?= ci_e(implode(' · ', array_filter([$r['batch_name'], $r['timing']]))) ?></td></tr><?php endif; ?>
     <?php if ($r['session_name']): ?><tr><td>Session</td><td><?= ci_e($r['session_name']) ?></td></tr><?php endif; ?>
+    <tr><td>Fee plan</td><td><?= $isInst ? 'Installment · <b>Installment ' . (int)$instNo . '</b>' : 'Final fee (one time)' ?></td></tr>
     <tr><td>Paid by</td><td><?= ci_e(CI_METHODS[$r['method']] ?? $r['method']) ?><?= $r['note'] ? ' — ' . ci_e($r['note']) : '' ?></td></tr>
   </table>
   <div class="amt"><b><?= ci_money($r['amount']) ?></b><small><?= ci_e(ci_words((float)$r['amount'])) ?></small></div>
   <table class="sum">
-    <tr><td>Total course fee</td><td><?= ci_money($r['fee']) ?><?= (float)$r['discount'] > 0 ? ' − ' . ci_money($r['discount']) . ' discount = ' . ci_money($net) : '' ?></td></tr>
+    <tr><td>Course fee</td><td><?= ci_money($r['fee']) ?></td></tr>
+    <?php if ((float)$r['discount'] > 0): ?><tr><td>Discount</td><td>− <?= ci_money($r['discount']) ?></td></tr><?php endif; ?>
+    <tr><td>Fee to pay</td><td><b><?= ci_money($net) ?></b></td></tr>
     <tr><td>Paid till this receipt</td><td><?= ci_money($paidTill) ?></td></tr>
     <tr><td>Balance due</td><td><b><?= ci_money($dueAfter) ?></b><?= $dueAfter > 0 && $r['due_date'] ? ' · next due ' . ci_date($r['due_date']) : '' ?></td></tr>
   </table>
