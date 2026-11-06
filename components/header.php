@@ -105,7 +105,9 @@ if ($__school) {
   .nb-sb-school .nb-brand-line{font-size:11.5px;margin-top:3px;white-space:normal}
   /* phones: room for the brand — no search icon and no Subscribe button in the bar (both stay in the menu) */
   .nb-h-racing .nb-hr-act .nb-search-icon,.nb-h-racing .nb-hr-act .nb-hr-sub{display:none!important}
+  .nb-hr-nav .nb-strip-search{display:inline-flex!important}
 }
+.nb-hr-nav .nb-strip-search{display:none;align-items:center;justify-content:center;flex:0 0 auto;padding-left:14px;padding-right:14px}
 @media (max-width:400px){.nb-brand-school .nb-emblem{width:36px;height:42px}.nb-sb-school .site-title{font-size:16.5px}.nb-sb-school .nb-brand-line{font-size:10.5px}}
 </style>
 <?php endif; ?>
@@ -142,6 +144,7 @@ if ($__school) {
       <div class="inb-scroll-menu-inner">
         <?php foreach ($__strip as $m): ?><a href="<?= htmlspecialchars($m['url']) ?>"<?= $__active($m['url']) ? ' class="current" aria-current="page"' : '' ?><?= $__tgt($m) ?>><?= htmlspecialchars($m['label']) ?></a><?php endforeach; ?>
         <?php if (th_on('h_dark') && th_on('menu_dark_icon')): ?><a href="#" class="dark-mode-toggle nb-strip-dark" aria-label="Dark mode"><svg class="nb-moon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></a><?php endif; ?>
+        <?php if (th_on('h_search') && $__school): ?><a href="/search" role="button" class="nb-strip-search" data-hsearch aria-label="Search" aria-controls="eduHSearch"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></a><?php endif; ?>
       </div>
     </div>
   </nav>
@@ -158,9 +161,10 @@ d&&d.querySelectorAll(".mnav-chev").forEach(function(x){x.addEventListener("clic
 var hs=document.getElementById("eduHSearch"),hst=document.getElementById("searchToggle"),hin=document.getElementById("edu-hsearch-input");
 function srch(o){if(!hs)return;hs.hidden=!o;hst&&hst.setAttribute("aria-expanded",o?"true":"false");if(o)setTimeout(function(){hin&&hin.focus()},30)}
 hst&&hst.addEventListener("click",function(v){v.preventDefault();srch(hs.hidden)});
+document.querySelectorAll("[data-hsearch]").forEach(function(x){x.addEventListener("click",function(v){v.preventDefault();srch(hs.hidden)})});
 var hx=document.getElementById("eduHSearchClose");hx&&hx.addEventListener("click",function(){srch(false)});
 document.addEventListener("keydown",function(e){if(e.key==="Escape")srch(false)});
-document.addEventListener("click",function(e){if(hs&&!hs.hidden&&!e.target.closest("#eduHSearch")&&!e.target.closest("#searchToggle"))srch(false)});
+document.addEventListener("click",function(e){if(hs&&!hs.hidden&&!e.target.closest("#eduHSearch")&&!e.target.closest("#searchToggle")&&!e.target.closest("[data-hsearch]"))srch(false)});
 document.querySelectorAll("[data-edu-subscribe]").forEach(function(a){a.addEventListener("click",function(e){e.preventDefault();setOpen(false);if(!window.eduPush){alert("Notifications are not supported in this browser.");return}if(eduPush.subscribed()){alert("You are already subscribed to job alerts.");return}eduPush.ask()})});
 var S=window.SpeechRecognition||window.webkitSpeechRecognition;document.querySelectorAll(".voice-icon").forEach(function(vb){var f=vb.closest("form"),i=f&&f.querySelector("input[type=search]");if(!S||!i){vb.style.display="none";return}var r=new S,p=i.placeholder;r.lang="en-IN";vb.onclick=function(){i.placeholder="Listening...";vb.classList.add("listening");try{r.start()}catch(e){}};r.onresult=function(e){i.value=e.results[0][0].transcript;i.placeholder=p;vb.classList.remove("listening");f.submit()};r.onend=function(){vb.classList.remove("listening");i.placeholder=p}});
 })();</script>
