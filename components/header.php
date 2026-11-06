@@ -116,7 +116,7 @@ if ($__school) {
   .nb-h-racing .inb-scroll-menu-inner{justify-content:center!important;gap:20px!important}
 }
 @media (max-width:767px){
-  .nb-hr-brand .nb-brand-link.nb-brand-school{margin:-5px 0 -5px -14px;padding:3px 44px 3px 14px;gap:8px}
+  .nb-hr-brand .nb-brand-link.nb-brand-school{margin:-5px 0 -5px -14px;padding:3px 44px 3px 14px;gap:8px;height:52px;box-sizing:border-box;align-self:center}
   .nb-brand-school::after{right:4px;width:30px;clip-path:polygon(35% 0,0 100%,20% 100%)}
   .nb-brand-school .nb-emblem{width:40px;height:46px}
   .nb-sb-school .site-title{font-size:18px}
@@ -126,7 +126,7 @@ if ($__school) {
   .nb-hr-nav .nb-strip-search{display:inline-flex!important}
 }
 .nb-hr-nav .nb-strip-search{display:none;align-items:center;justify-content:center;flex:0 0 auto;padding-left:14px;padding-right:14px}
-@media (max-width:400px){.nb-brand-school .nb-emblem{width:36px;height:42px}.nb-sb-school .site-title{font-size:16.5px}.nb-sb-school .nb-brand-line{font-size:10.5px}}
+@media (max-width:400px){.nb-hr-brand .nb-brand-link.nb-brand-school{height:48px}.nb-brand-school .nb-emblem{width:36px;height:42px}.nb-sb-school .site-title{font-size:16.5px}.nb-sb-school .nb-brand-line{font-size:10.5px}}
 </style>
 <?php endif; ?>
 <?php if ($__schoolFull): include __DIR__ . '/header-school.php'; else: ?>
