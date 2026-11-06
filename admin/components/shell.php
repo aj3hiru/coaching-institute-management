@@ -183,6 +183,10 @@ function admin_shell_head(): void
     foreach ($wpb['css'] as $c) echo '<link rel="stylesheet" href="' . htmlspecialchars($c) . '">' . "\n";
     echo '<script src="' . htmlspecialchars($wpb['js']) . '" defer></script>' . "\n";
     echo '<script src="/assets/js/admin-ui.js?v=' . (@filemtime(($_SERVER['DOCUMENT_ROOT'] ?? '') . '/assets/js/admin-ui.js') ?: 1) . '" defer></script>' . "\n";
+    // square corners + no shadows everywhere, and the themed dropdown for every <select>
+    $root = $_SERVER['DOCUMENT_ROOT'] ?? '';
+    echo '<link rel="stylesheet" href="/assets/css/admin-flat.css?v=' . (@filemtime($root . '/assets/css/admin-flat.css') ?: 1) . '">' . "\n";
+    echo '<script src="/assets/js/admin-select.js?v=' . (@filemtime($root . '/assets/js/admin-select.js') ?: 1) . '" defer></script>' . "\n";
 }
 
 function admin_shell_icon(string $name): string

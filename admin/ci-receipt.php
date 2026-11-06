@@ -51,7 +51,7 @@ function ci_words(float $amt): string
 *{box-sizing:border-box}
 body{margin:0;background:#f3f4f6;font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;color:#111827}
 .bar{display:flex;gap:8px;justify-content:center;padding:14px}
-.bar a,.bar button{height:36px;padding:0 14px;border:1px solid #d1d5db;background:#fff;color:#111827;font-family:inherit;font-size:13px;font-weight:600;line-height:34px;cursor:pointer;text-decoration:none;border-radius:4px}
+.bar a,.bar button{height:36px;padding:0 14px;border:1px solid #d1d5db;background:#fff;color:#111827;font-family:inherit;font-size:13px;font-weight:600;line-height:34px;cursor:pointer;text-decoration:none;border-radius:0}
 .bar button{background:#4a3369;border-color:#4a3369;color:#fff}
 .rc{background:#fff;margin:0 auto 30px;padding:28px;width:148mm;border:1px solid #e5e7eb}
 .rc.th{width:80mm;padding:10px 8px;font-size:12px}

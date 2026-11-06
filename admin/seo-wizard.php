@@ -88,6 +88,8 @@ $sw = fn($k, $label, $desc) => '<div class="wz-row"><div class="wz-l">' . $label
 <link rel="stylesheet" href="/assets/css/admin-seo.css?v=<?= @filemtime(ROOT_PATH . '/assets/css/admin-seo.css') ?>">
 <script src="/assets/js/admin-ui.js?v=<?= @filemtime(ROOT_PATH . '/assets/js/admin-ui.js') ?>" defer></script>
 <script src="/assets/js/admin-media.js?v=<?= @filemtime(ROOT_PATH . '/assets/js/admin-media.js') ?>" defer></script>
+<link rel="stylesheet" href="/assets/css/admin-flat.css?v=<?= @filemtime(ROOT_PATH . '/assets/css/admin-flat.css') ?>">
+<script src="/assets/js/admin-select.js?v=<?= @filemtime(ROOT_PATH . '/assets/js/admin-select.js') ?>" defer></script>
 <style>
 body{background:#f0f2f5;margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen-Sans,Ubuntu,Cantarell,"Helvetica Neue",sans-serif;color:#1e293b}
 .wz{max-width:970px;margin:0 auto;padding:40px 16px 60px}

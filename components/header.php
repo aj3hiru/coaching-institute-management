@@ -63,7 +63,26 @@ $__brandText = (!th_on('id_hide_title') || (!th_on('id_hide_tagline') && $__tagl
     ? '<span class="nb-site-branding">' . (!th_on('id_hide_title') ? '<span class="site-title">' . htmlspecialchars(edu_site_name()) . '</span>' : '')
         . (!th_on('id_hide_tagline') && $__tagline !== '' ? '<span class="site-tagline">' . htmlspecialchars($__tagline) . '</span>' : '') . '</span>'
     : '';
+// School-style brand (Customize → Site Identity → Header Brand): round emblem, the name in big letters, the address under it
+$__school = (string)th('id_brand_style', 'logo') === 'school';
+if ($__school) {
+    $__emb = trim((string)th('id_brand_emblem')) ?: '/assets/images/dk-academy-emblem.svg';
+    $__bt = trim((string)th('id_header_title')) ?: edu_site_name();
+    $__bl = trim((string)th('id_header_line')) ?: trim((string)es('general', 'address', ''));
+    $__logo = '<img src="' . htmlspecialchars($__emb) . '" alt="" class="nb-emblem" width="64" height="64">';
+    $__brandText = '<span class="nb-site-branding nb-sb-school"><span class="site-title">' . htmlspecialchars($__bt) . '</span>'
+        . ($__bl !== '' ? '<span class="site-tagline nb-brand-line">' . htmlspecialchars($__bl) . '</span>' : '') . '</span>';
+}
 ?>
+<?php if ($__school): ?><style>
+.nb-hr-brand .nb-brand-link.nb-brand-school{gap:12px;text-decoration:none;color:inherit}
+.nb-emblem{display:block;width:70px;height:70px;flex:0 0 auto}
+.nb-hr-brand .nb-sb-school{display:flex;flex-direction:column;align-items:flex-start;text-align:left;line-height:1.12;min-width:0}
+.nb-sb-school .site-title{font-size:28px;font-weight:800;letter-spacing:-.01em;color:var(--t-header-site-title,#8a1c2b);white-space:nowrap}
+.nb-sb-school .nb-brand-line{margin-top:4px;font-size:15px;font-weight:500;letter-spacing:0;text-transform:none;color:var(--t-header-tagline,#1f2937)}
+@media (max-width:980px){.nb-emblem{width:46px;height:46px}.nb-hr-brand .nb-brand-link.nb-brand-school{gap:8px}.nb-sb-school .site-title{font-size:20px}.nb-sb-school .nb-brand-line{font-size:11.5px;margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}}
+@media (max-width:400px){.nb-emblem{width:40px;height:40px}.nb-sb-school .site-title{font-size:17px}.nb-sb-school .nb-brand-line{font-size:10.5px}}
+</style><?php endif; ?>
 <?php if (th_on('h_topbar') && trim((string)th('h_topbar_text')) !== ''): ?><div class="nb-top-bar"><?= edu_shortcodes((string)th('h_topbar_text')) ?></div><?php endif; ?>
 <header class="nb-header nb-h-racing" id="site-navigation">
   <div class="nb-hr-top">
@@ -74,7 +93,7 @@ $__brandText = (!th_on('id_hide_title') || (!th_on('id_hide_tagline') && $__tagl
       <a href="/feed/" target="_blank" rel="noopener" aria-label="RSS Feed"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="<?= $__rss ?>"/></svg></a>
     </nav>
     <div class="nb-hr-brand">
-      <a href="/" title="<?= htmlspecialchars(edu_site_name()) ?> Home" rel="home" aria-label="Go to <?= htmlspecialchars(edu_site_name()) ?> homepage" class="nb-brand-link"><?= $__logo . $__brandText ?></a>
+      <a href="/" title="<?= htmlspecialchars(edu_site_name()) ?> Home" rel="home" aria-label="Go to <?= htmlspecialchars(edu_site_name()) ?> homepage" class="nb-brand-link<?= $__school ? ' nb-brand-school' : '' ?>"><?= $__logo . $__brandText ?></a>
     </div>
     <div class="nb-hr-act">
       <?php if (th_on('h_bell') && $__pushOn): ?><span class="nb-bell-wrap nb-hr-bell">

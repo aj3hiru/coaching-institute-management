@@ -4,7 +4,10 @@
  * and dues. Tables start with ci_ and are created the first time an institute page opens (nothing else is touched).
  *
  * Fee model: every enrollment (student → course, usually in a batch) has a total fee minus a discount. Payments are
- * instalments against one enrollment, each with its own receipt. Due = net fee − paid (a dropped enrollment has no due).
+ * made against one enrollment, any number of times, each with its own receipt. Due = net fee − paid (a dropped
+ * enrollment has no due). An enrollment may have an instalment plan (ci_installments: amount + due date per kist);
+ * what is paid fills the instalments oldest first, and e.due_date is kept = the date of the first unpaid instalment,
+ * so every "next due / due date passed" list works the same with or without a plan.
  */
 
 if (!function_exists('ci_tables')) {
@@ -53,6 +56,12 @@ function ci_tables(PDO $pdo): void
         amount DECIMAL(10,2) NOT NULL, method VARCHAR(20) NOT NULL DEFAULT 'Cash', receipt_no VARCHAR(30) NOT NULL, paid_on DATE NOT NULL,
         note VARCHAR(255) NULL, created_by INT NULL, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         UNIQUE KEY uq_receipt (receipt_no), KEY k_student (student_id), KEY k_enrollment (enrollment_id), KEY k_paid (paid_on)) $opt");
+    $pdo->exec("CREATE TABLE IF NOT EXISTS ci_installments (
+        id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, enrollment_id INT UNSIGNED NOT NULL, no INT NOT NULL DEFAULT 1,
+        amount DECIMAL(10,2) NOT NULL, due_date DATE NOT NULL, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        KEY k_enrollment (enrollment_id), KEY k_due (due_date)) $opt");
+    // added later: a course can belong to a class (the enrollment form then offers the class's courses first)
+    if (!$pdo->query("SHOW COLUMNS FROM ci_courses LIKE 'class_id'")->fetch()) $pdo->exec("ALTER TABLE ci_courses ADD COLUMN class_id INT UNSIGNED NULL AFTER code");
     // a fresh install gets the current academic session and a starter list of classes (both editable in Setup)
     if (!(int)$pdo->query("SELECT COUNT(*) FROM ci_sessions")->fetchColumn()) {
         $y = (int)date('Y');
@@ -62,7 +71,7 @@ function ci_tables(PDO $pdo): void
     }
     if (!(int)$pdo->query("SELECT COUNT(*) FROM ci_classes")->fetchColumn()) {
         $ins = $pdo->prepare("INSERT INTO ci_classes (name, sort) VALUES (?, ?)");
-        foreach (['6th', '7th', '8th', '9th', '10th', '11th', '12th', 'Graduation', 'Competitive'] as $i => $c) $ins->execute([$c, $i + 1]);
+        foreach (['5th', '6th', '7th', '8th', '9th', '10th', '11th', '12th'] as $i => $c) $ins->execute([$c, $i + 1]);
     }
 }
 
@@ -124,7 +133,7 @@ function ci_lists(PDO $pdo): array
     return [
         'classes' => $pdo->query("SELECT id, name FROM ci_classes ORDER BY sort, name")->fetchAll(PDO::FETCH_KEY_PAIR),
         'sessions' => $pdo->query("SELECT id, name FROM ci_sessions ORDER BY start_date DESC, name DESC")->fetchAll(PDO::FETCH_KEY_PAIR),
-        'courses' => $pdo->query("SELECT id, name, fee, status FROM ci_courses ORDER BY name")->fetchAll(PDO::FETCH_UNIQUE | PDO::FETCH_ASSOC),
+        'courses' => $pdo->query("SELECT c.id, c.name, c.fee, c.status, c.class_id FROM ci_courses c LEFT JOIN ci_classes k ON k.id = c.class_id ORDER BY k.sort IS NULL, k.sort, c.name")->fetchAll(PDO::FETCH_UNIQUE | PDO::FETCH_ASSOC),
         'batches' => $pdo->query("SELECT b.id, b.name, b.course_id, b.session_id, b.fee, b.timing, b.status, b.capacity, s.name AS session_name
             FROM ci_batches b LEFT JOIN ci_sessions s ON s.id = b.session_id ORDER BY b.status = 'active' DESC, b.name")->fetchAll(PDO::FETCH_UNIQUE | PDO::FETCH_ASSOC),
     ];
@@ -180,12 +189,148 @@ function ci_add_payment(PDO $pdo, int $enrollmentId, float $amount, string $meth
         try {
             $pdo->prepare("INSERT INTO ci_payments (student_id, enrollment_id, amount, method, receipt_no, paid_on, note, created_by) VALUES (?,?,?,?,?,?,?,?)")
                 ->execute([(int)$e['student_id'], $enrollmentId, $amount, $method, $no, $date ?: date('Y-m-d'), mb_substr($note, 0, 250), $userId]);
-            return [(int)$pdo->lastInsertId(), $no];
+            $pid = (int)$pdo->lastInsertId();
+            ci_sync_due($pdo, $enrollmentId);
+            return [$pid, $no];
         } catch (PDOException $ex) {
             if ($ex->getCode() !== '23000') throw $ex; // same receipt number taken at the same moment → try the next one
         }
     }
     return 'Could not save the payment, please try again.';
+}
+
+/**
+ * Instalment plan of one enrollment (oldest first) with what is paid / left on each kist and its state:
+ * paid, part (partly paid), late (due date passed, not fully paid), due (still to come). [] when there is no plan.
+ */
+function ci_plan(PDO $pdo, int $eid, ?float $paid = null): array
+{
+    $st = $pdo->prepare("SELECT id, no, amount, due_date FROM ci_installments WHERE enrollment_id = ? ORDER BY due_date, no, id");
+    $st->execute([$eid]);
+    $rows = $st->fetchAll(PDO::FETCH_ASSOC);
+    if (!$rows) return [];
+    if ($paid === null) {
+        $p = $pdo->prepare("SELECT COALESCE(SUM(amount),0) FROM ci_payments WHERE enrollment_id = ?");
+        $p->execute([$eid]);
+        $paid = (float)$p->fetchColumn();
+    }
+    $today = date('Y-m-d');
+    $left = $paid;
+    foreach ($rows as $i => &$r) {
+        $r['no'] = $i + 1;
+        $r['amount'] = (float)$r['amount'];
+        $r['paid'] = round(min($r['amount'], max(0, $left)), 2);
+        $left -= $r['paid'];
+        $r['left'] = round($r['amount'] - $r['paid'], 2);
+        $r['state'] = $r['left'] <= 0.004 ? 'paid' : ($r['due_date'] < $today ? 'late' : ($r['paid'] > 0 ? 'part' : 'due'));
+    }
+    unset($r);
+    return $rows;
+}
+
+/** Summary of a plan: count, paid count, late amount, next unpaid kist. */
+function ci_plan_summary(array $plan): array
+{
+    $next = null;
+    $late = 0.0;
+    $paidN = 0;
+    foreach ($plan as $r) {
+        if ($r['state'] === 'paid') { $paidN++; continue; }
+        $next ??= $r;
+        if ($r['state'] === 'late') $late += $r['left'];
+    }
+    return ['n' => count($plan), 'paid_n' => $paidN, 'late' => round($late, 2), 'next' => $next];
+}
+
+/** Splits a fee into $n instalments, one every $every months from $first (whole rupees; the last one takes the rest). */
+function ci_plan_split(float $net, int $n, string $first, int $every = 1): array
+{
+    $n = max(1, min(36, $n));
+    $every = max(1, min(12, $every));
+    $base = $n > 1 ? floor($net / $n) : $net;
+    [$y, $m, $d] = array_map('intval', explode('-', $first));
+    $rows = [];
+    for ($i = 0; $i < $n; $i++) {
+        $mm = $m - 1 + $i * $every;
+        $yy = $y + intdiv($mm, 12);
+        $mm = $mm % 12 + 1;
+        $dd = min($d, (int)date('t', mktime(0, 0, 0, $mm, 1, $yy)));
+        $rows[] = ['amount' => $i === $n - 1 ? round($net - $base * ($n - 1), 2) : $base, 'due_date' => sprintf('%04d-%02d-%02d', $yy, $mm, $dd)];
+    }
+    return $rows;
+}
+
+/** Replaces the plan of an enrollment (rows: amount, due_date) and updates its next due date. */
+function ci_plan_save(PDO $pdo, int $eid, array $rows): void
+{
+    $pdo->prepare("DELETE FROM ci_installments WHERE enrollment_id = ?")->execute([$eid]);
+    usort($rows, fn($a, $b) => strcmp($a['due_date'], $b['due_date']));
+    $ins = $pdo->prepare("INSERT INTO ci_installments (enrollment_id, no, amount, due_date) VALUES (?, ?, ?, ?)");
+    foreach (array_values($rows) as $i => $r) $ins->execute([$eid, $i + 1, round((float)$r['amount'], 2), $r['due_date']]);
+    ci_sync_due($pdo, $eid);
+}
+
+/** Removes the plan (the fee is then one amount with a manual next due date). */
+function ci_plan_clear(PDO $pdo, int $eid): void
+{
+    $pdo->prepare("DELETE FROM ci_installments WHERE enrollment_id = ?")->execute([$eid]);
+}
+
+/** When the fee of an enrollment with a plan changes: same number of kists and dates, amounts split again. */
+function ci_plan_resplit(PDO $pdo, int $eid): void
+{
+    $plan = ci_plan($pdo, $eid, 0);
+    if (!$plan) return;
+    $e = $pdo->prepare("SELECT fee - discount FROM ci_enrollments WHERE id = ?");
+    $e->execute([$eid]);
+    $net = max(0, (float)$e->fetchColumn());
+    if (abs(array_sum(array_column($plan, 'amount')) - $net) < 0.005) { ci_sync_due($pdo, $eid); return; }
+    $split = ci_plan_split($net, count($plan), $plan[0]['due_date']);
+    foreach ($plan as $i => $r) $split[$i]['due_date'] = $r['due_date'];
+    ci_plan_save($pdo, $eid, $split);
+}
+
+/** Keeps e.due_date = the first unpaid instalment's date (only for enrollments with a plan). */
+function ci_sync_due(PDO $pdo, int $eid): void
+{
+    $plan = ci_plan($pdo, $eid);
+    if (!$plan) return;
+    $next = ci_plan_summary($plan)['next'];
+    $pdo->prepare("UPDATE ci_enrollments SET due_date = ? WHERE id = ?")->execute([$next['due_date'] ?? null, $eid]);
+}
+
+/** Checks posted plan rows (amount[], date[]) against the net fee. Returns [rows, error|null]. */
+function ci_plan_from_post(array $amounts, array $dates, float $net): array
+{
+    $rows = [];
+    foreach ($amounts as $i => $a) {
+        $a = ci_amount($a);
+        $d = ci_clean_date($dates[$i] ?? '');
+        if (!$a && !$d) continue;
+        if (!$a) return [[], 'Every instalment needs an amount.'];
+        if (!$d) return [[], 'Every instalment needs a due date.'];
+        $rows[] = ['amount' => $a, 'due_date' => $d];
+    }
+    if (!$rows) return [[], 'Add at least one instalment.'];
+    if (count($rows) > 36) return [[], 'At most 36 instalments.'];
+    $sum = round(array_sum(array_column($rows, 'amount')), 2);
+    if (abs($sum - $net) > 0.005) return [[], 'The instalments add up to ' . ci_money($sum) . ' but the fee after discount is ' . ci_money($net) . '.'];
+    return [$rows, null];
+}
+
+function ci_plan_badge(string $state): string
+{
+    $m = ['paid' => ['Paid', 'ci-b-green'], 'part' => ['Part paid', 'ci-b-blue'], 'late' => ['Late', 'ci-b-red'], 'due' => ['Upcoming', 'ci-b-grey']];
+    [$l, $c] = $m[$state] ?? [$state, 'ci-b-grey'];
+    return '<span class="ci-badge ' . $c . '">' . $l . '</span>';
+}
+
+/** WhatsApp link for an Indian mobile number. */
+function ci_wa(?string $mobile, string $text = ''): string
+{
+    $d = preg_replace('/\D+/', '', (string)$mobile);
+    if (strlen($d) === 10) $d = '91' . $d;
+    return $d ? 'https://wa.me/' . $d . ($text !== '' ? '?text=' . rawurlencode($text) : '') : '';
 }
 
 /** Saves an uploaded student photo (JPG/PNG/WebP, max 3 MB), scaled down to 600px. Returns the stored path, '' or an error. */

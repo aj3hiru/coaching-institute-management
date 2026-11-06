@@ -1,0 +1,27 @@
+/* Admin panel look (owner's choice): square corners and no shadows anywhere — containers, cards, buttons, inputs,
+   menus. Loaded after every other admin stylesheet. Only spinners and tiny status dots stay round. */
+*, *::before, *::after { border-radius: 0 !important; box-shadow: none !important; }
+.spin2, .pn-live, .dt-dot, .an-source-dot, .ai-dot, .cm-dot, .badge-dot, .bu-ring, .bu-ring::before { border-radius: 50% !important; }
+
+/* without shadows the keyboard focus needs another sign */
+input:focus, select:focus, textarea:focus { outline: 1px solid var(--primary, #4a3369); outline-offset: -1px; }
+a:focus-visible, button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--primary, #4a3369); outline-offset: 1px; }
+
+/* ---- Themed dropdown (assets/js/admin-select.js): the native list never opens; this panel does ---- */
+select.dk-sel { pointer-events: none; }
+html.dk-sel-hover, html.dk-sel-hover * { cursor: pointer !important; }
+select.dk-sel.dk-open { border-color: var(--primary, #4a3369) !important; outline: 1px solid var(--primary, #4a3369); outline-offset: -1px; }
+.dk-pop { position: fixed; z-index: 100000; display: flex; flex-direction: column; background: #fff; border: 1px solid var(--primary, #4a3369);
+  font-size: 13.5px; line-height: 1.35; color: #111827; max-height: 320px; min-width: 160px; }
+.dk-pop .dk-q { flex: 0 0 auto; width: 100%; height: 36px; padding: 0 10px 0 30px; border: 0; border-bottom: 1px solid #e5e7eb; outline: 0 !important;
+  font: inherit; color: inherit; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2.4' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M20 20l-3.5-3.5'/%3E%3C/svg%3E") no-repeat 9px center; }
+.dk-pop .dk-list { overflow-y: auto; overscroll-behavior: contain; padding: 4px 0; }
+.dk-opt { padding: 7px 12px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; user-select: none; }
+.dk-opt.is-ph { color: #6b7280; }
+.dk-opt.is-act { background: var(--primary-lighter, #f5f3ff); color: var(--primary, #4a3369); }
+.dk-opt.is-sel { background: var(--primary, #4a3369); color: #fff; font-weight: 600; }
+.dk-opt.is-sel.is-act { background: var(--primary-dark, #3a2853); color: #fff; }
+.dk-opt.is-dis { color: #c0c4cc; cursor: default; background: none; }
+.dk-grp { padding: 8px 12px 3px; font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: #6b7280; }
+.dk-grp ~ .dk-opt { padding-left: 20px; }
+.dk-empty { padding: 10px 12px; color: #6b7280; }

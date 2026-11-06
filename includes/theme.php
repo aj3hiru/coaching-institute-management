@@ -84,6 +84,8 @@ function edu_theme_defaults(): array
         'f_logo' => '', 'f_desc' => '', 'f_play' => '0', 'f_play_url' => '',
         // Site Identity extras
         'id_hide_title' => '1', 'id_hide_tagline' => '1', 'id_retina_logo' => '',
+        // header brand: 'logo' (logo + optional title/tagline) or 'school' (round emblem + big name + a line such as the address)
+        'id_brand_style' => 'logo', 'id_brand_emblem' => '', 'id_header_title' => '', 'id_header_line' => '',
         // Colors: global palette + every area (empty = theme default)
         'global_colors' => [
             ['slug' => 'base-3', 'name' => 'White', 'color' => '#ffffff'], ['slug' => 'contrast', 'name' => 'Contrast', 'color' => '#222222'],
