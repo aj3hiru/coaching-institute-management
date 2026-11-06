@@ -1,0 +1,6 @@
+includes/config.php
+uploads/
+cache/*.html
+cj_smart_cache/
+vendor/
+.DS_Store
