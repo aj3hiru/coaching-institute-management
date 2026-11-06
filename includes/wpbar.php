@@ -107,9 +107,9 @@ function wpbar_html(array $ctx = []): string
     $left = wpbar_li('wp-logo', '<span class="ab-icon" aria-hidden="true"></span><span class="screen-reader-text">Admin menu</span>', '/admin/dashboard.php', '',
         [['wp-logo-default', $main], ['wp-logo-external', $main2, true]]);
 
-    // 2. Site name: on the site → admin pages; in the admin → Visit Site
+    // 2. Site name: on the site → admin pages; in the admin → a plain link to the site (no "Visit Site" menu)
     if ($inAdmin) {
-        $left .= wpbar_li('site-name', wpbar_e($site), '/', 'dk-in-admin', [['site-name-default', [['view-site', 'Visit Site', '/']]]]);
+        $left .= wpbar_li('site-name', wpbar_e($site), '/', 'dk-in-admin');
     } else {
         $sitePrimary = $keep([
             ['dashboard', 'Dashboard', '/admin/dashboard.php', true],
