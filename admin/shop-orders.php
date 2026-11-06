@@ -3,13 +3,13 @@
 require_once __DIR__ . '/components/guard.php';
 require_once INCLUDES_PATH . '/institute.php';
 require_once INCLUDES_PATH . '/shop.php';
-$me = ci_page_start($pdo, ['shop']);
+$me = sh_page_start($pdo, ['orders']);
 sh_tables($pdo);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_check();
     $id = (int)($_POST['id'] ?? 0);
-    if (($_POST['action'] ?? '') === 'mark_paid' && $id && $me['role'] === 'admin') { // money reached Razorpay but the order did not update
+    if (($_POST['action'] ?? '') === 'mark_paid' && $id && sh_perm($me, 'settings')) { // money reached Razorpay but the order did not update
         $pay = trim((string)($_POST['payment'] ?? ''));
         if (!preg_match('/^pay_[A-Za-z0-9]{6,40}$/', $pay)) admin_flash('Enter the Razorpay payment id (starts with pay_) from your Razorpay dashboard.', 'error');
         elseif (sh_order_paid($pdo, $id, $pay, 'manual')) { admin_log('shop_order', "Marked order #$id paid by hand ($pay)"); admin_flash('Order marked as paid and access given.'); }
@@ -72,7 +72,7 @@ $badge = fn($s) => '<span class="ci-badge ' . ['paid' => 'ci-b-green', 'created'
 <td><a href="/admin/shop-customers.php?id=<?= (int)$o['user_id'] ?>"><?= ci_e($o['name'] ?? 'Deleted') ?></a><small class="ci-muted" style="display:block"><?= ci_e($o['mobile'] ?? '') ?></small></td>
 <td><?= ci_e($o['title']) ?></td><td class="ci-num"><?= ci_money0($o['amount']) ?></td><td><?= $badge($o['status']) ?><?= $o['error'] && $o['status'] !== 'paid' ? '<small class="ci-muted" style="display:block">' . ci_e(mb_strimwidth($o['error'], 0, 60, '…')) . '</small>' : '' ?></td>
 <td class="ci-nw"><small><?= ci_e($o['rzp_payment'] ?: ($o['rzp_order'] ?: '—')) ?></small><?= $o['method'] ? '<small class="ci-muted" style="display:block">' . ci_e($o['method']) . '</small>' : '' ?>
-<?php if ($o['status'] !== 'paid' && $o['rzp_order'] && $me['role'] === 'admin'): ?><details><summary class="ci-muted" style="cursor:pointer;font-size:12px">Paid but not updated?</summary><form method="post" style="display:flex;gap:4px;margin-top:4px" onsubmit="return confirm('Only do this after checking the payment in your Razorpay dashboard. Give access?')"><?= csrf_field() ?><input type="hidden" name="action" value="mark_paid"><input type="hidden" name="id" value="<?= (int)$o['id'] ?>"><input name="payment" placeholder="pay_…" required style="width:140px;height:30px;padding:0 6px;border:1px solid #d1d5db"><button class="ci-btn ci-sm" type="submit">Mark paid</button></form></details><?php endif; ?></td>
+<?php if ($o['status'] !== 'paid' && $o['rzp_order'] && sh_perm($me, 'settings')): ?><details><summary class="ci-muted" style="cursor:pointer;font-size:12px">Paid but not updated?</summary><form method="post" style="display:flex;gap:4px;margin-top:4px" onsubmit="return confirm('Only do this after checking the payment in your Razorpay dashboard. Give access?')"><?= csrf_field() ?><input type="hidden" name="action" value="mark_paid"><input type="hidden" name="id" value="<?= (int)$o['id'] ?>"><input name="payment" placeholder="pay_…" required style="width:140px;height:30px;padding:0 6px;border:1px solid #d1d5db"><button class="ci-btn ci-sm" type="submit">Mark paid</button></form></details><?php endif; ?></td>
 <td class="ci-nw"><?= date('d M Y, h:i A', strtotime($o['paid_at'] ?: $o['created_at'])) ?></td></tr>
 <?php endforeach; ?>
 </tbody></table></div></div>

@@ -4,7 +4,7 @@
 require_once __DIR__ . '/components/guard.php';
 require_once INCLUDES_PATH . '/institute.php';
 require_once INCLUDES_PATH . '/shop.php';
-$me = ci_page_start($pdo, ['shop']);
+$me = sh_page_start($pdo, ['customers']);
 sh_tables($pdo);
 $id = (int)($_GET['id'] ?? $_POST['uid'] ?? 0);
 
@@ -96,7 +96,7 @@ if ($id) {
 <?php admin_shell_head(); ci_head(); ?>
 </head>
 <body>
-<?php admin_shell_open($cu ? ci_e($cu['name']) : 'Store Customers', $cu ? 'Buyer account' : 'Online accounts of students and buyers', $cu ? '<a class="ci-btn ci-ghost" href="/admin/shop-customers.php"><i class="fas fa-arrow-left"></i> All customers</a>' : ''); ?>
+<?php admin_shell_open($cu ? ci_e($cu['name']) : 'Store Customers', $cu ? 'Buyer account' : 'Online accounts of students and buyers', $cu ? '<a class="ci-btn ci-ghost" href="/admin/shop-customers.php"><i class="fas fa-arrow-left"></i> All customers</a>' : '<a class="ci-btn" href="?new=1#mk"><i class="fas fa-user-plus"></i> Add Student / Customer</a>'); ?>
 <div class="ci">
 <?= admin_flash() ?>
 <?php if ($cu): ?>
@@ -143,7 +143,7 @@ if ($id) {
 </tbody></table></div></div>
 
 <?php else: ?>
-<details class="ci-card" <?= isset($_GET['new']) ? 'open' : '' ?>><summary class="ci-card-h" style="cursor:pointer"><h3>Make an account</h3><span class="ci-muted">for an institute student or anyone</span></summary><div class="ci-card-b">
+<details class="ci-card" id="mk" <?= isset($_GET['new']) ? 'open' : '' ?>><summary class="ci-card-h" style="cursor:pointer"><h3>Add a student / customer account</h3><span class="ci-muted">for an institute student or anyone</span></summary><div class="ci-card-b">
 <form method="post"><?= csrf_field() ?><input type="hidden" name="action" value="create">
 <div class="ci-grid3">
   <div class="ci-f" style="grid-column:1/-1"><label>Institute student (optional)</label><select name="student_id" data-search><option value="">— Not an institute student —</option><?php foreach ($students as $s): ?><option value="<?= (int)$s['id'] ?>" <?= (int)($_GET['student'] ?? 0) === (int)$s['id'] ? 'selected' : '' ?>><?= ci_e($s['name'] . ' (' . $s['reg_no'] . ') · ' . $s['mobile']) ?></option><?php endforeach; ?></select><span class="ci-hint">Their name, mobile and email are used if you leave those empty. Students who already have an account are not listed.</span></div>

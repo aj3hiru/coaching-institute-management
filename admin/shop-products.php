@@ -4,7 +4,7 @@
 require_once __DIR__ . '/components/guard.php';
 require_once INCLUDES_PATH . '/institute.php';
 require_once INCLUDES_PATH . '/shop.php';
-$me = ci_page_start($pdo, ['shop']);
+$me = sh_page_start($pdo, ['products']);
 sh_tables($pdo);
 
 /** Saves an uploaded thumbnail (JPG/PNG/WebP, max 3 MB) to /uploads/store and returns its address. */

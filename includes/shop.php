@@ -504,7 +504,26 @@ function sh_staff(): bool
     $q->execute([$id]);
     $u = $q->fetch(PDO::FETCH_ASSOC);
     if (!$u || $u['status'] !== 'active') return $r = false;
-    if ($u['role'] === 'admin') return $r = true;
-    $p = json_decode((string)$u['permissions'], true) ?: [];
-    return $r = !empty($p['institute']['shop']);
+    return $r = sh_perm($u, 'products') || sh_perm($u, 'customers');
+}
+
+/* ---------- staff permissions (Users → Advance Access → Online Store) ---------- */
+const SH_PERMS = ['products' => 'Courses & notes (add, edit, upload)', 'orders' => 'Orders & sales reports', 'customers' => 'Customers (accounts, give access)', 'settings' => 'Store settings (Razorpay keys)'];
+
+/** May this staff user do $key in the store? Admins always. The older single "Manage online store" permission = all but settings. */
+function sh_perm(array $u, string $key = ''): bool
+{
+    if (($u['role'] ?? '') === 'admin') return true;
+    $p = is_array($u['permissions'] ?? null) ? $u['permissions'] : (json_decode((string)($u['permissions'] ?? '{}'), true) ?: []);
+    $legacy = !empty($p['institute']['shop']);
+    if ($key === '') { foreach (array_keys(SH_PERMS) as $k) if (!empty($p['store'][$k])) return true; return $legacy; }
+    return !empty($p['store'][$key]) || ($legacy && $key !== 'settings');
+}
+/** Admin store page guard: needs one of $keys. */
+function sh_page_start(PDO $pdo, array $keys): array
+{
+    $me = admin_guard(['admin', 'editor', 'author']);
+    if (!array_filter($keys, fn($k) => sh_perm($me, $k))) { http_response_code(403); exit('Access Denied'); }
+    sh_tables($pdo);
+    return $me;
 }

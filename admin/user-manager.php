@@ -20,7 +20,8 @@ const UM_PERMS = [
     'pages' => ['create' => 'Create', 'edit' => 'Edit', 'delete' => 'Delete'],
     'files' => ['access_file_manager' => 'File Manager'],
     'security' => ['view_logs' => 'View Logs', 'manage_blacklist' => 'Blacklist', 'manage_recaptcha' => 'reCAPTCHA'],
-    'institute' => ['add_student' => 'Add student', 'edit_student' => 'Edit student', 'batches' => 'Manage batches', 'courses' => 'Manage courses', 'fees' => 'Manage fee & dues', 'sessions' => 'Manage sessions', 'classes' => 'Manage classes', 'shop' => 'Manage online store'],
+    'institute' => ['add_student' => 'Add student', 'edit_student' => 'Edit student', 'batches' => 'Manage batches', 'courses' => 'Manage courses', 'fees' => 'Manage fee & dues', 'sessions' => 'Manage sessions', 'classes' => 'Manage classes'],
+    'store' => ['products' => 'Courses & notes (add, edit, upload)', 'orders' => 'Orders & sales reports', 'customers' => 'Customers (accounts, give access)', 'settings' => 'Store settings (Razorpay keys)'],
 ];
 const UM_ICONS = ['dashboard_access' => 'fa-tachometer-alt', 'blogs' => 'fa-blog', 'media' => 'fa-photo-video', 'push_notifications' => 'fa-bell', 'users' => 'fa-users', 'authors' => 'fa-feather-alt', 'analytics' => 'fa-chart-bar', 'ads' => 'fa-ad', 'settings' => 'fa-cog', 'pages' => 'fa-file-alt', 'files' => 'fa-folder', 'security' => 'fa-shield-alt'];
 
@@ -50,6 +51,7 @@ function um_role_perms(string $role): array
  *   Blog: none / own (add + edit own posts, own media, own analytics) / all (every post, media, page, SEO, all analytics); + Ads
  *   Push notifications: send; advanced (keys, import / export)
  *   Institute: add student, edit student, batches, courses, fee & dues, sessions, classes
+ *   Online store: courses & notes, orders & sales reports, customers, store settings
  * Everything else (users, settings, security …) stays with admins. The dashboard is always available.
  */
 function um_perms_from_post(): array
@@ -74,6 +76,7 @@ function um_perms_from_post(): array
     if (!empty($_POST['p_push']) || !empty($_POST['p_push_adv'])) { $out['push_notifications']['send'] = $out['push_notifications']['schedule'] = true; }
     if (!empty($_POST['p_push_adv'])) { $out['push_notifications']['manage_templates'] = $out['push_notifications']['advanced'] = true; }
     foreach (array_keys(UM_PERMS['institute']) as $k) $out['institute'][$k] = !empty($_POST['p_inst'][$k]);
+    foreach (array_keys(UM_PERMS['store']) as $k) $out['store'][$k] = !empty($_POST['p_store'][$k]);
     return $out;
 }
 
@@ -407,6 +410,9 @@ foreach ($rows as $r) {
           <div class="perm-group"><div class="perm-group-title"><i class="fas fa-user-graduate"></i> Institute Management</div><div class="perm-grid">
             <?php foreach (UM_PERMS['institute'] as $k => $l): ?><label class="perm-item"><input type="checkbox" name="p_inst[<?= $k ?>]" value="1" data-simple="inst.<?= $k ?>"> <?= $esc($l) ?></label><?php endforeach; ?>
           </div></div>
+          <div class="perm-group"><div class="perm-group-title"><i class="fas fa-store"></i> Online Store</div><div class="perm-grid">
+            <?php foreach (UM_PERMS['store'] as $k => $l): ?><label class="perm-item"><input type="checkbox" name="p_store[<?= $k ?>]" value="1" data-simple="store.<?= $k ?>"> <?= $esc($l) ?></label><?php endforeach; ?>
+          </div></div>
         </div></div>
         </div>
         <?php endif; ?>
@@ -448,6 +454,7 @@ window.UM = (function () {
       else if (k === 'push') on = g('push_notifications', 'send');
       else if (k === 'push_adv') on = g('push_notifications', 'advanced');
       else if (k.indexOf('inst.') === 0) on = g('institute', k.slice(5));
+      else if (k.indexOf('store.') === 0) on = g('store', k.slice(6)) || (k !== 'store.settings' && g('institute', 'shop')); // the older single store permission
       c.checked = !!on;
     });
     f.querySelectorAll('[data-simple]').forEach(function (c) { c.closest('.perm-item').classList.toggle('checked', c.checked); });

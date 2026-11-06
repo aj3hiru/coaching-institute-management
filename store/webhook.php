@@ -19,6 +19,7 @@ if (in_array($ev, ['payment.captured', 'order.paid'], true) && $rzpOrder !== '')
     $q->execute([$rzpOrder]);
     $o = $q->fetch(PDO::FETCH_ASSOC);
     if ($o && (int)($pay['amount'] ?? round((float)$o['amount'] * 100)) >= (int)round((float)$o['amount'] * 100)) sh_order_paid($pdo, (int)$o['id'], (string)($pay['id'] ?? ''), (string)($pay['method'] ?? ''));
+    if ($o && !empty($pay['method'])) $pdo->prepare("UPDATE sh_orders SET method = COALESCE(method, ?) WHERE id = ? AND status = 'paid'")->execute([mb_substr((string)$pay['method'], 0, 30), $o['id']]); // UPI / card / netbanking for the report
 } elseif ($ev === 'payment.failed' && $rzpOrder !== '') {
     sh_db()->prepare("UPDATE sh_orders SET status = IF(status = 'paid', 'paid', 'failed'), error = ? WHERE rzp_order = ?")->execute([mb_substr((string)($pay['error_description'] ?? 'Payment failed'), 0, 300), $rzpOrder]);
 }

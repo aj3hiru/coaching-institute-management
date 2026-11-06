@@ -83,12 +83,16 @@ function admin_shell_nav(): array
             $link($cp('sessions') || $cp('classes'), 'Sessions & Classes', '/admin/ci-setup.php', 'fa-calendar-alt'),
             $link(true, 'Reports', '/admin/ci-reports.php', 'fa-file-pdf'),
         ] : []],
-        ['label' => 'Online Store', 'items' => $cp('shop') ? [
-            $link(true, 'Products', '/admin/shop-products.php', 'fa-photo-film'),
-            $link(true, 'Orders', '/admin/shop-orders.php', 'fa-cart-shopping'),
-            $link(true, 'Customers', '/admin/shop-customers.php', 'fa-users'),
-            $link($cu['role'] === 'admin', 'Store Settings', '/admin/shop-settings.php', 'fa-sliders'),
-        ] : []],
+        ['label' => 'Online Store', 'items' => (function () use ($cu, $link) {
+            require_once ($_SERVER['DOCUMENT_ROOT'] ?? '') . '/includes/shop.php';
+            return [
+                $link(sh_perm($cu, 'products'), 'Products', '/admin/shop-products.php', 'fa-photo-film'),
+                $link(sh_perm($cu, 'orders'), 'Orders', '/admin/shop-orders.php', 'fa-cart-shopping'),
+                $link(sh_perm($cu, 'customers'), 'Customers', '/admin/shop-customers.php', 'fa-users'),
+                $link(sh_perm($cu, 'orders'), 'Sales Report', '/admin/ci-reports.php?type=store', 'fa-chart-line'),
+                $link(sh_perm($cu, 'settings'), 'Store Settings', '/admin/shop-settings.php', 'fa-sliders'),
+            ];
+        })()],
         ['label' => 'Blog', 'collapsible' => true, 'items' => [
             $link($blogOn, 'Blog Dashboard', '/admin/blog-dashboard.php', 'fa-gauge'),
             $blogOn ? ['label' => 'Posts', 'href' => '/admin/blogs-manager.php', 'icon' => 'fa-newspaper', 'items' => $sub([

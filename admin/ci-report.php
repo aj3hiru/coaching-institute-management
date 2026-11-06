@@ -4,9 +4,12 @@
 // with that status and the date, so a course/batch report shows who left in between.
 require_once __DIR__ . '/components/guard.php';
 require_once INCLUDES_PATH . '/institute.php';
-$me = ci_page_start($pdo);
-header('Content-Type: application/json; charset=utf-8');
+require_once INCLUDES_PATH . '/shop.php';
 $type = (string)($_GET['type'] ?? '');
+// online sales need the store "Orders" permission; every other report needs institute access
+if ($type === 'store') { $me = admin_guard(['admin', 'editor', 'author']); if (!sh_perm($me, 'orders')) { http_response_code(403); exit('{"error":"Access denied"}'); } ci_tables($pdo); sh_tables($pdo); }
+else $me = ci_page_start($pdo);
+header('Content-Type: application/json; charset=utf-8');
 $id = (int)($_GET['id'] ?? 0);
 $out = fn(array $d) => exit(json_encode($d + ['institute' => ci_institute(), 'generated' => date('d M Y, h:i A'), 'viewer' => ['name' => $me['username'], 'role' => $me['role']]], JSON_UNESCAPED_UNICODE));
 $fail = function (string $m) { http_response_code(404); exit(json_encode(['error' => $m])); };
@@ -153,6 +156,59 @@ if ($type === 'class') {
                 'foot' => $rows ? [['', 'Total', '', '', '', $rs($t['fee']), $rs($t['paid']), $rs($t['due'])]] : null, 'empty' => 'No students in this class.'],
         ],
         'notes' => ['Class ' . $k['name'] . ': ' . $t['n'] . ' student(s), ' . $t['active'] . ' studying now, ' . $t['left'] . ' left.', 'Fee: ' . $rs($t['fee']) . ' in total, ' . $rs($t['paid']) . ' collected, ' . $rs($t['due']) . ' still due.']]);
+}
+// ---- online store sales for a period: ?type=store&period=today|yesterday|week|month|lastmonth|year|custom&from=&to=&product=
+if ($type === 'store') {
+    $today = date('Y-m-d');
+    $period = (string)($_GET['period'] ?? 'month');
+    $okDate = fn($v) => is_string($v) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $v) && checkdate((int)substr($v, 5, 2), (int)substr($v, 8, 2), (int)substr($v, 0, 4)) ? $v : null;
+    switch ($period) {
+        case 'today': $from = $to = $today; $pl = 'Today'; break;
+        case 'yesterday': $from = $to = date('Y-m-d', strtotime('-1 day')); $pl = 'Yesterday'; break;
+        case 'week': $from = date('Y-m-d', strtotime('monday this week')); $to = $today; $pl = 'This week'; break;
+        case 'lastmonth': $from = date('Y-m-01', strtotime('first day of last month')); $to = date('Y-m-t', strtotime('first day of last month')); $pl = 'Last month'; break;
+        case 'year': $from = date('Y-01-01'); $to = $today; $pl = 'This year'; break;
+        case 'all': $from = '2000-01-01'; $to = $today; $pl = 'All time'; break;
+        case 'custom': $from = $okDate($_GET['from'] ?? '') ?? $today; $to = $okDate($_GET['to'] ?? '') ?? $from; if ($from > $to) [$from, $to] = [$to, $from]; $pl = 'Chosen dates'; break;
+        default: $period = 'month'; $from = date('Y-m-01'); $to = $today; $pl = 'This month';
+    }
+    $range = $period === 'all' ? 'All time' : ($from === $to ? $d($from) : $d($from) . ' to ' . $d($to));
+    $prodId = (int)($_GET['product'] ?? 0);
+    $prodName = 'All courses & notes';
+    $w = "o.status = 'paid' AND DATE(o.paid_at) BETWEEN ? AND ?"; $a = [$from, $to];
+    if ($prodId) { $w .= ' AND o.product_id = ?'; $a[] = $prodId; $pn = $pdo->prepare("SELECT title FROM sh_products WHERE id = ?"); $pn->execute([$prodId]); $prodName = (string)($pn->fetchColumn() ?: '#' . $prodId); }
+    $q = $pdo->prepare("SELECT o.*, u.name, u.mobile, p.type FROM sh_orders o LEFT JOIN sh_users u ON u.id = o.user_id LEFT JOIN sh_products p ON p.id = o.product_id WHERE $w ORDER BY o.paid_at, o.id");
+    $q->execute($a);
+    $rows = $q->fetchAll(PDO::FETCH_ASSOC);
+    $total = array_sum(array_column($rows, 'amount'));
+    $byP = []; $byM = []; $buyers = [];
+    foreach ($rows as $o) {
+        $k = $o['title']; $byP[$k] = [($byP[$k][0] ?? 0) + 1, ($byP[$k][1] ?? 0) + (float)$o['amount'], $o['type'] === 'notes' ? 'PDF notes' : 'Video course'];
+        $m = ucfirst((string)($o['method'] ?: 'online')); $byM[$m] = [($byM[$m][0] ?? 0) + 1, ($byM[$m][1] ?? 0) + (float)$o['amount']];
+        $buyers[$o['user_id']] = true;
+    }
+    uasort($byP, fn($x, $y) => $y[1] <=> $x[1]); uasort($byM, fn($x, $y) => $y[1] <=> $x[1]);
+    $na = $pdo->prepare("SELECT COUNT(*) FROM sh_users WHERE DATE(created_at) BETWEEN ? AND ?"); $na->execute([$from, $to]); $newAcc = (int)$na->fetchColumn();
+    $gq = $pdo->prepare("SELECT a.granted_at, a.note, a.source, u.name, u.mobile, p.title, s.username FROM sh_access a JOIN sh_users u ON u.id = a.user_id JOIN sh_products p ON p.id = a.product_id
+        LEFT JOIN users s ON s.id = a.granted_by WHERE a.source IN ('admin', 'free') AND a.revoked = 0 AND DATE(a.granted_at) BETWEEN ? AND ?" . ($prodId ? ' AND a.product_id = ' . $prodId : '') . " ORDER BY a.granted_at");
+    $gq->execute([$from, $to]); $given = $gq->fetchAll(PDO::FETCH_ASSOC);
+    $sections = [
+        ['title' => 'Sales by course / notes', 'head' => ['Item', 'Type', 'Orders', 'Amount'], 'body' => array_map(fn($k, $v) => [$k, $v[2], (string)$v[0], $rs($v[1])], array_keys($byP), $byP),
+            'foot' => $byP ? [['Total', '', (string)count($rows), $rs($total)]] : null, 'right' => [2, 3], 'empty' => 'No sales in this period.'],
+        ['title' => 'Paid orders', 'right_text' => count($rows) . ' order(s)', 'head' => ['No.', 'Date', 'Order', 'Buyer', 'Mobile', 'Item', 'Payment id', 'Amount'],
+            'body' => array_map(fn($o, $i) => [$i + 1, $d($o['paid_at']), $o['order_no'] ?: '#' . $o['id'], $o['name'] ?? '-', $o['mobile'] ?? '-', $o['title'], $o['rzp_payment'] ?: '-', $rs0($o['amount'])], $rows, array_keys($rows)),
+            'foot' => $rows ? [['', '', '', '', '', '', 'Total', $rs0($total)]] : null, 'right' => [7], 'small' => true, 'empty' => 'No paid orders in this period.'],
+    ];
+    if (count($byM) > 1 || ($byM && !isset($byM['Online']))) $sections[] = ['title' => 'By payment method', 'head' => ['Method', 'Orders', 'Amount'], 'body' => array_map(fn($k, $v) => [$k, (string)$v[0], $rs($v[1])], array_keys($byM), $byM), 'right' => [1, 2]];
+    $sections[] = ['title' => 'Given free / by staff', 'right_text' => count($given) . ' item(s)', 'head' => ['No.', 'Date', 'Buyer', 'Mobile', 'Item', 'How', 'Note'],
+        'body' => array_map(fn($g, $i) => [$i + 1, $d($g['granted_at']), $g['name'], $g['mobile'], $g['title'], $g['source'] === 'free' ? 'Free item' : 'Given by ' . ($g['username'] ?: 'staff'), $g['note'] ?: '-'], $given, array_keys($given)),
+        'small' => true, 'empty' => 'Nothing given free in this period.'];
+    $out(['title' => 'ONLINE SALES REPORT', 'subtitle' => $pl . ' · ' . $range, 'no' => 'OS-' . ($period === 'all' ? 'ALL' : str_replace('-', '', $from) . ($to !== $from ? '-' . str_replace('-', '', $to) : '')),
+        'file' => 'online-sales_' . ($period === 'all' ? 'all-time' : $from . ($to !== $from ? '_to_' . $to : '')), 'landscape' => true,
+        'boxes' => [['head' => 'REPORT FOR', 'rows' => [['Period', $pl], ['Dates', $range], ['Item', $prodName]]],
+                    ['head' => 'SALES', 'rows' => [['Total sales', $rs($total)], ['Paid orders', (string)count($rows)], ['Buyers', (string)count($buyers)], ['New accounts', (string)$newAcc], ['Given free / by staff', (string)count($given)]]]],
+        'sections' => $sections,
+        'notes' => [$rows ? $rs($total) . ' from ' . count($buyers) . ' buyer(s) in ' . count($rows) . ' paid order(s), ' . $range . '.' : 'No online sales ' . ($period === 'all' ? 'yet' : ($from === $to ? 'on ' : 'from ') . $range) . '.', 'Amounts are what buyers paid through Razorpay (Razorpay\'s own fee is not taken off).']]);
 }
 // ---- fee collection for a period: ?type=fees&period=today|yesterday|week|month|lastmonth|year|custom&from=&to=&course=&method=
 if ($type === 'fees') {

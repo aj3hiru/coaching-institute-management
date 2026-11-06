@@ -89,7 +89,7 @@ function ci_tables(PDO $pdo): void
 
 /** Institute permissions (Users → Advance Access → Institute). Admins have all of them. */
 define('CI_PERMS', ['add_student' => 'Add student', 'edit_student' => 'Edit student', 'batches' => 'Manage batches', 'courses' => 'Manage courses',
-    'fees' => 'Manage fee & dues', 'sessions' => 'Manage sessions', 'classes' => 'Manage classes', 'shop' => 'Manage online store']);
+    'fees' => 'Manage fee & dues', 'sessions' => 'Manage sessions', 'classes' => 'Manage classes']);
 
 function ci_perm(array $u, string $key): bool
 {

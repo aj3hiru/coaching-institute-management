@@ -3,14 +3,23 @@
 // traffic report): one student, a filtered list of students, any course, batch (active or completed) or class.
 require_once __DIR__ . '/components/guard.php';
 require_once INCLUDES_PATH . '/institute.php';
-$me = ci_page_start($pdo);
+require_once INCLUDES_PATH . '/shop.php';
+$me = admin_guard(['admin', 'editor', 'author']);
+$ciOK = ci_can($me);                 // institute reports
+$storeOK = sh_perm($me, 'orders');   // online sales report
+if (!$ciOK && !$storeOK) { http_response_code(403); exit('Access Denied'); }
+ci_tables($pdo); sh_tables($pdo);
+$storeItems = $storeOK ? $pdo->query("SELECT id, title FROM sh_products ORDER BY title")->fetchAll(PDO::FETCH_KEY_PAIR) : [];
 $L = ci_lists($pdo);
 $students = $pdo->query("SELECT s.id, s.reg_no, s.name, s.status, c.name AS class_name FROM ci_students s LEFT JOIN ci_classes c ON c.id = s.class_id ORDER BY s.name")->fetchAll(PDO::FETCH_ASSOC);
 $courses = $pdo->query("SELECT id, name, status FROM ci_courses ORDER BY status = 'active' DESC, name")->fetchAll(PDO::FETCH_ASSOC);
 $batches = $pdo->query("SELECT b.id, b.name, b.status, c.name AS course_name, se.name AS session_name FROM ci_batches b LEFT JOIN ci_courses c ON c.id = b.course_id LEFT JOIN ci_sessions se ON se.id = b.session_id ORDER BY b.status = 'active' DESC, c.name, b.name")->fetchAll(PDO::FETCH_ASSOC);
 $tag = fn(string $st) => $st === 'active' ? '' : ' — ' . ucfirst($st);
 $canFees = ci_perm($me, 'fees');
-$pre = ['type' => (string)($_GET['type'] ?? ($canFees ? 'fees' : 'students')), 'id' => (int)($_GET['id'] ?? 0)];
+$types = ($canFees ? ['fees'] : []) + [];
+if ($storeOK) $types[] = 'store';
+if ($ciOK) array_push($types, 'students', 'student', 'course', 'batch', 'class');
+$pre = ['type' => in_array((string)($_GET['type'] ?? ''), $types, true) ? (string)$_GET['type'] : $types[0], 'id' => (int)($_GET['id'] ?? 0)];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -67,7 +76,7 @@ $pre = ['type' => (string)($_GET['type'] ?? ($canFees ? 'fees' : 'students')), '
 <div class="ci">
 <div class="ci-card"><div class="ci-card-b"><div class="rp-pick">
   <div class="rp-types" role="tablist">
-    <?php foreach (($canFees ? ['fees' => ['fa-indian-rupee-sign', 'Fee collection']] : []) + ['students' => ['fa-users', 'Students (filtered)'], 'student' => ['fa-user', 'One student'], 'course' => ['fa-book-open', 'Course'], 'batch' => ['fa-layer-group', 'Batch'], 'class' => ['fa-school', 'Class']] as $k => [$ic, $l]): ?>
+    <?php foreach (array_intersect_key(['fees' => ['fa-indian-rupee-sign', 'Fee collection'], 'store' => ['fa-store', 'Online sales'], 'students' => ['fa-users', 'Students (filtered)'], 'student' => ['fa-user', 'One student'], 'course' => ['fa-book-open', 'Course'], 'batch' => ['fa-layer-group', 'Batch'], 'class' => ['fa-school', 'Class']], array_flip($types)) as $k => [$ic, $l]): ?>
     <button type="button" data-type="<?= $k ?>" class="<?= $pre['type'] === $k ? 'on' : '' ?>"><i class="fas <?= $ic ?>"></i> <?= $l ?></button>
     <?php endforeach; ?>
   </div>
@@ -79,6 +88,13 @@ $pre = ['type' => (string)($_GET['type'] ?? ($canFees ? 'fees' : 'students')), '
       <div class="ci-f"><label>Course</label><select name="course"><option value="0">All courses</option><?php foreach ($courses as $c): ?><option value="<?= (int)$c['id'] ?>"><?= ci_e($c['name'] . $tag($c['status'])) ?></option><?php endforeach; ?></select></div>
       <div class="ci-f"><label>Payment mode</label><select name="method"><option value="">All modes</option><?php foreach (CI_METHODS as $k => $l): ?><option value="<?= ci_e($k) ?>"><?= ci_e($l) ?></option><?php endforeach; ?></select></div>
     </form><?php endif; ?>
+    <?php if ($storeOK): ?><form class="rp-pane ci-filters" data-pane="store" onsubmit="return false" hidden>
+      <div class="ci-f"><label>Period</label><select name="period"><?php foreach (['today' => 'Today', 'yesterday' => 'Yesterday', 'week' => 'This week', 'month' => 'This month', 'lastmonth' => 'Last month', 'year' => 'This year', 'all' => 'All time', 'custom' => 'Choose dates'] as $k => $l): ?><option value="<?= $k ?>" <?= $k === 'month' ? 'selected' : '' ?>><?= $l ?></option><?php endforeach; ?></select></div>
+      <div class="ci-f rp-custom2" hidden><label>From</label><input type="date" name="from" value="<?= date('Y-m-01') ?>" max="<?= date('Y-m-d') ?>"></div>
+      <div class="ci-f rp-custom2" hidden><label>To</label><input type="date" name="to" value="<?= date('Y-m-d') ?>" max="<?= date('Y-m-d') ?>"></div>
+      <div class="ci-f"><label>Course / notes</label><select name="product"><option value="0">All courses &amp; notes</option><?php foreach ($storeItems as $k => $l): ?><option value="<?= (int)$k ?>"><?= ci_e($l) ?></option><?php endforeach; ?></select></div>
+    </form><?php endif; ?>
+    <?php if ($ciOK): ?>
     <form class="rp-pane ci-filters" data-pane="students" onsubmit="return false">
       <div class="ci-f"><label>Status</label><select name="status"><?php foreach (['active' => 'Active', 'left' => 'Left', 'completed' => 'Completed', 'all' => 'All'] as $k => $l): ?><option value="<?= $k ?>"><?= $l ?></option><?php endforeach; ?></select></div>
       <div class="ci-f"><label>Class</label><select name="class"><option value="0">All classes</option><?php foreach ($L['classes'] as $id => $n): ?><option value="<?= $id ?>"><?= ci_e($n) ?></option><?php endforeach; ?></select></div>
@@ -93,6 +109,7 @@ $pre = ['type' => (string)($_GET['type'] ?? ($canFees ? 'fees' : 'students')), '
     <div class="rp-pane rp-two" data-pane="course" hidden><div class="ci-f"><label>Course (active or completed)</label><select data-id><option value="all">All courses (one line each)</option><?php foreach ($courses as $c): ?><option value="<?= (int)$c['id'] ?>" <?= $pre['type'] === 'course' && $pre['id'] === (int)$c['id'] ? 'selected' : '' ?>><?= ci_e($c['name'] . $tag($c['status'])) ?></option><?php endforeach; ?></select></div><div class="ci-f rp-all-st" hidden><label>Status</label><select data-st><option value="all">All</option><option value="active">Active</option><option value="completed">Completed</option><option value="inactive">Inactive</option></select></div></div>
     <div class="rp-pane rp-two" data-pane="batch" hidden><div class="ci-f"><label>Batch (active or completed)</label><select data-id><option value="all">All batches (one line each)</option><?php foreach ($batches as $b): ?><option value="<?= (int)$b['id'] ?>" <?= $pre['type'] === 'batch' && $pre['id'] === (int)$b['id'] ? 'selected' : '' ?>><?= ci_e($b['name'] . ' · ' . $b['course_name'] . ($b['session_name'] ? ' (' . $b['session_name'] . ')' : '') . $tag($b['status'])) ?></option><?php endforeach; ?></select></div><div class="ci-f rp-all-st" hidden><label>Status</label><select data-st><option value="all">All</option><option value="active">Active</option><option value="completed">Completed</option><option value="inactive">Inactive</option></select></div></div>
     <div class="rp-pane" data-pane="class" hidden><div class="ci-f"><label>Class</label><select data-id><option value="all">All classes (one line each)</option><?php foreach ($L['classes'] as $id => $n): ?><option value="<?= $id ?>" <?= $pre['type'] === 'class' && $pre['id'] === $id ? 'selected' : '' ?>><?= ci_e($n) ?></option><?php endforeach; ?></select></div></div>
+    <?php endif; ?>
     <div class="rp-go"><button type="button" class="ci-btn" id="rpView"><i class="fas fa-eye"></i> View report</button><button type="button" class="ci-btn ci-ghost" id="rpPdf"><i class="fas fa-file-pdf"></i> Download PDF</button><span class="ci-muted" id="rpMsg" style="align-self:center"></span></div>
   </div>
 </div></div></div>
@@ -101,7 +118,7 @@ $pre = ['type' => (string)($_GET['type'] ?? ($canFees ? 'fees' : 'students')), '
 <?php admin_shell_close(); ?>
 <script>
 (function () {
-  var type = <?= json_encode(in_array($pre['type'], array_merge($canFees ? ['fees'] : [], ['students', 'student', 'course', 'batch', 'class']), true) ? $pre['type'] : ($canFees ? 'fees' : 'students')) ?>, last = null, lastKey = '';
+  var type = <?= json_encode($pre['type']) ?>, last = null, lastKey = '';
   var out = document.getElementById('rpOut'), msg = document.getElementById('rpMsg');
   function show(t) {
     type = t;
@@ -116,6 +133,11 @@ $pre = ['type' => (string)($_GET['type'] ?? ($canFees ? 'fees' : 'students')), '
       [].forEach.call(g.elements, function (el) { if (!el.name || el.value === '' || el.value === '0') return; if ((el.name === 'from' || el.name === 'to') && g.elements.period.value !== 'custom') return; p.set(el.name, el.value); });
       if (g.elements.period.value === 'custom' && !g.elements.from.value) { msg.textContent = 'Type the From date as dd/mm/yyyy.'; return ''; }
       return '/admin/ci-report.php?' + p.toString();
+    }
+    if (type === 'store') {
+      var sp = document.querySelector('.rp-pane[data-pane=store]'), sq = new URLSearchParams({ type: 'store' });
+      [].forEach.call(sp.elements, function (el) { if (!el.name || el.value === '' || el.value === '0') return; if ((el.name === 'from' || el.name === 'to') && sp.elements.period.value !== 'custom') return; sq.set(el.name, el.value); });
+      return '/admin/ci-report.php?' + sq.toString();
     }
     if (type === 'students') {
       var f = document.querySelector('.rp-pane[data-pane=students]'), q = new URLSearchParams();
@@ -145,6 +167,8 @@ $pre = ['type' => (string)($_GET['type'] ?? ($canFees ? 'fees' : 'students')), '
   function syncAll() {
     document.querySelectorAll('.rp-two').forEach(function (p) { var all = p.querySelector('[data-id]').value === 'all'; p.querySelector('.rp-all-st').hidden = !all; });
     var per = document.querySelector('.rp-pane[data-pane=fees] [name=period]'), custom = !!per && per.value === 'custom';
+    var sper = document.querySelector('.rp-pane[data-pane=store] [name=period]');
+    document.querySelectorAll('.rp-custom2').forEach(function (c) { c.hidden = !(sper && sper.value === 'custom'); });
     document.querySelectorAll('.rp-custom').forEach(function (c) { c.hidden = !custom; });
   }
   document.addEventListener('change', function (e) { if (e.target.closest('.rp-pane')) { last = null; syncAll(); } });

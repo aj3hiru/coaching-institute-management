@@ -9,7 +9,7 @@ header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
 $out = function (array $d, int $code = 200) { http_response_code($code); exit(json_encode($d, JSON_UNESCAPED_UNICODE)); };
 $me = admin_guard(['admin', 'editor', 'author']);
-if (!ci_perm($me, 'shop')) $out(['error' => 'Access denied'], 403);
+if (!sh_perm($me, 'products')) $out(['error' => 'Access denied'], 403);
 if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') $out(['error' => 'Invalid request'], 405);
 csrf_check();
 session_write_close();

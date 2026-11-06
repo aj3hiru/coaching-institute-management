@@ -3,13 +3,22 @@
 require_once __DIR__ . '/components/guard.php';
 require_once INCLUDES_PATH . '/institute.php';
 require_once INCLUDES_PATH . '/shop.php';
-$me = ci_page_start($pdo, ['shop']);
-if ($me['role'] !== 'admin') { http_response_code(403); exit('Access Denied'); }
+$me = sh_page_start($pdo, ['settings']);
 sh_tables($pdo);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_check();
     $a = (string)($_POST['action'] ?? 'save');
+    if ($a === 'demo_add' || $a === 'demo_remove') {
+        require_once INCLUDES_PATH . '/shop-demo.php';
+        try {
+            $msg = $a === 'demo_add' ? sh_demo_add($pdo, (int)$me['id']) : sh_demo_remove($pdo);
+            admin_log('shop_demo', $msg);
+            admin_flash($msg);
+        } catch (Throwable $e) { admin_flash('Demo data: ' . $e->getMessage(), 'error'); }
+        header('Location: /admin/shop-settings.php#demo');
+        exit;
+    }
     if ($a === 'test') {
         $k = sh_rzp_keys();
         if ($k['id'] === '' || $k['secret'] === '') admin_flash('Save the Key Id and Key Secret first.', 'error');
@@ -76,6 +85,16 @@ $mask = fn($s) => $s === '' ? '' : str_repeat('•', 8) . substr($s, -4);
 <button class="ci-btn" type="submit"><i class="fas fa-check"></i> Save settings</button>
 </form>
 <form method="post" style="margin-top:10px"><?= csrf_field() ?><input type="hidden" name="action" value="test"><button class="ci-btn ci-ghost" type="submit"><i class="fas fa-plug"></i> Test Razorpay connection</button></form>
+<?php require_once INCLUDES_PATH . '/shop-demo.php'; $demo = sh_demo_info(); ?>
+<div class="ci-card" id="demo" style="margin-top:16px"><div class="ci-card-h"><h3>Demo data</h3><?= $demo['products'] ? '<span class="ci-badge ci-b-amber">Demo is on</span>' : '' ?></div><div class="ci-card-b">
+  <?php if ($demo['products']): ?>
+    <p style="margin:0 0 10px">The store has demo content: <?= count($demo['products']) ?> courses / notes, <?= count($demo['users']) ?> demo students, <?= count($demo['orders']) ?> paid demo orders. Demo student login: <b>9000000001</b> (or 9000000002, 9000000003), password <b><?= SH_DEMO_PASS ?></b> at <a href="/account/login" target="_blank">/account/login</a>.</p>
+    <form method="post" onsubmit="return confirm('Remove all demo courses, notes, demo students and demo orders? Your own data is not touched.')"><?= csrf_field() ?><input type="hidden" name="action" value="demo_remove"><button class="ci-btn ci-ghost" type="submit" style="color:#b91c1c;border-color:#fca5a5"><i class="fas fa-trash"></i> Remove demo data</button></form>
+  <?php else: ?>
+    <p class="ci-muted" style="margin:0 0 10px">Adds 2 video courses (one lesson uploaded to the server with 720p + 360p, the rest public Khan Academy YouTube lessons), 2 PDF notes packs, 3 demo student accounts and a few paid demo orders — to show the software to someone. Remove it with one click later.</p>
+    <form method="post"><?= csrf_field() ?><input type="hidden" name="action" value="demo_add"><button class="ci-btn" type="submit"><i class="fas fa-wand-magic-sparkles"></i> Add demo data</button></form>
+  <?php endif; ?>
+</div></div>
 </div>
 <?php admin_shell_close(); ?>
 </body>

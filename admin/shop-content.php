@@ -4,7 +4,7 @@
 require_once __DIR__ . '/components/guard.php';
 require_once INCLUDES_PATH . '/institute.php';
 require_once INCLUDES_PATH . '/shop.php';
-$me = ci_page_start($pdo, ['shop']);
+$me = sh_page_start($pdo, ['products']);
 sh_tables($pdo);
 $pid = (int)($_GET['id'] ?? $_POST['pid'] ?? 0);
 $p = $pid ? sh_product($pdo, $pid, false) : null;
