@@ -133,7 +133,7 @@ table.lines{width:100%;border-collapse:collapse;font-size:13px;border:1px solid 
     </tbody>
   </table>
   <div class="words">Amount received in words: <b><?= ci_e(ci_words((float)$r['amount'])) ?></b></div>
-  <div class="meta"><span>Received by: <b><?= ci_e($r['username'] ?? '—') ?></b></span><span>Entered on <?= date('d M Y, h:i A', strtotime($r['created_at'])) ?></span></div>
+  <div class="meta"><span></span><span>Entered on <?= date('d M Y, h:i A', strtotime($r['created_at'])) ?></span></div>
   <div class="sign"><div class="s">Student / Guardian</div><div class="s">Authorised Signatory<br><b><?= ci_e($inst['name']) ?></b></div></div>
   <div class="foot"><span>This is a computer-generated receipt.</span><span><?= ci_e($r['receipt_no']) ?></span></div>
 </div>
@@ -161,7 +161,7 @@ table.lines{width:100%;border-collapse:collapse;font-size:13px;border:1px solid 
     <tr><td><b>Balance due</b></td><td class="r"><b><?= ci_money($dueAfter) ?></b></td></tr>
   </table>
   <hr><p><?= ci_e(ci_words((float)$r['amount'])) ?></p><hr>
-  <p class="c">Received by <?= ci_e($r['username'] ?? '') ?> · <?= date('d M Y h:i A', strtotime($r['created_at'])) ?></p>
+  <p class="c"><?= date('d M Y h:i A', strtotime($r['created_at'])) ?></p>
   <p class="c">Thank you</p>
 </div>
 <?php endif; ?>

@@ -26,6 +26,8 @@ $pre = ['type' => (string)($_GET['type'] ?? 'students'), 'id' => (int)($_GET['id
 .rp-types button.on{background:var(--ci-acc);color:#fff}
 .rp-types button:not(.on):hover{background:#faf8fd;color:var(--ci-acc)}
 .rp-pane[hidden]{display:none}
+.rp-two{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:12px}
+@media (max-width:700px){.rp-two{grid-template-columns:1fr}}
 .rp-go{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
 .rp-out{margin-top:16px}
 .rp-out:empty{display:none}
@@ -80,9 +82,9 @@ $pre = ['type' => (string)($_GET['type'] ?? 'students'), 'id' => (int)($_GET['id
       <div class="ci-f"><label>Admitted to</label><input type="date" name="to"></div>
     </form>
     <div class="rp-pane" data-pane="student" hidden><div class="ci-f"><label>Student (any status)</label><select data-id><option value=""></option><?php foreach ($students as $s): ?><option value="<?= (int)$s['id'] ?>" <?= $pre['type'] === 'student' && $pre['id'] === (int)$s['id'] ? 'selected' : '' ?>><?= ci_e($s['name'] . ' (' . $s['reg_no'] . ')' . ($s['class_name'] ? ' · ' . $s['class_name'] : '') . $tag($s['status'])) ?></option><?php endforeach; ?></select></div></div>
-    <div class="rp-pane" data-pane="course" hidden><div class="ci-f"><label>Course (active or completed)</label><select data-id><option value=""></option><?php foreach ($courses as $c): ?><option value="<?= (int)$c['id'] ?>" <?= $pre['type'] === 'course' && $pre['id'] === (int)$c['id'] ? 'selected' : '' ?>><?= ci_e($c['name'] . $tag($c['status'])) ?></option><?php endforeach; ?></select></div></div>
-    <div class="rp-pane" data-pane="batch" hidden><div class="ci-f"><label>Batch (active or completed)</label><select data-id><option value=""></option><?php foreach ($batches as $b): ?><option value="<?= (int)$b['id'] ?>" <?= $pre['type'] === 'batch' && $pre['id'] === (int)$b['id'] ? 'selected' : '' ?>><?= ci_e($b['name'] . ' · ' . $b['course_name'] . ($b['session_name'] ? ' (' . $b['session_name'] . ')' : '') . $tag($b['status'])) ?></option><?php endforeach; ?></select></div></div>
-    <div class="rp-pane" data-pane="class" hidden><div class="ci-f"><label>Class</label><select data-id><option value=""></option><?php foreach ($L['classes'] as $id => $n): ?><option value="<?= $id ?>" <?= $pre['type'] === 'class' && $pre['id'] === $id ? 'selected' : '' ?>><?= ci_e($n) ?></option><?php endforeach; ?></select></div></div>
+    <div class="rp-pane rp-two" data-pane="course" hidden><div class="ci-f"><label>Course (active or completed)</label><select data-id><option value="all">All courses (one line each)</option><?php foreach ($courses as $c): ?><option value="<?= (int)$c['id'] ?>" <?= $pre['type'] === 'course' && $pre['id'] === (int)$c['id'] ? 'selected' : '' ?>><?= ci_e($c['name'] . $tag($c['status'])) ?></option><?php endforeach; ?></select></div><div class="ci-f rp-all-st" hidden><label>Status</label><select data-st><option value="all">All</option><option value="active">Active</option><option value="completed">Completed</option><option value="inactive">Inactive</option></select></div></div>
+    <div class="rp-pane rp-two" data-pane="batch" hidden><div class="ci-f"><label>Batch (active or completed)</label><select data-id><option value="all">All batches (one line each)</option><?php foreach ($batches as $b): ?><option value="<?= (int)$b['id'] ?>" <?= $pre['type'] === 'batch' && $pre['id'] === (int)$b['id'] ? 'selected' : '' ?>><?= ci_e($b['name'] . ' · ' . $b['course_name'] . ($b['session_name'] ? ' (' . $b['session_name'] . ')' : '') . $tag($b['status'])) ?></option><?php endforeach; ?></select></div><div class="ci-f rp-all-st" hidden><label>Status</label><select data-st><option value="all">All</option><option value="active">Active</option><option value="completed">Completed</option><option value="inactive">Inactive</option></select></div></div>
+    <div class="rp-pane" data-pane="class" hidden><div class="ci-f"><label>Class</label><select data-id><option value="all">All classes (one line each)</option><?php foreach ($L['classes'] as $id => $n): ?><option value="<?= $id ?>" <?= $pre['type'] === 'class' && $pre['id'] === $id ? 'selected' : '' ?>><?= ci_e($n) ?></option><?php endforeach; ?></select></div></div>
     <div class="rp-go"><button type="button" class="ci-btn" id="rpView"><i class="fas fa-eye"></i> View report</button><button type="button" class="ci-btn ci-ghost" id="rpPdf"><i class="fas fa-file-pdf"></i> Download PDF</button><span class="ci-muted" id="rpMsg" style="align-self:center"></span></div>
   </div>
 </div></div></div>
@@ -107,7 +109,8 @@ $pre = ['type' => (string)($_GET['type'] ?? 'students'), 'id' => (int)($_GET['id
       q.set('export', 'json');
       return '/admin/students.php?' + q.toString();
     }
-    var id = document.querySelector('.rp-pane[data-pane=' + type + '] [data-id]').value;
+    var pane = document.querySelector('.rp-pane[data-pane=' + type + ']'), id = pane.querySelector('[data-id]').value, st = pane.querySelector('[data-st]');
+    if (id === 'all') return '/admin/ci-report.php?type=' + type + (type === 'class' ? 'es' : (type === 'batch' ? 'es' : 's')) + (st ? '&status=' + st.value : '');
     return id ? '/admin/ci-report.php?type=' + type + '&id=' + encodeURIComponent(id) : '';
   }
   function load(then) {
@@ -124,7 +127,10 @@ $pre = ['type' => (string)($_GET['type'] ?? 'students'), 'id' => (int)($_GET['id
     if (!window.jspdf || !window.jspdf.jsPDF) { msg.textContent = 'The PDF tool is still loading, try again in a moment.'; return; }
     load(function (d) { window.ciReportPdf(d); if (!out.innerHTML) out.innerHTML = window.ciReportHtml(d); });
   });
-  document.addEventListener('change', function (e) { if (e.target.closest('.rp-pane')) { last = null; } });
+  // the Status filter shows only for "All courses / All batches"
+  function syncAll() { document.querySelectorAll('.rp-two').forEach(function (p) { var all = p.querySelector('[data-id]').value === 'all'; p.querySelector('.rp-all-st').hidden = !all; }); }
+  document.addEventListener('change', function (e) { if (e.target.closest('.rp-pane')) { last = null; syncAll(); } });
+  syncAll();
   show(type);
   if (<?= $pre['id'] ? 'true' : 'false' ?>) document.addEventListener('DOMContentLoaded', function () { document.getElementById('rpView').click(); }); // the report scripts load deferred
 })();

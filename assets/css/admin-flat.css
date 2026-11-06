@@ -73,3 +73,6 @@ html{scrollbar-gutter:stable}
 .dk-pop .dk-opt{margin:0 6px}
 .dk-pop .dk-grp{margin:2px 6px 0}
 .dk-pop{padding-bottom:0}
+.dk-pop .dk-list{padding:6px 0 12px}
+.dk-pop .dk-opt{padding:8px 12px}
+.dk-pop{max-height:min(340px,calc(100vh - 24px))}

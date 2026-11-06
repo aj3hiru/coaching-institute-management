@@ -245,7 +245,7 @@ $tel = fn(?string $m) => $m ? '<a href="tel:' . ci_e($m) . '">' . ci_e($m) . '</
       </div>
       <details class="ci-cc-pays"<?= $ep ? '' : ' hidden' ?>><summary><?= $inst ? 'Installments paid' : 'Payments' ?> (<?= count($ep) ?>)</summary>
         <table class="ci-table ci-plan"><thead><tr><th><?= $inst ? 'Installment' : '#' ?></th><th>Date</th><th>Receipt</th><th>Paid by</th><th class="ci-num">Amount</th><th class="ci-noprint"></th></tr></thead><tbody>
-        <?php foreach ($ep as $p): ?><tr><td><b><?= $inst ? 'Installment ' . $p['no'] : $p['no'] ?></b></td><td class="ci-nw"><?= ci_date($p['paid_on']) ?></td><td><?= ci_e($p['receipt_no']) ?></td><td><?= ci_e(ci_pay_mode($p)) ?></td><td class="ci-num"><b class="ci-g"><?= ci_money($p['amount']) ?></b></td><td class="ci-noprint"><a class="ci-ico" href="/admin/ci-receipt.php?id=<?= (int)$p['id'] ?>" target="_blank" aria-label="Print receipt"><?= ci_svg('print') ?></a></td></tr><?php endforeach; ?>
+        <?php foreach ($ep as $p): ?><tr><td><b><?= $inst ? 'Installment ' . $p['no'] : $p['no'] ?></b></td><td class="ci-nw"><?= ci_date($p['paid_on']) ?></td><td><?= ci_e($p['receipt_no']) ?></td><td><?= ci_e(ci_pay_mode($p)) ?><?= $p['username'] ? '<small class="ci-by">by ' . ci_e($p['username']) . '</small>' : '' ?></td><td class="ci-num"><b class="ci-g"><?= ci_money($p['amount']) ?></b></td><td class="ci-noprint"><a class="ci-ico" href="/admin/ci-receipt.php?id=<?= (int)$p['id'] ?>" target="_blank" aria-label="Print receipt"><?= ci_svg('print') ?></a></td></tr><?php endforeach; ?>
         </tbody></table></details>
     </div>
     <?php endforeach; ?>
@@ -256,7 +256,7 @@ $tel = fn(?string $m) => $m ? '<a href="tel:' . ci_e($m) . '">' . ci_e($m) . '</
     <?php if (!$pays): ?><tr><td colspan="7" class="ci-empty">No payments yet.</td></tr><?php endif; ?>
     <?php foreach ($pays as $p): ?>
     <tr<?= (int)$p['id'] === $newReceipt ? ' class="ci-hl"' : '' ?>><td class="ci-nw"><?= ci_date($p['paid_on']) ?></td><td class="ci-nw"><b><?= ci_e($p['receipt_no']) ?></b><?= $p['note'] ? '<small class="ci-muted" style="display:block">' . ci_e($p['note']) . '</small>' : '' ?></td><td><?= ci_e($p['course_name'] ?? '—') ?></td>
-    <td><?= ci_e(ci_pay_mode($p)) ?></td><td class="ci-num"><b class="ci-g"><?= ci_money($p['amount']) ?></b></td><td class="ci-num"><?= ci_money($p['balance']) ?></td>
+    <td><?= ci_e(ci_pay_mode($p)) ?><?= $p['username'] ? '<small class="ci-by">by ' . ci_e($p['username']) . '</small>' : '' ?></td><td class="ci-num"><b class="ci-g"><?= ci_money($p['amount']) ?></b></td><td class="ci-num"><?= ci_money($p['balance']) ?></td>
     <td class="ci-noprint"><div class="ci-icos"><a class="ci-ico" href="/admin/ci-receipt.php?id=<?= (int)$p['id'] ?>" target="_blank" aria-label="Print receipt"><?= ci_svg('print') ?></a>
     <?php if ($me['role'] === 'admin'): ?><?= ci_post_ico('trash', 'Delete payment', ['action' => 'pay_delete', 'id' => $id, 'payment_id' => $p['id']], 'Delete payment ' . $p['receipt_no'] . '? The due goes up again.') ?><?php endif; ?>
     </div></td></tr>

@@ -143,7 +143,7 @@
 (function () {
   var tip = null, cur = null;
   // only the icon buttons of table Action columns (not the delete bin, not other buttons)
-  var SEL = 'td:last-child .ci-ico:not([data-i="trash"])'; // Action column icons only (never delete)
+  var SEL = 'td:last-child .ci-ico:not([data-i="trash"]):not([data-i="edit"])'; // Action column icons only (not delete / edit — those are clear)
   function show(el, x, y) {
     var t = el.getAttribute('data-tip') || el.getAttribute('title') || el.getAttribute('aria-label');
     if (!t) return;

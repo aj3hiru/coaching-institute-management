@@ -33,7 +33,7 @@ $stats = [
 ];
 $recentStudents = $pdo->query("SELECT s.*, (SELECT GROUP_CONCAT(c.name SEPARATOR ', ') FROM ci_enrollments e JOIN ci_courses c ON c.id = e.course_id WHERE e.student_id = s.id AND e.status <> 'dropped') AS courses
     FROM ci_students s ORDER BY s.id DESC LIMIT 8")->fetchAll(PDO::FETCH_ASSOC);
-$recentPays = $pdo->query("SELECT p.*, s.name, s.reg_no, s.photo FROM ci_payments p JOIN ci_students s ON s.id = p.student_id ORDER BY p.id DESC LIMIT 8")->fetchAll(PDO::FETCH_ASSOC);
+$recentPays = $pdo->query("SELECT p.*, s.name, s.reg_no, s.photo, u.username FROM ci_payments p JOIN ci_students s ON s.id = p.student_id LEFT JOIN users u ON u.id = p.created_by ORDER BY p.id DESC LIMIT 8")->fetchAll(PDO::FETCH_ASSOC);
 $upcoming = $pdo->query("SELECT e.id, e.due_date, s.id AS sid, s.name, s.mobile, s.photo, c.name AS course_name, " . CI_DUE_SQL . " AS due
     FROM ci_enrollments e JOIN ci_students s ON s.id = e.student_id LEFT JOIN ci_courses c ON c.id = e.course_id
     WHERE e.status <> 'dropped' AND " . CI_DUE_SQL . " > 0.004 ORDER BY (e.due_date IS NULL), e.due_date, due DESC LIMIT 8")->fetchAll(PDO::FETCH_ASSOC);
@@ -83,7 +83,7 @@ $empty = !$stats['active'] && !$stats['courses'] && !$stats['batches'];
   </ul></div></div>
   <div class="ci-card"><div class="ci-card-h"><h3>Recent payments</h3><a href="/admin/ci-fees.php">All payments</a></div><div class="ci-card-b ci-p0"><ul class="ci-list">
     <?php if (!$recentPays): ?><li class="ci-muted">No payments yet.</li><?php endif; ?>
-    <?php foreach ($recentPays as $p): ?><li><div class="ci-person"><div><a href="/admin/student-view.php?id=<?= (int)$p['student_id'] ?>"><?= ci_e($p['name']) ?></a><small><?= ci_date($p['paid_on']) ?> · <?= ci_e(ci_pay_mode($p)) ?></small></div></div><span class="r"><b><?= ci_money0($p['amount']) ?></b><br><a class="ci-ico" href="/admin/ci-receipt.php?id=<?= (int)$p['id'] ?>" target="_blank" aria-label="Print receipt" style="width:26px;height:26px;margin-top:3px"><?= ci_svg('print') ?></a></span></li><?php endforeach; ?>
+    <?php foreach ($recentPays as $p): ?><li><div class="ci-person"><div><a href="/admin/student-view.php?id=<?= (int)$p['student_id'] ?>"><?= ci_e($p['name']) ?></a><small><?= ci_date($p['paid_on']) ?> · <?= ci_e(ci_pay_mode($p)) ?><?= $p['username'] ? ' · by ' . ci_e($p['username']) : '' ?></small></div></div><span class="r"><b><?= ci_money0($p['amount']) ?></b><br><a class="ci-ico" href="/admin/ci-receipt.php?id=<?= (int)$p['id'] ?>" target="_blank" aria-label="Print receipt" style="width:26px;height:26px;margin-top:3px"><?= ci_svg('print') ?></a></span></li><?php endforeach; ?>
   </ul></div></div>
   <div class="ci-card"><div class="ci-card-h"><h3>Fee to collect</h3><a href="/admin/ci-fees.php?tab=dues">All dues</a></div><div class="ci-card-b ci-p0"><ul class="ci-list">
     <?php if (!$upcoming): ?><li class="ci-muted">No dues. Everyone has paid.</li><?php endif; ?>
