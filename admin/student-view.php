@@ -34,7 +34,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // the next due date is typed by hand when some fee is still left (empty = none)
         $pdo->prepare("UPDATE ci_enrollments SET due_date = ? WHERE id = ?")->execute([ci_clean_date($_POST['next_due'] ?? ''), $eid]);
         admin_log('ci_payment', 'Fee ' . ci_money(array_sum(array_column($parts, 1))) . " from {$s['reg_no']} {$s['name']} ({$res[1]})");
-        admin_flash('Fee saved. Receipt ' . $res[1] . '.');
         header("Location: /admin/student-view.php?id=$id&receipt=" . $res[0] . '#payments');
         exit;
     }
@@ -52,6 +51,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         admin_log('ci_promote', "Moved {$s['reg_no']} to class #$to");
         admin_flash('Class changed. The earlier courses and their fees are kept. Add the new class\'s course now.');
         header('Location: /admin/student-edit.php?id=' . $id . '&addcourse=1');
+        exit;
+    }
+    if ($a === 'enroll' && (ci_perm($me, 'edit_student') || ci_perm($me, 'add_student'))) {
+        $parts = (ci_perm($me, 'fees') || ci_perm($me, 'add_student')) ? ci_parts_from_post((array)($_POST['epm'] ?? []), (array)($_POST['epa'] ?? [])) : [];
+        $fin = trim((string)($_POST['final'] ?? ''));
+        $pdo->beginTransaction();
+        $res = ci_enroll($pdo, $id, (int)($_POST['course_id'] ?? 0), (int)($_POST['batch_id'] ?? 0) ?: null, (string)($_POST['fee_type'] ?? 'full'),
+            $fin === '' ? null : ci_amount($fin), ci_clean_date($_POST['due'] ?? ''), $parts, date('Y-m-d'), (int)$me['id']);
+        if (is_string($res)) { $pdo->rollBack(); admin_flash($res, 'error'); header('Location: ' . $back()); exit; }
+        $pdo->commit();
+        admin_log('ci_enroll', "Added {$s['reg_no']} to course #" . (int)$_POST['course_id']);
+        if (!$res[1]) admin_flash('Course added.'); // with a payment the page shows "Payment saved — Print receipt"
+        header("Location: /admin/student-view.php?id=$id" . ($res[1] ? '&receipt=' . $res[1] : ''));
         exit;
     }
     if ($a === 'pay_delete' && $me['role'] === 'admin') {
@@ -96,7 +108,8 @@ $hq = $pdo->prepare("SELECT h.*, a.name AS from_name, b.name AS to_name, se.name
     LEFT JOIN ci_classes b ON b.id = h.to_class LEFT JOIN ci_sessions se ON se.id = h.session_id LEFT JOIN users u ON u.id = h.created_by WHERE h.student_id = ? ORDER BY h.changed_on DESC, h.id DESC");
 $hq->execute([$id]);
 $history = $hq->fetchAll(PDO::FETCH_ASSOC);
-$classes = ci_lists($pdo)['classes'];
+$L = ci_lists($pdo);
+$classes = $L['classes'];
 $late = 0.0;
 $next = null;
 $byEnr = [];
@@ -141,7 +154,7 @@ $tel = fn(?string $m) => $m ? '<a href="tel:' . ci_e($m) . '">' . ci_e($m) . '</
 <?php admin_shell_open('Student Profile', ci_e($s['reg_no'] . ' · ' . $s['name'])); ?>
 <div class="ci">
 <?= admin_flash() ?>
-<?php if ($newReceipt): ?><div class="ci-alert ci-alert-ok"><i class="fas fa-receipt"></i> Payment saved. <a href="/admin/ci-receipt.php?id=<?= $newReceipt ?>" target="_blank"><b>Print receipt</b></a></div><?php endif; ?>
+<?php if ($newReceipt): ?><div class="ci-alert ci-alert-ok"><i class="fas fa-receipt"></i> Saved. <a href="/admin/ci-receipt.php?id=<?= $newReceipt ?>" target="_blank"><b>Print receipt</b></a></div><?php endif; ?>
 
 <div class="ci-card ci-ph"><div class="ci-card-b">
   <div class="ci-ph-main">
@@ -161,7 +174,7 @@ $tel = fn(?string $m) => $m ? '<a href="tel:' . ci_e($m) . '">' . ci_e($m) . '</
     <?php if ($s['mobile']): ?><?= ci_ico('phone', 'tel:' . $s['mobile'], 'Call') ?><?php endif; ?>
     <?php if ($wa): ?><a class="ci-ico ci-ico-ok" href="<?= ci_e($wa) ?>" target="_blank" rel="noopener" title="WhatsApp (fee reminder)" aria-label="WhatsApp"><i class="fab fa-whatsapp" style="font-size:16px"></i></a><?php endif; ?>
     <?= ci_ico('pdf', null, 'Student report (PDF)', 'button', ' data-report="student" data-id="' . $id . '"') ?>
-    <?php if (ci_perm($me, 'edit_student')): ?><?= ci_ico('edit', '/admin/student-edit.php?id=' . $id, 'Edit student') ?><a class="ci-btn ci-ghost" href="/admin/student-edit.php?id=<?= $id ?>&amp;addcourse=1"><?= ci_svg('book-plus') ?> Add to course / batch</a><?php endif; ?>
+    <?php if (ci_perm($me, 'edit_student')): ?><?= ci_ico('edit', '/admin/student-edit.php?id=' . $id, 'Edit student') ?><button type="button" class="ci-btn ci-ghost" data-open="ci-addc"><?= ci_svg('book-plus') ?> Add to course / batch</button><?php endif; ?>
     <?php if (!$pays && ci_perm($me, 'edit_student')): ?><?= ci_post_ico('trash', 'Delete student', ['action' => 'delete', 'id' => $id], 'Delete student ' . $s['name'] . '? This cannot be undone.') ?><?php endif; ?>
     <?php if ($payable && ci_perm($me, 'fees')): ?><button type="button" class="ci-btn" data-collect="<?= (int)$payable[0]['id'] ?>"><i class="fas fa-indian-rupee-sign"></i> Collect Fee</button><?php endif; ?>
   </div>
@@ -175,90 +188,93 @@ $tel = fn(?string $m) => $m ? '<a href="tel:' . ci_e($m) . '">' . ci_e($m) . '</
   <div class="ci-stat"><i class="fas fa-calendar-day ci-i-blue"></i><div><b><?= $next ? ci_money0($next['amount']) : '—' ?></b><small><?= $next ? 'Next due · ' . ci_date($next['date']) : 'No due date set' ?></small></div></div>
 </div>
 
-<div class="ci-tabs ci-noprint" id="ci-ptabs">
-  <a href="#overview" data-tab="overview"><i class="fas fa-id-card"></i> Overview</a>
-  <a href="#fee" data-tab="fee"><i class="fas fa-indian-rupee-sign"></i> Fee (<?= count($enr) ?>)</a>
-  <a href="#payments" data-tab="payments"><i class="fas fa-receipt"></i> Payments (<?= count($pays) ?>)</a>
-</div>
-
-<section class="ci-pane" data-pane="overview">
-<div class="ci-grid2">
-  <div class="ci-card"><div class="ci-card-h"><h3>Personal</h3></div><div class="ci-card-b"><dl class="ci-kv"><?= $kv([
-      'Full name' => ci_e($s['name']), 'Reg. no.' => ci_e($s['reg_no']),
-      'Date of birth' => $s['dob'] ? ci_date($s['dob']) . ' (' . $age . ' yrs)' : '', 'Gender' => ci_e($s['gender'] ?? ''),
-      'Status' => ci_status_badge($s['status']),
-  ]) ?></dl></div></div>
-  <div class="ci-card"><div class="ci-card-h"><h3>Parents &amp; contact</h3></div><div class="ci-card-b"><dl class="ci-kv"><?= $kv([
-      "Father's name" => ci_e($s['father_name'] ?? ''), "Mother's name" => ci_e($s['mother_name'] ?? ''),
-      'Mobile' => $tel($s['mobile']), 'Alternate mobile' => $tel($s['alt_mobile']),
-      'Email' => $s['email'] ? '<a href="mailto:' . ci_e($s['email']) . '">' . ci_e($s['email']) . '</a>' : '',
-  ]) ?></dl></div></div>
-  <div class="ci-card"><div class="ci-card-h"><h3>Address</h3></div><div class="ci-card-b"><dl class="ci-kv"><?= $kv([
-      'Address' => ci_e($s['address'] ?? ''), 'City / Village' => ci_e($s['city'] ?? ''), 'State' => ci_e($s['state'] ?? ''), 'PIN code' => ci_e($s['pincode'] ?? ''),
-      'Map' => $address ? '<a href="https://www.google.com/maps/search/?api=1&amp;query=' . rawurlencode($address) . '" target="_blank" rel="noopener">Open in Google Maps</a>' : '',
-  ]) ?: '<span class="ci-muted">No address added.</span>' ?></dl></div></div>
-  <div class="ci-card"><div class="ci-card-h"><h3>Academic</h3></div><div class="ci-card-b"><dl class="ci-kv"><?= $kv([
-      'Class' => ci_e($s['class_name'] ?? ''), 'School / College' => ci_e($s['school'] ?? ''), 'Admission date' => ci_date($s['admission_date']),
-      'Courses' => implode('<br>', array_map(fn($e) => ci_e($e['course_name'] . ($e['batch_name'] ? ' · ' . $e['batch_name'] : '')) . ($e['status'] !== 'active' ? ' ' . ci_status_badge($e['status']) : ''), $enr)),
-      'Added' => ci_e(date('d M Y, h:i A', strtotime($s['created_at']))) . ($s['added_by'] ? ' by ' . ci_e($s['added_by']) : ''),
-  ]) ?></dl></div></div>
-</div>
-<div class="ci-card"><div class="ci-card-h"><h3>Class history</h3><?php if (ci_perm($me, 'edit_student')): ?><a class="ci-btn ci-ghost ci-sm ci-noprint" href="/admin/student-edit.php?id=<?= $id ?>&amp;addcourse=1"><?= ci_svg('book-plus') ?> Add to course / batch</a><?php endif; ?></div><div class="ci-card-b ci-p0 ci-table-wrap"><table class="ci-table">
-<thead><tr><th>Date</th><th>From class</th><th>To class</th><th>Session</th><th>Note</th></tr></thead><tbody>
-<?php if (!$history): ?><tr><td colspan="5" class="ci-empty">In <?= ci_e($s['class_name'] ?? '—') ?> since admission (<?= ci_date($s['admission_date']) ?>). A class change made in Edit Student is listed here; earlier courses and fees stay as they are.</td></tr><?php endif; ?>
-<?php foreach ($history as $h): ?><tr><td><?= ci_date($h['changed_on']) ?></td><td><?= ci_e($h['from_name'] ?? '—') ?></td><td><b><?= ci_e($h['to_name'] ?? '—') ?></b></td><td class="ci-muted"><?= ci_e($h['session_name'] ?? '—') ?></td><td class="ci-muted"><?= ci_e($h['note'] ?? '') ?><?= $h['username'] ? ' <small>by ' . ci_e($h['username']) . '</small>' : '' ?></td></tr><?php endforeach; ?>
-</tbody></table></div></div>
-<?php if ($s['notes']): ?><div class="ci-card"><div class="ci-card-h"><h3>Notes</h3></div><div class="ci-card-b"><?= nl2br(ci_e($s['notes'])) ?></div></div><?php endif; ?>
-</section>
-
-<section class="ci-pane" data-pane="fee">
-<?php if (!$enr): ?><div class="ci-card"><div class="ci-card-b ci-empty">Not enrolled in any course yet. <a href="/admin/student-edit.php?id=<?= $id ?>">Add a course</a>.</div></div><?php endif; ?>
-<?php foreach ($enr as $e): $eid = (int)$e['id']; $bi = $batchInfo[$e['batch_id']] ?? []; $dropped = $e['status'] === 'dropped'; $inst = ($e['fee_type'] ?? 'full') === 'installment'; $ep = array_reverse($byEnr[$eid] ?? []); ?>
-<div class="ci-card ci-enr" id="enr-<?= $eid ?>">
-  <div class="ci-card-h"><div><h3><?= ci_e($e['course_name'] ?? '—') ?> <span class="ci-badge <?= $inst ? 'ci-b-blue' : 'ci-b-violet' ?>"><?= $inst ? 'Installment' : 'Final fee' ?></span> <?= $e['status'] !== 'active' ? ci_status_badge($e['status']) : '' ?></h3>
-    <small class="ci-muted"><?= ci_e(implode(' · ', array_filter([$e['batch_name'] ? 'Batch ' . $e['batch_name'] : 'No batch', $e['timing'], $bi['days'] ?? '', ($bi['teacher'] ?? '') ? 'Teacher ' . $bi['teacher'] : '', $e['session_name'] ? 'Session ' . $e['session_name'] : '']))) ?></small></div>
-    <div class="ci-actions ci-noprint">
-      <?php if (!$dropped && (float)$e['due'] > 0.004 && ci_perm($me, 'fees')): ?><button type="button" class="ci-btn ci-sm" data-collect="<?= $eid ?>"><i class="fas fa-indian-rupee-sign"></i> Collect<?= $inst ? ' installment' : ' fee' ?></button><?php endif; ?>
-      <?php if (ci_perm($me, 'edit_student')): ?><?= ci_ico('edit', '/admin/student-edit.php?id=' . $id, 'Change course / fee') ?><?php endif; ?>
+<?php
+  $age = $s['dob'] ? (new DateTime($s['dob']))->diff(new DateTime())->y : null;
+  $mainKv = array_filter(["Mother's name" => $s['mother_name'], 'Date of birth' => $s['dob'] ? ci_date($s['dob']) . ' (' . $age . ' yrs)' : '', 'Gender' => $s['gender'], 'Email' => $s['email']]);
+  $allKv = array_filter(['Full name' => $s['name'], 'Reg. no.' => $s['reg_no'], 'Class' => $s['class_name'], "Father's name" => $s['father_name'], "Mother's name" => $s['mother_name'],
+      'Mobile' => $s['mobile'], 'Alternate mobile' => $s['alt_mobile'], 'Email' => $s['email'], 'Date of birth' => $s['dob'] ? ci_date($s['dob']) . ' (' . $age . ' yrs)' : '', 'Gender' => $s['gender'],
+      'Address' => $s['address'], 'City' => $s['city'], 'State' => $s['state'], 'PIN code' => $s['pincode'], 'School / College' => $s['school'], 'Admission date' => ci_date($s['admission_date']),
+      'Status' => ucfirst($s['status']) . ($s['status'] === 'left' && $s['left_on'] ? ' (' . ci_date($s['left_on']) . ')' : ''), 'Added' => date('d M Y, h:i A', strtotime($s['created_at'])) . ($s['added_by'] ? ' by ' . $s['added_by'] : '')]);
+?>
+<div class="ci-pf">
+  <aside class="ci-pf-side">
+    <div class="ci-card ci-det" data-ds="Student details"><div class="ci-card-h"><h3>Student details</h3><?php if (ci_perm($me, 'edit_student')): ?><?= ci_ico('edit', '/admin/student-edit.php?id=' . $id, 'Edit details') ?><?php endif; ?></div><div class="ci-card-b">
+      <?php if ($mainKv): ?><dl class="ci-kv ci-kv1"><?php foreach ($mainKv as $k => $v): ?><dt><?= ci_e($k) ?></dt><dd><?= ci_e($v) ?></dd><?php endforeach; ?></dl><?php else: ?><p class="ci-muted" style="margin:0">Nothing more than the card above.</p><?php endif; ?>
+      <div class="ci-det-all" hidden><dl class="ci-kv ci-kv1"><?php foreach ($allKv as $k => $v): ?><dt><?= ci_e($k) ?></dt><dd><?= ci_e($v) ?></dd><?php endforeach; ?></dl>
+        <?php if ($s['notes']): ?><div class="ci-det-notes"><b>Notes</b><br><?= nl2br(ci_e($s['notes'])) ?></div><?php endif; ?></div>
+      <button type="button" class="ci-more-btn" data-more>View all details <i class="fas fa-chevron-down"></i></button>
+    </div></div>
+    <div class="ci-card" data-ds="Class history"><div class="ci-card-h"><h3>Class history</h3></div><div class="ci-card-b">
+      <ul class="ci-timeline">
+        <?php foreach ($history as $h): ?><li><b><?= ci_e($h['from_name'] ?? '—') ?> → <?= ci_e($h['to_name'] ?? '—') ?></b><small><?= ci_date($h['changed_on']) ?><?= $h['session_name'] ? ' · ' . ci_e($h['session_name']) : '' ?><?= $h['note'] ? ' · ' . ci_e($h['note']) : '' ?></small></li><?php endforeach; ?>
+        <li><b>Admitted<?= !$history && $s['class_name'] ? ' in ' . ci_e($s['class_name']) : '' ?></b><small><?= ci_date($s['admission_date']) ?></small></li>
+      </ul>
+    </div></div>
+  </aside>
+  <div class="ci-pf-main">
+    <div class="ci-sec-h" data-ds="Courses &amp; batches"><h3>Courses &amp; batches <span class="ci-muted">(<?= count($enr) ?>)</span></h3><?php if (ci_perm($me, 'edit_student') || ci_perm($me, 'add_student')): ?><button type="button" class="ci-btn ci-sm ci-noprint" data-open="ci-addc"><?= ci_svg('book-plus') ?> Add to course / batch</button><?php endif; ?></div>
+    <?php if (!$enr): ?><div class="ci-card"><div class="ci-card-b ci-empty">Not in any course yet.</div></div><?php endif; ?>
+    <?php foreach ($enr as $e): $eid = (int)$e['id']; $bi = $batchInfo[$e['batch_id']] ?? []; $dropped = $e['status'] === 'dropped'; $inst = ($e['fee_type'] ?? 'full') === 'installment'; $ep = array_reverse($byEnr[$eid] ?? []); $late = $e['due_date'] && $e['due_date'] < date('Y-m-d') && (float)$e['due'] > 0.004; ?>
+    <div class="ci-cc<?= $e['status'] !== 'active' ? ' is-off' : '' ?>" id="enr-<?= $eid ?>">
+      <div class="ci-cc-h">
+        <div class="ci-cc-t"><h4><?= ci_e($e['course_name'] ?? '—') ?></h4>
+          <div class="ci-cc-tags"><span class="ci-badge <?= $inst ? 'ci-b-blue' : 'ci-b-violet' ?>"><?= $inst ? 'Installment' : 'Final fee' ?></span><?= ci_status_badge($e['status']) ?><?= (float)$e['due'] > 0.004 ? '<span class="ci-badge ci-b-red">Due ' . ci_money0($e['due']) . '</span>' : ((float)$e['paid'] > 0 ? '<span class="ci-badge ci-b-green">Paid</span>' : '') ?><?= $late ? '<span class="ci-badge ci-b-amber">Due date passed</span>' : '' ?></div>
+          <div class="ci-cc-meta"><?= ci_e(implode(' · ', array_filter([$e['batch_name'] ? 'Batch ' . $e['batch_name'] : 'No batch', $e['timing'], $bi['days'] ?? '', ($bi['teacher'] ?? '') ? 'Teacher ' . $bi['teacher'] : '', $e['session_name'] ? 'Session ' . $e['session_name'] : '']))) ?></div></div>
+        <div class="ci-icos ci-noprint"><?php if (!$dropped && (float)$e['due'] > 0.004 && ci_perm($me, 'fees')): ?><button type="button" class="ci-btn ci-sm" data-collect="<?= $eid ?>"><?= ci_svg('rupee') ?> Collect</button><?php endif; ?><?php if (ci_perm($me, 'edit_student')): ?><?= ci_ico('edit', '/admin/student-edit.php?id=' . $id . '#enr-' . $eid, 'Change course / fee') ?><?php endif; ?></div>
+      </div>
+      <div class="ci-cc-money">
+        <div><small>Course fee</small><b><?= ci_money0($e['fee']) ?></b></div>
+        <div><small>Discount</small><b><?= (float)$e['discount'] > 0 ? '−' . ci_money0($e['discount']) : '—' ?></b></div>
+        <div><small>Fee</small><b><?= ci_money0($dropped ? 0 : $e['net']) ?></b></div>
+        <div><small>Paid</small><b class="ci-g"><?= ci_money0($e['paid']) ?></b></div>
+        <div><small>Due</small><b class="<?= (float)$e['due'] > 0.004 ? 'ci-r' : 'ci-g' ?>"><?= ci_money0($e['due']) ?></b></div>
+        <div><small>Next due</small><b<?= $late ? ' class="ci-r"' : '' ?>><?= (float)$e['due'] > 0.004 && $e['due_date'] ? ci_date($e['due_date']) : '—' ?></b></div>
+      </div>
+      <details class="ci-cc-pays"<?= $ep ? '' : ' hidden' ?>><summary><?= $inst ? 'Installments paid' : 'Payments' ?> (<?= count($ep) ?>)</summary>
+        <table class="ci-table ci-plan"><thead><tr><th><?= $inst ? 'Installment' : '#' ?></th><th>Date</th><th>Receipt</th><th>Paid by</th><th class="ci-num">Amount</th><th class="ci-noprint"></th></tr></thead><tbody>
+        <?php foreach ($ep as $p): ?><tr><td><b><?= $inst ? 'Installment ' . $p['no'] : $p['no'] ?></b></td><td class="ci-nw"><?= ci_date($p['paid_on']) ?></td><td><?= ci_e($p['receipt_no']) ?></td><td><?= ci_e(ci_pay_mode($p)) ?></td><td class="ci-num"><b class="ci-g"><?= ci_money($p['amount']) ?></b></td><td class="ci-noprint"><a class="ci-ico" href="/admin/ci-receipt.php?id=<?= (int)$p['id'] ?>" target="_blank" title="Print receipt" aria-label="Print receipt"><?= ci_svg('print') ?></a></td></tr><?php endforeach; ?>
+        </tbody></table></details>
     </div>
-  </div>
-  <div class="ci-card-b">
-    <div class="ci-money">
-      <div><small>Course fee</small><b><?= ci_money($e['fee']) ?></b></div>
-      <div><small>Discount</small><b><?= (float)$e['discount'] > 0 ? '−' . ci_money($e['discount']) : '—' ?></b></div>
-      <div><small>Fee for this student</small><b><?= ci_money($dropped ? 0 : $e['net']) ?></b></div>
-      <div><small>Paid</small><b class="ci-g"><?= ci_money($e['paid']) ?></b></div>
-      <div><small>Due</small><b class="<?= (float)$e['due'] > 0.004 ? 'ci-r' : 'ci-g' ?>"><?= ci_money($e['due']) ?></b></div>
-    </div>
-    <?php if (!$dropped && (float)$e['due'] > 0.004 && $e['due_date']): ?><p class="ci-muted" style="margin:10px 0 0">Next due date: <b<?= $e['due_date'] < date('Y-m-d') ? ' class="ci-r"' : '' ?>><?= ci_date($e['due_date']) ?></b><?= $e['due_date'] < date('Y-m-d') ? ' (passed)' : '' ?></p><?php endif; ?>
-    <div class="ci-plan-head"><b><?= $inst ? 'Installments paid' : 'Payments' ?></b> · <?= count($ep) ?></div>
-    <div class="ci-table-wrap"><table class="ci-table ci-plan">
-      <thead><tr><th><?= $inst ? 'Installment' : '#' ?></th><th>Date</th><th>Receipt</th><th>Paid by</th><th class="ci-num">Amount</th><th class="ci-noprint"></th></tr></thead><tbody>
-      <?php if (!$ep): ?><tr><td colspan="6" class="ci-empty">Nothing paid yet for this course.</td></tr><?php endif; ?>
-      <?php foreach ($ep as $p): ?><tr><td><b><?= $inst ? 'Installment ' . $p['no'] : $p['no'] ?></b></td><td><?= ci_date($p['paid_on']) ?></td><td><?= ci_e($p['receipt_no']) ?></td><td><?= ci_e(ci_pay_mode($p)) ?></td><td class="ci-num"><b class="ci-g"><?= ci_money($p['amount']) ?></b></td><td class="ci-noprint"><a class="ci-ico" href="/admin/ci-receipt.php?id=<?= (int)$p['id'] ?>" target="_blank" title="Print receipt" aria-label="Print receipt"><?= ci_svg('print') ?></a></td></tr><?php endforeach; ?>
-      </tbody></table></div>
+    <?php endforeach; ?>
+
+    <div class="ci-card" data-ds="Fee statement" style="margin-top:16px"><div class="ci-card-h"><h3>Fee statement</h3><div class="ci-actions ci-noprint"><button type="button" class="ci-btn ci-ghost ci-sm" onclick="window.print()"><?= ci_svg('print') ?> Print</button></div></div>
+    <div class="ci-card-b ci-p0 ci-table-wrap"><table class="ci-table">
+    <thead><tr><th>Date</th><th>Receipt</th><th>For</th><th>Paid by</th><th class="ci-num">Amount</th><th class="ci-num">Balance after</th><th class="ci-noprint"></th></tr></thead><tbody>
+    <?php if (!$pays): ?><tr><td colspan="7" class="ci-empty">No payments yet.</td></tr><?php endif; ?>
+    <?php foreach ($pays as $p): ?>
+    <tr<?= (int)$p['id'] === $newReceipt ? ' class="ci-hl"' : '' ?>><td class="ci-nw"><?= ci_date($p['paid_on']) ?></td><td class="ci-nw"><b><?= ci_e($p['receipt_no']) ?></b><?= $p['note'] ? '<small class="ci-muted" style="display:block">' . ci_e($p['note']) . '</small>' : '' ?></td><td><?= ci_e($p['course_name'] ?? '—') ?></td>
+    <td><?= ci_e(ci_pay_mode($p)) ?></td><td class="ci-num"><b class="ci-g"><?= ci_money($p['amount']) ?></b></td><td class="ci-num"><?= ci_money($p['balance']) ?></td>
+    <td class="ci-noprint"><div class="ci-icos"><a class="ci-ico" href="/admin/ci-receipt.php?id=<?= (int)$p['id'] ?>" target="_blank" title="Print receipt" aria-label="Print receipt"><?= ci_svg('print') ?></a>
+    <?php if ($me['role'] === 'admin'): ?><?= ci_post_ico('trash', 'Delete payment', ['action' => 'pay_delete', 'id' => $id, 'payment_id' => $p['id']], 'Delete payment ' . $p['receipt_no'] . '? The due goes up again.') ?><?php endif; ?>
+    </div></td></tr>
+    <?php endforeach; ?>
+    <?php if ($pays): ?><tr class="ci-total-row"><td colspan="4">Total paid</td><td class="ci-num"><?= ci_money($tot['paid']) ?></td><td class="ci-num"><?= ci_money($tot['due']) ?></td><td class="ci-noprint"></td></tr><?php endif; ?>
+    </tbody></table></div></div>
   </div>
 </div>
-<?php endforeach; ?>
-</section>
 
-<section class="ci-pane" data-pane="payments">
-<div class="ci-card"><div class="ci-card-h"><h3>Fee statement</h3><div class="ci-actions ci-noprint"><?php if ($payable): ?><button type="button" class="ci-btn ci-sm" data-collect="<?= (int)$payable[0]['id'] ?>"><i class="fas fa-plus"></i> Collect fee</button><?php endif; ?><button type="button" class="ci-btn ci-ghost ci-sm" onclick="window.print()"><i class="fas fa-print"></i> Print</button></div></div>
-<div class="ci-card-b ci-p0 ci-table-wrap"><table class="ci-table">
-<thead><tr><th>Date</th><th>Receipt</th><th>For</th><th>Paid by</th><th>Note</th><th class="ci-num">Amount</th><th class="ci-num">Balance after</th><th class="ci-noprint"></th></tr></thead><tbody>
-<?php if (!$pays): ?><tr><td colspan="8" class="ci-empty">No payments yet.</td></tr><?php endif; ?>
-<?php foreach ($pays as $p): ?>
-<tr<?= (int)$p['id'] === $newReceipt ? ' class="ci-hl"' : '' ?>><td><?= ci_date($p['paid_on']) ?></td><td><b><?= ci_e($p['receipt_no']) ?></b></td><td><?= ci_e($p['course_name'] ?? '—') ?></td>
-<td><?= ci_e(ci_pay_mode($p)) ?></td><td class="ci-muted"><?= ci_e($p['note'] ?? '') ?><?= $p['username'] ? '<small style="display:block">by ' . ci_e($p['username']) . '</small>' : '' ?></td>
-<td class="ci-num"><b class="ci-g"><?= ci_money($p['amount']) ?></b></td><td class="ci-num"><?= ci_money($p['balance']) ?></td>
-<td class="ci-noprint"><div class="ci-icos"><a class="ci-ico" href="/admin/ci-receipt.php?id=<?= (int)$p['id'] ?>" target="_blank" title="Print receipt" aria-label="Print receipt"><?= ci_svg('print') ?></a>
-<?php if ($me['role'] === 'admin'): ?><?= ci_post_ico('trash', 'Delete payment', ['action' => 'pay_delete', 'id' => $id, 'payment_id' => $p['id']], 'Delete payment ' . $p['receipt_no'] . '? The due goes up again.') ?><?php endif; ?>
-</div></td></tr>
-<?php endforeach; ?>
-<?php if ($pays): ?><tr class="ci-total-row"><td colspan="5">Total paid</td><td class="ci-num"><?= ci_money($tot['paid']) ?></td><td class="ci-num"><?= ci_money($tot['due']) ?></td><td class="ci-noprint"></td></tr><?php endif; ?>
-</tbody></table></div></div>
-</section>
-
+<?php if (ci_perm($me, 'edit_student') || ci_perm($me, 'add_student')): $myClass = (string)(int)$s['class_id']; ?>
+<div class="ci-modal" id="ci-addc" hidden><div class="ci-modal-box ci-modal-wide" role="dialog" aria-modal="true" aria-labelledby="ci-addc-h">
+  <div class="ci-card-h"><h3 id="ci-addc-h">Add <?= ci_e($s['name']) ?> to a course / batch</h3><button type="button" class="ci-x" data-close aria-label="Close"><i class="fas fa-times"></i></button></div>
+  <form method="post" class="ci-card-b ci-float" id="ci-addc-f"><?= csrf_field() ?><input type="hidden" name="action" value="enroll"><input type="hidden" name="id" value="<?= $id ?>">
+    <div class="ci-grid2" style="gap:16px 12px">
+      <div class="ci-f"><label>Course</label><select name="course_id" id="ac-course" data-search required><option value=""></option>
+        <?php $mine = array_filter($L['courses'], fn($c) => $c['status'] === 'active' && (string)(int)$c['class_id'] === $myClass && $myClass !== '0');
+              $rest = array_filter($L['courses'], fn($c) => $c['status'] === 'active' && !((string)(int)$c['class_id'] === $myClass && $myClass !== '0'));
+              $opt = fn($cid, $c) => '<option value="' . $cid . '" data-fee="' . (float)$c['fee'] . '">' . ci_e($c['name']) . ' — ' . ci_money0($c['fee']) . '</option>';
+              if ($mine) { echo '<optgroup label="Class ' . ci_e($s['class_name']) . ' courses">'; foreach ($mine as $cid => $c) echo $opt($cid, $c); echo '</optgroup><optgroup label="Other courses">'; foreach ($rest as $cid => $c) echo $opt($cid, $c); echo '</optgroup>'; }
+              else foreach ($rest as $cid => $c) echo $opt($cid, $c); ?></select></div>
+      <div class="ci-f"><label>Batch</label><select name="batch_id" id="ac-batch" data-search><option value="">Choose the course first</option></select></div>
+      <div class="ci-f"><label>Fee plan</label><select name="fee_type" id="ac-type"><option value="full">Final fee (one time)</option><option value="installment">Installment</option></select></div>
+      <div class="ci-f"><label>Fee for this student (₹)</label><input type="number" name="final" id="ac-final" min="0" step="0.01"></div>
+      <?php if (ci_perm($me, 'fees') || ci_perm($me, 'add_student')): ?><div class="ci-f ci-nofloat" style="grid-column:1/-1"><?= ci_pays_html('epm[]', 'epa[]', [], 'Paying now') ?></div><?php endif; ?>
+      <div class="ci-f" id="ac-due-f" hidden><label>Next due date</label><input type="date" name="due"></div>
+    </div>
+    <div class="ci-row-sum" id="ac-sum" style="margin-top:12px"></div>
+    <div style="display:flex;gap:8px;margin-top:16px"><button class="ci-btn" type="submit"><?= ci_svg('check') ?> Save</button><button type="button" class="ci-btn ci-ghost" data-close>Cancel</button></div>
+  </form>
+</div></div>
+<?php endif; ?>
 <?php if ($payable): ?>
 <div class="ci-modal" id="ci-collect" hidden><div class="ci-modal-box" role="dialog" aria-modal="true" aria-labelledby="ci-collect-h">
   <div class="ci-card-h"><h3 id="ci-collect-h">Collect fee — <?= ci_e($s['name']) ?></h3><button type="button" class="ci-x" data-close aria-label="Close"><i class="fas fa-times"></i></button></div>
@@ -283,16 +299,41 @@ $tel = fn(?string $m) => $m ? '<a href="tel:' . ci_e($m) . '">' . ci_e($m) . '</
 <script>
 (function () {
   var inr = function (n) { return '₹' + (Math.round(n * 100) / 100).toLocaleString('en-IN'); };
-  // tabs (remembered in the address: #overview / #fee / #payments)
-  var tabs = document.querySelectorAll('#ci-ptabs a'), panes = document.querySelectorAll('.ci-pane');
-  function show(t) {
-    if (!document.querySelector('.ci-pane[data-pane="' + t + '"]')) t = 'overview';
-    tabs.forEach(function (a) { a.classList.toggle('on', a.dataset.tab === t); });
-    panes.forEach(function (p) { p.hidden = p.dataset.pane !== t; });
-  }
-  tabs.forEach(function (a) { a.addEventListener('click', function (e) { e.preventDefault(); history.replaceState(null, '', '#' + a.dataset.tab); show(a.dataset.tab); }); });
-  show((location.hash || '#overview').slice(1));
-  window.addEventListener('hashchange', function () { show(location.hash.slice(1)); });
+  // Add to course / batch (popup on this page)
+  (function () {
+    var f = document.getElementById('ci-addc-f'); if (!f) return;
+    var B = <?= json_encode(array_values(array_map(fn($b, $bid) => ['id' => $bid, 'c' => (int)$b['course_id'], 'n' => $b['name'] . ($b['timing'] ? ' · ' . $b['timing'] : '') . ($b['session_name'] ? ' (' . $b['session_name'] . ')' : ''), 'a' => $b['status'] === 'active'], $L['batches'], array_keys($L['batches']))), JSON_UNESCAPED_UNICODE) ?>;
+    var course = f.querySelector('#ac-course'), batch = f.querySelector('#ac-batch'), type = f.querySelector('#ac-type'), fin = f.querySelector('#ac-final'), sum = f.querySelector('#ac-sum');
+    var inr = function (n) { return '₹' + (Math.round(n * 100) / 100).toLocaleString('en-IN'); };
+    var fee = function () { var o = course.options[course.selectedIndex]; return o && o.value ? +o.dataset.fee : null; };
+    var first = function () { return f.querySelector('.ci-pay-a'); };
+    function onePay(v) { f.querySelectorAll('.ci-pay-row').forEach(function (r, k) { if (k) r.remove(); }); if (first()) { first().value = v; f.querySelector('[data-pays]').dispatchEvent(new Event('input', { bubbles: true })); } }
+    function paid() { var t = 0; f.querySelectorAll('.ci-pay-a').forEach(function (i) { t += parseFloat(i.value) || 0; }); return t; }
+    function show() {
+      var l = fee(), v = parseFloat(fin.value);
+      f.querySelector('#ac-due-f').hidden = type.value !== 'installment';
+      if (l === null || isNaN(v)) { sum.innerHTML = ''; return; }
+      var p = paid(), d = Math.max(0, v - p);
+      sum.innerHTML = '<span>Course fee <b>' + inr(l) + '</b></span>' + (v < l ? '<span>Discount <b>' + inr(l - v) + '</b></span>' : '') + '<span>Fee <b>' + inr(v) + '</b></span><span>Paid now <b class="ci-g">' + inr(p) + '</b></span><span>Due <b class="' + (d > 0 ? 'ci-r' : 'ci-g') + '">' + inr(d) + '</b></span>' + (p > v + 0.004 ? '<span class="ci-r"><b>More than the fee</b></span>' : '');
+    }
+    course.addEventListener('change', function () {
+      var c = +course.value, n = 0;
+      batch.innerHTML = '<option value="">' + (c ? 'Choose batch…' : 'Choose the course first') + '</option>';
+      B.forEach(function (b) { if (b.c === c && b.a) { var o = document.createElement('option'); o.value = b.id; o.textContent = b.n; batch.appendChild(o); n++; } });
+      if (c && !n) batch.options[0].textContent = 'No batch for this course';
+      var l = fee(); fin.value = l === null ? '' : l; onePay(type.value === 'full' && l !== null ? l : ''); show();
+    });
+    type.addEventListener('change', function () { onePay(type.value === 'full' ? fin.value : ''); show(); if (type.value === 'installment' && first()) first().focus(); });
+    fin.addEventListener('input', function () { if (type.value === 'full') onePay(fin.value); show(); });
+    f.addEventListener('input', function (e) { if (e.target.closest('[data-pays]')) show(); });
+    f.addEventListener('ci-pays', show);
+    f.addEventListener('submit', function (e) { if (!course.value) { e.preventDefault(); alert('Choose a course.'); } });
+    if (/[?&]addcourse=1/.test(location.search)) { var md = document.getElementById('ci-addc'); md.hidden = false; }
+  })();
+  // View all details
+  document.querySelectorAll('[data-more]').forEach(function (b) { b.addEventListener('click', function () { var box = b.parentNode.querySelector('.ci-det-all'), open = box.hidden; box.hidden = !open; b.classList.toggle('open', open); b.firstChild.textContent = open ? 'Show less ' : 'View all details '; }); });
+  // a course card linked from elsewhere (#enr-N) opens its payments
+  if (/^#enr-\d+$/.test(location.hash)) { var cc = document.querySelector(location.hash); if (cc) { var dt = cc.querySelector('details'); if (dt) dt.open = true; cc.scrollIntoView({ block: 'center' }); } }
 
   // simple modals (promote)
   document.querySelectorAll('[data-open]').forEach(function (b) { b.addEventListener('click', function () { var md = document.getElementById(b.dataset.open); if (md) { md.hidden = false; document.body.style.overflow = 'hidden'; } }); });

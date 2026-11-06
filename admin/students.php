@@ -151,7 +151,7 @@ $filtered = $f['q'] !== '' || $f['class'] || $f['course'] || $f['batch'] || $f['
 <td class="ci-muted ci-nw"><?= ci_date($s['admission_date']) ?></td>
 <td class="ci-num"><div class="ci-due-cell"><?php if ((float)$s['due'] > 0.004): ?><b class="ci-r"><?= ci_money0($s['due']) ?></b><?= $s['overdue'] ? ' <span class="ci-badge ci-b-amber">Late</span>' : '' ?><?php if (ci_perm($me, 'fees')): ?><?= ci_ico('rupee', '/admin/student-view.php?id=' . $sid . '&collect=1#fee', 'Collect fee') ?><?php endif; ?><?php elseif ((float)$s['net'] > 0): ?><span class="ci-badge ci-b-green">Paid</span><?php else: ?><span class="ci-muted">—</span><?php endif; ?></div></td>
 <td><div class="ci-icos">
-<?php if (ci_perm($me, 'edit_student')): ?><?= ci_ico('edit', '/admin/student-edit.php?id=' . $sid, 'Edit student') ?><?= ci_ico('book-plus', '/admin/student-edit.php?id=' . $sid . '&addcourse=1', 'Add to course / batch') ?>
+<?php if (ci_perm($me, 'edit_student')): ?><?= ci_ico('edit', '/admin/student-edit.php?id=' . $sid, 'Edit student') ?><?= ci_ico('book-plus', '/admin/student-view.php?id=' . $sid . '&addcourse=1', 'Add to course / batch') ?>
 <?php if ($s['status'] !== 'left'): ?><?= ci_post_ico('logout', 'Mark as left', ['action' => 'left', 'id' => $sid, 'back' => $back], 'Mark ' . $s['name'] . ' as Left? Their running courses end as Left; any fee still due stays on the record.') ?><?php else: ?><span class="ci-badge ci-b-grey">Left</span><?php endif; ?>
 <?php else: ?><?= ci_ico('eye', '/admin/student-view.php?id=' . $sid, 'Open profile') ?><?php endif; ?>
 </div></td></tr>

@@ -527,6 +527,51 @@ function ci_page_start(PDO $pdo, array $need = []): array
     return $me;
 }
 
+/**
+ * Adds a student to a course (and batch): fee type, the fee for this student (below the course fee = discount),
+ * next due date and the payment made now (parts = [[mode, amount], …]). Returns [enrollment id, payment id|null] or an error.
+ */
+function ci_enroll(PDO $pdo, int $sid, int $courseId, ?int $batchId, string $type, ?float $final, ?string $due, array $parts, string $date, int $userId)
+{
+    $c = $pdo->prepare("SELECT * FROM ci_courses WHERE id = ?");
+    $c->execute([$courseId]);
+    $course = $c->fetch(PDO::FETCH_ASSOC);
+    if (!$course) return 'Choose a course.';
+    $session = null;
+    if ($batchId) {
+        $b = $pdo->prepare("SELECT * FROM ci_batches WHERE id = ?");
+        $b->execute([$batchId]);
+        $batch = $b->fetch(PDO::FETCH_ASSOC);
+        if (!$batch || (int)$batch['course_id'] !== $courseId) return 'The chosen batch does not belong to this course.';
+        if ($batch['status'] !== 'active') return 'This batch is not active.';
+        if ((int)$batch['capacity']) {
+            $n = $pdo->prepare("SELECT COUNT(*) FROM ci_enrollments WHERE batch_id = ? AND status = 'active'");
+            $n->execute([$batchId]);
+            if ((int)$n->fetchColumn() >= (int)$batch['capacity']) return 'Batch ' . $batch['name'] . ' is full (' . (int)$batch['capacity'] . ' seats).';
+        }
+        $dupe = $pdo->prepare("SELECT COUNT(*) FROM ci_enrollments WHERE student_id = ? AND batch_id = ? AND status = 'active'");
+        $dupe->execute([$sid, $batchId]);
+        if ((int)$dupe->fetchColumn()) return 'The student is already in this batch.';
+        $session = $batch['session_id'] ? (int)$batch['session_id'] : null;
+    }
+    $session ??= ci_current_session($pdo);
+    $type = $type === 'installment' ? 'installment' : 'full';
+    $list = (float)$course['fee'];
+    $final = $final === null ? $list : max(0, $final);
+    $pay = round(array_sum(array_column($parts, 1)), 2);
+    if ($pay > $final + 0.004) return 'The amount paid now is more than the fee (' . ci_money($final) . ').';
+    $pdo->prepare("INSERT INTO ci_enrollments (student_id, course_id, batch_id, session_id, fee, discount, fee_type, due_date, enrolled_on, status) VALUES (?,?,?,?,?,?,?,?,?,?)")
+        ->execute([$sid, $courseId, $batchId, $session, max($list, $final), max(0, round($list - $final, 2)), $type, $type === 'installment' ? $due : null, $date, 'active']);
+    $eid = (int)$pdo->lastInsertId();
+    $pid = null;
+    if ($pay > 0) {
+        $res = ci_add_payment($pdo, $eid, $pay, $parts, min($date, date('Y-m-d')), $type === 'installment' ? 'Installment 1' : 'Course fee', $userId);
+        if (is_string($res)) return $res;
+        $pid = $res[0];
+    }
+    return [$eid, $pid];
+}
+
 /** Batch finished: the batch and its students' active courses in it become "completed" (dues stay as they are). */
 function ci_complete_batch(PDO $pdo, int $bid): int
 {

@@ -91,7 +91,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $rows[] = ['idx' => $i, 'id' => $eid, 'course_id' => $c, 'batch_id' => $b, 'session_id' => $b ? ((int)$L['batches'][$b]['session_id'] ?: $curSession) : $curSession,
             'type' => $type, 'list' => $list, 'final' => $final, 'fee' => max($list, $final), 'discount' => max(0, round($list - $final, 2)),
             'due_date' => $type === 'installment' ? ci_clean_date($_POST['e_due'][$i] ?? '') : null, 'status' => $status, 'remove' => $remove,
-            'pay' => $pay, 'parts' => $parts, 'key' => $key ?: ('k' . $i), 'paid' => $paid];
+            'pay' => $pay, 'parts' => $parts, 'key' => $key ?: ('k' . $i), 'paid' => $paid, 'unlocked' => true];
     }
     foreach ($rows as $r) {
         if ($r['remove'] || !$r['batch_id'] || $r['status'] !== 'active') continue;
@@ -167,7 +167,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pdo->commit();
             if ($oldPhoto && $oldPhoto !== $form['photo']) ci_delete_photo($oldPhoto); // only after the save went through
             admin_log('ci_student', ($student ? 'Updated' : 'Added') . " student {$form['reg_no']} {$form['name']}");
-            admin_flash($student ? 'Student saved.' : 'Student added: ' . $form['reg_no'] . '.');
+            if (!$receipt) admin_flash($student ? 'Student saved.' : 'Student added: ' . $form['reg_no'] . '.'); // with a payment the profile shows "Saved — Print receipt"
             header('Location: /admin/student-view.php?id=' . $id . ($receipt ? '&receipt=' . $receipt . '#payments' : '#fee'));
             exit;
         } catch (Throwable $e) {
@@ -202,7 +202,20 @@ $rowHtml = function (array $r, int $idx) use ($L): string {
     $type = ($r['type'] ?? 'full') === 'installment' ? 'installment' : 'full';
     $key = $r['key'] ?? ($id ? 'e' . $id : '__K__');
     $num = fn($v) => $v === null || $v === '' ? '' : rtrim(rtrim(number_format((float)$v, 2, '.', ''), '0'), '.');
-    $h = '<div class="ci-enr-row ci-fee-row' . (!empty($r['remove']) ? ' is-removing' : '') . '" data-paid="' . $paid . '" data-new="' . ($id ? 0 : 1) . '"><input type="hidden" name="e_id[]" value="' . $id . '"><input type="hidden" name="e_key[]" value="' . ci_e($key) . '">';
+    $cname = isset($L['courses'][(int)($r['course_id'] ?? 0)]) ? $L['courses'][(int)$r['course_id']]['name'] : '';
+    $bname = isset($L['batches'][(int)($r['batch_id'] ?? 0)]) ? $L['batches'][(int)$r['batch_id']]['name'] : '';
+    $locked = $id && empty($r['unlocked']); // a course the student already has: shown as a summary until "Edit" is pressed
+    $h = '<div class="ci-enr-row ci-fee-row ci-ec' . ($locked ? ' is-locked' : '') . (!empty($r['remove']) ? ' is-removing' : '') . '"' . ($id ? ' id="enr-' . $id . '"' : '') . ' data-paid="' . $paid . '" data-new="' . ($id ? 0 : 1) . '">';
+    $h .= '<input type="hidden" name="e_id[]" value="' . $id . '"><input type="hidden" name="e_key[]" value="' . ci_e($key) . '">';
+    // head: what this course is, and its buttons
+    $h .= '<div class="ci-ec-h"><div class="ci-ec-t"><span class="ci-ec-ico">' . ci_svg('book-plus') . '</span><div><b class="ci-ec-name">' . ci_e($cname ?: 'New course') . '</b><small class="ci-ec-sub">'
+        . ci_e(implode(' · ', array_filter([$bname ? 'Batch ' . $bname : ($id ? 'No batch' : ''), $id ? ($type === 'installment' ? 'Installment' : 'Final fee') : '', $id && ($r['status'] ?? 'active') !== 'active' ? ucfirst($r['status']) : '']))) . '</small></div></div><div class="ci-icos">';
+    if ($id) $h .= '<button type="button" class="ci-ico ci-ec-edit" title="' . ($locked ? 'Change this course' : 'Lock') . '" aria-label="Change this course">' . ci_svg('edit') . '</button>';
+    if (!$id) $h .= '<button type="button" class="ci-ico ci-ico-danger ci-enr-del" title="Remove this course" aria-label="Remove this course">' . ci_svg('trash') . '</button>';
+    elseif ($paid <= 0) $h .= '<label class="ci-ico ci-ico-danger ci-enr-rm" title="Remove this course (no fee paid yet)"><input type="checkbox" name="e_remove[' . $idx . ']" value="1"' . (!empty($r['remove']) ? ' checked' : '') . '>' . ci_svg('trash') . '</label>';
+    $h .= '</div></div>';
+    // body: the fields
+    $h .= '<div class="ci-ec-b">';
     $h .= '<div class="ci-f"><label>Course</label><select name="e_course[]" class="ci-course" data-search><option value="">Choose course…</option>';
     foreach ($L['courses'] as $cid => $c) {
         $sel = (int)($r['course_id'] ?? 0) === $cid;
@@ -213,20 +226,18 @@ $rowHtml = function (array $r, int $idx) use ($L): string {
     $h .= '<div class="ci-f"><label>Batch</label><select name="e_batch[]" class="ci-batch" data-search data-val="' . (int)($r['batch_id'] ?? 0) . '"><option value="">Choose the course first</option></select></div>';
     $h .= '<div class="ci-f"><label>Fee plan</label><select name="e_type[]" class="ci-type"><option value="full"' . ($type === 'full' ? ' selected' : '') . '>Final fee (one time)</option><option value="installment"' . ($type === 'installment' ? ' selected' : '') . '>Installment</option></select></div>';
     $h .= '<div class="ci-f"><label>Fee for this student (₹)</label><input name="e_final[]" class="ci-final" type="number" min="0" step="0.01" value="' . ci_e($num($r['final'] ?? null)) . '" data-list="' . ci_e($num($r['list'] ?? null)) . '"></div>';
-    if (!$id) $h .= '<button type="button" class="ci-ico ci-ico-danger ci-enr-del" title="Remove this course row" aria-label="Remove this course row">' . ci_svg('trash') . '</button>';
-    elseif ($paid <= 0) $h .= '<label class="ci-ico ci-ico-danger ci-enr-rm" title="Remove this course (no fee paid yet)"><input type="checkbox" name="e_remove[' . $idx . ']" value="1"' . (!empty($r['remove']) ? ' checked' : '') . '>' . ci_svg('trash') . '</label>';
-    else $h .= '<span class="ci-enr-x"></span>';
-    if (!$id) {
-        $h .= '<input type="hidden" name="e_status[]" value="active">';
-        $h .= '<div class="ci-f ci-nofloat ci-span2 ci-paybox">' . ci_pays_html('pay[' . $key . '][m][]', 'pay[' . $key . '][a][]', $r['parts'] ?? [], 'Paying now') . '</div>';
-    } else {
+    if ($id) {
         $h .= '<div class="ci-f"><label>Status</label><select name="e_status[]">';
         foreach (['active' => 'Active', 'completed' => 'Completed', 'left' => 'Left (fee due stays)', 'dropped' => 'Dropped (no fee)'] as $k => $l) $h .= '<option value="' . $k . '"' . (($r['status'] ?? '') === $k ? ' selected' : '') . '>' . $l . '</option>';
         $h .= '</select></div>';
-        $h .= '<div class="ci-f"><label>Paid so far</label><div class="ci-plan-note"><b>' . ci_money($paid) . '</b> · <a href="/admin/student-view.php?id=' . (int)($r['student_id'] ?? 0) . '#fee">collect in profile</a></div></div>';
+    } else {
+        $h .= '<input type="hidden" name="e_status[]" value="active">';
     }
     $h .= '<div class="ci-f ci-due-f"><label>Next due date</label><input name="e_due[]" type="date" value="' . ci_e($r['due_date'] ?? '') . '"></div>';
-    $h .= '<div class="ci-row-sum"></div>';
+    if (!$id) $h .= '<div class="ci-f ci-nofloat ci-paybox">' . ci_pays_html('pay[' . $key . '][m][]', 'pay[' . $key . '][a][]', $r['parts'] ?? [], 'Paying now') . '</div>';
+    $h .= '</div>';
+    $h .= '<div class="ci-row-sum ci-ec-f"></div>';
+    if ($id) $h .= '<div class="ci-ec-note">Paid so far <b>' . ci_money($paid) . '</b> · more fee is collected in the <a href="/admin/student-view.php?id=' . (int)($r['student_id'] ?? 0) . '#enr-' . $id . '">profile</a></div>';
     return $h . '</div>';
 };
 $batchJs = [];
@@ -349,6 +360,14 @@ $v = fn($k) => ci_e($form[$k] ?? '');
     row.addEventListener('ci-pays', function () { sum(row); });
     var del = row.querySelector('.ci-enr-del');
     if (del) del.addEventListener('click', function () { if (rows.querySelectorAll('.ci-enr-row').length > 1) row.remove(); else { course.value = ''; fillBatches(row); setFee(row); } });
+    var ed = row.querySelector('.ci-ec-edit');
+    if (ed) ed.addEventListener('click', function () { var l = row.classList.toggle('is-locked'); ed.setAttribute('data-tip', l ? 'Change this course' : 'Lock'); ed.classList.toggle('on', !l); if (!l) row.querySelector('.ci-final').focus(); });
+    var title = function () {
+      var o = course.options[course.selectedIndex], b = row.querySelector('.ci-batch'), bo = b.options[b.selectedIndex];
+      row.querySelector('.ci-ec-name').textContent = o && o.value ? o.textContent.replace(/ — ₹[\d,]+$/, '') : 'New course';
+      row.querySelector('.ci-ec-sub').textContent = [bo && bo.value ? 'Batch ' + bo.textContent.split(' · ')[0] : '', type.value === 'installment' ? 'Installment' : 'Final fee'].filter(Boolean).join(' · ');
+    };
+    [course, row.querySelector('.ci-batch'), type].forEach(function (el) { el.addEventListener('change', title); });
     var rm = row.querySelector('.ci-enr-rm input');
     if (rm) rm.addEventListener('change', function () { row.classList.toggle('is-removing', rm.checked); });
     fillBatches(row);
