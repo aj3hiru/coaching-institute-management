@@ -348,8 +348,8 @@ $tel = fn(?string $m) => $m ? '<a href="tel:' . ci_e($m) . '">' . ci_e($m) . '</
   if (/^#enr-\d+$/.test(location.hash)) { var cc = document.querySelector(location.hash); if (cc) { var dt = cc.querySelector('details'); if (dt) dt.open = true; cc.scrollIntoView({ block: 'center' }); } }
 
   // simple modals (promote)
-  document.querySelectorAll('[data-open]').forEach(function (b) { b.addEventListener('click', function () { var md = document.getElementById(b.dataset.open); if (md) { md.hidden = false; document.body.style.overflow = 'hidden'; } }); });
-  document.querySelectorAll('.ci-modal').forEach(function (md) { if (md.id === 'ci-collect') return; md.addEventListener('click', function (e) { if (e.target === md || e.target.closest('[data-close]')) { md.hidden = true; document.body.style.overflow = ''; } }); });
+  document.querySelectorAll('[data-open]').forEach(function (b) { b.addEventListener('click', function () { var md = document.getElementById(b.dataset.open); if (md) { md.hidden = false; (window.ciLock ? ciLock(true) : null); } }); });
+  document.querySelectorAll('.ci-modal').forEach(function (md) { if (md.id === 'ci-collect') return; md.addEventListener('click', function (e) { if (e.target === md || e.target.closest('[data-close]')) { md.hidden = true; (window.ciLock ? ciLock(false) : null); } }); });
   // collect fee box
   var m = document.getElementById('ci-collect');
   if (m) {
@@ -368,8 +368,8 @@ $tel = fn(?string $m) => $m ? '<a href="tel:' . ci_e($m) . '">' . ci_e($m) . '</
     };
     chips.addEventListener('click', function (e) { var b = e.target.closest('.ci-chip'); if (b) { m.querySelectorAll('.ci-pay-row').forEach(function (r, k) { if (k) r.remove(); }); amtFirst().value = b.dataset.v; m.querySelector('[data-pays]').dispatchEvent(new Event('input', { bubbles: true })); } });
     f.addEventListener('change', refresh);
-    var open = function (eid) { if (eid) { f.value = eid; } refresh(); m.hidden = false; document.body.style.overflow = 'hidden'; setTimeout(function () { var a = amtFirst(); a.focus(); a.select(); }, 30); };
-    var close = function () { m.hidden = true; document.body.style.overflow = ''; };
+    var open = function (eid) { if (eid) { f.value = eid; } refresh(); m.hidden = false; (window.ciLock ? ciLock(true) : null); setTimeout(function () { var a = amtFirst(); a.focus(); a.select(); }, 30); };
+    var close = function () { m.hidden = true; (window.ciLock ? ciLock(false) : null); };
     document.querySelectorAll('[data-collect]').forEach(function (b) { b.addEventListener('click', function () { open(b.dataset.collect); }); });
     m.addEventListener('click', function (e) { if (e.target === m || e.target.closest('[data-close]')) close(); });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !m.hidden && !document.querySelector('.dk-pop')) close(); });

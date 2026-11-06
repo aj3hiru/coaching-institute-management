@@ -49,8 +49,8 @@ $__canAdd = ci_perm($me, 'edit_student') || ci_perm($me, 'add_student');
   var inr = function (n) { return '₹' + (Math.round(n * 100) / 100).toLocaleString('en-IN'); };
   var C = <?= json_encode(array_values(array_map(fn($c, $cid) => ['id' => $cid, 'n' => $c['name'], 'f' => (float)$c['fee'], 'k' => (int)$c['class_id']], array_filter($__L['courses'], fn($c) => $c['status'] === 'active'), array_keys(array_filter($__L['courses'], fn($c) => $c['status'] === 'active')))), JSON_UNESCAPED_UNICODE) ?>;
   var B = <?= json_encode(array_values(array_map(fn($b, $bid) => ['id' => $bid, 'c' => (int)$b['course_id'], 'n' => $b['name'] . ($b['timing'] ? ' · ' . $b['timing'] : '') . ($b['session_name'] ? ' (' . $b['session_name'] . ')' : ''), 'a' => $b['status'] === 'active'], $__L['batches'], array_keys($__L['batches']))), JSON_UNESCAPED_UNICODE) ?>;
-  function openM(m) { m.hidden = false; document.body.style.overflow = 'hidden'; }
-  function closeM(m) { m.hidden = true; document.body.style.overflow = ''; }
+  function openM(m) { m.hidden = false; (window.ciLock ? ciLock(true) : null); }
+  function closeM(m) { m.hidden = true; (window.ciLock ? ciLock(false) : null); }
   document.querySelectorAll('#ci-lc, #ci-la').forEach(function (m) { m.addEventListener('click', function (e) { if (e.target === m || e.target.closest('[data-close]')) closeM(m); }); });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !document.querySelector('.dk-pop')) document.querySelectorAll('#ci-lc, #ci-la').forEach(function (m) { if (!m.hidden) closeM(m); }); });
   function student(id) { return fetch('/admin/ci-api.php?a=student&id=' + id, { credentials: 'same-origin' }).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }); }

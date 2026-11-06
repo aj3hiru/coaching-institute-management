@@ -275,3 +275,7 @@ details.ci-more>summary::-webkit-details-marker{display:none}
 .ci-toast{position:fixed;right:20px;top:calc(var(--wpab-top,32px) + 86px);z-index:9500;max-width:min(420px,calc(100vw - 40px));padding:11px 16px 11px 14px;background:#ecfdf5;border:1px solid #6ee7b7;border-left:4px solid #059669;color:#065f46;font-size:13.5px;font-weight:600}
 .ci-toast.is-err{background:#fef2f2;border-color:#fca5a5;border-left-color:#dc2626;color:#991b1b}
 .ci-toast[hidden]{display:none}
+.ci-danger-card{border-color:#fca5a5;border-left:3px solid #dc2626}
+.ci-danger-card .ci-card-h h3{color:#b91c1c}
+.ci-btn.ci-danger-solid{background:#dc2626;border-color:#dc2626;color:#fff!important}
+.ci-btn.ci-danger-solid:hover{background:#b91c1c}

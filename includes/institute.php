@@ -572,6 +572,61 @@ function ci_enroll(PDO $pdo, int $sid, int $courseId, ?int $batchId, string $typ
     return [$eid, $pid];
 }
 
+/**
+ * Everything that belongs to one academic session (for "delete session"):
+ *   batches of the session; enrollments in the session or in those batches (+ their payments and kists);
+ *   students whose every course is in that list (students who also study in another session or batch are kept —
+ *   only their courses of this session go); courses whose every batch and every student course are in that list.
+ */
+function ci_session_plan(PDO $pdo, int $sid): array
+{
+    $ids = fn(string $sql, array $a = []) => (function () use ($pdo, $sql, $a) { $q = $pdo->prepare($sql); $q->execute($a); return array_map('intval', $q->fetchAll(PDO::FETCH_COLUMN)); })();
+    $in = fn(array $x) => $x ? implode(',', $x) : '0';
+    $batches = $ids("SELECT id FROM ci_batches WHERE session_id = ?", [$sid]);
+    $enr = $ids("SELECT id FROM ci_enrollments WHERE session_id = ? OR batch_id IN (" . $in($batches) . ")", [$sid]);
+    $touched = $ids("SELECT DISTINCT student_id FROM ci_enrollments WHERE id IN (" . $in($enr) . ")");
+    $keep = $touched ? $ids("SELECT DISTINCT student_id FROM ci_enrollments WHERE student_id IN (" . $in($touched) . ") AND id NOT IN (" . $in($enr) . ")") : [];
+    $students = array_values(array_diff($touched, $keep));
+    $cands = $ids("SELECT DISTINCT course_id FROM ci_batches WHERE id IN (" . $in($batches) . ") UNION SELECT DISTINCT course_id FROM ci_enrollments WHERE id IN (" . $in($enr) . ")");
+    $courses = [];
+    foreach ($cands as $c) {
+        $otherB = (int)$pdo->query("SELECT COUNT(*) FROM ci_batches WHERE course_id = $c AND id NOT IN (" . $in($batches) . ")")->fetchColumn();
+        $otherE = (int)$pdo->query("SELECT COUNT(*) FROM ci_enrollments WHERE course_id = $c AND id NOT IN (" . $in($enr) . ")")->fetchColumn();
+        if (!$otherB && !$otherE) $courses[] = $c;
+    }
+    $pay = $pdo->query("SELECT COUNT(*), COALESCE(SUM(amount),0) FROM ci_payments WHERE enrollment_id IN (" . $in($enr) . ")")->fetch(PDO::FETCH_NUM);
+    return ['batches' => $batches, 'enrollments' => $enr, 'students' => $students, 'kept' => $keep, 'courses' => $courses, 'payments' => (int)$pay[0], 'paid' => (float)$pay[1]];
+}
+
+/** Deletes a session and everything in ci_session_plan() — in one transaction. Returns the plan that was carried out. */
+function ci_session_purge(PDO $pdo, int $sid): array
+{
+    $plan = ci_session_plan($pdo, $sid);
+    $in = fn(array $x) => $x ? implode(',', $x) : '0';
+    $photos = $plan['students'] ? $pdo->query("SELECT photo FROM ci_students WHERE id IN (" . $in($plan['students']) . ") AND photo IS NOT NULL")->fetchAll(PDO::FETCH_COLUMN) : [];
+    $pdo->beginTransaction();
+    try {
+        $pdo->exec("DELETE FROM ci_payments WHERE enrollment_id IN (" . $in($plan['enrollments']) . ")");
+        $pdo->exec("DELETE FROM ci_installments WHERE enrollment_id IN (" . $in($plan['enrollments']) . ")");
+        $pdo->exec("DELETE FROM ci_enrollments WHERE id IN (" . $in($plan['enrollments']) . ")");
+        if ($plan['students']) {
+            $pdo->exec("DELETE FROM ci_payments WHERE student_id IN (" . $in($plan['students']) . ")"); // nothing should be left, but never keep orphans
+            $pdo->exec("DELETE FROM ci_class_history WHERE student_id IN (" . $in($plan['students']) . ")");
+            $pdo->exec("DELETE FROM ci_students WHERE id IN (" . $in($plan['students']) . ")");
+        }
+        $pdo->exec("DELETE FROM ci_batches WHERE id IN (" . $in($plan['batches']) . ")");
+        $pdo->exec("DELETE FROM ci_courses WHERE id IN (" . $in($plan['courses']) . ")");
+        $pdo->exec("UPDATE ci_class_history SET session_id = NULL WHERE session_id = " . (int)$sid);
+        $pdo->prepare("DELETE FROM ci_sessions WHERE id = ?")->execute([$sid]);
+        $pdo->commit();
+    } catch (Throwable $e) {
+        $pdo->rollBack();
+        throw $e;
+    }
+    foreach ($photos as $ph) ci_delete_photo($ph);
+    return $plan;
+}
+
 /** Batch finished: the batch and its students' active courses in it become "completed" (dues stay as they are). */
 function ci_complete_batch(PDO $pdo, int $bid): int
 {

@@ -29,10 +29,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pdo->prepare("UPDATE ci_sessions SET is_current = 1 WHERE id = ?")->execute([$id]);
             admin_flash('Current session changed.');
         } elseif ($a === 'session_delete' && $id) {
-            $used = (int)$pdo->query("SELECT (SELECT COUNT(*) FROM ci_batches WHERE session_id = $id) + (SELECT COUNT(*) FROM ci_enrollments WHERE session_id = $id)")->fetchColumn();
-            if ($used) throw new RuntimeException('This session is used by batches or students, so it cannot be deleted.');
-            $pdo->prepare("DELETE FROM ci_sessions WHERE id = ?")->execute([$id]);
-            admin_flash('Session deleted.');
+            // deletes the session with its batches, its students' courses and payments, the students who were only in it,
+            // and the courses that only it used — after the user typed the session's name on the confirm screen
+            if ($me['role'] !== 'admin') throw new RuntimeException('Only an admin can delete a session.');
+            $q = $pdo->prepare("SELECT * FROM ci_sessions WHERE id = ?"); $q->execute([$id]);
+            $ses = $q->fetch(PDO::FETCH_ASSOC);
+            if (!$ses) throw new RuntimeException('Session not found.');
+            if ((int)$ses['is_current']) throw new RuntimeException('This is the current session. Make another session current first.');
+            if (trim((string)($_POST['confirm_name'] ?? '')) !== $ses['name']) { admin_flash('Type the session name exactly (' . $ses['name'] . ') to delete it.', 'error'); header('Location: /admin/ci-setup.php?purge=' . $id); exit; }
+            $done = ci_session_purge($pdo, $id);
+            admin_log('ci_session_delete', "Deleted session {$ses['name']}: " . count($done['batches']) . ' batches, ' . count($done['courses']) . ' courses, ' . count($done['students']) . ' students, ' . count($done['enrollments']) . ' course entries, ' . $done['payments'] . ' payments (' . ci_money($done['paid']) . ')');
+            admin_flash('Session ' . $ses['name'] . ' deleted with ' . count($done['batches']) . ' batches, ' . count($done['courses']) . ' courses and ' . count($done['students']) . ' students.');
         } elseif ($a === 'class_save') {
             $name = trim((string)($_POST['name'] ?? ''));
             $sort = (int)($_POST['sort'] ?? 0);
@@ -76,6 +83,28 @@ $ec = $tab === 'classes' && $edit ? (array_values(array_filter($classes, fn($s) 
 <?= admin_flash() ?>
 <div class="ci-tabs"><a href="/admin/ci-setup.php" class="<?= $tab === 'sessions' ? 'on' : '' ?>">Academic Sessions</a><a href="?tab=classes" class="<?= $tab === 'classes' ? 'on' : '' ?>">Classes</a></div>
 
+<?php $purge = (int)($_GET['purge'] ?? 0); $ps = $purge ? (array_values(array_filter($sessions, fn($x) => (int)$x['id'] === $purge))[0] ?? null) : null;
+if ($tab === 'sessions' && $ps && !$ps['is_current'] && $me['role'] === 'admin'):
+    $plan = ci_session_plan($pdo, $purge);
+    $names = fn(string $t, string $col, array $ids, int $max = 40) => $ids ? $pdo->query("SELECT $col FROM $t WHERE id IN (" . implode(',', array_slice($ids, 0, $max)) . ") ORDER BY $col")->fetchAll(PDO::FETCH_COLUMN) : []; ?>
+<div class="ci-card ci-danger-card"><div class="ci-card-h"><h3>Delete session <?= ci_e($ps['name']) ?>?</h3><a href="/admin/ci-setup.php">Cancel</a></div><div class="ci-card-b">
+  <p style="margin:0 0 12px">This deletes the session and <b>everything that belongs only to it</b>. It cannot be undone.</p>
+  <div class="ci-stats" style="margin-bottom:12px">
+    <div class="ci-stat"><i class="fas fa-layer-group ci-i-red"></i><div><b><?= count($plan['batches']) ?></b><small>batches</small></div></div>
+    <div class="ci-stat"><i class="fas fa-book-open ci-i-red"></i><div><b><?= count($plan['courses']) ?></b><small>courses (used only here)</small></div></div>
+    <div class="ci-stat"><i class="fas fa-user-graduate ci-i-red"></i><div><b><?= count($plan['students']) ?></b><small>students (only in this session)</small></div></div>
+    <div class="ci-stat"><i class="fas fa-receipt ci-i-red"></i><div><b><?= $plan['payments'] ?></b><small>payments · <?= ci_money0($plan['paid']) ?></small></div></div>
+  </div>
+  <?php if ($plan['kept']): ?><p class="ci-muted" style="margin:0 0 10px"><b><?= count($plan['kept']) ?> student(s)</b> also study in another session or batch: they stay; only their courses of <?= ci_e($ps['name']) ?> are removed.</p><?php endif; ?>
+  <?php foreach ([['Batches', 'ci_batches', 'name', $plan['batches']], ['Courses', 'ci_courses', 'name', $plan['courses']], ['Students', 'ci_students', 'name', $plan['students']]] as [$lbl, $tb, $col, $ids]): if (!$ids) continue; $n = $names($tb, $col, $ids); ?>
+    <p style="margin:0 0 6px;font-size:13px"><b><?= $lbl ?>:</b> <?= ci_e(implode(', ', $n)) ?><?= count($ids) > count($n) ? ' … and ' . (count($ids) - count($n)) . ' more' : '' ?></p>
+  <?php endforeach; ?>
+  <form method="post" class="ci-inline-form" style="margin-top:14px" onsubmit="return confirm('Delete session <?= ci_e(addslashes($ps['name'])) ?> and everything listed? This cannot be undone.')"><?= csrf_field() ?><input type="hidden" name="action" value="session_delete"><input type="hidden" name="id" value="<?= (int)$ps['id'] ?>">
+    <div class="ci-f"><label>Type <b><?= ci_e($ps['name']) ?></b> to confirm</label><input name="confirm_name" autocomplete="off" required></div>
+    <div class="ci-f"><button class="ci-btn ci-danger-solid" type="submit"><?= ci_svg('trash') ?> Delete everything</button></div>
+  </form>
+</div></div>
+<?php endif; ?>
 <?php if ($tab === 'sessions'): ?>
 <div class="ci-card"><div class="ci-card-h"><h3><?= $es ? 'Edit session' : 'Add a session' ?></h3><?php if ($es): ?><a href="/admin/ci-setup.php">Cancel</a><?php endif; ?></div><div class="ci-card-b">
 <form method="post" class="ci-inline-form"><?= csrf_field() ?><input type="hidden" name="action" value="session_save"><input type="hidden" name="id" value="<?= (int)($es['id'] ?? 0) ?>">
@@ -94,7 +123,7 @@ $ec = $tab === 'classes' && $edit ? (array_values(array_filter($classes, fn($s) 
 <td><?= $s['is_current'] ? '<span class="ci-badge ci-b-green">Current</span>' : '' ?></td>
 <td><div class="ci-icos"><?= ci_ico('edit', '?edit=' . (int)$s['id'], 'Edit session') ?>
 <?php if (!$s['is_current']): ?><?= ci_post_ico('flag', 'Make this the current session', ['action' => 'session_current', 'id' => $s['id']]) ?><?php endif; ?>
-<?php if (!$s['batches'] && !$s['students']): ?><?= ci_post_ico('trash', 'Delete session', ['action' => 'session_delete', 'id' => $s['id']], 'Delete session ' . $s['name'] . '?') ?><?php endif; ?>
+<?php if (!$s['is_current'] && $me['role'] === 'admin'): ?><?= ci_ico('trash', '?purge=' . (int)$s['id'], 'Delete session') ?><?php endif; ?>
 </div></td></tr>
 <?php endforeach; ?>
 </tbody></table></div></div>

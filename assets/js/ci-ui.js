@@ -51,3 +51,11 @@
   function start() { document.querySelectorAll('[data-pays]').forEach(refresh); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 })();
+/* Lock / unlock page scrolling for popups without the page shifting (scroll bar room kept). */
+window.ciLock = function (on) {
+  var b = document.body, gutter = window.CSS && CSS.supports && CSS.supports('scrollbar-gutter', 'stable');
+  if (on) {
+    if (!gutter) { var w = window.innerWidth - document.documentElement.clientWidth; if (w > 0) b.style.paddingRight = w + 'px'; }
+    b.style.overflow = 'hidden';
+  } else { b.style.overflow = ''; b.style.paddingRight = ''; }
+};
