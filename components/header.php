@@ -69,24 +69,20 @@ if ($__school) {
     $__emb = trim((string)th('id_brand_emblem')) ?: '/assets/images/dk-academy-emblem.svg';
     $__bt = trim((string)th('id_header_title')) ?: edu_site_name();
     $__bl = trim((string)th('id_header_line')) ?: trim((string)es('general', 'address', ''));
-    $__logo = '<img src="' . htmlspecialchars($__emb) . '" alt="" class="nb-emblem" width="64" height="64">';
+    $__logo = '<img src="' . htmlspecialchars($__emb) . '" alt="" class="nb-emblem" width="52" height="60">';
     $__brandText = '<span class="nb-site-branding nb-sb-school"><span class="site-title">' . htmlspecialchars($__bt) . '</span>'
         . ($__bl !== '' ? '<span class="site-tagline nb-brand-line">' . htmlspecialchars($__bl) . '</span>' : '') . '</span>';
 }
 ?>
-<?php if ($__school): ?><style>
-.nb-hr-brand .nb-brand-link.nb-brand-school{position:relative;isolation:isolate;gap:12px;padding:8px 58px 8px 18px;text-decoration:none;color:inherit}
-/* the tinted panel with a slanted right edge, and the red stripe along that edge (like a school letterhead) */
-.nb-brand-school::before{content:"";position:absolute;inset:0 14px 0 0;z-index:-1;background:var(--brand-panel,#f9dcc3);clip-path:polygon(0 0,100% 0,calc(100% - 30px) 100%,0 100%)}
-.nb-brand-school::after{content:"";position:absolute;inset:0;z-index:-1;background:var(--brand-stripe,#e8401c);clip-path:polygon(calc(100% - 19px) 30%,calc(100% - 15px) 30%,calc(100% - 26px) 100%,calc(100% - 41px) 100%)}
-.nb-emblem{display:block;width:70px;height:70px;flex:0 0 auto}
-.nb-hr-brand .nb-sb-school{display:flex;flex-direction:column;align-items:flex-start;text-align:left;line-height:1.12;min-width:0}
-.nb-sb-school .site-title{font-size:28px;font-weight:800;letter-spacing:-.01em;color:var(--t-header-site-title,#8a1c2b);white-space:nowrap}
-.nb-sb-school .nb-brand-line{margin-top:4px;font-size:15px;font-weight:500;letter-spacing:0;text-transform:none;color:var(--t-header-tagline,#1f2937)}
-@media (max-width:980px){.nb-emblem{width:46px;height:46px}.nb-hr-brand .nb-brand-link.nb-brand-school{gap:8px;padding:6px 40px 6px 10px}.nb-brand-school::before{right:10px;clip-path:polygon(0 0,100% 0,calc(100% - 20px) 100%,0 100%)}.nb-brand-school::after{clip-path:polygon(calc(100% - 14px) 30%,calc(100% - 11px) 30%,calc(100% - 17px) 100%,calc(100% - 28px) 100%)}.nb-sb-school .site-title{font-size:20px}.nb-sb-school .nb-brand-line{font-size:11.5px;margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}}
-@media (max-width:400px){.nb-emblem{width:40px;height:40px}.nb-sb-school .site-title{font-size:17px}.nb-sb-school .nb-brand-line{font-size:10.5px}}
-</style><?php endif; ?>
 <?php if (th_on('h_topbar') && trim((string)th('h_topbar_text')) !== ''): ?><div class="nb-top-bar"><?= edu_shortcodes((string)th('h_topbar_text')) ?></div><?php endif; ?>
+<?php
+        $__loginUrl = trim((string)th('h_login_url')) ?: '/admin-login';
+        $__subUrl = trim((string)th('h_sub_url'));
+        $__subAttr = $__subUrl !== '' ? 'href="' . htmlspecialchars($__subUrl) . '"' : 'href="#" role="button" data-edu-subscribe';
+        $__subOn = th_on('h_sub') && ($__subUrl !== '' || $__pushOn);
+        $__userIco = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>';
+?>
+<?php if ($__school): include __DIR__ . '/header-school.php'; else: ?>
 <header class="nb-header nb-h-racing" id="site-navigation">
   <div class="nb-hr-top">
     <nav class="nb-hr-soc" aria-label="Social networks"<?= th_on('h_socials') ? '' : ' style="visibility:hidden"' ?>>
@@ -107,71 +103,10 @@ if ($__school) {
         </button>
       </span><?php endif; ?>
       <?php if (th_on('h_search')): ?><a href="/search" role="button" aria-label="Search" class="nb-search-icon" id="searchToggle" aria-expanded="false" aria-controls="eduHSearch"><span class="gp-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></span></a><?php endif; ?>
-      <?php
-        $__loginUrl = trim((string)th('h_login_url')) ?: '/admin-login';
-        $__subUrl = trim((string)th('h_sub_url'));
-        $__subAttr = $__subUrl !== '' ? 'href="' . htmlspecialchars($__subUrl) . '"' : 'href="#" role="button" data-edu-subscribe';
-        $__subOn = th_on('h_sub') && ($__subUrl !== '' || $__pushOn);
-        $__userIco = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>';
-      ?>
       <?php if (th_on('h_login')): ?><a class="nb-hr-login" href="<?= htmlspecialchars($__loginUrl) ?>"><?= $__userIco ?><span><?= htmlspecialchars((string)th('h_login_text')) ?></span></a><?php endif; ?>
       <?php if (th_on('h_login') && $__subOn): ?><span class="nb-hr-div" aria-hidden="true"></span><?php endif; ?>
       <?php if ($__subOn): ?><a class="nb-hr-sub" <?= $__subAttr ?>><?= htmlspecialchars((string)th('h_sub_text')) ?></a><?php endif; ?>
-<?php if (th_on('h_search')): ?>
-  <div class="edu-hsearch" id="eduHSearch" hidden>
-    <form role="search" method="get" action="/search" class="edu-hsearch-form">
-      <label for="edu-hsearch-input" class="screen-reader-text">Search for:</label>
-      <input id="edu-hsearch-input" type="search" name="q" placeholder="<?= htmlspecialchars((string)th('h_search_placeholder')) ?>" autocomplete="off" required>
-      <?php if (th_on('h_voice')): ?><button type="button" class="voice-icon" aria-label="Voice search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19v3"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><rect x="9" y="2" width="6" height="13" rx="3"/></svg></button><?php endif; ?>
-      <button type="submit" class="edu-hsearch-go" aria-label="Search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button>
-      <button type="button" class="edu-hsearch-x" id="eduHSearchClose" aria-label="Close search">&times;</button>
-    </form>
-  </div>
-  <?php endif; ?>
-      <button type="button" class="nb-burger" id="menuToggle" aria-label="Open menu" aria-expanded="false" aria-controls="nb-drawer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
-      <div class="mnav-overlay" id="overlay" role="presentation"></div>
-      <aside id="nb-drawer" class="mnav nb-drawer" aria-label="Mobile menu" aria-hidden="true" inert>
-        <div class="mnav-top">
-          <a href="/" class="mnav-brand"><?= $__logo ?></a>
-          <button type="button" class="mnav-close" id="closeBtn" aria-label="Close menu"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
-        </div>
-        <?php
-          // Customize → Header → Mobile menu: greeting, Log in and Subscribe can each be hidden
-          $__dHello = th_on('h_drawer_hello'); $__dLogin = th_on('h_login') && th_on('h_drawer_login'); $__dSub = $__subOn && th_on('h_drawer_sub');
-        ?>
-        <?php if ($__dHello || $__dLogin || $__dSub): ?>
-        <div class="mnav-hello">
-          <?php if ($__dHello): ?>
-          <div class="mnav-hello-row">
-            <span class="mnav-avatar"><?= $__userIco ?></span>
-            <div class="mnav-hello-text"><p class="mnav-hello-title"><?= htmlspecialchars((string)th('h_drawer_title')) ?></p><?php if (trim((string)th('h_drawer_text')) !== ''): ?><p class="mnav-hello-sub"><?= htmlspecialchars((string)th('h_drawer_text')) ?></p><?php endif; ?></div>
-          </div>
-          <?php endif; ?>
-          <?php if ($__dLogin || $__dSub): ?>
-          <div class="mnav-hello-btns" style="<?= $__dLogin && $__dSub ? '' : 'grid-template-columns:1fr;' ?><?= $__dHello ? '' : 'margin-top:0' ?>">
-            <?php if ($__dLogin): ?><a href="<?= htmlspecialchars($__loginUrl) ?>" class="mnav-btn outline"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="m10 17 5-5-5-5"/><path d="M15 12H3"/></svg> <?= htmlspecialchars((string)th('h_login_text')) ?></a><?php endif; ?>
-            <?php if ($__dSub): ?><a <?= $__subAttr ?> class="mnav-btn solid"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.27 21a2 2 0 0 0 3.46 0"/><path d="M3.26 15.33A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.67C19.41 13.96 18 12.5 18 8A6 6 0 0 0 6 8c0 4.5-1.41 5.96-2.74 7.33"/></svg> <?= htmlspecialchars((string)th('h_sub_text')) ?></a><?php endif; ?>
-          </div>
-          <?php endif; ?>
-        </div>
-        <div class="mnav-gap" aria-hidden="true"></div>
-        <?php endif; ?>
-        <nav class="mnav-list" aria-label="Menu">
-          <ul>
-            <?php foreach ($__menu as $m): ?>
-            <li<?= $__active($m['url']) ? ' class="active"' : '' ?>><div class="mnav-row"><a href="<?= htmlspecialchars($m['url']) ?>" class="mnav-link"<?= $__tgt($m) ?>><svg class="mnav-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><?= $__ico[$m['icon']] ?></svg><span><?= htmlspecialchars($m['label']) ?></span></a><?php if ($m['children']): ?><button type="button" class="mnav-chev" aria-expanded="false" aria-label="Show sub-menu"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><?php else: ?><svg class="mnav-arrow" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg><?php endif; ?></div><?php if ($m['children']): ?><ul class="mnav-sub"><?php foreach ($m['children'] as $c): ?><li<?= $__active((string)$c['url']) ? ' class="active"' : '' ?>><a href="<?= htmlspecialchars((string)$c['url']) ?>"<?= $__tgt($c) ?>><?= htmlspecialchars((string)$c['label']) ?></a></li><?php endforeach; ?></ul><?php endif; ?></li>
-            <?php endforeach; ?>
-          </ul>
-        </nav>
-        <div class="mnav-foot"<?= th_on('h_dark') ? '' : ' hidden' ?>>
-          <a role="button" tabindex="0" class="mnav-dark dark-mode-toggle"><svg class="mnav-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg><span>Dark Mode</span><span class="mnav-switch" aria-hidden="true"></span></a>
-        </div>
-        <?php if ($__socials): ?>
-        <div class="nb-drawer-follow"><span>Follow Us</span><div>
-          <?php foreach ($__socials as [$name, $url, $path]): ?><a href="<?= htmlspecialchars($url) ?>" target="_blank" rel="noopener nofollow" aria-label="<?= $name ?>"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="<?= $path ?>"/></svg></a><?php endforeach; ?>
-        </div></div>
-        <?php endif; ?>
-      </aside>
+<?php include __DIR__ . '/header-drawer.php'; ?>
     </div>
   </div>
 
@@ -186,6 +121,7 @@ if ($__school) {
 
   
 </header>
+<?php endif; ?>
 <script id="msb-sp-c">(function(){
 var d=document.getElementById("nb-drawer"),o=document.getElementById("overlay"),b=document.getElementById("menuToggle"),c=document.getElementById("closeBtn");
 function setOpen(v){d.classList.toggle("open",v);o.classList.toggle("open",v);d.setAttribute("aria-hidden",v?"false":"true");v?d.removeAttribute("inert"):d.setAttribute("inert","");b.setAttribute("aria-expanded",v?"true":"false");document.documentElement.classList.toggle("mnav-lock",v);}

@@ -207,6 +207,10 @@ const PANELS = [
       ['media', 'id_brand_emblem', 'Emblem (round logo)', { hint: 'School style only. Empty = the built-in DK Academy emblem. Square image works best.' }],
       ['text', 'id_header_title', 'Name in the header', { hint: 'School style only. Empty = the Site Title.' }],
       ['text', 'id_header_line', 'Line under the name', { hint: 'School style only, e.g. the address. Empty = the address in General Settings.' }],
+      ['text', 'id_school_phone', 'Top bar: phone', { hint: 'School style only. Empty = the phone in General Settings.' }],
+      ['text', 'id_school_wa', 'Top bar: WhatsApp number', { hint: 'Empty = the same phone.' }],
+      ['text', 'id_school_bar_text', 'Top bar: text on the right', { hint: 'e.g. Admission Open 2026-27. Empty = none.' }],
+      ['text', 'id_school_login_text', 'Top bar: login button text', { hint: 'Uses Header → Log in (on/off and its address).' }],
     ]],
     ['Site Icon', [
       ['media', 'g.favicon', 'Site Icon', { hint: 'The Site Icon is what you see in browser tabs, bookmark bars, and within mobile apps. It should be square and at least 512 × 512 pixels.' }],
