@@ -742,7 +742,7 @@ html.tox-fullscreen #wpadminbar,body.tox-fullscreen #wpadminbar{display:none}
 .jc-switch small{display:block;font-weight:400;color:#6b7280;font-size:.75rem;margin-top:2px}
 .jc-fields{margin-top:.8rem;padding-top:.8rem;border-top:1px solid #f1f5f9}
 .jcard-box .jc-f small{font-weight:400;color:#9ca3af}
-.jcard-box .jc-f select,.jcard-box .jc-f input[type=date]{width:100%;box-sizing:border-box;padding:.5rem .65rem;border:1px solid var(--gray-300,#d1d5db);border-radius:6px;font:inherit;font-size:.85rem;font-weight:400;background:#fff}
+.jcard-box .jc-f select,.jcard-box .jc-f input[type=date],.jcard-box .jc-f input.dk-date{width:100%;box-sizing:border-box;padding:.5rem .65rem;border:1px solid var(--gray-300,#d1d5db);border-radius:6px;font:inherit;font-size:.85rem;font-weight:400;background:#fff}
 .jcard-box .jc-f select+input{margin-top:6px}
 .jc-rupee{display:flex;align-items:stretch;border:1px solid var(--gray-300,#d1d5db);border-radius:6px;overflow:hidden;background:#fff}
 .jc-rupee>span{display:flex;align-items:center;padding:0 .6rem;background:#f8fafc;border-right:1px solid var(--gray-300,#d1d5db);font-weight:700;color:#374151}

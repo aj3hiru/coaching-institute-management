@@ -9,7 +9,8 @@ $students = $pdo->query("SELECT s.id, s.reg_no, s.name, s.status, c.name AS clas
 $courses = $pdo->query("SELECT id, name, status FROM ci_courses ORDER BY status = 'active' DESC, name")->fetchAll(PDO::FETCH_ASSOC);
 $batches = $pdo->query("SELECT b.id, b.name, b.status, c.name AS course_name, se.name AS session_name FROM ci_batches b LEFT JOIN ci_courses c ON c.id = b.course_id LEFT JOIN ci_sessions se ON se.id = b.session_id ORDER BY b.status = 'active' DESC, c.name, b.name")->fetchAll(PDO::FETCH_ASSOC);
 $tag = fn(string $st) => $st === 'active' ? '' : ' — ' . ucfirst($st);
-$pre = ['type' => (string)($_GET['type'] ?? 'students'), 'id' => (int)($_GET['id'] ?? 0)];
+$canFees = ci_perm($me, 'fees');
+$pre = ['type' => (string)($_GET['type'] ?? ($canFees ? 'fees' : 'students')), 'id' => (int)($_GET['id'] ?? 0)];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -66,11 +67,18 @@ $pre = ['type' => (string)($_GET['type'] ?? 'students'), 'id' => (int)($_GET['id
 <div class="ci">
 <div class="ci-card"><div class="ci-card-b"><div class="rp-pick">
   <div class="rp-types" role="tablist">
-    <?php foreach (['students' => ['fa-users', 'Students (filtered)'], 'student' => ['fa-user', 'One student'], 'course' => ['fa-book-open', 'Course'], 'batch' => ['fa-layer-group', 'Batch'], 'class' => ['fa-school', 'Class']] as $k => [$ic, $l]): ?>
+    <?php foreach (($canFees ? ['fees' => ['fa-indian-rupee-sign', 'Fee collection']] : []) + ['students' => ['fa-users', 'Students (filtered)'], 'student' => ['fa-user', 'One student'], 'course' => ['fa-book-open', 'Course'], 'batch' => ['fa-layer-group', 'Batch'], 'class' => ['fa-school', 'Class']] as $k => [$ic, $l]): ?>
     <button type="button" data-type="<?= $k ?>" class="<?= $pre['type'] === $k ? 'on' : '' ?>"><i class="fas <?= $ic ?>"></i> <?= $l ?></button>
     <?php endforeach; ?>
   </div>
   <div>
+    <?php if ($canFees): ?><form class="rp-pane ci-filters" data-pane="fees" onsubmit="return false" hidden>
+      <div class="ci-f"><label>Period</label><select name="period"><?php foreach (['today' => 'Today', 'yesterday' => 'Yesterday', 'week' => 'This week', 'month' => 'This month', 'lastmonth' => 'Last month', 'year' => 'This year', 'custom' => 'Choose dates'] as $k => $l): ?><option value="<?= $k ?>"><?= $l ?></option><?php endforeach; ?></select></div>
+      <div class="ci-f rp-custom" hidden><label>From</label><input type="date" name="from" value="<?= date('Y-m-01') ?>" max="<?= date('Y-m-d') ?>"></div>
+      <div class="ci-f rp-custom" hidden><label>To</label><input type="date" name="to" value="<?= date('Y-m-d') ?>" max="<?= date('Y-m-d') ?>"></div>
+      <div class="ci-f"><label>Course</label><select name="course"><option value="0">All courses</option><?php foreach ($courses as $c): ?><option value="<?= (int)$c['id'] ?>"><?= ci_e($c['name'] . $tag($c['status'])) ?></option><?php endforeach; ?></select></div>
+      <div class="ci-f"><label>Payment mode</label><select name="method"><option value="">All modes</option><?php foreach (CI_METHODS as $k => $l): ?><option value="<?= ci_e($k) ?>"><?= ci_e($l) ?></option><?php endforeach; ?></select></div>
+    </form><?php endif; ?>
     <form class="rp-pane ci-filters" data-pane="students" onsubmit="return false">
       <div class="ci-f"><label>Status</label><select name="status"><?php foreach (['active' => 'Active', 'left' => 'Left', 'completed' => 'Completed', 'all' => 'All'] as $k => $l): ?><option value="<?= $k ?>"><?= $l ?></option><?php endforeach; ?></select></div>
       <div class="ci-f"><label>Class</label><select name="class"><option value="0">All classes</option><?php foreach ($L['classes'] as $id => $n): ?><option value="<?= $id ?>"><?= ci_e($n) ?></option><?php endforeach; ?></select></div>
@@ -93,7 +101,7 @@ $pre = ['type' => (string)($_GET['type'] ?? 'students'), 'id' => (int)($_GET['id
 <?php admin_shell_close(); ?>
 <script>
 (function () {
-  var type = <?= json_encode(in_array($pre['type'], ['students', 'student', 'course', 'batch', 'class'], true) ? $pre['type'] : 'students') ?>, last = null, lastKey = '';
+  var type = <?= json_encode(in_array($pre['type'], array_merge($canFees ? ['fees'] : [], ['students', 'student', 'course', 'batch', 'class']), true) ? $pre['type'] : ($canFees ? 'fees' : 'students')) ?>, last = null, lastKey = '';
   var out = document.getElementById('rpOut'), msg = document.getElementById('rpMsg');
   function show(t) {
     type = t;
@@ -103,6 +111,12 @@ $pre = ['type' => (string)($_GET['type'] ?? 'students'), 'id' => (int)($_GET['id
   }
   document.querySelectorAll('.rp-types button').forEach(function (b) { b.addEventListener('click', function () { show(b.dataset.type); }); });
   function url() {
+    if (type === 'fees') {
+      var g = document.querySelector('.rp-pane[data-pane=fees]'), p = new URLSearchParams({ type: 'fees' });
+      [].forEach.call(g.elements, function (el) { if (!el.name || el.value === '' || el.value === '0') return; if ((el.name === 'from' || el.name === 'to') && g.elements.period.value !== 'custom') return; p.set(el.name, el.value); });
+      if (g.elements.period.value === 'custom' && !g.elements.from.value) { msg.textContent = 'Type the From date as dd/mm/yyyy.'; return ''; }
+      return '/admin/ci-report.php?' + p.toString();
+    }
     if (type === 'students') {
       var f = document.querySelector('.rp-pane[data-pane=students]'), q = new URLSearchParams();
       [].forEach.call(f.elements, function (el) { if (el.name && el.value !== '' && el.value !== '0') q.set(el.name, el.value); });
@@ -115,7 +129,7 @@ $pre = ['type' => (string)($_GET['type'] ?? 'students'), 'id' => (int)($_GET['id
   }
   function load(then) {
     var u = url();
-    if (!u) { msg.textContent = 'Choose a ' + type + ' first.'; return; }
+    if (!u) { if (type !== 'fees') msg.textContent = 'Choose a ' + type + ' first.'; return; }
     if (last && lastKey === u) { then(last); return; }
     msg.textContent = 'Loading…';
     fetch(u, { credentials: 'same-origin' }).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
@@ -128,7 +142,11 @@ $pre = ['type' => (string)($_GET['type'] ?? 'students'), 'id' => (int)($_GET['id
     load(function (d) { window.ciReportPdf(d); if (!out.innerHTML) out.innerHTML = window.ciReportHtml(d); });
   });
   // the Status filter shows only for "All courses / All batches"
-  function syncAll() { document.querySelectorAll('.rp-two').forEach(function (p) { var all = p.querySelector('[data-id]').value === 'all'; p.querySelector('.rp-all-st').hidden = !all; }); }
+  function syncAll() {
+    document.querySelectorAll('.rp-two').forEach(function (p) { var all = p.querySelector('[data-id]').value === 'all'; p.querySelector('.rp-all-st').hidden = !all; });
+    var per = document.querySelector('.rp-pane[data-pane=fees] [name=period]'), custom = !!per && per.value === 'custom';
+    document.querySelectorAll('.rp-custom').forEach(function (c) { c.hidden = !custom; });
+  }
   document.addEventListener('change', function (e) { if (e.target.closest('.rp-pane')) { last = null; syncAll(); } });
   syncAll();
   show(type);

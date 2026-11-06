@@ -154,6 +154,70 @@ if ($type === 'class') {
         ],
         'notes' => ['Class ' . $k['name'] . ': ' . $t['n'] . ' student(s), ' . $t['active'] . ' studying now, ' . $t['left'] . ' left.', 'Fee: ' . $rs($t['fee']) . ' in total, ' . $rs($t['paid']) . ' collected, ' . $rs($t['due']) . ' still due.']]);
 }
+// ---- fee collection for a period: ?type=fees&period=today|yesterday|week|month|lastmonth|year|custom&from=&to=&course=&method=
+if ($type === 'fees') {
+    if (!ci_perm($me, 'fees')) { http_response_code(403); exit(json_encode(['error' => 'You do not have access to fee reports.'])); }
+    $today = date('Y-m-d');
+    $period = (string)($_GET['period'] ?? 'today');
+    $okDate = fn($v) => is_string($v) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $v) && checkdate((int)substr($v, 5, 2), (int)substr($v, 8, 2), (int)substr($v, 0, 4)) ? $v : null;
+    switch ($period) {
+        case 'yesterday': $from = $to = date('Y-m-d', strtotime('-1 day')); $pl = 'Yesterday'; break;
+        case 'week': $from = date('Y-m-d', strtotime('monday this week')); $to = $today; $pl = 'This week'; break;
+        case 'month': $from = date('Y-m-01'); $to = $today; $pl = 'This month'; break;
+        case 'lastmonth': $from = date('Y-m-01', strtotime('first day of last month')); $to = date('Y-m-t', strtotime('first day of last month')); $pl = 'Last month'; break;
+        case 'year': $from = date('Y-01-01'); $to = $today; $pl = 'This year'; break;
+        case 'custom':
+            $from = $okDate($_GET['from'] ?? '') ?? $today; $to = $okDate($_GET['to'] ?? '') ?? $from;
+            if ($from > $to) [$from, $to] = [$to, $from];
+            $pl = 'Chosen dates'; break;
+        default: $period = 'today'; $from = $to = $today; $pl = 'Today';
+    }
+    $range = $from === $to ? $d($from) : $d($from) . ' to ' . $d($to);
+    $w = ['p.paid_on BETWEEN ? AND ?']; $a = [$from, $to];
+    $courseId = (int)($_GET['course'] ?? 0);
+    $courseName = 'All courses';
+    if ($courseId) {
+        $w[] = 'e.course_id = ?'; $a[] = $courseId;
+        $cn = $pdo->prepare("SELECT name FROM ci_courses WHERE id = ?"); $cn->execute([$courseId]); $courseName = (string)($cn->fetchColumn() ?: 'Course #' . $courseId);
+    }
+    $q = $pdo->prepare("SELECT p.*, s.name, s.reg_no, c.name AS course_name, b.name AS batch_name, u.username FROM ci_payments p
+        JOIN ci_students s ON s.id = p.student_id LEFT JOIN ci_enrollments e ON e.id = p.enrollment_id LEFT JOIN ci_courses c ON c.id = e.course_id
+        LEFT JOIN ci_batches b ON b.id = e.batch_id LEFT JOIN users u ON u.id = p.created_by WHERE " . implode(' AND ', $w) . " ORDER BY p.paid_on, p.id");
+    $q->execute($a);
+    $method = trim((string)($_GET['method'] ?? ''));
+    $rows = []; $byMode = []; $byStaff = []; $byCourse = []; $total = 0; $students = [];
+    foreach ($q as $p) {
+        $split = ci_pay_split($p);
+        if ($method !== '' && !isset($split[$method])) continue;
+        $amt = $method !== '' ? (float)$split[$method] : (float)$p['amount']; // with a mode chosen, count only that part of a split payment
+        $rows[] = [$p, $amt];
+        foreach ($split as $m => $v) if ($method === '' || $m === $method) $byMode[$m] = ($byMode[$m] ?? 0) + $v;
+        $who = $p['username'] ?: '-';
+        $byStaff[$who] = [($byStaff[$who][0] ?? 0) + 1, ($byStaff[$who][1] ?? 0) + $amt];
+        $cn = $p['course_name'] ?: '-';
+        $byCourse[$cn] = [($byCourse[$cn][0] ?? 0) + 1, ($byCourse[$cn][1] ?? 0) + $amt];
+        $total += $amt; $students[$p['student_id']] = true;
+    }
+    arsort($byMode); uasort($byStaff, fn($x, $y) => $y[1] <=> $x[1]); uasort($byCourse, fn($x, $y) => $y[1] <=> $x[1]);
+    $sumTable = fn(string $title, string $col, array $list) => ['title' => $title, 'head' => [$col, 'Payments', 'Amount'],
+        'body' => array_map(fn($k, $v) => [$k, (string)$v[0], $rs($v[1])], array_keys($list), $list), 'foot' => $list ? [['Total', (string)count($rows), $rs($total)]] : null, 'right' => [1, 2], 'empty' => 'Nothing.'];
+    $modeRows = []; foreach ($byMode as $m => $v) $modeRows[$m] = [count(array_filter($rows, fn($r) => isset(ci_pay_split($r[0])[$m]))), $v];
+    $sections = [
+        $sumTable('By payment mode', 'Mode', $modeRows),
+        ['title' => 'Payments', 'right_text' => count($rows) . ' payment(s)', 'head' => ['No.', 'Date', 'Receipt', 'Student', 'Reg. no.', 'Course / batch', 'Mode', 'Collected by', 'Amount'],
+            'body' => array_map(fn($r, $i) => [$i + 1, $d($r[0]['paid_on']), $r[0]['receipt_no'], $r[0]['name'], $r[0]['reg_no'],
+                ($r[0]['course_name'] ?: '-') . ($r[0]['batch_name'] ? ' / ' . $r[0]['batch_name'] : ''), ci_pay_mode($r[0]), $r[0]['username'] ?: '-', $rs0($r[1])], $rows, array_keys($rows)),
+            'foot' => $rows ? [['', '', '', '', '', '', '', 'Total', $rs0($total)]] : null, 'right' => [8], 'small' => true, 'empty' => 'No fee was collected in this period.'],
+        $sumTable('By staff (collected by)', 'Collected by', $byStaff),
+    ];
+    if (!$courseId && count($byCourse) > 1) $sections[] = $sumTable('By course', 'Course', $byCourse);
+    $out(['title' => 'FEE COLLECTION REPORT', 'subtitle' => $pl . ' · ' . $range, 'no' => 'FEE-' . str_replace('-', '', $from) . ($to !== $from ? '-' . str_replace('-', '', $to) : ''),
+        'file' => 'fee-report_' . $from . ($to !== $from ? '_to_' . $to : ''), 'landscape' => true,
+        'boxes' => [['head' => 'REPORT FOR', 'rows' => [['Period', $pl], ['Dates', $range], ['Course', $courseName], ['Payment mode', $method !== '' ? $method : 'All modes']]],
+                    ['head' => 'COLLECTION', 'rows' => [['Total collected', $rs($total)], ['Payments', (string)count($rows)], ['Students who paid', (string)count($students)]]]],
+        'sections' => $sections,
+        'notes' => [$rows ? $rs($total) . ' collected from ' . count($students) . ' student(s) in ' . count($rows) . ' payment(s), ' . $range . '.' : 'No fee was collected ' . ($from === $to ? 'on ' : 'from ') . $range . '.']]);
+}
 // ---- all courses / all batches / all classes (one line each), ?status=active|completed|inactive|all
 $stF = in_array($_GET['status'] ?? '', ['active', 'completed', 'inactive', 'all'], true) ? $_GET['status'] : 'all';
 $money = "COALESCE(SUM(CASE WHEN e.status = 'dropped' THEN 0 ELSE e.fee - e.discount END),0) AS fee, COALESCE(SUM(" . CI_PAID_SQL . "),0) AS paid, COALESCE(SUM(" . CI_DUE_SQL . "),0) AS due";

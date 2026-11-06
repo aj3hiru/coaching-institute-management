@@ -76,3 +76,29 @@ html{scrollbar-gutter:stable}
 .dk-pop .dk-list{padding:6px 0 12px}
 .dk-pop .dk-opt{padding:8px 12px}
 .dk-pop{max-height:min(340px,calc(100vh - 24px))}
+/* phones: no logo in the page header — menu button, page name, then icon-only buttons */
+@media (max-width:767px){
+  .top-nav .sitename-mob{display:none!important}
+  .top-nav .nav-left{flex:1;min-width:0;gap:10px}
+  .top-nav .page-heading{display:block;min-width:0}
+  .top-nav .page-heading h1{font-size:1.02rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .top-nav .page-heading p{display:none}
+  .top-nav .nav-right{gap:6px;flex-shrink:0}
+  .top-nav .nav-right .nr-ico{width:38px;height:38px;min-width:38px;padding:0!important;justify-content:center;gap:0!important}
+  .top-nav .nav-right .nr-ico .nr-t{display:none}
+  .top-nav .nav-right .nr-ico svg,.top-nav .nav-right .nr-ico i{margin:0!important}
+  .top-nav .dsp-btn{width:38px;height:38px;padding:0;justify-content:center}
+}
+/* phones: a compact Display options box */
+@media (max-width:767px){
+  .dsp-panel{width:236px;max-height:min(58vh,420px);top:calc(100% + 4px)}
+  .dsp-head{padding:8px 10px;font-size:12.5px}
+  .dsp-reset{font-size:12px}
+  .dsp-sec,.dsp-item{padding:6px 10px;font-size:12.5px;gap:7px}
+  .dsp-item{padding-left:27px}
+  .dsp-sec input,.dsp-item input{width:14px;height:14px}
+  .dsp-more{font-size:10.5px;padding:1px 5px}
+}
+/* typed dates (admin-date.js) */
+input.dk-date{font-variant-numeric:tabular-nums;letter-spacing:.02em}
+input.dk-date.dk-date-bad{border-color:#dc2626!important;background:#fff7f7;box-shadow:0 0 0 3px rgba(220,38,38,.12)}

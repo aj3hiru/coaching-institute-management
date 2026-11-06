@@ -64,7 +64,7 @@
         var contact = [clean(inst.phone), clean(inst.email)].filter(Boolean).join('  |  ');
         if (contact) { font('normal', 8, MUTE); doc.text(contact, px, y + ph + 13); }
         font('bold', 18, INK); doc.text(clean(d.title), W - M, y + 18, { align: 'right' });
-        var meta = [['Report No.', clean(d.no)], ['Report Date', clean(d.generated)], ['Prepared by', clean(d.viewer && d.viewer.name)]];
+        var meta = [['Report No.', clean(d.no)], ['Report Date', clean(d.generated)]];
         font('bold', 8.5, INK);
         var valW = Math.max.apply(null, meta.map(function (m) { return doc.getTextWidth(m[1]); }));
         meta.forEach(function (m, i) {
@@ -131,9 +131,6 @@
             wrapped.forEach(function (w) { font('normal', 8.8, TEXT); doc.text(w, M + 10, ty); ty += w.length * 12 + 3; });
             y += nh + 34;
         } else { need(90); y += 10; }
-        font('normal', 8.5, MUTE); doc.text('Prepared by', M, y);
-        font('bold', 9.5, INK); doc.text(clean(d.viewer && d.viewer.name) || '-', M, y + 14);
-        font('normal', 8.5, MUTE); doc.text(cap(d.viewer && d.viewer.role) + ', ' + bTitle, M, y + 27);
         rule(W - M - 170, y + 14, W - M, y + 14, 0.6, INK);
         font('normal', 8.5, MUTE); doc.text('Authorised Signatory', W - M - 85, y + 27, { align: 'center' });
 
@@ -179,7 +176,7 @@
         var inst = d.institute || {}, h = '<div class="rp-doc">';
         var br = inst.brand || {};
         h += '<div class="rp-top"><div><div class="rp-brand">' + (br.emblem ? '<img src="' + esc(br.emblem) + '" alt="">' : '') + '<div><b>' + esc(br.title || inst.name || 'Institute') + '</b>' + (br.line || inst.address ? '<span>' + esc(br.line || inst.address) + '</span>' : '') + '</div></div><p>' + esc([inst.phone, inst.email].filter(Boolean).join('  |  ')) + '</p></div>';
-        h += '<div class="rp-meta"><h2>' + esc(d.title) + '</h2><table><tr><td>Report No.:</td><td>' + esc(d.no) + '</td></tr><tr><td>Report Date:</td><td>' + esc(d.generated) + '</td></tr><tr><td>Prepared by:</td><td>' + esc(d.viewer && d.viewer.name) + '</td></tr></table></div></div>';
+        h += '<div class="rp-meta"><h2>' + esc(d.title) + '</h2><table><tr><td>Report No.:</td><td>' + esc(d.no) + '</td></tr><tr><td>Report Date:</td><td>' + esc(d.generated) + '</td></tr></table></div></div>';
         if ((d.boxes || []).length) {
             h += '<div class="rp-boxes">' + d.boxes.slice(0, 2).map(function (b) { return '<div class="rp-box"><h3>' + esc(b.head) + '</h3><table>' + b.rows.map(function (r) { return '<tr><td>' + esc(r[0]) + '</td><td>' + esc(r[1]) + '</td></tr>'; }).join('') + '</table></div>'; }).join('') + '</div>';
         }

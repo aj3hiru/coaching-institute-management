@@ -198,6 +198,7 @@ function admin_shell_head(): void
     echo '<link rel="stylesheet" href="/assets/css/admin-flat.css?v=' . (@filemtime($root . '/assets/css/admin-flat.css') ?: 1) . '">' . "\n";
     echo '<script src="/assets/js/admin-select.js?v=' . (@filemtime($root . '/assets/js/admin-select.js') ?: 1) . '" defer></script>' . "\n";
     echo '<script src="/assets/js/admin-display.js?v=' . (@filemtime($root . '/assets/js/admin-display.js') ?: 1) . '" defer></script>' . "\n";
+    echo '<script src="/assets/js/admin-date.js?v=' . (@filemtime($root . '/assets/js/admin-date.js') ?: 1) . '" defer></script>' . "\n";
 }
 
 function admin_shell_icon(string $name): string
@@ -290,7 +291,6 @@ function admin_shell_open(string $title, string $subtitle = '', string $navRight
   <header class="top-nav">
     <div class="nav-left">
       <button class="menu-toggle" aria-label="Toggle sidebar" type="button" onclick="admShell.open()"><i class="fas fa-bars"></i></button>
-      <span class="sitename-mob"><?php if ($logo): ?><img src="<?= htmlspecialchars($logo) ?>" alt="" class="sb-logo sb-logo-mob"><?php else: ?><span class="sb-sitename"><?= htmlspecialchars($site) ?></span><?php endif; ?></span>
       <div class="page-heading"><h1><?= $title ?></h1><?php if ($subtitle !== ''): ?><p><?= $subtitle ?></p><?php endif; ?></div>
     </div>
     <div class="nav-right"><?= $navRight ?><div class="dsp-wrap"><button type="button" class="dsp-btn" id="dspBtn" aria-haspopup="true" aria-expanded="false"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg><span class="dsp-lbl">Display options</span><span class="dsp-count" id="dspCount" hidden></span></button><div class="dsp-panel" id="dspPanel" hidden></div></div></div>
@@ -306,6 +306,17 @@ function admin_shell_close(): void
 </div>
 </div>
 <script>
+// Page-header buttons: their words go in a span, so phones can show the icon alone (the word stays as the label)
+document.querySelectorAll('.top-nav .nav-right a, .top-nav .nav-right button').forEach(function (b) {
+  if (b.id === 'dspBtn' || b.closest('.dsp-panel')) return;
+  var words = '';
+  [].slice.call(b.childNodes).forEach(function (n) {
+    if (n.nodeType === 3 && n.textContent.trim()) { words += n.textContent.trim() + ' '; var s = document.createElement('span'); s.className = 'nr-t'; s.textContent = n.textContent; b.replaceChild(s, n); }
+    else if (n.nodeType === 1 && n.tagName === 'SPAN' && !n.className && n.textContent.trim()) { words += n.textContent.trim() + ' '; n.className = 'nr-t'; }
+  });
+  if (words && !b.getAttribute('aria-label')) b.setAttribute('aria-label', words.trim());
+  if (words && b.querySelector('svg, i, img')) b.classList.add('nr-ico');
+});
 window.admShell = {
   open() { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebarOverlay').classList.add('active'); },
   close() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebarOverlay').classList.remove('active'); },

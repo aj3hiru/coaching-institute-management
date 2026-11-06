@@ -114,6 +114,15 @@ $clickRate = $delivered > 0 ? round($clicks / $delivered * 100, 1) : 0;
 .px .pn-msg{margin-top:10px;font-size:.85rem}.px .pn-msg.ok{color:#16a34a}.px .pn-msg.err{color:#dc2626}
 .px .pn-btn-light{display:inline-flex;align-items:center;gap:7px;color:#1e293b;font-size:13px}.px .pn-btn-light:hover{border-color:var(--primary);color:var(--primary)}
 .px .pn-btn-danger{background:#dc2626}.px .pn-btn-danger:hover{background:#b91c1c}
+.pk-box{max-width:460px;text-align:left}.pk-box .acm-icon,.pk-box .acm-title{margin-left:auto;margin-right:auto;text-align:center}.pk-box .acm-message{text-align:center;margin-bottom:14px}
+.pk-opt{display:flex;gap:10px;align-items:flex-start;padding:11px 12px;border:1px solid #e5e7eb;margin:0 0 8px;cursor:pointer;font-size:13.5px;color:#1f2937}
+.pk-opt:has(input:checked){border-color:var(--primary,#4a3369);background:#f7f4fb}.pk-opt-del:has(input:checked){border-color:#dc2626;background:#fef2f2}
+.pk-opt input{margin:3px 0 0;accent-color:var(--primary,#4a3369);flex-shrink:0}.pk-opt-del input{accent-color:#dc2626}
+.pk-opt small{display:block;color:#6b7280;font-size:12.5px;line-height:1.45;margin-top:2px}
+.pk-type{display:block;margin:14px 0 4px;font-size:13px;color:#374151}.pk-type b{color:#dc2626;letter-spacing:.04em}
+.pk-word{display:block;width:100%;margin-top:6px;padding:10px 12px;border:1px solid #d1d5db;font:600 14px/1.2 ui-monospace,Menlo,monospace;letter-spacing:.12em;text-transform:uppercase;color:#111827;background:#fff;outline:none}
+.pk-word:focus{border-color:var(--primary,#4a3369);box-shadow:0 0 0 3px rgba(74,51,105,.12)}
+.pk-err{color:#dc2626;font-size:13px;margin:6px 0 0}.pk-box .acm-actions{margin-top:16px}.pk-go:disabled{opacity:.45;cursor:not-allowed}
 .px .pn-note{padding:12px 14px;border-radius:10px;background:#f8fafc;border:1px solid #e2e8f0;color:#475569;font-size:13px;line-height:1.55}
 .px .pn-rule{display:grid;grid-template-columns:160px 110px 1fr 34px;gap:8px;align-items:center;margin-bottom:8px}.px .pn-rule select,.px .pn-rule input{width:100%}
 .px .pn-chips{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 6px}.px .pn-chips button{padding:3px 9px;border:1px solid #e2e8f0;border-radius:99px;background:#f8fafc;font-size:12px;cursor:pointer;color:#334155}.px .pn-chips button:hover{border-color:var(--primary);color:var(--primary)}
@@ -330,7 +339,7 @@ tr.px-camp{cursor:pointer}tr.px-camp:hover td{background:#fafafa}tr.px-camp.open
           <?php else: ?><p class="pn-msg err"><i class="fas fa-triangle-exclamation"></i> No key yet — use “Reset keys” below to create one.</p><?php endif; ?>
           <?php if (count($keySets) > 1): ?>
           <table class="pn-table" style="margin-top:10px"><thead><tr><th>Key set</th><th class="num">Subscribers</th></tr></thead><tbody>
-          <?php foreach ($keySets as $k): ?><tr><td><code><?= htmlspecialchars($mask($k['public_key'])) ?></code> <?= $k['active'] ? '<span class="pn-badge completed">Active</span>' : '<small class="pn-muted">imported</small>' ?></td><td class="num"><?= number_format((int)$k['n']) ?></td></tr><?php endforeach; ?>
+          <?php foreach ($keySets as $k): ?><tr><td><code><?= htmlspecialchars($mask($k['public_key'])) ?></code> <?= $k['active'] ? '<span class="pn-badge completed">Active</span>' : '<small class="pn-muted">old key — still sends to its subscribers</small>' ?></td><td class="num"><?= number_format((int)$k['n']) ?></td></tr><?php endforeach; ?>
           </tbody></table><?php endif; ?>
         </div>
         <div class="pn-card"><h3>Backup</h3><p class="px-sub">One file with every key and subscriber — to restore, or to move push to another site.</p>
@@ -338,7 +347,7 @@ tr.px-camp{cursor:pointer}tr.px-camp:hover td{background:#fafafa}tr.px-camp.open
           <div class="pn-field" style="margin:14px 0 0">Import a file<div class="pn-row" style="display:flex;gap:8px;flex-wrap:wrap"><input type="file" id="imp-file" accept=".json,application/json" class="pn-input" style="flex:1;min-width:160px"><button type="button" class="pn-btn-light" id="imp-go"><i class="fas fa-upload"></i> Import</button></div></div>
           <div class="pn-msg" id="imp-msg"></div>
         </div>
-        <div class="pn-card px-danger"><h3>Danger zone</h3><p class="px-sub">Reset makes a new key and erases the old key<?= count($keySets) > 1 ? 's' : '' ?> and all <?= number_format($allSubs) ?> subscriber<?= $allSubs === 1 ? '' : 's' ?>. Readers who allowed notifications re-subscribe on their next visit. Export first.</p>
+        <div class="pn-card px-danger"><h3>Danger zone</h3><p class="px-sub">Reset makes a new key. You choose whether the <?= number_format($allSubs) ?> subscriber<?= $allSubs === 1 ? '' : 's' ?> stay (and keep getting notifications) or are removed. Export first.</p>
           <button type="button" class="pn-btn pn-btn-danger" id="key-reset"><i class="fas fa-rotate"></i> Reset keys</button>
         </div>
       </div>
@@ -527,12 +536,36 @@ document.addEventListener('DOMContentLoaded', function () {
         if (d.ok) { msg($('set-msg'), ' Saved.', true); } else msg($('set-msg'), ' ' + (d.error || 'Could not save.'), false);
       });
     };
+    // Reset keys: one themed box — keep or remove the subscribers, then type RESET
     $('key-reset').onclick = function () {
-      ask('This creates a new key and completely erases the old key and all <?= number_format($allSubs) ?> subscribers linked to it. Readers who allowed notifications are subscribed again automatically on their next visit.', { title: 'Reset push keys?', confirmText: 'Continue' }).then(function (ok) {
-        if (!ok) return;
-        var t = prompt('Type RESET to erase the old keys and subscribers'); if (t !== 'RESET') { if (t !== null) tell('Nothing changed — the word did not match.', 'info'); return; }
-        post('reset_keys', { confirm: 'RESET' }).then(function (d) { if (d.ok) { tell('New keys are ready. ' + d.removed + ' old subscriber' + (d.removed === 1 ? ' was' : 's were') + ' erased.', 'success'); setTimeout(function () { location.href = '?tab=settings'; }, 1500); } else tell(d.error || 'Could not reset.', 'error'); });
-      });
+      var n = <?= (int)$allSubs ?>, ov = document.createElement('div');
+      ov.className = 'acm-overlay acm-open pk-ov'; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true');
+      ov.innerHTML = '<div class="acm-box pk-box"><div class="acm-icon acm-danger"><i class="fas fa-rotate"></i></div>' +
+        '<h3 class="acm-title">Reset push keys?</h3><p class="acm-message">A new key is made for new subscribers. What should happen to the ' + n.toLocaleString('en-IN') + ' subscriber' + (n === 1 ? '' : 's') + ' you have now?</p>' +
+        '<label class="pk-opt"><input type="radio" name="pk-subs" value="keep" checked><span><b>No — keep the subscribers</b><small>Only the key is reset. Old subscribers stay and still get every notification; their browser moves to the new key on its next visit.</small></span></label>' +
+        '<label class="pk-opt pk-opt-del"><input type="radio" name="pk-subs" value="clear"><span><b>Yes — remove all subscribers</b><small>The old key' + (<?= count($keySets) ?> > 1 ? 's' : '') + ' and all subscribers are erased. Readers who allowed notifications subscribe again on their next visit.</small></span></label>' +
+        '<label class="pk-type">Type <b>RESET</b> to confirm<input type="text" class="pk-word" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="RESET"></label>' +
+        '<p class="pk-err" hidden></p>' +
+        '<div class="acm-actions"><button type="button" class="acm-btn acm-btn-cancel">Cancel</button><button type="button" class="acm-btn acm-btn-confirm acm-danger pk-go" disabled>Reset keys</button></div>' +
+        '<button type="button" class="acm-close" aria-label="Close"><i class="fas fa-xmark"></i></button></div>';
+      var word = ov.querySelector('.pk-word'), go = ov.querySelector('.pk-go'), err = ov.querySelector('.pk-err');
+      function close() { document.removeEventListener('keydown', key, true); ov.remove(); }
+      function key(e) { if (e.key === 'Escape') { e.stopPropagation(); close(); } else if (e.key === 'Enter' && !go.disabled) { e.preventDefault(); go.click(); } }
+      word.addEventListener('input', function () { go.disabled = word.value.trim().toUpperCase() !== 'RESET'; err.hidden = true; });
+      ov.addEventListener('click', function (e) { if (e.target === ov || e.target.closest('.acm-btn-cancel,.acm-close')) close(); });
+      go.onclick = function () {
+        var clear = ov.querySelector('[name=pk-subs]:checked').value === 'clear';
+        go.disabled = true; go.textContent = 'Resetting…';
+        post('reset_keys', { confirm: 'RESET', clear: clear ? '1' : '0' }).then(function (d) {
+          if (!d.ok) { err.textContent = d.error || 'Could not reset.'; err.hidden = false; go.disabled = false; go.textContent = 'Reset keys'; return; }
+          close();
+          tell(clear ? 'New keys are ready. ' + d.removed + ' old subscriber' + (d.removed === 1 ? ' was' : 's were') + ' removed.'
+                     : 'New key is ready. All ' + d.kept + ' subscriber' + (d.kept === 1 ? '' : 's') + ' kept — they still get notifications.', 'success');
+          setTimeout(function () { location.href = '?tab=settings'; }, 1500);
+        });
+      };
+      document.addEventListener('keydown', key, true);
+      document.body.appendChild(ov); word.focus();
     };
     $('imp-go').onclick = function () {
       var f = $('imp-file').files[0], out = $('imp-msg'); if (!f) { msg(out, 'Please choose an export file.', false); return; }

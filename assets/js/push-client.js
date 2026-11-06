@@ -30,7 +30,7 @@
   });
 
   function save(sub) {
-    var body = { subscription: sub.toJSON(), key: C.key, touch: navigator.maxTouchPoints > 1 ? 1 : 0, lang: navigator.language || '' };
+    var body = { subscription: sub.toJSON(), key: C.key, old: oldEp && oldEp !== sub.endpoint ? oldEp : '', touch: navigator.maxTouchPoints > 1 ? 1 : 0, lang: navigator.language || '' };
     try { body.tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) {}
     return fetch('/push_notifications/save-subscriptions.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), credentials: 'omit' })
       .then(function (r) { return r.json().then(function (d) { return { status: r.status, d: d }; }); })
@@ -42,17 +42,19 @@
       });
   }
 
+  var oldEp = '';
   function ensure(force) {
     return ready.then(function (reg) {
       return reg.pushManager.getSubscription().then(function (sub) {
-        if (sub && keyOf(sub) && keyOf(sub) !== C.key) return sub.unsubscribe().then(function () { return null; });
+        // subscribed with an older key: move to the current one (the server drops the old row)
+        if (sub && keyOf(sub) && keyOf(sub) !== C.key) { oldEp = sub.endpoint; return sub.unsubscribe().then(function () { return null; }); }
         return sub;
       }).then(function (sub) {
         return sub || reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToBytes(C.key) });
       }).then(function (sub) {
         subscribed(true);
         var last = null; try { last = JSON.parse(read(SYNC) || 'null'); } catch (e) {}
-        if (force || !last || last.e !== sub.endpoint || last.k !== C.key || Date.now() - last.t > 3 * 86400000) return save(sub);
+        if (force || oldEp || !last || last.e !== sub.endpoint || last.k !== C.key || Date.now() - last.t > 3 * 86400000) return save(sub);
         return true;
       });
     }).catch(function () { subscribed(false); return false; });

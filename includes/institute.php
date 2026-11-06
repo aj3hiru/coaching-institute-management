@@ -125,6 +125,7 @@ function ci_clean_date($v): ?string
 {
     $v = trim((string)$v);
     if ($v === '') return null;
+    if (preg_match('#^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})$#', $v, $m)) $v = sprintf('%04d-%02d-%02d', $m[3], $m[2], $m[1]); // typed dd/mm/yyyy
     $d = DateTime::createFromFormat('Y-m-d', $v);
     return ($d && $d->format('Y-m-d') === $v) ? $v : null;
 }
@@ -459,14 +460,14 @@ function ci_photo_url(?string $p): string
     return $p ? '/' . ltrim($p, '/') : '';
 }
 
-/** Initials avatar when there is no photo. */
+/** The student's photo, or a grey profile picture when there is none. */
 function ci_avatar(array $s, int $size = 40): string
 {
     $url = ci_photo_url($s['photo'] ?? '');
     if ($url) return '<img class="ci-av" src="' . ci_e($url) . '" alt="" width="' . $size . '" height="' . $size . '" style="width:' . $size . 'px;height:' . $size . 'px">';
-    $parts = preg_split('/\s+/', trim((string)($s['name'] ?? '?')));
-    $ini = mb_strtoupper(mb_substr($parts[0] ?? '?', 0, 1) . (count($parts) > 1 ? mb_substr(end($parts), 0, 1) : ''));
-    return '<span class="ci-av ci-av-txt" style="width:' . $size . 'px;height:' . $size . 'px;font-size:' . round($size * .38) . 'px">' . ci_e($ini) . '</span>';
+    // no photo: the usual grey profile picture
+    return '<span class="ci-av ci-av-none" role="img" aria-label="No photo" style="width:' . $size . 'px;height:' . $size . 'px"><svg viewBox="0 0 64 64" width="100%" height="100%" aria-hidden="true">'
+        . '<rect width="64" height="64" fill="#c9ced6"/><circle cx="32" cy="25" r="12" fill="#fff"/><path d="M8 64c1.6-13 11.6-21 24-21s22.4 8 24 21z" fill="#fff"/></svg></span>';
 }
 
 function ci_status_badge(string $s): string

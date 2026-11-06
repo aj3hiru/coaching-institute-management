@@ -200,6 +200,11 @@ function edu_push_save_subscription(array $data, array $server): array
             $hdr('HTTP_CF_REGION', 80), $hdr('HTTP_CF_IPCITY', 80),
             mb_substr((string)preg_replace('/[^A-Za-z0-9-]/', '', (string)($data['lang'] ?? '')), 0, 20),
             mb_substr((string)preg_replace('/[^A-Za-z0-9_\/+-]/', '', (string)($data['tz'] ?? '')), 0, 60)]);
+    // the browser moved from an older key: its old subscription no longer works, so drop that row
+    $old = (string)($data['old'] ?? '');
+    if ($old !== '' && $old !== $ep && preg_match('#^https://\S+$#', $old) && strlen($old) <= 1000) {
+        $pdo->prepare("DELETE FROM push_subscriptions WHERE endpoint_hash = ? AND (key_id IS NULL OR key_id <> ?)")->execute([hash('sha256', $old), (int)$keyId]); // only rows of an older key
+    }
     return ['ok' => true];
 }
 
@@ -460,7 +465,11 @@ function edu_push_send_test(array $n, ?int $subId = null, string $endpoint = '')
 /* ---------- Keys, export / import ---------- */
 
 /** New key set; erases every old key and the subscribers that used them. Returns the new public key. */
-function edu_push_reset_keys(): string
+/**
+ * Makes a new active key. $clearSubscribers: erase every old key and subscriber; otherwise the old keys stay
+ * (inactive) so their subscribers still get notifications, and each browser moves to the new key on its next visit.
+ */
+function edu_push_reset_keys(bool $clearSubscribers = true): string
 {
     require_once ROOT_PATH . '/vendor/autoload.php';
     $pdo = edu_push_db();
@@ -468,8 +477,12 @@ function edu_push_reset_keys(): string
     $subject = (string)($pdo->query("SELECT subject FROM push_keys WHERE active = 1 ORDER BY id DESC LIMIT 1")->fetchColumn() ?: (defined('VAPID_SUBJECT') ? VAPID_SUBJECT : ''));
     $pdo->beginTransaction();
     try {
-        $pdo->exec("DELETE FROM push_subscriptions");
-        $pdo->exec("DELETE FROM push_keys");
+        if ($clearSubscribers) {
+            $pdo->exec("DELETE FROM push_subscriptions");
+            $pdo->exec("DELETE FROM push_keys");
+        } else {
+            $pdo->exec("UPDATE push_keys SET active = 0");
+        }
         $pdo->prepare("INSERT INTO push_keys (public_key, private_key, subject, active) VALUES (?, ?, ?, 1)")->execute([$k['publicKey'], $k['privateKey'], $subject]);
         $pdo->commit();
     } catch (Throwable $e) {

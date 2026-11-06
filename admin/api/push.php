@@ -139,9 +139,10 @@ try {
             push_admin_only($pushAdv);
             if (($_POST['confirm'] ?? '') !== 'RESET') push_out(['error' => 'Type RESET to confirm.'], 400);
             $n = (int)$pdo->query("SELECT COUNT(*) FROM push_subscriptions")->fetchColumn();
-            $pub = edu_push_reset_keys();
-            admin_log('push_keys_reset', "Reset push keys; erased old keys and $n subscribers");
-            push_out(['ok' => true, 'public_key' => $pub, 'removed' => $n]);
+            $clear = ($_POST['clear'] ?? '') === '1';
+            $pub = edu_push_reset_keys($clear);
+            admin_log('push_keys_reset', $clear ? "Reset push keys; erased old keys and $n subscribers" : "Reset push key; kept the old keys and $n subscribers");
+            push_out(['ok' => true, 'public_key' => $pub, 'removed' => $clear ? $n : 0, 'kept' => $clear ? 0 : $n]);
         case 'import':
             push_admin_only($pushAdv);
             $f = $_FILES['file'] ?? null;
