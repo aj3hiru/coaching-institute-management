@@ -48,22 +48,31 @@
             y += 13;
         }
 
-        // ---------- header ----------
-        y = 50;
-        font('bold', 17, INK); doc.text(clean(inst.name) || 'Institute', M, y);
-        font('normal', 9, MUTE);
-        var sub = [clean(inst.address), [clean(inst.phone), clean(inst.email)].filter(Boolean).join('  |  ')].filter(Boolean);
-        sub.forEach(function (l, i) { doc.text(doc.splitTextToSize(l, CW * 0.55)[0], M, y + 15 + i * 11.5); });
-        font('bold', 18, INK); doc.text(clean(d.title), W - M, y, { align: 'right' });
+        // ---------- header: the site's brand (tinted panel with a notch and a red stripe, emblem, name, address) ----------
+        var brand = inst.brand || {}, bTitle = clean(brand.title || inst.name) || 'Institute', bLine = clean(brand.line || inst.address);
+        y = 34;
+        var ph = 62, px = M, pw = Math.min(CW * 0.6, 330), logoS = ph - 12;
+        doc.setFillColor(249, 223, 198);
+        // panel: straight left, notch at 97% / 45% on the right (as on the website)
+        doc.lines([[pw, 0], [-pw * 0.03, ph * 0.45], [pw * 0.03, ph * 0.55], [-pw, 0]], px, y, [1, 1], 'F', true);
+        doc.setFillColor(240, 40, 1);
+        doc.triangle(px + pw - 4, y + ph * 0.45, px + pw - 18, y + ph, px + pw - 8, y + ph, 'F');
+        var tx = px + 12;
+        if (d._logo) { doc.addImage(d._logo, 'PNG', px + 10, y + 6, logoS * 0.866, logoS); tx = px + 10 + logoS * 0.866 + 10; }
+        font('bold', 17, [158, 27, 50]); doc.text(doc.splitTextToSize(bTitle, pw - (tx - px) - 30)[0], tx, y + ph / 2 - 3);
+        if (bLine) { font('normal', 8.5, [26, 26, 26]); doc.text(doc.splitTextToSize(bLine, pw - (tx - px) - 30)[0], tx, y + ph / 2 + 11); }
+        var contact = [clean(inst.phone), clean(inst.email)].filter(Boolean).join('  |  ');
+        if (contact) { font('normal', 8, MUTE); doc.text(contact, px, y + ph + 13); }
+        font('bold', 18, INK); doc.text(clean(d.title), W - M, y + 18, { align: 'right' });
         var meta = [['Report No.', clean(d.no)], ['Report Date', clean(d.generated)], ['Prepared by', clean(d.viewer && d.viewer.name)]];
         font('bold', 8.5, INK);
         var valW = Math.max.apply(null, meta.map(function (m) { return doc.getTextWidth(m[1]); }));
         meta.forEach(function (m, i) {
-            var my = y + 17 + i * 12.5;
+            var my = y + 34 + i * 12.5;
             font('normal', 8.5, MUTE); doc.text(m[0] + ':', W - M - valW - 10, my, { align: 'right' });
             font('bold', 8.5, INK); doc.text(m[1], W - M - valW, my);
         });
-        y += Math.max(17 + meta.length * 12.5, 15 + sub.length * 11.5) + 6;
+        y += ph + (contact ? 22 : 10);
         rule(M, y, W - M, y, 1.4, INK);
         y += 18;
 
@@ -92,7 +101,7 @@
             sectionTitle(s.title, s.right_text, body.length);
             if (!body.length) { font('italic', 9, MUTE); doc.text(clean(s.empty || 'Nothing to show.'), M, y + 8); y += 30; return; }
             var right = s.right || [], cs = {};
-            right.forEach(function (i) { cs[i] = { halign: 'right', minCellWidth: s.small ? 68 : 76 }; }); // money stays on one line
+            right.forEach(function (i) { cs[i] = { halign: 'right', minCellWidth: s.small ? 50 : 70 }; }); // money stays on one line
             Object.keys(s.w || {}).forEach(function (i) { cs[i] = Object.assign(cs[i] || {}, { cellWidth: s.w[i] }); });
             doc.autoTable({
                 startY: y, margin: { left: M, right: M, top: 64, bottom: 60 }, head: [s.head.map(clean)], body: body, foot: s.foot ? s.foot.map(function (r) { return r.map(clean); }) : undefined,
@@ -124,7 +133,7 @@
         } else { need(90); y += 10; }
         font('normal', 8.5, MUTE); doc.text('Prepared by', M, y);
         font('bold', 9.5, INK); doc.text(clean(d.viewer && d.viewer.name) || '-', M, y + 14);
-        font('normal', 8.5, MUTE); doc.text(cap(d.viewer && d.viewer.role) + ', ' + (clean(inst.name) || ''), M, y + 27);
+        font('normal', 8.5, MUTE); doc.text(cap(d.viewer && d.viewer.role) + ', ' + bTitle, M, y + 27);
         rule(W - M - 170, y + 14, W - M, y + 14, 0.6, INK);
         font('normal', 8.5, MUTE); doc.text('Authorised Signatory', W - M - 85, y + 27, { align: 'center' });
 
@@ -133,26 +142,43 @@
         for (var pg = 1; pg <= pages; pg++) {
             doc.setPage(pg);
             if (pg > 1) {
-                font('bold', 9, INK); doc.text(clean(inst.name), M, 36);
+                font('bold', 9, INK); doc.text(bTitle, M, 36);
                 font('normal', 8.5, MUTE); doc.text(cap(clean(d.title).toLowerCase()) + ' ' + clean(d.no), W - M, 36, { align: 'right' });
                 rule(M, 44, W - M, 44, 0.8, INK);
             }
             rule(M, H - 42, W - M, H - 42, 0.6, RULE);
             font('normal', 7.6, MUTE);
-            doc.text('This is a system-generated report from ' + (clean(inst.name) || 'the institute') + '.', M, H - 28);
+            doc.text('This is a system-generated report from ' + bTitle + '.', M, H - 28);
             doc.text('Page ' + pg + ' of ' + pages, W - M, H - 28, { align: 'right' });
         }
         var slug = clean(d.file || 'report').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'report';
         doc.save(slug + '.pdf');
     }
     window.ciReportDraw = draw;
+    var logoCache = {};
+    /** The brand emblem as a PNG data URL (jsPDF cannot draw SVG). Resolves to null when it cannot be loaded. */
+    function logo(url) {
+        if (!url) return Promise.resolve(null);
+        if (logoCache[url]) return logoCache[url];
+        return (logoCache[url] = new Promise(function (res) {
+            var im = new Image();
+            im.onload = function () { try { var w = 300, h = Math.round(300 * (im.naturalHeight || 232) / (im.naturalWidth || 200)), c = document.createElement('canvas'); c.width = w; c.height = h; c.getContext('2d').drawImage(im, 0, 0, w, h); res(c.toDataURL('image/png')); } catch (e) { res(null); } };
+            im.onerror = function () { res(null); };
+            im.src = url;
+        }));
+    }
+    /** Draws and downloads the PDF once the emblem is ready. */
+    window.ciReportPdf = function (d) {
+        return logo(d.institute && d.institute.brand && d.institute.brand.emblem).then(function (img) { d._logo = img; draw(d); });
+    };
     window.ciReportFromStudents = fromStudents;
 
     /** The same document as HTML, to read the report on the page before downloading it. */
     function esc(v) { return String(v == null ? '' : v).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
     window.ciReportHtml = function (d) {
         var inst = d.institute || {}, h = '<div class="rp-doc">';
-        h += '<div class="rp-top"><div><h1>' + esc(inst.name || 'Institute') + '</h1>' + (inst.address ? '<p>' + esc(inst.address) + '</p>' : '') + '<p>' + esc([inst.phone, inst.email].filter(Boolean).join('  |  ')) + '</p></div>';
+        var br = inst.brand || {};
+        h += '<div class="rp-top"><div><div class="rp-brand">' + (br.emblem ? '<img src="' + esc(br.emblem) + '" alt="">' : '') + '<div><b>' + esc(br.title || inst.name || 'Institute') + '</b>' + (br.line || inst.address ? '<span>' + esc(br.line || inst.address) + '</span>' : '') + '</div></div><p>' + esc([inst.phone, inst.email].filter(Boolean).join('  |  ')) + '</p></div>';
         h += '<div class="rp-meta"><h2>' + esc(d.title) + '</h2><table><tr><td>Report No.:</td><td>' + esc(d.no) + '</td></tr><tr><td>Report Date:</td><td>' + esc(d.generated) + '</td></tr><tr><td>Prepared by:</td><td>' + esc(d.viewer && d.viewer.name) + '</td></tr></table></div></div>';
         if ((d.boxes || []).length) {
             h += '<div class="rp-boxes">' + d.boxes.slice(0, 2).map(function (b) { return '<div class="rp-box"><h3>' + esc(b.head) + '</h3><table>' + b.rows.map(function (r) { return '<tr><td>' + esc(r[0]) + '</td><td>' + esc(r[1]) + '</td></tr>'; }).join('') + '</table></div>'; }).join('') + '</div>';
@@ -178,7 +204,7 @@
         var kind = b.dataset.report, url = b.dataset.src || ('/admin/ci-report.php?type=' + encodeURIComponent(kind) + '&id=' + encodeURIComponent(b.dataset.id || ''));
         b.disabled = true; b.classList.add('is-busy');
         fetch(url, { credentials: 'same-origin' }).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-            .then(function (d) { if (d.error) throw new Error(d.error); draw(d.kind === 'students' ? fromStudents(d) : d); })
+            .then(function (d) { if (d.error) throw new Error(d.error); return window.ciReportPdf(d.kind === 'students' ? fromStudents(d) : d); })
             .catch(function (err) { alert('Could not make the report: ' + err.message); })
             .then(function () { b.disabled = false; b.classList.remove('is-busy'); });
     });

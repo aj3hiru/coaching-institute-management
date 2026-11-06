@@ -15,6 +15,7 @@ $back = fn(string $tab = '') => "/admin/student-view.php?id=$id" . ($tab ? "#$ta
 // popups on list pages post here with back = that page; go back there after saving
 $listBack = (string)($_POST['back'] ?? '');
 $listBack = preg_match('#^/admin/[\w\-./]*\.php(\?[^\s<>"]*)?$#', $listBack) ? $listBack : '';
+if ($listBack) { $listBack = rtrim(str_replace(['?&', '&&'], ['?', '&'], preg_replace('/([?&])(paid|ok)=[^&]*/', '$1', $listBack)), '?&'); } // no old receipt link
 $toList = function (string $msg, ?int $paid = null) use ($listBack) {
     $u = preg_replace('/([?&])(paid|ok)=[^&]*/', '$1', $listBack);
     $u = rtrim(str_replace(['?&', '&&'], ['?', '&'], $u), '?&');
@@ -184,7 +185,7 @@ $tel = fn(?string $m) => $m ? '<a href="tel:' . ci_e($m) . '">' . ci_e($m) . '</
   </div>
   <div class="ci-actions ci-noprint">
     <?php if ($s['mobile']): ?><?= ci_ico('phone', 'tel:' . $s['mobile'], 'Call') ?><?php endif; ?>
-    <?php if ($wa): ?><a class="ci-ico ci-ico-ok" href="<?= ci_e($wa) ?>" target="_blank" rel="noopener" title="WhatsApp (fee reminder)" aria-label="WhatsApp"><i class="fab fa-whatsapp" style="font-size:16px"></i></a><?php endif; ?>
+    <?php if ($wa): ?><a class="ci-ico ci-ico-ok" href="<?= ci_e($wa) ?>" target="_blank" rel="noopener" aria-label="WhatsApp"><i class="fab fa-whatsapp" style="font-size:16px"></i></a><?php endif; ?>
     <?= ci_ico('pdf', null, 'Student report (PDF)', 'button', ' data-report="student" data-id="' . $id . '"') ?>
     <?php if (ci_perm($me, 'edit_student')): ?><?= ci_ico('edit', '/admin/student-edit.php?id=' . $id, 'Edit student') ?><button type="button" class="ci-btn ci-ghost" data-open="ci-addc"><?= ci_svg('book-plus') ?> Add to course / batch</button><?php endif; ?>
     <?php if (!$pays && ci_perm($me, 'edit_student')): ?><?= ci_post_ico('trash', 'Delete student', ['action' => 'delete', 'id' => $id], 'Delete student ' . $s['name'] . '? This cannot be undone.') ?><?php endif; ?>
@@ -244,7 +245,7 @@ $tel = fn(?string $m) => $m ? '<a href="tel:' . ci_e($m) . '">' . ci_e($m) . '</
       </div>
       <details class="ci-cc-pays"<?= $ep ? '' : ' hidden' ?>><summary><?= $inst ? 'Installments paid' : 'Payments' ?> (<?= count($ep) ?>)</summary>
         <table class="ci-table ci-plan"><thead><tr><th><?= $inst ? 'Installment' : '#' ?></th><th>Date</th><th>Receipt</th><th>Paid by</th><th class="ci-num">Amount</th><th class="ci-noprint"></th></tr></thead><tbody>
-        <?php foreach ($ep as $p): ?><tr><td><b><?= $inst ? 'Installment ' . $p['no'] : $p['no'] ?></b></td><td class="ci-nw"><?= ci_date($p['paid_on']) ?></td><td><?= ci_e($p['receipt_no']) ?></td><td><?= ci_e(ci_pay_mode($p)) ?></td><td class="ci-num"><b class="ci-g"><?= ci_money($p['amount']) ?></b></td><td class="ci-noprint"><a class="ci-ico" href="/admin/ci-receipt.php?id=<?= (int)$p['id'] ?>" target="_blank" title="Print receipt" aria-label="Print receipt"><?= ci_svg('print') ?></a></td></tr><?php endforeach; ?>
+        <?php foreach ($ep as $p): ?><tr><td><b><?= $inst ? 'Installment ' . $p['no'] : $p['no'] ?></b></td><td class="ci-nw"><?= ci_date($p['paid_on']) ?></td><td><?= ci_e($p['receipt_no']) ?></td><td><?= ci_e(ci_pay_mode($p)) ?></td><td class="ci-num"><b class="ci-g"><?= ci_money($p['amount']) ?></b></td><td class="ci-noprint"><a class="ci-ico" href="/admin/ci-receipt.php?id=<?= (int)$p['id'] ?>" target="_blank" aria-label="Print receipt"><?= ci_svg('print') ?></a></td></tr><?php endforeach; ?>
         </tbody></table></details>
     </div>
     <?php endforeach; ?>
@@ -256,7 +257,7 @@ $tel = fn(?string $m) => $m ? '<a href="tel:' . ci_e($m) . '">' . ci_e($m) . '</
     <?php foreach ($pays as $p): ?>
     <tr<?= (int)$p['id'] === $newReceipt ? ' class="ci-hl"' : '' ?>><td class="ci-nw"><?= ci_date($p['paid_on']) ?></td><td class="ci-nw"><b><?= ci_e($p['receipt_no']) ?></b><?= $p['note'] ? '<small class="ci-muted" style="display:block">' . ci_e($p['note']) . '</small>' : '' ?></td><td><?= ci_e($p['course_name'] ?? '—') ?></td>
     <td><?= ci_e(ci_pay_mode($p)) ?></td><td class="ci-num"><b class="ci-g"><?= ci_money($p['amount']) ?></b></td><td class="ci-num"><?= ci_money($p['balance']) ?></td>
-    <td class="ci-noprint"><div class="ci-icos"><a class="ci-ico" href="/admin/ci-receipt.php?id=<?= (int)$p['id'] ?>" target="_blank" title="Print receipt" aria-label="Print receipt"><?= ci_svg('print') ?></a>
+    <td class="ci-noprint"><div class="ci-icos"><a class="ci-ico" href="/admin/ci-receipt.php?id=<?= (int)$p['id'] ?>" target="_blank" aria-label="Print receipt"><?= ci_svg('print') ?></a>
     <?php if ($me['role'] === 'admin'): ?><?= ci_post_ico('trash', 'Delete payment', ['action' => 'pay_delete', 'id' => $id, 'payment_id' => $p['id']], 'Delete payment ' . $p['receipt_no'] . '? The due goes up again.') ?><?php endif; ?>
     </div></td></tr>
     <?php endforeach; ?>

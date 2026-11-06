@@ -293,7 +293,7 @@ function admin_shell_open(string $title, string $subtitle = '', string $navRight
       <span class="sitename-mob"><?php if ($logo): ?><img src="<?= htmlspecialchars($logo) ?>" alt="" class="sb-logo sb-logo-mob"><?php else: ?><span class="sb-sitename"><?= htmlspecialchars($site) ?></span><?php endif; ?></span>
       <div class="page-heading"><h1><?= $title ?></h1><?php if ($subtitle !== ''): ?><p><?= $subtitle ?></p><?php endif; ?></div>
     </div>
-    <div class="nav-right"><?= $navRight ?><div class="dsp-wrap"><button type="button" class="dsp-btn" id="dspBtn" aria-haspopup="true" aria-expanded="false" title="Display options: show or hide parts of this page"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg><span class="dsp-lbl">Display options</span><span class="dsp-count" id="dspCount" hidden></span></button><div class="dsp-panel" id="dspPanel" hidden></div></div></div>
+    <div class="nav-right"><?= $navRight ?><div class="dsp-wrap"><button type="button" class="dsp-btn" id="dspBtn" aria-haspopup="true" aria-expanded="false"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg><span class="dsp-lbl">Display options</span><span class="dsp-count" id="dspCount" hidden></span></button><div class="dsp-panel" id="dspPanel" hidden></div></div></div>
   </header>
   <div class="content-wrapper">
     <?php

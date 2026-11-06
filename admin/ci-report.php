@@ -11,12 +11,13 @@ $id = (int)($_GET['id'] ?? 0);
 $out = fn(array $d) => exit(json_encode($d + ['institute' => ci_institute(), 'generated' => date('d M Y, h:i A'), 'viewer' => ['name' => $me['username'], 'role' => $me['role']]], JSON_UNESCAPED_UNICODE));
 $fail = function (string $m) { http_response_code(404); exit(json_encode(['error' => $m])); };
 $rs = fn($n) => 'Rs. ' . number_format((float)$n, 2);
+$rs0 = fn($n) => 'Rs. ' . number_format((float)$n); // whole rupees for wide tables
 $d = fn($v) => $v ? date('d M Y', strtotime($v)) : '-';
 $st = fn(string $s, ?string $on = null) => ['active' => 'Active', 'completed' => 'Completed', 'left' => 'Left', 'dropped' => 'Dropped', 'inactive' => 'Inactive'][$s] ?? ucfirst($s);
 $withDate = fn(string $s, ?string $on) => $st($s) . (in_array($s, ['left', 'dropped', 'completed'], true) && $on ? ' (' . date('d M Y', strtotime($on)) . ')' : '');
 
 /** Students of one course / batch / class as table rows + totals. */
-$studentRows = function (string $where, array $args, bool $showBatch) use ($pdo, $rs, $d, $withDate) {
+$studentRows = function (string $where, array $args, bool $showBatch) use ($pdo, $rs0, $d, $withDate) {
     $q = $pdo->prepare("SELECT s.reg_no, s.name, s.mobile, s.status AS sstatus, s.left_on, e.status, e.ended_on, e.enrolled_on, e.fee, e.discount, e.fee_type,
         b.name AS batch_name, c.name AS course_name, " . CI_PAID_SQL . " AS paid, " . CI_DUE_SQL . " AS due
         FROM ci_enrollments e JOIN ci_students s ON s.id = e.student_id LEFT JOIN ci_batches b ON b.id = e.batch_id LEFT JOIN ci_courses c ON c.id = e.course_id
@@ -29,7 +30,7 @@ $studentRows = function (string $where, array $args, bool $showBatch) use ($pdo,
         $status = $r['sstatus'] === 'left' && $r['status'] !== 'completed' ? $withDate('left', $r['left_on'] ?: $r['ended_on']) : $withDate($r['status'], $r['ended_on']);
         $row = [$r['reg_no'], $r['name'], $r['mobile']];
         if ($showBatch) $row[] = $r['batch_name'] ?: '-';
-        array_push($row, $d($r['enrolled_on']), $status, $rs($net), $rs($r['paid']), $rs($r['due']));
+        array_push($row, $d($r['enrolled_on']), $status, $rs0($net), $rs0($r['paid']), $rs0($r['due']));
         $rows[] = $row;
         $t['n']++;
         if ($r['status'] === 'active' && $r['sstatus'] !== 'left') $t['active']++;
@@ -40,7 +41,7 @@ $studentRows = function (string $where, array $args, bool $showBatch) use ($pdo,
     return [$rows, $t];
 };
 $studentHead = fn(bool $b) => array_merge(['Reg. No.', 'Student', 'Mobile'], $b ? ['Batch'] : [], ['Joined', 'Status', 'Fee', 'Paid', 'Due']);
-$moneyCols = fn(bool $b) => $b ? [7, 8, 9] : [6, 7, 8];
+$moneyCols = fn(bool $b) => $b ? [6, 7, 8] : [5, 6, 7]; // Fee, Paid, Due
 $summary = fn(array $t) => [['Students (all time)', (string)$t['n']], ['Studying now', (string)$t['active']], ['Completed', (string)$t['completed']], ['Left / dropped in between', (string)$t['left']],
     ['Total fee (after discounts)', $rs($t['fee'])], ['Fee collected', $rs($t['paid'])], ['Fee still due', $rs($t['due'])]];
 
@@ -51,7 +52,7 @@ if ($type === 'student') {
     $enr = ci_enrollments($pdo, $id);
     $tot = ci_student_totals($pdo, $id);
     $cRows = array_map(fn($e) => [$e['course_name'] ?? '-', $e['batch_name'] ?: '-', $e['session_name'] ?: '-', ($e['fee_type'] ?? 'full') === 'installment' ? 'Installment' : 'Final fee',
-        $rs($e['fee']), (float)$e['discount'] > 0 ? $rs($e['discount']) : '-', $rs($e['status'] === 'dropped' ? 0 : (float)$e['fee'] - (float)$e['discount']), $rs($e['paid']), $rs($e['due']), $withDate($e['status'], $e['ended_on'] ?? null)], $enr);
+        $rs0($e['fee']), (float)$e['discount'] > 0 ? $rs0($e['discount']) : '-', $rs0($e['status'] === 'dropped' ? 0 : (float)$e['fee'] - (float)$e['discount']), $rs0($e['paid']), $rs0($e['due']), $withDate($e['status'], $e['ended_on'] ?? null)], $enr);
     $pq = $pdo->prepare("SELECT p.*, c.name AS course_name FROM ci_payments p LEFT JOIN ci_enrollments e ON e.id = p.enrollment_id LEFT JOIN ci_courses c ON c.id = e.course_id WHERE p.student_id = ? ORDER BY p.paid_on, p.id");
     $pq->execute([$id]);
     $pays = $pq->fetchAll(PDO::FETCH_ASSOC);
@@ -98,7 +99,7 @@ if ($type === 'course' || $type === 'batch') {
                 ['title' => 'Batches', 'right_text' => count($bat) . ' batch(es)', 'head' => ['Batch', 'Timing', 'Session', 'Teacher', 'Students now', 'All time', 'Status'],
                     'body' => array_map(fn($b) => [$b['name'], trim(($b['timing'] ?? '') . ($b['days'] ? ' ' . $b['days'] : '')) ?: '-', $b['session_name'] ?: '-', $b['teacher'] ?: '-', (string)$b['act'], (string)$b['alln'], $st($b['status'])], $bat), 'right' => [4, 5], 'empty' => 'No batches.'],
                 ['title' => 'Students', 'right_text' => $t['n'] . ' student(s)', 'head' => $studentHead(true), 'body' => $rows, 'right' => $moneyCols(true), 'small' => true,
-                    'foot' => $rows ? [['', 'Total', '', '', '', '', $rs($t['fee']), $rs($t['paid']), $rs($t['due'])]] : null, 'empty' => 'No students yet.'],
+                    'foot' => $rows ? [['', 'Total', '', '', '', '', $rs0($t['fee']), $rs0($t['paid']), $rs0($t['due'])]] : null, 'empty' => 'No students yet.'],
             ],
             'notes' => [$c['name'] . ': ' . $t['n'] . ' student(s) in ' . count($bat) . ' batch(es); ' . $t['active'] . ' studying now, ' . $t['completed'] . ' completed, ' . $t['left'] . ' left or dropped in between.',
                 'Fee: ' . $rs($t['fee']) . ' in total, ' . $rs($t['paid']) . ' collected, ' . $rs($t['due']) . ' still due.']]);
@@ -115,7 +116,7 @@ if ($type === 'course' || $type === 'batch') {
         'sections' => [
             ['title' => 'Summary of Figures', 'head' => ['Description', 'Value'], 'body' => $summary($t), 'right' => [1], 'w' => [1 => 140]],
             ['title' => 'Students', 'right_text' => $t['n'] . ' student(s)', 'head' => $studentHead(false), 'body' => $rows, 'right' => $moneyCols(false), 'small' => true,
-                'foot' => $rows ? [['', 'Total', '', '', '', $rs($t['fee']), $rs($t['paid']), $rs($t['due'])]] : null, 'empty' => 'No students yet.'],
+                'foot' => $rows ? [['', 'Total', '', '', '', $rs0($t['fee']), $rs0($t['paid']), $rs0($t['due'])]] : null, 'empty' => 'No students yet.'],
         ],
         'notes' => [$b['name'] . ' (' . ($b['course_name'] ?: 'course') . '): ' . $t['n'] . ' student(s); ' . $t['active'] . ' studying now, ' . $t['completed'] . ' completed, ' . $t['left'] . ' left or dropped in between.',
             'Fee: ' . $rs($t['fee']) . ' in total, ' . $rs($t['paid']) . ' collected, ' . $rs($t['due']) . ' still due.']]);

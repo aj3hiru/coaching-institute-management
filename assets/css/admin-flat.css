@@ -64,3 +64,12 @@ select.dk-sel{-webkit-appearance:none!important;appearance:none!important;backgr
 .dk-tip[hidden]{display:none}
 /* keep the scroll bar's room when a popup locks scrolling, so the page does not jump sideways */
 html{scrollbar-gutter:stable}
+/* dropdown: breathing room at the top and bottom of the list, a slim scroll bar in the theme colour */
+.dk-pop .dk-list{padding:6px 0 8px;scrollbar-width:thin;scrollbar-color:#cbbfe0 transparent}
+.dk-pop .dk-list::-webkit-scrollbar{width:8px}
+.dk-pop .dk-list::-webkit-scrollbar-track{background:transparent;margin:4px 0}
+.dk-pop .dk-list::-webkit-scrollbar-thumb{background:#d6cce8;border:2px solid #fff;border-radius:8px!important}
+.dk-pop .dk-list::-webkit-scrollbar-thumb:hover{background:var(--primary,#4a3369)}
+.dk-pop .dk-opt{margin:0 6px}
+.dk-pop .dk-grp{margin:2px 6px 0}
+.dk-pop{padding-bottom:0}

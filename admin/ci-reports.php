@@ -31,7 +31,13 @@ $pre = ['type' => (string)($_GET['type'] ?? 'students'), 'id' => (int)($_GET['id
 .rp-out:empty{display:none}
 .rp-doc{background:#fff;border:1px solid #9ca3af;padding:26px 28px;max-width:1100px;margin:0 auto;color:#2d2d2d;font-size:13px}
 .rp-top{display:flex;justify-content:space-between;gap:20px;padding-bottom:12px;border-bottom:2.5px solid #141414;flex-wrap:wrap}
-.rp-top h1{margin:0 0 3px;font-size:20px;color:#141414}.rp-top p{margin:0;color:#6e6e6e;font-size:12px}
+.rp-top p{margin:6px 0 0;color:#6e6e6e;font-size:12px}
+.rp-brand{position:relative;isolation:isolate;display:inline-flex;align-items:center;gap:10px;padding:6px 56px 6px 12px}
+.rp-brand::before{content:"";position:absolute;inset:0 12px 0 0;z-index:-1;background:rgba(240,174,113,.43);clip-path:polygon(0 0,100% 0,97% 45%,100% 100%,0 100%)}
+.rp-brand::after{content:"";position:absolute;bottom:0;right:6px;width:40px;height:55%;z-index:-1;background:#f02801;clip-path:polygon(50% 0,0 100%,25% 100%)}
+.rp-brand img{width:45px;height:52px;display:block}
+.rp-brand b{display:block;font-family:Poppins,Roboto,Arial,sans-serif;font-size:21px;color:#9e1b32}
+.rp-brand span{display:block;font-size:13px;color:#1a1a1a;margin-top:2px}
 .rp-meta{text-align:right}.rp-meta h2{margin:0 0 6px;font-size:19px;letter-spacing:.04em;color:#141414}
 .rp-meta table{margin-left:auto;font-size:12px;border-collapse:collapse}.rp-meta td{padding:1px 0 1px 10px}.rp-meta td:first-child{color:#6e6e6e}.rp-meta td:last-child{font-weight:700;color:#141414}
 .rp-boxes{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:16px 0}
@@ -116,7 +122,7 @@ $pre = ['type' => (string)($_GET['type'] ?? 'students'), 'id' => (int)($_GET['id
   document.getElementById('rpView').addEventListener('click', function () { load(function (d) { out.innerHTML = window.ciReportHtml(d); out.scrollIntoView({ behavior: 'smooth', block: 'start' }); }); });
   document.getElementById('rpPdf').addEventListener('click', function () {
     if (!window.jspdf || !window.jspdf.jsPDF) { msg.textContent = 'The PDF tool is still loading, try again in a moment.'; return; }
-    load(function (d) { window.ciReportDraw(d); if (!out.innerHTML) out.innerHTML = window.ciReportHtml(d); });
+    load(function (d) { window.ciReportPdf(d); if (!out.innerHTML) out.innerHTML = window.ciReportHtml(d); });
   });
   document.addEventListener('change', function (e) { if (e.target.closest('.rp-pane')) { last = null; } });
   show(type);

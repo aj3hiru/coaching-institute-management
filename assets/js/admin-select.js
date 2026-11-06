@@ -59,7 +59,7 @@
       d.className = 'dk-opt' + (o.selected ? ' is-sel' : '') + (o.disabled || groupDisabled ? ' is-dis' : '') + (o.value === '' ? ' is-ph' : '');
       d.setAttribute('role', 'option');
       d.setAttribute('aria-selected', o.selected ? 'true' : 'false');
-      d.textContent = t || ' ';
+      d.textContent = t || '—'; // an empty first option shows a dash, not a blank bar
       d.title = t;
       d.dataset.i = o.index;
       box.appendChild(d);

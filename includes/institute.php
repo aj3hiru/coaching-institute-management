@@ -216,7 +216,7 @@ function ci_parts_from_post(array $methods, array $amounts): array
 function ci_pays_html(string $nameM, string $nameA, array $parts = [], string $label = 'Paying now'): string
 {
     if (!$parts) $parts = [['Cash', '']];
-    $h = '<div class="ci-pays" data-pays><div class="ci-pays-h"><span class="ci-pays-l">' . ci_e($label) . '</span><button type="button" class="ci-pays-add" title="Split the payment over another mode">+ Add</button></div>';
+    $h = '<div class="ci-pays" data-pays><div class="ci-pays-h"><span class="ci-pays-l">' . ci_e($label) . '</span><button type="button" class="ci-pays-add">+ Add</button></div>';
     foreach ($parts as [$m, $a]) {
         $h .= '<div class="ci-pay-row"><select name="' . ci_e($nameM) . '" aria-label="Payment mode">';
         foreach (CI_METHODS as $k => $l) $h .= '<option value="' . $k . '"' . ($m === $k ? ' selected' : '') . '>' . $l . '</option>';
@@ -496,6 +496,19 @@ function ci_csv(string $filename, array $head, array $rows): void
     exit;
 }
 
+/** The site's header brand (Customize → Site Identity → Header Brand): emblem, name and the line under it — used on PDF reports. */
+function ci_brand(): array
+{
+    if (!function_exists('th') && defined('INCLUDES_PATH') && is_file(INCLUDES_PATH . '/theme.php')) require_once INCLUDES_PATH . '/theme.php';
+    $th = function_exists('th') ? fn($k) => trim((string)th($k)) : fn($k) => '';
+    $g = function_exists('edu_settings') ? (array)edu_settings('general') : [];
+    return [
+        'title' => $th('id_header_title') ?: (function_exists('edu_site_name') ? edu_site_name() : 'Institute'),
+        'line' => $th('id_header_line') ?: trim((string)($g['address'] ?? '')),
+        'emblem' => $th('id_brand_emblem') ?: '/assets/images/dk-academy-emblem.svg',
+    ];
+}
+
 /** Institute name/address/phone for receipts (from Settings → General). */
 function ci_institute(): array
 {
@@ -506,6 +519,7 @@ function ci_institute(): array
         'address' => trim((string)($g['address'] ?? (defined('COMPANY_ADDRESS') ? COMPANY_ADDRESS : ''))),
         'phone' => trim((string)($g['phone'] ?? (defined('PHONE_NUMBER') ? PHONE_NUMBER : ''))),
         'email' => trim((string)($g['contact_email'] ?? (defined('CONTACT_EMAIL') ? CONTACT_EMAIL : ''))),
+        'brand' => ci_brand(),
     ];
 }
 
@@ -673,7 +687,7 @@ function ci_ico(string $icon, ?string $href, string $label, string $kind = 'link
 {
     $cls = 'ci-ico' . ($icon === 'trash' || $icon === 'logout' ? ' ci-ico-danger' : '') . ($icon === 'check' || $icon === 'rupee' ? ' ci-ico-ok' : '');
     // delete needs no hover label (the bin says it); every other icon gets one
-    $a = ($icon === 'trash' ? '' : ' title="' . ci_e($label) . '"') . ' aria-label="' . ci_e($label) . '" data-i="' . $icon . '" class="' . $cls . '"' . $extra;
+    $a = ' aria-label="' . ci_e($label) . '" data-i="' . $icon . '" class="' . $cls . '"' . $extra; // label on hover only in table Action columns (admin-display.js)
     if ($kind === 'submit') return '<button type="submit"' . $a . '>' . ci_svg($icon) . '</button>';
     if ($kind === 'button') return '<button type="button"' . $a . '>' . ci_svg($icon) . '</button>';
     return '<a href="' . ci_e((string)$href) . '"' . $a . '>' . ci_svg($icon) . '</a>';
