@@ -230,7 +230,16 @@ function admin_shell_sidebar(): void
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="admShell.close()"></div>
 <aside class="sidebar sb" id="sidebar">
   <div class="sb-head">
+    <?php
+    // the site uses the school-style header brand (Customize → Header): show the same brand here
+    require_once ($_SERVER['DOCUMENT_ROOT'] ?? '') . '/includes/institute.php';
+    $br = ci_brand();
+    $school = function_exists('th') && in_array((string)th('id_brand_style', 'logo'), ['school', 'school_full'], true);
+    if ($school): ?>
+    <a class="sb-brand sb-school" href="/admin/dashboard.php" aria-label="Dashboard"><img src="<?= htmlspecialchars($br['emblem']) ?>" alt="" class="sb-emblem" width="40" height="46"><span class="sb-school-t"><b><?= htmlspecialchars($br['title']) ?></b><?php if ($br['line'] !== ''): ?><small><?= htmlspecialchars($br['line']) ?></small><?php endif; ?></span></a>
+    <?php else: ?>
     <a class="sb-brand" title="Dashboard" href="/admin/dashboard.php"><?php if ($logo): ?><img src="<?= htmlspecialchars($logo) ?>" alt="<?= htmlspecialchars($site) ?>" class="sb-logo"><?php else: ?><span class="sb-sitename"><?= htmlspecialchars($site) ?></span><?php endif; ?></a>
+    <?php endif; ?>
     <button class="sb-close" aria-label="Close menu" type="button" onclick="admShell.close()"><i class="fas fa-times"></i></button>
   </div>
   <nav class="sb-nav" id="admSbNav">
