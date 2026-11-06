@@ -83,6 +83,12 @@ function admin_shell_nav(): array
             $link($cp('sessions') || $cp('classes'), 'Sessions & Classes', '/admin/ci-setup.php', 'fa-calendar-alt'),
             $link(true, 'Reports', '/admin/ci-reports.php', 'fa-file-pdf'),
         ] : []],
+        ['label' => 'Online Store', 'items' => $cp('shop') ? [
+            $link(true, 'Products', '/admin/shop-products.php', 'fa-photo-film'),
+            $link(true, 'Orders', '/admin/shop-orders.php', 'fa-cart-shopping'),
+            $link(true, 'Customers', '/admin/shop-customers.php', 'fa-users'),
+            $link($cu['role'] === 'admin', 'Store Settings', '/admin/shop-settings.php', 'fa-sliders'),
+        ] : []],
         ['label' => 'Blog', 'collapsible' => true, 'items' => [
             $link($blogOn, 'Blog Dashboard', '/admin/blog-dashboard.php', 'fa-gauge'),
             $blogOn ? ['label' => 'Posts', 'href' => '/admin/blogs-manager.php', 'icon' => 'fa-newspaper', 'items' => $sub([

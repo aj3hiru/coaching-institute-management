@@ -89,7 +89,7 @@ function ci_tables(PDO $pdo): void
 
 /** Institute permissions (Users → Advance Access → Institute). Admins have all of them. */
 define('CI_PERMS', ['add_student' => 'Add student', 'edit_student' => 'Edit student', 'batches' => 'Manage batches', 'courses' => 'Manage courses',
-    'fees' => 'Manage fee & dues', 'sessions' => 'Manage sessions', 'classes' => 'Manage classes']);
+    'fees' => 'Manage fee & dues', 'sessions' => 'Manage sessions', 'classes' => 'Manage classes', 'shop' => 'Manage online store']);
 
 function ci_perm(array $u, string $key): bool
 {
@@ -101,7 +101,7 @@ function ci_perm(array $u, string $key): bool
 /** May the user open the institute section at all (any one institute permission)? */
 function ci_can(array $u): bool
 {
-    foreach (array_keys(CI_PERMS) as $k) if (ci_perm($u, $k)) return true;
+    foreach (array_keys(CI_PERMS) as $k) if ($k !== 'shop' && ci_perm($u, $k)) return true; // the online store is separate from the institute pages
     return false;
 }
 
@@ -677,6 +677,7 @@ function ci_svg(string $n): string
         'receipt' => '<path d="M4 2v20l3-2 3 2 3-2 3 2 3-2 1 .7V2l-1 .7-3-2-3 2-3-2-3 2-3-2z"/><path d="M8 7h8M8 11h8M8 15h5"/>',
         'logout' => '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>',
         'up' => '<path d="M12 19V5"/><path d="m5 12 7-7 7 7"/>',
+        'down' => '<path d="M12 5v14"/><path d="m19 12-7 7-7-7"/>',
         'print' => '<path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/>',
         'whatsapp' => '<path d="M3 21l1.7-5A8.5 8.5 0 1 1 8 19.3z"/>',
         'phone' => '<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/>',

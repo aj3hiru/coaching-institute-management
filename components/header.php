@@ -78,7 +78,7 @@ if ($__school) {
 ?>
 <?php if (th_on('h_topbar') && trim((string)th('h_topbar_text')) !== ''): ?><div class="nb-top-bar"><?= edu_shortcodes((string)th('h_topbar_text')) ?></div><?php endif; ?>
 <?php
-        $__loginUrl = trim((string)th('h_login_url')) ?: '/admin-login';
+        $__loginUrl = trim((string)th('h_login_url')) ?: (is_file(ROOT_PATH . '/account/login.php') ? '/account/login' : '/admin-login'); // buyers log in to their library
         $__subUrl = trim((string)th('h_sub_url'));
         $__subAttr = $__subUrl !== '' ? 'href="' . htmlspecialchars($__subUrl) . '"' : 'href="#" role="button" data-edu-subscribe';
         $__subOn = th_on('h_sub') && ($__subUrl !== '' || $__pushOn);
@@ -151,6 +151,12 @@ if ($__school) {
       </span><?php endif; ?>
       <?php if (th_on('h_search')): ?><a href="/search" role="button" aria-label="Search" class="nb-search-icon" id="searchToggle" aria-expanded="false" aria-controls="eduHSearch"><span class="gp-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></span></a><?php endif; ?>
       <?php if (th_on('h_login')): ?><a class="nb-hr-login" href="<?= htmlspecialchars($__loginUrl) ?>"><?= $__userIco ?><span><?= htmlspecialchars((string)th('h_login_text')) ?></span></a><?php endif; ?>
+      <?php if (th_on('h_login') && is_file(ROOT_PATH . '/account/login.php') && !trim((string)th('h_login_url'))): // a buyer who is logged in sees "My Library" (done in the browser, so cached pages stay the same for everyone) ?>
+      <script>(function(){if(!/(?:^|; )sh_in=1/.test(document.cookie))return;var n='';try{n=decodeURIComponent((document.cookie.match(/(?:^|; )sh_n=([^;]*)/)||[])[1]||'');}catch(e){}
+      function go(){document.querySelectorAll('a[href="/account/login"]').forEach(function(a){a.href='/account/';var s=a.querySelector('span');if(s)s.textContent='My Library';else{for(var i=a.childNodes.length-1;i>=0;i--)if(a.childNodes[i].nodeType===3&&a.childNodes[i].textContent.trim()){a.childNodes[i].textContent=' My Library';break;}}});
+      if(n)document.querySelectorAll('.mnav-hello-title').forEach(function(t){t.textContent='Hello, '+n;});}
+      if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',go);else go();})();</script>
+      <?php endif; ?>
       <?php if (th_on('h_login') && $__subOn): ?><span class="nb-hr-div" aria-hidden="true"></span><?php endif; ?>
       <?php if ($__subOn): ?><a class="nb-hr-sub" <?= $__subAttr ?>><?= htmlspecialchars((string)th('h_sub_text')) ?></a><?php endif; ?>
 <?php include __DIR__ . '/header-drawer.php'; ?>

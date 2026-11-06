@@ -217,6 +217,15 @@ $tel = fn(?string $m) => $m ? '<a href="tel:' . ci_e($m) . '">' . ci_e($m) . '</
         <?php if ($s['notes']): ?><div class="ci-det-notes"><b>Notes</b><br><?= nl2br(ci_e($s['notes'])) ?></div><?php endif; ?></div>
       <button type="button" class="ci-more-btn" data-more>View all details <i class="fas fa-chevron-down"></i></button>
     </div></div>
+    <?php if (ci_perm($me, 'shop') && is_file(INCLUDES_PATH . '/shop.php')): // online store account of this student
+      require_once INCLUDES_PATH . '/shop.php'; sh_tables($pdo);
+      $oq = $pdo->prepare("SELECT u.id, u.email, (SELECT COUNT(*) FROM sh_access a WHERE a.user_id = u.id AND a.revoked = 0 AND (a.expires_at IS NULL OR a.expires_at > NOW())) AS items FROM sh_users u WHERE u.student_id = ? OR u.mobile = ? ORDER BY u.student_id = ? DESC LIMIT 1");
+      $oq->execute([$s['id'], $s['mobile'], $s['id']]); $oacc = $oq->fetch(PDO::FETCH_ASSOC); ?>
+    <div class="ci-card" data-ds="Online account"><div class="ci-card-h"><h3>Online account</h3></div><div class="ci-card-b">
+      <?php if ($oacc): ?><p style="margin:0 0 8px"><?= ci_e($oacc['email']) ?> · <?= (int)$oacc['items'] ?> course<?= (int)$oacc['items'] === 1 ? '' : 's' ?> / notes</p><a class="ci-btn ci-ghost ci-sm" href="/admin/shop-customers.php?id=<?= (int)$oacc['id'] ?>"><i class="fas fa-key"></i> Open · give courses</a>
+      <?php else: ?><p class="ci-muted" style="margin:0 0 8px">No online account yet. The student can sign up with mobile <?= ci_e($s['mobile']) ?>, or you can make one.</p><a class="ci-btn ci-ghost ci-sm" href="/admin/shop-customers.php?new=1&student=<?= (int)$s['id'] ?>"><i class="fas fa-user-plus"></i> Make online account</a><?php endif; ?>
+    </div></div>
+    <?php endif; ?>
     <div class="ci-card" data-ds="Class history"><div class="ci-card-h"><h3>Class history</h3></div><div class="ci-card-b">
       <ul class="ci-timeline">
         <?php foreach ($history as $h): ?><li><b><?= ci_e($h['from_name'] ?? '—') ?> → <?= ci_e($h['to_name'] ?? '—') ?></b><small><?= ci_date($h['changed_on']) ?><?= $h['session_name'] ? ' · ' . ci_e($h['session_name']) : '' ?><?= $h['note'] ? ' · ' . ci_e($h['note']) : '' ?></small></li><?php endforeach; ?>
