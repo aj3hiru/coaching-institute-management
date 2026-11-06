@@ -23,7 +23,7 @@ $permissions = json_decode($user['permissions'] ?? '{}', true);
 if (
     !$user ||
     $user['status'] !== 'active' ||
-    empty($permissions['settings']['maintenance_mode'])
+    (($_SESSION['role'] ?? '') !== 'admin' && empty($permissions['settings']['maintenance_mode'])) // admins always; others need the permission
 ) {
     exit('Access Denied');
 }
