@@ -75,12 +75,15 @@ if ($__school) {
 }
 ?>
 <?php if ($__school): ?><style>
-.nb-hr-brand .nb-brand-link.nb-brand-school{gap:12px;text-decoration:none;color:inherit}
+.nb-hr-brand .nb-brand-link.nb-brand-school{position:relative;isolation:isolate;gap:12px;padding:8px 58px 8px 18px;text-decoration:none;color:inherit}
+/* the tinted panel with a slanted right edge, and the red stripe along that edge (like a school letterhead) */
+.nb-brand-school::before{content:"";position:absolute;inset:0 14px 0 0;z-index:-1;background:var(--brand-panel,#f9dcc3);clip-path:polygon(0 0,100% 0,calc(100% - 30px) 100%,0 100%)}
+.nb-brand-school::after{content:"";position:absolute;inset:0;z-index:-1;background:var(--brand-stripe,#e8401c);clip-path:polygon(calc(100% - 19px) 30%,calc(100% - 15px) 30%,calc(100% - 26px) 100%,calc(100% - 41px) 100%)}
 .nb-emblem{display:block;width:70px;height:70px;flex:0 0 auto}
 .nb-hr-brand .nb-sb-school{display:flex;flex-direction:column;align-items:flex-start;text-align:left;line-height:1.12;min-width:0}
 .nb-sb-school .site-title{font-size:28px;font-weight:800;letter-spacing:-.01em;color:var(--t-header-site-title,#8a1c2b);white-space:nowrap}
 .nb-sb-school .nb-brand-line{margin-top:4px;font-size:15px;font-weight:500;letter-spacing:0;text-transform:none;color:var(--t-header-tagline,#1f2937)}
-@media (max-width:980px){.nb-emblem{width:46px;height:46px}.nb-hr-brand .nb-brand-link.nb-brand-school{gap:8px}.nb-sb-school .site-title{font-size:20px}.nb-sb-school .nb-brand-line{font-size:11.5px;margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}}
+@media (max-width:980px){.nb-emblem{width:46px;height:46px}.nb-hr-brand .nb-brand-link.nb-brand-school{gap:8px;padding:6px 40px 6px 10px}.nb-brand-school::before{right:10px;clip-path:polygon(0 0,100% 0,calc(100% - 20px) 100%,0 100%)}.nb-brand-school::after{clip-path:polygon(calc(100% - 14px) 30%,calc(100% - 11px) 30%,calc(100% - 17px) 100%,calc(100% - 28px) 100%)}.nb-sb-school .site-title{font-size:20px}.nb-sb-school .nb-brand-line{font-size:11.5px;margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}}
 @media (max-width:400px){.nb-emblem{width:40px;height:40px}.nb-sb-school .site-title{font-size:17px}.nb-sb-school .nb-brand-line{font-size:10.5px}}
 </style><?php endif; ?>
 <?php if (th_on('h_topbar') && trim((string)th('h_topbar_text')) !== ''): ?><div class="nb-top-bar"><?= edu_shortcodes((string)th('h_topbar_text')) ?></div><?php endif; ?>
