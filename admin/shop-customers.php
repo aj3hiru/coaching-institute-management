@@ -96,7 +96,7 @@ if ($id) {
 <?php admin_shell_head(); ci_head(); ?>
 </head>
 <body>
-<?php admin_shell_open($cu ? ci_e($cu['name']) : 'Store Customers', $cu ? 'Buyer account' : 'Online accounts of students and buyers', $cu ? '<a class="ci-btn ci-ghost" href="/admin/shop-customers.php"><i class="fas fa-arrow-left"></i> All customers</a>' : (sh_perm($me, 'orders') ? '<button type="button" class="ci-btn" data-enroll="Enroll a student"><i class="fas fa-cart-plus"></i> Enroll student</button> ' : '') . '<a class="ci-btn ci-ghost" href="?new=1#mk"><i class="fas fa-user-plus"></i> Account only</a>'); ?>
+<?php admin_shell_open($cu ? ci_e($cu['name']) : 'Store Customers', $cu ? 'Buyer account' : 'Online accounts of students and buyers', $cu ? '<a class="ci-btn ci-ghost" href="/admin/shop-customers.php"><i class="fas fa-arrow-left"></i> All customers</a>' : (sh_perm($me, 'orders') ? '<button type="button" class="ci-btn" data-enroll="Enroll a student"><i class="fas fa-cart-plus"></i> Enroll student</button> ' : '') . '<button type="button" class="ci-btn ci-ghost" data-mopen="#mkForm"><i class="fas fa-user-plus"></i> Account only</button>'); ?>
 <div class="ci">
 <?= admin_flash() ?>
 <?php if ($cu): ?>
@@ -143,17 +143,20 @@ if ($id) {
 </tbody></table></div></div>
 
 <?php else: ?>
-<details class="ci-card" id="mk" <?= isset($_GET['new']) ? 'open' : '' ?>><summary class="ci-card-h" style="cursor:pointer"><h3>Add a student / customer account</h3><span class="ci-muted">for an institute student or anyone</span></summary><div class="ci-card-b">
+<div class="ci-modal" id="mkForm" data-mform<?= isset($_GET['new']) ? ' data-open-now' : '' ?> hidden><div class="ci-modal-box ci-modal-wide" role="dialog" aria-modal="true" aria-labelledby="mkFormH">
+<div class="ci-card-h"><h3 id="mkFormH">Make an online account</h3><button type="button" class="ci-x" data-close aria-label="Close"><i class="fas fa-times"></i></button></div><div class="ci-card-b">
+<p class="ci-muted" style="margin:0 0 12px">Only the login — no course. To sell or give a course too, use <b>Enroll student</b>.</p>
 <form method="post"><?= csrf_field() ?><input type="hidden" name="action" value="create">
-<div class="ci-grid3">
+<div class="ci-grid2 ci-mgrid">
   <div class="ci-f" style="grid-column:1/-1"><label>Institute student (optional)</label><select name="student_id" data-search><option value="">— Not an institute student —</option><?php foreach ($students as $s): ?><option value="<?= (int)$s['id'] ?>" <?= (int)($_GET['student'] ?? 0) === (int)$s['id'] ? 'selected' : '' ?>><?= ci_e($s['name'] . ' (' . $s['reg_no'] . ') · ' . $s['mobile']) ?></option><?php endforeach; ?></select><span class="ci-hint">Their name, mobile and email are used if you leave those empty. Students who already have an account are not listed.</span></div>
   <div class="ci-f"><label>Name</label><input name="name" maxlength="150"></div>
   <div class="ci-f"><label>Mobile</label><input name="mobile" inputmode="numeric" maxlength="14"></div>
   <div class="ci-f"><label>Email</label><input name="email" type="email" maxlength="190"><span class="ci-hint">Needed for password reset.</span></div>
   <div class="ci-f"><label>Password</label><input name="pass" minlength="4" autocomplete="new-password" placeholder="leave empty to make one"></div>
 </div>
-<div style="margin-top:12px"><button class="ci-btn" type="submit"><i class="fas fa-user-plus"></i> Make account</button></div>
-</form></div></details>
+<div class="ci-mfoot"><button type="button" class="ci-btn ci-ghost" data-close>Cancel</button><button class="ci-btn" type="submit"><i class="fas fa-user-plus"></i> Make account</button></div>
+</form>
+</div></div></div>
 <form class="ci-filters" method="get"><div class="ci-f" style="min-width:280px"><label>Search</label><input name="q" value="<?= ci_e($qq) ?>" placeholder="Name, mobile or email"></div><div class="ci-f"><label>&nbsp;</label><button class="ci-btn" type="submit"><i class="fas fa-search"></i> Search</button></div></form>
 <div class="ci-card"><div class="ci-card-b ci-p0 ci-table-wrap"><table class="ci-table"><thead><tr><th>Name</th><th>Mobile</th><th>Email</th><th>Institute</th><th class="ci-num">Items</th><th class="ci-num">Spent</th><th>Joined</th><th>Action</th></tr></thead><tbody>
 <?php if (!$list): ?><tr><td colspan="8" class="ci-empty">No accounts yet.</td></tr><?php endif; ?>

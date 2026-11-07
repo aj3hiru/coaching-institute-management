@@ -37,7 +37,10 @@ $courses = $pdo->query("SELECT p.id, p.title FROM sh_products p WHERE p.type = '
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="robots" content="noindex, nofollow">
 <title>Doubts - <?= ci_e(edu_site_name()) ?></title>
 <?php admin_shell_head(); ci_head(); ?>
-<style>.sd-q{white-space:pre-line;color:#111827;max-width:560px;line-height:1.55}.sd-ctx{font-size:12.5px;color:#6b7280;margin-bottom:4px}.sd-ans{display:flex;flex-direction:column;gap:6px;margin-top:8px;max-width:560px}.sd-ans textarea{min-height:70px}</style>
+<style>.sd-q{white-space:pre-line;color:#111827;max-width:560px;line-height:1.55}.sd-ctx{font-size:12.5px;color:#6b7280;margin-bottom:4px}.sd-ans{display:flex;flex-direction:column;gap:6px;margin-top:8px;max-width:560px}.sd-ans textarea{min-height:70px}
+.sd-a{margin-top:8px;max-width:560px;padding:8px 12px;background:#f0fdf4;border-left:3px solid #22c55e}.sd-a b{font-size:12px;color:#15803d}.sd-a p{margin:2px 0 0;line-height:1.55;color:#1f2937}
+.sd-edit{margin-top:6px}.sd-edit summary{cursor:pointer;font-size:12.5px;font-weight:600;color:var(--primary,#4a3369);list-style:none}.sd-edit summary::-webkit-details-marker{display:none}
+.sd-edit[open] summary{margin-bottom:4px}</style>
 </head>
 <body>
 <?php admin_shell_open('Doubts', $all ? 'Questions students asked under lectures' : 'Questions from students of your courses'); ?>
@@ -58,7 +61,9 @@ $courses = $pdo->query("SELECT p.id, p.title FROM sh_products p WHERE p.type = '
 <tr><td><b><?= ci_e($r['name']) ?></b><small class="ci-muted" style="display:block"><?= ci_e($r['mobile']) ?></small></td>
 <td><div class="sd-ctx"><?= ci_e($r['course']) ?> › <?= ci_e($r['chapter'] ?? '') ?> › <a href="/store/learn?s=<?= rawurlencode($r['slug']) ?>&l=<?= (int)$r['lesson_id'] ?>&preview=1" target="_blank"><?= ci_e($r['lecture']) ?></a></div>
   <div class="sd-q"><?= ci_e($r['question']) ?></div>
-  <form method="post" class="sd-ans"><?= csrf_field() ?><input type="hidden" name="action" value="answer"><input type="hidden" name="id" value="<?= (int)$r['id'] ?>"><textarea name="answer" maxlength="5000" placeholder="Write the answer — the student sees it under the lecture"><?= ci_e($r['answer'] ?? '') ?></textarea><div><button class="ci-btn ci-sm" type="submit"><?= $r['answer'] ? 'Update answer' : 'Send answer' ?></button></div></form></td>
+  <?php if ($r['answer']): ?><div class="sd-a"><b>Answer</b><p><?= nl2br(ci_e($r['answer'])) ?></p></div>
+  <details class="sd-edit"><summary>Edit answer</summary>  <form method="post" class="sd-ans"><?= csrf_field() ?><input type="hidden" name="action" value="answer"><input type="hidden" name="id" value="<?= (int)$r['id'] ?>"><textarea name="answer" maxlength="5000" placeholder="Write the answer — the student sees it under the lecture"><?= ci_e($r['answer'] ?? '') ?></textarea><div><button class="ci-btn ci-sm" type="submit">Update answer</button></div></form></details>
+  <?php else: ?>  <form method="post" class="sd-ans"><?= csrf_field() ?><input type="hidden" name="action" value="answer"><input type="hidden" name="id" value="<?= (int)$r['id'] ?>"><textarea name="answer" maxlength="5000" placeholder="Write the answer — the student sees it under the lecture"><?= ci_e($r['answer'] ?? '') ?></textarea><div><button class="ci-btn ci-sm" type="submit">Send answer</button></div></form><?php endif; ?></td>
 <td class="ci-nw"><?= date('d M Y, h:i A', strtotime($r['created_at'])) ?></td>
 <td><?= ['open' => '<span class="ci-badge ci-b-red">Waiting</span>', 'answered' => '<span class="ci-badge ci-b-green">Answered</span>', 'hidden' => '<span class="ci-badge ci-b-grey">Hidden</span>'][$r['status']] ?? '' ?></td>
 <td><div class="ci-icos"><?= $r['status'] === 'hidden' ? ci_post_ico('check', 'Show again', ['action' => 'show', 'id' => $r['id']]) : ci_post_ico('eye', 'Hide', ['action' => 'hide', 'id' => $r['id']]) ?><?= ci_post_ico('trash', 'Delete', ['action' => 'delete', 'id' => $r['id']], 'Delete this doubt?') ?></div></td></tr>

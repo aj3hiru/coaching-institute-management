@@ -94,6 +94,7 @@ $mask = fn($s) => $s === '' ? '' : str_repeat('•', 8) . substr($s, -4);
     <div class="ci-f"><label>Webhook Secret</label><input name="rzp_webhook_secret" type="password" placeholder="<?= $k['hook'] !== '' ? ci_e('saved ' . $mask($k['hook']) . ' — type to change') : 'your own secret word' ?>" autocomplete="new-password"><?php if ($k['hook'] !== ''): ?><label class="ci-hint"><input type="checkbox" name="clear_rzp_webhook_secret" value="1"> remove</label><?php endif; ?></div>
   </div>
   <div class="ci-f" style="margin-top:12px"><label>Webhook address (Razorpay → Webhooks → Add)</label><input value="<?= ci_e($hook) ?>" readonly onclick="this.select()"><span class="ci-hint">Events: <b>payment.captured</b>, <b>order.paid</b>, <b>payment.failed</b>. Use the same secret as above. With this, a buyer gets access even if their phone closes the page right after paying.</span></div>
+  <div style="margin-top:12px"><button class="ci-btn ci-ghost ci-sm" type="submit" form="rzpTest"><i class="fas fa-plug"></i> Test Razorpay connection</button></div>
 </div></div>
 
 <div class="ci-card"><div class="ci-card-h"><h3>Uploads &amp; storage</h3></div><div class="ci-card-b">
@@ -102,9 +103,9 @@ $mask = fn($s) => $s === '' ? '' : str_repeat('•', 8) . substr($s, -4);
     <div class="ci-f" style="grid-column:span 2"><label>Private media folder</label><input value="<?= ci_e($dir) ?>" readonly><span class="ci-hint"><?= $writable ? '✓ Ready' : '✗ Not writable — uploads will fail' ?><?= $free !== false ? ' · ' . round($free / 1073741824, 1) . ' GB free on the server' : '' ?>. Outside the website folder, so files can only be opened through the store.</span></div>
   </div>
 </div></div>
-<button class="ci-btn" type="submit"><i class="fas fa-check"></i> Save settings</button>
+<div class="ci-savebar"><span class="ci-muted">Changes apply as soon as you save.</span><button class="ci-btn" type="submit"><i class="fas fa-check"></i> Save settings</button></div>
 </form>
-<form method="post" style="margin-top:10px"><?= csrf_field() ?><input type="hidden" name="action" value="test"><button class="ci-btn ci-ghost" type="submit"><i class="fas fa-plug"></i> Test Razorpay connection</button></form>
+<form method="post" id="rzpTest" hidden><?= csrf_field() ?><input type="hidden" name="action" value="test"></form>
 <?php if ($nDemoPay): ?><form method="post" style="margin-top:12px" onsubmit="return confirm('Remove all <?= $nDemoPay ?> demo payment orders and the course access they gave? Real orders are not touched.')"><?= csrf_field() ?><input type="hidden" name="action" value="demo_pay_clear"><button class="ci-btn ci-ghost" type="submit"><i class="fas fa-broom"></i> Remove demo payment orders (<?= $nDemoPay ?>)</button></form><?php endif; ?>
 <?php require_once INCLUDES_PATH . '/shop-demo.php'; $demo = sh_demo_info(); ?>
 <div class="ci-card" id="demo" style="margin-top:16px"><div class="ci-card-h"><h3>Demo data</h3><?= $demo['products'] ? '<span class="ci-badge ci-b-amber">Demo is on</span>' : '' ?></div><div class="ci-card-b">
