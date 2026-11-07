@@ -17,3 +17,17 @@
 .yt-lock .plyr__controls{padding-top:28px}
 .yt-lock .plyr__menu__container{border-radius:6px}
 @media (max-width:560px){.yt-lock .plyr__controls{padding:18px 6px 6px}.yt-lock .plyr__controls .plyr__control{padding:6px}.yt-lock .plyr__volume{display:none}}
+
+/* quality button + menu (next to the settings gear) */
+.yt-lock .ytq{position:relative;display:flex;align-items:center}
+.yt-lock .ytq[hidden]{display:none}
+.yt-lock .ytq-btn{display:inline-flex;align-items:flex-start;gap:1px;font-size:13px;font-weight:600;line-height:1;padding:7px 8px}
+.yt-lock .ytq-hd{font-size:8.5px;font-weight:800;line-height:1;padding:1px 2px;border-radius:2px;background:#e11d48;color:#fff;margin:-3px 0 0 1px}
+.yt-lock .ytq-menu{position:absolute;right:0;bottom:calc(100% + 10px);z-index:5;min-width:150px;padding:6px;border-radius:6px;background:rgba(255,255,255,.97);box-shadow:0 6px 24px rgba(0,0,0,.25);color:#1f2937}
+.yt-lock .ytq-menu[hidden]{display:none}
+.yt-lock .ytq-h{padding:6px 10px 8px;margin-bottom:4px;border-bottom:1px solid #e5e7eb;font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.05em}
+.yt-lock .ytq-menu button{display:flex;align-items:center;gap:6px;width:100%;padding:7px 10px 7px 26px;border:0;border-radius:4px;background:none;color:inherit;font:inherit;font-size:13.5px;text-align:left;cursor:pointer;position:relative}
+.yt-lock .ytq-menu button:hover{background:#f1f5f9}
+.yt-lock .ytq-menu button.on{font-weight:700;color:var(--sa,#0c6878)}
+.yt-lock .ytq-menu button.on::before{content:"";position:absolute;left:10px;top:50%;width:7px;height:7px;margin-top:-4px;border-radius:50%;background:var(--sa,#0c6878)}
+.yt-lock .ytq-menu small{color:#6b7280;font-weight:400}.yt-lock .ytq-menu sup{font-size:9px;font-weight:800;color:#e11d48}
