@@ -28,16 +28,21 @@ if (!$slides) $slides = [ // until the admin adds slides (Online Store → Homep
     ['image' => 'assets/img/home/default-board.jpg', 'mobile_image' => 'assets/img/home/default-board-m.jpg', 'link' => '/courses/', 'title' => 'New batches — admissions open', 'new_tab' => 0],
     ['image' => 'assets/img/home/default-free.jpg', 'mobile_image' => 'assets/img/home/default-free-m.jpg', 'link' => '/free-courses/', 'title' => 'Free courses for every student', 'new_tab' => 0],
     ['image' => 'assets/img/home/default-notes.jpg', 'mobile_image' => 'assets/img/home/default-notes-m.jpg', 'link' => '/notes/', 'title' => 'Notes and study materials', 'new_tab' => 0]];
-$courses = sh_latest($pdo, 'course', 9);            // 8 shown, the 9th tells if "View more" has anything
+$cfg = sh_home_cfg(); // layout + options from Customize → Homepage
+$cw = $cfg['courses_filter'] === 'all' ? '' : $cfg['courses_filter'];
+$courses = sh_latest($pdo, 'course', 9, 0, 0, $cw); // 8 shown, the 9th tells if "View more" has anything
 $moreCourses = count($courses) > 8; $courses = array_slice($courses, 0, 8);
 $up = $pdo->query("SELECT p.*, (SELECT COUNT(*) FROM sh_lessons l WHERE l.product_id = p.id) AS lessons, (SELECT COUNT(*) FROM sh_files f WHERE f.product_id = p.id) AS files
     FROM sh_products p WHERE p.status = 'published' AND p.type = 'course' AND p.starts_at >= CURDATE() ORDER BY p.starts_at LIMIT 6")->fetchAll(PDO::FETCH_ASSOC);
-$batches = $up; $seen = array_column($up, 'id');
-foreach (sh_latest($pdo, 'course', 8) as $p) { if (count($batches) >= 6) break; if (!in_array($p['id'], $seen)) $batches[] = $p; }
-$notes = sh_latest($pdo, 'notes', 12);
+if ($cfg['batches_filter'] === 'launched') { $up = []; $batches = sh_latest($pdo, 'course', 6, 0, 0, 'launched'); }
+else {
+    $batches = $up; $seen = array_column($up, 'id');
+    if ($cfg['batches_filter'] === 'all') foreach (sh_latest($pdo, 'course', 8) as $p) { if (count($batches) >= 6) break; if (!in_array($p['id'], $seen)) $batches[] = $p; }
+}
+$notes = sh_latest($pdo, 'notes', 12, 0, 0, '', $cfg['notes_sort']);
 $free = $pdo->query("SELECT * FROM hm_free WHERE active = 1 ORDER BY sort, id DESC LIMIT 12")->fetchAll(PDO::FETCH_ASSOC);
 $posts = $pdo->query("SELECT p.id, p.title, p.slug, p.date, m.file_path AS img, c.name AS cat FROM posts p LEFT JOIN media m ON m.id = p.featured_image_id
-    LEFT JOIN categories c ON c.id = p.category_id WHERE p.status = 'published' ORDER BY p.date DESC LIMIT 10")->fetchAll(PDO::FETCH_ASSOC);
+    LEFT JOIN categories c ON c.id = p.category_id WHERE p.status = 'published' ORDER BY p.date DESC LIMIT " . (int)$cfg['posts_count'])->fetchAll(PDO::FETCH_ASSOC);
 $teacherNames = [];
 foreach ($batches as $p) if (!empty($p['teacher_id'])) $teacherNames[(int)$p['teacher_id']] ??= sh_teacher_name($pdo, (int)$p['teacher_id']);
 // "Our Impact": numbers counted by the site unless the admin typed their own
@@ -49,7 +54,6 @@ $auto = [
     'free' => (int)$pdo->query("SELECT COUNT(*) FROM sh_lessons l JOIN sh_products p ON p.id = l.product_id WHERE p.status = 'published' AND (l.free = 1 OR p.price <= 0)")->fetchColumn() + (int)$pdo->query("SELECT COALESCE(SUM(videos),0) FROM hm_free WHERE active = 1")->fetchColumn(),
     'notes' => (int)$pdo->query("SELECT COUNT(*) FROM sh_files f JOIN sh_products p ON p.id = f.product_id WHERE p.status = 'published'")->fetchColumn(),
 ];
-$cfg = sh_home_cfg();
 $teachers = sh_home_teachers($pdo);
 $toppers = $pdo->query("SELECT * FROM hm_toppers WHERE active = 1 ORDER BY sort, id")->fetchAll(PDO::FETCH_ASSOC);
 $impact = [];
@@ -106,7 +110,7 @@ $short0 = function (string $n) { $p = preg_split('/\s+/', trim(preg_replace('/\(
   <div class="hm-h"><div><h2><?= sh_e($ttl('courses')) ?></h2></div><a href="/courses/">View all ›</a></div>
   <?php if (!$courses): ?><div class="st-empty">New courses are coming soon.</div><?php else: ?>
   <div class="hm-grid" id="hmCourses"><?php foreach ($courses as $p) echo sh_mini_card($p, $catName($p)); ?></div>
-  <div class="hm-more"><?php if ($moreCourses || count($courses) > 4): ?><button type="button" class="hm-btn hm-pro hm-splash" id="hmMore" data-o="8" data-more="<?= $moreCourses ? 1 : 0 ?>">View more courses <span class="hm-pro-a"><?= $ico('arrow') ?></span></button><?php endif; ?><a class="hm-btn hm-pro hm-splash" id="hmAll" href="/courses/"<?= $moreCourses || count($courses) > 4 ? ' hidden' : '' ?>>See all courses <span class="hm-pro-a"><?= $ico('arrow') ?></span></a></div>
+  <div class="hm-more"><?php if ($moreCourses || count($courses) > 4): ?><button type="button" class="hm-btn hm-pro hm-splash" id="hmMore" data-o="8" data-w="<?= sh_e($cw) ?>" data-more="<?= $moreCourses ? 1 : 0 ?>">View more courses <span class="hm-pro-a"><?= $ico('arrow') ?></span></button><?php endif; ?><a class="hm-btn hm-pro hm-splash" id="hmAll" href="/courses/"<?= $moreCourses || count($courses) > 4 ? ' hidden' : '' ?>>See all courses <span class="hm-pro-a"><?= $ico('arrow') ?></span></a></div>
   <?php endif; ?>
 </div></section>
 <?php $S['courses'] = ob_get_clean(); ?>
@@ -114,8 +118,9 @@ $short0 = function (string $n) { $p = preg_split('/\s+/', trim(preg_replace('/\(
 <?php ob_start(); ?><?php /* 3. categories */ ?>
 <?php if ($cats): ?>
 <section class="hm-sec hm-cats-s"><div class="sp-wrap">
-  <div class="hm-h"><div><h2><?= sh_e($ttl('categories')) ?></h2></div><a href="/courses/">All ›</a></div>
-  <div class="hm-cats"><?php foreach ($cats as $c): ?><a class="hm-cat" href="<?= sh_e(sh_cat_url($c['slug'])) ?>"><span class="hm-cat-i"><?php if ($c['icon']): ?><img src="<?= sh_e(sh_upload_url($c['icon'])) ?>" alt="" loading="lazy" width="44" height="44"><?php else: ?><b><?= sh_e(mb_strtoupper(mb_substr(preg_replace('/^Class\s+/i', '', $c['name']), 0, 2))) ?></b><?php endif; ?></span><span class="hm-cat-n"><?= sh_e($c['name']) ?></span><?= (int)$c['items'] ? '<small>' . (int)$c['items'] . ' course' . ((int)$c['items'] === 1 ? '' : 's') . '</small>' : '<small class="soon">Coming soon</small>' ?></a><?php endforeach; ?></div>
+  <?php $cd = $cfg['cats_d']; $cm = $cfg['cats_m']; $nc = count($cats); $hasMore = ($cd && $nc > $cd) || ($cm && $nc > $cm); $ci = 0; ?>
+  <div class="hm-h"><div><h2><?= sh_e($ttl('categories')) ?></h2></div><?php if ($hasMore): ?><button type="button" class="hm-cats-all<?= $cd && $nc > $cd ? ' d' : '' ?><?= $cm && $nc > $cm ? ' m' : '' ?>" aria-expanded="false" data-more="All ›" data-less="Show less">All ›</button><?php else: ?><a href="/courses/">All ›</a><?php endif; ?></div>
+  <div class="hm-cats" id="hmCats"><?php foreach ($cats as $c): $ci++; ?><a class="hm-cat<?= $cd && $ci > $cd ? ' xd' : '' ?><?= $cm && $ci > $cm ? ' xm' : '' ?>" href="<?= sh_e(sh_cat_url($c['slug'])) ?>"><span class="hm-cat-i"><?php if ($c['icon']): ?><img src="<?= sh_e(sh_upload_url($c['icon'])) ?>" alt="" loading="lazy" width="44" height="44"><?php else: ?><b><?= sh_e(mb_strtoupper(mb_substr(preg_replace('/^Class\s+/i', '', $c['name']), 0, 2))) ?></b><?php endif; ?></span><span class="hm-cat-n"><?= sh_e($c['name']) ?></span><?= (int)$c['items'] ? '<small>' . (int)$c['items'] . ' course' . ((int)$c['items'] === 1 ? '' : 's') . '</small>' : '<small class="soon">Coming soon</small>' ?></a><?php endforeach; ?></div>
 </div></section>
 <?php endif; ?>
 <?php $S['categories'] = ob_get_clean(); ?>
@@ -123,7 +128,7 @@ $short0 = function (string $n) { $p = preg_split('/\s+/', trim(preg_replace('/\(
 <?php ob_start(); ?><?php /* 4. latest courses / upcoming batches — one at a time */ ?>
 <?php if ($batches): ?>
 <section class="hm-sec hm-bt-s"><div class="sp-wrap">
-  <div class="hm-h"><div><h2><?= sh_e($ttl('batches', $up ? 'Latest courses & upcoming batches' : 'Latest courses')) ?></h2></div></div>
+  <div class="hm-h"><div><h2><?= sh_e($ttl('batches', $cfg['batches_filter'] === 'upcoming' ? 'Upcoming batches' : ($up ? 'Latest courses & upcoming batches' : 'Latest courses'))) ?></h2></div></div>
   <div class="hm-bt" data-hs data-auto="6500">
     <div class="hs-track"><?php foreach ($batches as $p): [$bt, $isUp] = sh_batch($p); $tn = $teacherNames[(int)($p['teacher_id'] ?? 0)] ?? ''; ?>
       <div class="hs-s"><div class="hm-btc">

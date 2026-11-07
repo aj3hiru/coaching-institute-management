@@ -83,7 +83,7 @@
       if (hid.length) { hid.slice(0, 8).forEach(function (c) { c.classList.add('shown', 'hm-new'); }); sync(); return; }
       var o = +more.getAttribute('data-o') || 0, label = more.innerHTML;
       more.disabled = true; more.textContent = 'Loading…';
-      fetch('/store/more?o=' + o + '&n=8').then(function (r) { return r.json(); }).then(function (d) {
+      fetch('/store/more?o=' + o + '&n=8' + (more.getAttribute('data-w') ? '&w=' + encodeURIComponent(more.getAttribute('data-w')) : '')).then(function (r) { return r.json(); }).then(function (d) {
         var tmp = document.createElement('div'); tmp.innerHTML = d.html || '';
         [].slice.call(tmp.children).forEach(function (c) { c.classList.add('shown', 'hm-new'); grid.appendChild(c); });
         more.setAttribute('data-o', o + (d.count || 0));
@@ -93,6 +93,10 @@
       }).catch(function () { more.disabled = false; more.innerHTML = label; });
     });
   }
+
+  // ---- Categories: "All" shows every category (the rest are hidden by the count set in Customize) ----
+  var ca = document.querySelector('.hm-cats-all'), cg = document.getElementById('hmCats');
+  if (ca && cg) ca.addEventListener('click', function () { var on = cg.classList.toggle('all'); ca.setAttribute('aria-expanded', on ? 'true' : 'false'); ca.textContent = on ? ca.getAttribute('data-less') : ca.getAttribute('data-more'); });
 
   // ---- splash: ripple where a .hm-splash button is pressed ----
   document.addEventListener('pointerdown', function (e) {

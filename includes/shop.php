@@ -939,11 +939,16 @@ function sh_mini_card(array $p, string $cat = ''): string
         . '<small class="hc-m' . ($bt === '' && $p['type'] === 'notes' ? ' hc-pdf' : '') . '">' . $mi . sh_e($bt !== '' ? $bt : $meta) . '</small>' . ($free ? '' : '<span class="hc-p">' . sh_price_html($p) . '</span>')
         . '<span class="hc-f"><span class="hc-go">View details ' . sh_icon('arrow') . '</span>' . ($free ? '<em class="hc-free hm-splash">Free</em>' : '') . '</span></span></a>';
 }
-/** Published courses, newest first (for the homepage list and its "View more"). */
-function sh_latest(PDO $pdo, string $type, int $limit, int $offset = 0, int $cat = 0): array
+/** Published courses / notes for the homepage lists and "View more".
+    $when: '' all · 'launched' already started (or no start date) · 'upcoming' batch starts today or later (soonest first).
+    $sort: 'latest' newest first · 'popular' most students first. */
+function sh_latest(PDO $pdo, string $type, int $limit, int $offset = 0, int $cat = 0, string $when = '', string $sort = 'latest'): array
 {
+    $w = $when === 'launched' ? " AND (p.starts_at IS NULL OR p.starts_at < CURDATE())" : ($when === 'upcoming' ? " AND p.starts_at >= CURDATE()" : '');
+    $order = $when === 'upcoming' ? 'p.starts_at, p.id DESC'
+        : ($sort === 'popular' ? '(SELECT COUNT(*) FROM sh_access a WHERE a.product_id = p.id AND a.revoked = 0) DESC, p.id DESC' : 'p.id DESC');
     $sql = "SELECT p.*, (SELECT COUNT(*) FROM sh_lessons l WHERE l.product_id = p.id) AS lessons, (SELECT COUNT(*) FROM sh_files f WHERE f.product_id = p.id) AS files
-        FROM sh_products p WHERE p.status = 'published' AND p.type = " . $pdo->quote($type) . ($cat ? ' AND p.category_id = ' . $cat : '') . " ORDER BY p.id DESC LIMIT " . max(1, $limit) . ' OFFSET ' . max(0, $offset);
+        FROM sh_products p WHERE p.status = 'published' AND p.type = " . $pdo->quote($type) . ($cat ? ' AND p.category_id = ' . $cat : '') . $w . " ORDER BY $order LIMIT " . max(1, $limit) . ' OFFSET ' . max(0, $offset);
     return $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
 }
 /** YouTube playlist (or single video) details for a Free course: [list, video, title, thumb, channel, videos, error]. */
@@ -995,8 +1000,14 @@ function sh_home_cfg(): array
         'why_title' => $titles['why'],
         'why_text' => (string)es('home', 'why_text', SH_HOME_WHY_TEXT),
         'order' => $order, 'on' => $on, 'titles' => $titles,
+        'courses_filter' => sh_home_pick((string)es('home', 'courses_filter', ''), ['all', 'launched', 'upcoming'], 'all'),
+        'batches_filter' => sh_home_pick((string)es('home', 'batches_filter', ''), ['all', 'launched', 'upcoming'], 'all'),
+        'notes_sort' => sh_home_pick((string)es('home', 'notes_sort', ''), ['latest', 'popular'], 'latest'),
+        'cats_d' => max(0, min(40, (int)es('home', 'cats_d', '0'))), 'cats_m' => max(0, min(40, (int)es('home', 'cats_m', '0'))), // 0 = all
+        'posts_count' => max(1, min(20, (int)es('home', 'posts_count', '10'))),
     ];
 }
+function sh_home_pick(string $v, array $ok, string $def): string { return in_array($v, $ok, true) ? $v : $def; }
 /** What the Customizer sends for the homepage → clean settings (strings) for the 'home' group. */
 function sh_home_sanitize(array $h): array
 {
@@ -1017,7 +1028,12 @@ function sh_home_sanitize(array $h): array
     }
     $flag = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES;
     return ['sections' => json_encode($secs, $flag), 'why' => json_encode($why, $flag), 'impact' => json_encode($imp, $flag),
-        'why_text' => $str($h['why_text'] ?? '', 300), 'why_title' => ''];
+        'why_text' => $str($h['why_text'] ?? '', 300), 'why_title' => '',
+        'courses_filter' => sh_home_pick((string)($h['courses_filter'] ?? ''), ['all', 'launched', 'upcoming'], 'all'),
+        'batches_filter' => sh_home_pick((string)($h['batches_filter'] ?? ''), ['all', 'launched', 'upcoming'], 'all'),
+        'notes_sort' => sh_home_pick((string)($h['notes_sort'] ?? ''), ['latest', 'popular'], 'latest'),
+        'cats_d' => (string)max(0, min(40, (int)($h['cats_d'] ?? 0))), 'cats_m' => (string)max(0, min(40, (int)($h['cats_m'] ?? 0))),
+        'posts_count' => (string)max(1, min(20, (int)($h['posts_count'] ?? 10)))];
 }
 
 /* ---------- orders made by staff (student pays at the office: cash / UPI / card …) ---------- */

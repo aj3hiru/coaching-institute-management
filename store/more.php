@@ -5,7 +5,8 @@ require_once INCLUDES_PATH . '/shop.php';
 header('Content-Type: application/json; charset=utf-8'); header('Cache-Control: public, max-age=120');
 $pdo = sh_db();
 $o = max(0, (int)($_GET['o'] ?? 0)); $n = max(1, min(24, (int)($_GET['n'] ?? 8)));
-$rows = sh_latest($pdo, 'course', $n + 1, $o);
+$w = in_array($_GET['w'] ?? '', ['launched', 'upcoming'], true) ? $_GET['w'] : ''; // same filter as the homepage list
+$rows = sh_latest($pdo, 'course', $n + 1, $o, 0, $w);
 $cats = sh_categories($pdo, true);
 $html = '';
 foreach (array_slice($rows, 0, $n) as $p) $html .= sh_mini_card($p, $cats[(int)$p['category_id']]['name'] ?? '');

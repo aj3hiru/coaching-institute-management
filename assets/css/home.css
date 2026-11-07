@@ -423,3 +423,8 @@
 .hm .hc:hover,.hm .hm-cat:hover,.hm .hm-post:hover,.hm .hm-fc:hover,.hm .hm-pc:hover,.hm .tA-card:hover,.hm .tC-card:hover,.hm .hm-btc:hover,.hm .hm-btn:not(.hm-pro):hover{box-shadow:none!important}
 .hm .hm-pro:hover{box-shadow:0 4px 12px rgba(12,104,120,.18)!important} /* same as when not hovered */
 .nb-hr-sub,.nb-hr-sub:hover{box-shadow:none!important} /* header Subscribe: no hover shadow on the homepage */
+
+/* Categories: how many show on computers / phones (Customize → Homepage); "All" shows the rest */
+.hm-cats-all{border:0;background:none;padding:0;font:inherit;font-weight:700;font-size:14px;color:var(--sa,#0c6878);cursor:pointer}
+@media (min-width:761px){.hm-cats:not(.all) .hm-cat.xd{display:none}.hm-cats-all:not(.d){display:none}}
+@media (max-width:760px){.hm-cats:not(.all) .hm-cat.xm{display:none}.hm-cats-all:not(.m){display:none}}

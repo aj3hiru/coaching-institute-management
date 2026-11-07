@@ -23,6 +23,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && ($me['role'] ?? '') === 'admin' && !
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_check();
     $a = (string)($_POST['action'] ?? ''); $id = (int)($_POST['id'] ?? 0); $go = 'slides';
+    // a picture chosen in the Media Library (already WebP): "/uploads/2026/11/x.webp" → "uploads/2026/11/x.webp"
+    $media = function (string $k): string { $v = ltrim(trim((string)($_POST[$k] ?? '')), '/'); return preg_match('#^uploads/[\w./-]+\.(webp|jpe?g|png|gif|avif)$#i', $v) && !str_contains($v, '..') ? $v : ''; };
     $link = function (string $u): ?string { $u = trim($u); if ($u === '') return null; if (!preg_match('#^(https?://|/)#i', $u)) $u = 'https://' . $u; return mb_substr($u, 0, 500); };
     try {
         if ($a === 'slide_save') {
@@ -30,12 +32,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $img = (string)($row['image'] ?? ''); $mob = (string)($row['mobile_image'] ?? '');
             if (!empty($_FILES['image']['name'])) { [$n, $e] = sh_image_save($_FILES['image'], 'slides', 6); if ($e) throw new RuntimeException($e); sh_image_drop($img); $img = $n; }
             if (!empty($_FILES['mobile_image']['name'])) { [$n, $e] = sh_image_save($_FILES['mobile_image'], 'slides', 6); if ($e) throw new RuntimeException($e); sh_image_drop($mob); $mob = $n; }
+            if (($m = $media('image_path')) !== '') { if ($m !== $img) sh_image_drop($img); $img = $m; }
+            if (($m = $media('mobile_path')) !== '') { if ($m !== $mob) sh_image_drop($mob); $mob = $m; }
             if (!empty($_POST['mobile_rm'])) { sh_image_drop($mob); $mob = ''; }
             if ($img === '') throw new RuntimeException('Please choose the slide image.');
             $v = [$img, $mob ?: null, $link((string)($_POST['link'] ?? '')), mb_substr(trim((string)($_POST['title'] ?? '')), 0, 200) ?: null, !empty($_POST['new_tab']) ? 1 : 0, (int)($_POST['sort'] ?? 0), !empty($_POST['active']) ? 1 : 0];
             if ($row) { $v[] = $id; $pdo->prepare("UPDATE hm_slides SET image=?, mobile_image=?, link=?, title=?, new_tab=?, sort=?, active=? WHERE id=?")->execute($v); }
             else $pdo->prepare("INSERT INTO hm_slides (image, mobile_image, link, title, new_tab, sort, active) VALUES (?,?,?,?,?,?,?)")->execute($v);
             admin_flash('Slide saved.');
+        } elseif ($a === 'slide_order' || $a === 'top_order') { // new order from the Customizer: ids in order
+            $go = $a === 'slide_order' ? 'slides' : 'toppers'; $tb = $a === 'slide_order' ? 'hm_slides' : 'hm_toppers';
+            $q = $pdo->prepare("UPDATE $tb SET sort = ? WHERE id = ?");
+            foreach (array_values(array_filter(array_map('intval', explode(',', (string)($_POST['ids'] ?? ''))))) as $k => $sid) $q->execute([$k + 1, $sid]);
         } elseif ($a === 'slide_delete') {
             $row = $pdo->query("SELECT * FROM hm_slides WHERE id = $id")->fetch(PDO::FETCH_ASSOC);
             if ($row) { sh_image_drop($row['image']); sh_image_drop($row['mobile_image']); $pdo->exec("DELETE FROM hm_slides WHERE id = $id"); }
@@ -62,6 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $row = $id ? $pdo->query("SELECT * FROM hm_toppers WHERE id = $id")->fetch(PDO::FETCH_ASSOC) : null;
             $ph = (string)($row['photo'] ?? '');
             if (!empty($_FILES['photo']['name'])) { [$n, $e] = sh_image_save($_FILES['photo'], 'toppers', 4); if ($e) throw new RuntimeException($e); sh_image_drop($ph); $ph = $n; }
+            if (($m = $media('photo_path')) !== '') { if ($m !== $ph) sh_image_drop($ph); $ph = $m; }
             $name = mb_substr(trim((string)($_POST['name'] ?? '')), 0, 120);
             if ($name === '') throw new RuntimeException('Please type the student\'s name.');
             $v = [$name, $ph ?: null, mb_substr(trim((string)($_POST['result'] ?? '')), 0, 160) ?: null, mb_substr(trim((string)($_POST['class_name'] ?? '')), 0, 80) ?: null,
