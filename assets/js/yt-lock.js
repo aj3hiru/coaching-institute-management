@@ -171,9 +171,11 @@
       if (!t.closest || !t.closest('.plyr__video-wrapper, .plyr__poster') || t.closest('.plyr__controls, .plyr__control, .plyr__menu')) return;
       if (p.ended) { p.currentTime = 0; p.play(); } else p.togglePlay();
     });
-    if (box._q === undefined) box._q = store.get();
+    // Quality is left to YouTube (Auto): it picks the best for the internet and screen. Our own quality menu scaled
+    // YouTube's frame, and with it YouTube's middle play / pause icon changed size — so it is switched off.
+    box._q = 'auto'; store.set('auto');
     box.classList.remove('yt-started', 'yt-go');
-    p.on('ready', function () { addQ(box); dress(box); sizeFrame(box); });
+    p.on('ready', function () { dress(box); sizeFrame(box); });
     // our cover stays until YouTube really plays, so YouTube's own start screen / button never shows through
     p.on('play', function () { box.classList.add('yt-go'); });          // red button goes at the click, like YouTube
     p.on('playing', function () { box.classList.add('yt-started'); }); // the picture goes when YouTube really plays
