@@ -7,7 +7,7 @@ $me = admin_guard(['admin', 'editor', 'author']);
 if (!ci_can($me)) {
     if (admin_blog_access()) { header('Location: /admin/blog-dashboard.php'); exit; }
     require_once INCLUDES_PATH . '/shop.php';
-    if (sh_perm($me)) { header('Location: ' . (sh_perm($me, 'orders') ? '/admin/shop-orders.php' : (sh_perm($me, 'products') ? '/admin/shop-products.php' : '/admin/shop-customers.php'))); exit; } // online store staff
+    if (sh_perm($me)) { header('Location: ' . (sh_perm($me, 'orders') ? '/admin/shop-orders.php' : (sh_perm($me, 'products') ? '/admin/shop-products.php' : (sh_perm($me, 'customers') ? '/admin/shop-customers.php' : '/admin/shop-doubts.php')))); exit; } // online store staff
     // no institute and no blog access: a plain welcome page (no figures)
     echo '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Dashboard</title>';
     admin_shell_head();

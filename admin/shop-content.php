@@ -15,9 +15,9 @@ $dur = fn($v) => preg_match('/^\d{1,3}:\d{2}(:\d{2})?$/', trim((string)$v)) ? tr
 /** Deletes the uploaded files of a lesson (main video + its qualities). */
 function shc_drop_media(PDO $pdo, int $id): void
 {
-    $l = $pdo->query("SELECT video_file, variants FROM sh_lessons WHERE id = $id")->fetch(PDO::FETCH_ASSOC);
+    $l = $pdo->query("SELECT video_file, variants, pdf_file FROM sh_lessons WHERE id = $id")->fetch(PDO::FETCH_ASSOC);
     if (!$l) return;
-    foreach (array_filter(array_merge([$l['video_file']], array_values(sh_variants($l)))) as $f) { $f = sh_media_path($f); if (is_file($f)) @unlink($f); }
+    foreach (array_filter(array_merge([$l['video_file'], $l['pdf_file']], array_values(sh_variants($l)))) as $f) { $f = sh_media_path($f); if (is_file($f)) @unlink($f); }
 }
 /** Swaps the order of a row with its neighbour (sh_sections / sh_lessons / sh_files) within the same product (and section). */
 function shc_move(PDO $pdo, string $table, int $id, int $pid, int $dir, string $extra = ''): void
@@ -127,6 +127,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             case 'delete_lesson':
                 if (!(int)$pdo->query("SELECT COUNT(*) FROM sh_lessons WHERE id = $id AND product_id = $pid")->fetchColumn()) break;
                 shc_drop_media($pdo, $id);
+                foreach ($pdo->query("SELECT file FROM sh_files WHERE lesson_id = $id")->fetchAll(PDO::FETCH_COLUMN) as $nf) { $nf = sh_media_path($nf); if (is_file($nf)) @unlink($nf); }
+                $pdo->exec("DELETE FROM sh_files WHERE lesson_id = $id"); $pdo->exec("DELETE FROM sh_doubts WHERE lesson_id = $id");
                 $pdo->prepare("DELETE FROM sh_lessons WHERE id = ? AND product_id = ?")->execute([$id, $pid]);
                 $pdo->prepare("DELETE FROM sh_progress WHERE lesson_id = ?")->execute([$id]);
                 admin_flash('Video deleted.');
@@ -173,7 +175,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $isCourse = $p['type'] === 'course';
 $cur = $isCourse ? sh_curriculum($pdo, $pid) : [];
 $secs = $pdo->query("SELECT id, title FROM sh_sections WHERE product_id = $pid ORDER BY sort, id")->fetchAll(PDO::FETCH_KEY_PAIR);
-$files = sh_files($pdo, $pid);
+$files = array_values(array_filter(sh_files($pdo, $pid), fn($f) => empty($f['lesson_id']))); // lecture notes are managed on the lecture
 $editL = (int)($_GET['lesson'] ?? 0);
 $el = $editL ? ($pdo->query("SELECT * FROM sh_lessons WHERE id = $editL AND product_id = $pid")->fetch(PDO::FETCH_ASSOC) ?: null) : null;
 $mb = fn($b) => $b ? ($b >= 1073741824 ? round($b / 1073741824, 2) . ' GB' : round($b / 1048576, 1) . ' MB') : '';
@@ -220,39 +222,10 @@ $btn = function (string $action, int $id, string $icon, string $label, array $mo
 <p class="shc-small">Files are kept in a private folder (not reachable by address). Used by this product: <?= $mb($used) ?: '0 MB' ?><?= $free !== false ? ' · free on the server: ' . $mb($free) : '' ?></p>
 
 <?php if ($isCourse): ?>
-<!-- add / edit a video -->
-<div class="ci-card" id="add"><div class="ci-card-h"><h3><?= $el ? 'Edit video: ' . ci_e($el['title']) : 'Add a video' ?></h3><?php if ($el): ?><a href="<?= $self ?>">Cancel</a><?php endif; ?></div><div class="ci-card-b">
-<form method="post" id="shcLesson" class="shc-up"><?= csrf_field() ?><input type="hidden" name="action" value="save_lesson"><input type="hidden" name="id" value="<?= (int)($el['id'] ?? 0) ?>"><input type="hidden" name="pid" value="<?= $pid ?>">
-  <?php $isLink = $el ? (!$el['video_file'] && $el['video_url']) : false; ?>
-  <div class="shc-src" role="radiogroup" aria-label="Where is the video?">
-    <label><input type="radio" name="source" value="upload" <?= $isLink ? '' : 'checked' ?>> Upload to our server</label>
-    <label><input type="radio" name="source" value="link" <?= $isLink ? 'checked' : '' ?>> YouTube / video link</label>
-  </div>
-  <div class="ci-grid3">
-    <div class="ci-f" style="grid-column:span 2"><label>Title</label><input name="title" required maxlength="200" placeholder="e.g. Chapter 1 — Real Numbers (Part 1)" value="<?= ci_e($el['title'] ?? '') ?>"></div>
-    <div class="ci-f"><label>Chapter</label><select name="section_id"><?= $secOpts((int)($el['section_id'] ?? ($_GET['section'] ?? 0))) ?></select></div>
-    <div class="ci-f shc-when-up" style="grid-column:span 2"><label><?= !empty($el['video_file']) ? 'Replace the video (optional)' : 'Video file (MP4)' ?></label><input type="file" name="vfile" accept="video/mp4,video/webm,video/quicktime,.mp4,.m4v,.webm,.mov"><span class="ci-hint">Any size — it is sent in small pieces. MP4 (H.264) plays on every phone.</span></div>
-    <div class="ci-f shc-when-link" style="grid-column:span 2"><label>YouTube or video link</label><input name="video_url" maxlength="500" placeholder="https://www.youtube.com/watch?v=…" value="<?= ci_e($el['video_url'] ?? '') ?>"><span class="ci-hint">YouTube (Unlisted works), Vimeo, or a Bunny / other embed link.</span></div>
-    <div class="ci-f"><label>Duration</label><input name="duration" maxlength="9" placeholder="filled in by itself" value="<?= ci_e($el['duration'] ?? '') ?>"><span class="ci-hint">mm:ss — read from the file / YouTube.</span></div>
-  </div>
-  <?php if (!empty($el['video_file'])): $vv = sh_variants($el); ?>
-  <div class="shc-q shc-when-up" style="margin-top:12px;border:1px solid #e5e7eb;padding:10px 12px">
-    <b style="font-size:13.5px">Qualities for the player's ⚙ menu</b> <span class="shc-small">— original<?= $el['height'] ? ' ' . (int)$el['height'] . 'p' : '' ?> is always there. Add smaller files (made on your computer, e.g. with HandBrake) so slow internet can choose them.</span>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px;margin-top:8px">
-    <?php foreach (['720', '480', '360'] as $qq): ?>
-      <div style="border:1px dashed #d1d5db;padding:8px"><b><?= $qq ?>p</b> <?= isset($vv[$qq]) ? '<span class="shc-tag up">Uploaded</span>' : '<span class="shc-small">not added</span>' ?>
-        <input type="file" class="shc-qf" data-q="<?= $qq ?>" accept="video/mp4,video/webm,.mp4,.m4v,.webm" style="display:block;margin-top:6px;max-width:100%">
-        <?php if (isset($vv[$qq])): ?><button type="button" class="shc-free" style="margin-top:6px" data-rmq="<?= $qq ?>">Remove <?= $qq ?>p</button><?php endif; ?>
-      </div>
-    <?php endforeach; ?>
-    </div>
-  </div>
-  <?php endif; ?>
-  <div class="ci-f" style="margin-top:10px"><label>Notes under the video (optional)</label><textarea name="notes" rows="2" maxlength="5000"><?= ci_e($el['notes'] ?? '') ?></textarea></div>
-  <label style="display:flex;gap:8px;align-items:center;margin:10px 0 0;font-weight:600"><input type="checkbox" name="free" value="1" <?= !empty($el['free']) ? 'checked' : '' ?>> Free preview (anyone can watch this video)</label>
-  <div class="shc-bar"><i></i></div><p class="shc-small" data-st style="margin:6px 0 0"></p>
-  <div style="margin-top:12px"><button class="ci-btn" type="submit"><i class="fas fa-check"></i> <?= $el ? 'Save video' : 'Add video' ?></button></div>
-</form></div></div>
+<!-- lectures are added on their own page (type → chapter → unit → video / PDF → notes, VVI, quiz) -->
+<div class="ci-card"><div class="ci-card-b" style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+  <div><b style="font-size:15px">Add a lecture</b><div class="shc-small">Video (upload or any link) or PDF, with notes, VVI questions and a quiz.</div></div>
+  <a class="ci-btn" href="/admin/shop-lecture.php?course=<?= $pid ?>"><i class="fas fa-plus"></i> Add lecture</a></div></div>
 
 <!-- many YouTube videos at once -->
 <details class="ci-card"><summary class="ci-card-h" style="cursor:pointer"><h3>Add many YouTube videos at once</h3><span class="shc-small">links or a playlist</span></summary><div class="ci-card-b">
@@ -282,15 +255,16 @@ foreach ($blocks as $s): ?>
   <?php if ($s['id']): $si++; ?><div class="shc-sec-h">
     <form method="post" class="rn"><?= csrf_field() ?><input type="hidden" name="action" value="rename_section"><input type="hidden" name="id" value="<?= $s['id'] ?>"><input type="hidden" name="anchor" value="list"><input name="title" value="<?= ci_e($s['title']) ?>" maxlength="200" aria-label="Chapter name" onchange="this.form.submit()"></form>
     <span class="shc-small"><?= count($s['lessons']) ?> videos</span>
-    <a class="ci-btn ci-ghost ci-sm" href="?id=<?= $pid ?>&section=<?= $s['id'] ?>#add"><i class="fas fa-plus"></i> Video</a>
+    <a class="ci-btn ci-ghost ci-sm" href="/admin/shop-lecture.php?course=<?= $pid ?>&chapter=<?= $s['id'] ?>"><i class="fas fa-plus"></i> Lecture</a>
     <div class="ci-icos"><?= $btn('move_section', $s['id'], 'up', 'Move chapter up', ['dir' => -1, 'anchor' => 'list']) ?><?= $btn('move_section', $s['id'], 'down', 'Move chapter down', ['dir' => 1, 'anchor' => 'list']) ?><?= $btn('delete_section', $s['id'], 'trash', 'Remove chapter', ['anchor' => 'list'], 'Remove the chapter "' . $s['title'] . '"? Its videos are kept.') ?></div>
   </div><?php elseif ($loose): ?><div class="shc-sec-h"><b>Without a chapter</b></div><?php endif; ?>
   <?php if ($s['lessons']): ?><div class="ci-table-wrap"><table class="ci-table"><tbody>
   <?php foreach ($s['lessons'] as $l): ?>
-  <tr><td><b><?= ci_e($l['title']) ?></b><?= $l['duration'] ? ' <span class="shc-small">' . ci_e($l['duration']) . '</span>' : '' ?></td>
-    <td><?= $l['video_file'] ? '<span class="shc-tag up">On our server · ' . $mb((int)$l['size']) . '</span>' : ($l['video_url'] ? '<span class="shc-tag yt">' . (sh_yt_id((string)$l['video_url']) ? 'YouTube' : 'Video link') . '</span>' : '<span class="shc-tag no">No video yet</span>') ?></td>
+  <tr><td><?= $l['lecture_no'] ? '<span class="shc-small">L' . (int)$l['lecture_no'] . ' · </span>' : '' ?><b><?= ci_e($l['title']) ?></b><?= $l['duration'] ? ' <span class="shc-small">' . ci_e($l['duration']) . '</span>' : '' ?><?= $l['unit_title'] ? '<small class="shc-small" style="display:block">Unit: ' . ci_e($l['unit_title']) . '</small>' : '' ?>
+    <?php $xv = sh_vvi($l); $xq = sh_quiz($l); $xn = (int)$pdo->query("SELECT COUNT(*) FROM sh_files WHERE lesson_id = " . (int)$l['id'])->fetchColumn(); ?><small class="shc-small" style="display:block"><?= implode(' · ', array_filter([$xn ? $xn . ' notes PDF' : '', ($xv['qa'] || $xv['links']) ? 'VVI' : '', ($xq['items'] || $xq['links']) ? 'Quiz ' . count($xq['items']) : '', $l['doubts_on'] ? '' : 'doubts off'])) ?></small></td>
+    <td><?= ($l['kind'] ?? 'video') === 'pdf' ? ($l['pdf_file'] ? '<span class="shc-tag up">PDF · ' . (int)$l['pdf_pages'] . ' pages</span>' : '<span class="shc-tag no">No PDF yet</span>') : ($l['video_file'] ? '<span class="shc-tag up">On our server · ' . $mb((int)$l['size']) . '</span>' : ($l['video_url'] ? '<span class="shc-tag yt">' . (sh_yt_id((string)$l['video_url']) ? 'YouTube' : (str_contains((string)$l['video_url'], 'drive.google') ? 'Google Drive' : 'Video link')) . '</span>' : '<span class="shc-tag no">No video yet</span>')) ?></td>
     <td><form method="post" style="display:inline"><?= csrf_field() ?><input type="hidden" name="action" value="toggle_free"><input type="hidden" name="id" value="<?= (int)$l['id'] ?>"><input type="hidden" name="anchor" value="list"><button class="shc-free<?= $l['free'] ? ' on' : '' ?>" type="submit"><?= $l['free'] ? 'Free preview' : 'Paid' ?></button></form></td>
-    <td><div class="ci-icos"><?= ci_ico('edit', '?id=' . $pid . '&lesson=' . (int)$l['id'] . '#add', 'Edit / upload video') ?><?= $btn('move_lesson', (int)$l['id'], 'up', 'Move up', ['dir' => -1, 'anchor' => 'list']) ?><?= $btn('move_lesson', (int)$l['id'], 'down', 'Move down', ['dir' => 1, 'anchor' => 'list']) ?><?= $btn('delete_lesson', (int)$l['id'], 'trash', 'Delete video', ['anchor' => 'list'], 'Delete the video "' . $l['title'] . '"?' . ($l['video_file'] ? ' The uploaded file is removed from the server.' : '')) ?></div></td></tr>
+    <td><div class="ci-icos"><?= ci_ico('edit', '/admin/shop-lecture.php?id=' . (int)$l['id'], 'Edit lecture') ?><?= $btn('move_lesson', (int)$l['id'], 'up', 'Move up', ['dir' => -1, 'anchor' => 'list']) ?><?= $btn('move_lesson', (int)$l['id'], 'down', 'Move down', ['dir' => 1, 'anchor' => 'list']) ?><?= $btn('delete_lesson', (int)$l['id'], 'trash', 'Delete video', ['anchor' => 'list'], 'Delete the video "' . $l['title'] . '"?' . ($l['video_file'] ? ' The uploaded file is removed from the server.' : '')) ?></div></td></tr>
   <?php endforeach; ?>
   </tbody></table></div><?php elseif ($s['id']): ?><p class="shc-small" style="padding:8px 12px;margin:0">No videos in this chapter yet.</p><?php endif; ?>
 </div>

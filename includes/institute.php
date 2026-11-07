@@ -677,6 +677,8 @@ function ci_svg(string $n): string
         'receipt' => '<path d="M4 2v20l3-2 3 2 3-2 3 2 3-2 1 .7V2l-1 .7-3-2-3 2-3-2-3 2-3-2z"/><path d="M8 7h8M8 11h8M8 15h5"/>',
         'logout' => '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>',
         'up' => '<path d="M12 19V5"/><path d="m5 12 7-7 7 7"/>',
+        'plus' => '<path d="M12 5v14M5 12h14"/>',
+        'film' => '<rect x="2" y="3" width="20" height="18"/><path d="M7 3v18M17 3v18M2 9h5M2 15h5M17 9h5M17 15h5"/>',
         'down' => '<path d="M12 5v14"/><path d="m19 12-7 7-7-7"/>',
         'print' => '<path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/>',
         'whatsapp' => '<path d="M3 21l1.7-5A8.5 8.5 0 1 1 8 19.3z"/>',

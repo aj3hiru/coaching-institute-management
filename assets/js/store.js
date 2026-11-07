@@ -82,16 +82,19 @@
     document.addEventListener('fullscreenchange', fs);
   }
 
-  // ---- PDF reader (pages drawn on the screen with the buyer's watermark) ----
-  var box = document.getElementById('stPdf');
-  if (box) {
-    var info = document.getElementById('stPdfInfo'), tries = 0;
+  // ---- PDF reader (pages drawn on the screen with the buyer's watermark); window.stPdf(box, src, wm, info) for more ----
+  function loadPdfJs() {
+    if (window.pdfjsLib) return Promise.resolve();
+    if (!loadPdfJs.p) loadPdfJs.p = new Promise(function (ok, bad) { var s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js'; s.onload = ok; s.onerror = function () { loadPdfJs.p = null; bad(); }; document.head.appendChild(s); });
+    return loadPdfJs.p;
+  }
+  window.stPdf = function (box, src, wmText, info) {
+    var tries = 0;
     var start = function () {
-      if (!window.pdfjsLib) { if (++tries < 100) setTimeout(start, 150); else info.textContent = 'The reader could not load. Check your internet.'; return; }
+      if (!window.pdfjsLib) { if (++tries < 100) setTimeout(start, 150); else if (info) info.textContent = 'The reader could not load. Check your internet.'; return; }
       window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-      window.pdfjsLib.getDocument({ url: box.getAttribute('data-src') }).promise.then(function (doc) {
-        info.textContent = doc.numPages + ' page' + (doc.numPages === 1 ? '' : 's');
-        var wmText = box.getAttribute('data-wm');
+      window.pdfjsLib.getDocument({ url: src }).promise.then(function (doc) {
+        if (info) { info.textContent = doc.numPages + ' page' + (doc.numPages === 1 ? '' : 's'); info.hidden = false; }
         var draw = function (c) {
           doc.getPage(+c.getAttribute('data-p')).then(function (pg) {
             var w = box.clientWidth || 800, vp1 = pg.getViewport({ scale: 1 }), dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -114,10 +117,12 @@
           box.appendChild(c);
           if (io) io.observe(c); else draw(c);
         }
-      }).catch(function () { info.textContent = ''; box.innerHTML = '<div class="st-empty">This PDF could not be opened. Please reload the page.</div>'; });
+      }).catch(function () { if (info) info.textContent = ''; box.innerHTML = '<div class="st-empty">This PDF could not be opened. Please reload the page.</div>'; });
     };
-    start();
-  }
+    loadPdfJs().then(start, function () { box.innerHTML = '<div class="st-empty">The reader could not load. Check your internet.</div>'; });
+  };
+  var box = document.getElementById('stPdf');
+  if (box && box.getAttribute('data-src')) window.stPdf(box, box.getAttribute('data-src'), box.getAttribute('data-wm'), document.getElementById('stPdfInfo'));
 
   // ---- show / hide password ----
   document.querySelectorAll('.st-pw button').forEach(function (b) {
@@ -311,4 +316,73 @@
     t.addEventListener('click', function (e) { if (moved) { e.preventDefault(); e.stopPropagation(); moved = false; } }, true);
     t.addEventListener('dragstart', function (e) { e.preventDefault(); });
   });
+})();
+
+/* lecture tabs: About · PDF Notes · VVI Questions · Quiz · Doubts & Problems */
+(function () {
+  'use strict';
+  var lt = document.getElementById('lt'); if (!lt) return;
+  var btns = lt.querySelectorAll('.lt-strip button'), panes = lt.querySelectorAll('.lt-pane');
+  function show(k) {
+    btns.forEach(function (b) { var on = b.getAttribute('data-lt') === k; b.classList.toggle('on', on); b.setAttribute('aria-selected', on ? 'true' : 'false'); if (on) b.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' }); });
+    panes.forEach(function (p) { p.hidden = p.getAttribute('data-pane') !== k; });
+    if (k === 'doubts') loadDoubts();
+  }
+  btns.forEach(function (b) { b.addEventListener('click', function () { show(b.getAttribute('data-lt')); }); });
+  // notes: read inside the tab
+  lt.querySelectorAll('.lt-note-h').forEach(function (h) {
+    h.addEventListener('click', function () {
+      var box = h.nextElementSibling, open = box.hidden; box.hidden = !open; h.classList.toggle('open', open);
+      if (open && !box.dataset.done) { box.dataset.done = '1'; window.stPdf(box, h.getAttribute('data-pdf'), h.getAttribute('data-wm'), null); }
+    });
+  });
+  // quiz
+  var qz = lt.querySelector('.lt-quiz');
+  if (qz) {
+    var key = []; try { key = JSON.parse(qz.getAttribute('data-quiz')); } catch (e) {}
+    var chk = qz.querySelector('[data-check]'), retry = qz.querySelector('[data-retry]'), score = qz.querySelector('.lt-score');
+    chk.addEventListener('click', function () {
+      var right = 0, answered = 0;
+      qz.querySelectorAll('.lt-q').forEach(function (q) {
+        var n = +q.getAttribute('data-n'), pick = q.querySelector('input:checked'), k = key[n] || [0, ''];
+        q.querySelectorAll('.lt-opt').forEach(function (o, i) { o.classList.toggle('right', i === k[0]); o.classList.toggle('wrong', !!pick && +pick.value === i && i !== k[0]); o.querySelector('input').disabled = true; });
+        if (pick) { answered++; if (+pick.value === k[0]) right++; }
+        var ex = q.querySelector('.lt-exp'); if (k[1]) { ex.textContent = k[1]; ex.hidden = false; }
+      });
+      score.textContent = 'You got ' + right + ' of ' + key.length + ' right' + (answered < key.length ? ' (' + (key.length - answered) + ' not answered)' : '') + (right === key.length ? ' — excellent!' : '');
+      chk.hidden = true; retry.hidden = false;
+    });
+    retry.addEventListener('click', function () {
+      qz.querySelectorAll('.lt-opt').forEach(function (o) { o.classList.remove('right', 'wrong'); var i = o.querySelector('input'); i.disabled = false; i.checked = false; });
+      qz.querySelectorAll('.lt-exp').forEach(function (e) { e.hidden = true; }); score.textContent = ''; chk.hidden = false; retry.hidden = true;
+    });
+  }
+  // doubts
+  var db = document.getElementById('ltDoubts'), loaded = false;
+  function esc(s) { return String(s || '').replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function render(list) {
+    var box = db.querySelector('.lt-dlist');
+    if (!list.length) { box.innerHTML = '<p class="lt-dl-empty">No doubts yet. Ask the first one — the teacher will answer here.</p>'; return; }
+    box.innerHTML = list.map(function (d) {
+      return '<div class="lt-d' + (d.mine ? ' mine' : '') + '"><div class="lt-d-q"><span class="sp-av sp-av' + (d.id % 3) + '">' + esc(d.who.charAt(0)) + '</span><div><b>' + esc(d.who) + (d.mine ? ' <em>you</em>' : '') + '</b><small>' + esc(d.at) + '</small><p>' + esc(d.q).replace(/\n/g, '<br>') + '</p></div></div>'
+        + (d.a ? '<div class="lt-d-a"><b>Teacher' + (d.by ? ' · ' + esc(d.by) : '') + '</b><p>' + esc(d.a).replace(/\n/g, '<br>') + '</p></div>' : '<div class="lt-d-w">Waiting for the teacher\'s answer</div>') + '</div>';
+    }).join('');
+  }
+  function loadDoubts() {
+    if (!db || loaded) return; loaded = true;
+    fetch('/store/doubt?l=' + db.getAttribute('data-l'), { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (d) { render(d.list || []); }).catch(function () { loaded = false; });
+  }
+  if (db) {
+    var form = db.querySelector('.lt-ask'), ta = form.querySelector('textarea'), m = form.querySelector('.lt-ask-m'), b = form.querySelector('button');
+    form.addEventListener('submit', function () {
+      var q = ta.value.trim(); if (q.length < 5) { m.textContent = 'Please write your doubt.'; ta.focus(); return; }
+      b.disabled = true; m.textContent = 'Sending…';
+      var fd = new FormData(); fd.append('l', db.getAttribute('data-l')); fd.append('q', q); fd.append('_t', db.getAttribute('data-t'));
+      fetch('/store/doubt', { method: 'POST', body: fd, credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (d) {
+        b.disabled = false; if (d.error) { m.textContent = d.error; return; }
+        ta.value = ''; m.textContent = 'Sent! The teacher will answer soon.'; render(d.list || []);
+      }).catch(function () { b.disabled = false; m.textContent = 'Could not send. Please try again.'; });
+    });
+    if (lt.querySelector('.lt-strip button.on[data-lt=doubts]')) loadDoubts();
+  }
 })();

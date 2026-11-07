@@ -14,7 +14,7 @@
  */
 require_once __DIR__ . '/settings.php';
 
-const SH_SCHEMA = 6;
+const SH_SCHEMA = 7;
 
 function sh_db(): PDO
 {
@@ -86,6 +86,28 @@ function sh_tables(PDO $pdo): void
         message TEXT NOT NULL, file VARCHAR(300) NULL, file_name VARCHAR(200) NULL, size INT UNSIGNED NOT NULL DEFAULT 0,
         status VARCHAR(10) NOT NULL DEFAULT 'new', note VARCHAR(500) NULL, created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
         KEY idx_status (status, id), KEY idx_user (user_id))$t");
+    // v7: teacher, course FAQ and "what you'll get"; units inside chapters; lecture number, PDF lectures, lecture notes,
+    // VVI questions, quiz; students' doubts per lecture
+    $add = function (string $tb, string $c, string $def) use ($pdo, $col) { if (!$col($tb, $c)) $pdo->exec("ALTER TABLE `$tb` ADD COLUMN $c $def"); };
+    $add('sh_products', 'teacher_id', 'INT UNSIGNED NULL');
+    $add('sh_products', 'faq', 'TEXT NULL');
+    $add('sh_products', 'includes', 'TEXT NULL');
+    $add('sh_lessons', 'unit_id', 'INT UNSIGNED NULL');
+    $add('sh_lessons', 'lecture_no', 'INT UNSIGNED NULL');
+    $add('sh_lessons', 'kind', "VARCHAR(8) NOT NULL DEFAULT 'video'");
+    $add('sh_lessons', 'pdf_file', 'VARCHAR(300) NULL');
+    $add('sh_lessons', 'pdf_pages', 'INT UNSIGNED NULL');
+    $add('sh_lessons', 'vvi', 'MEDIUMTEXT NULL');
+    $add('sh_lessons', 'quiz', 'MEDIUMTEXT NULL');
+    $add('sh_lessons', 'doubts_on', 'TINYINT(1) NOT NULL DEFAULT 1');
+    $add('sh_files', 'lesson_id', 'INT UNSIGNED NULL');
+    $pdo->exec("CREATE TABLE IF NOT EXISTS sh_units (
+        id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, product_id INT UNSIGNED NOT NULL, section_id INT UNSIGNED NOT NULL, title VARCHAR(200) NOT NULL, sort INT NOT NULL DEFAULT 0,
+        KEY idx_ps (product_id, section_id))$t");
+    $pdo->exec("CREATE TABLE IF NOT EXISTS sh_doubts (
+        id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, lesson_id INT UNSIGNED NOT NULL, product_id INT UNSIGNED NOT NULL, user_id INT UNSIGNED NOT NULL,
+        question TEXT NOT NULL, answer TEXT NULL, answered_by INT UNSIGNED NULL, status VARCHAR(10) NOT NULL DEFAULT 'open',
+        created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP, answered_at DATETIME NULL, KEY idx_l (lesson_id, status), KEY idx_p (product_id, status))$t");
     edu_settings_save('shop', ['schema' => SH_SCHEMA]);
 }
 
@@ -279,15 +301,17 @@ function sh_curriculum(PDO $pdo, int $pid): array
     $secs->execute([$pid]);
     $out = [0 => ['id' => 0, 'title' => '', 'lessons' => []]];
     foreach ($secs as $s) $out[(int)$s['id']] = ['id' => (int)$s['id'], 'title' => $s['title'], 'lessons' => []];
+    $units = [];
+    try { $uq = $pdo->prepare("SELECT id, title FROM sh_units WHERE product_id = ?"); $uq->execute([$pid]); $units = $uq->fetchAll(PDO::FETCH_KEY_PAIR); } catch (Throwable) {}
     $ls = $pdo->prepare("SELECT * FROM sh_lessons WHERE product_id = ? ORDER BY sort, id");
     $ls->execute([$pid]);
-    foreach ($ls as $l) { $k = isset($out[(int)$l['section_id']]) ? (int)$l['section_id'] : 0; $out[$k]['lessons'][] = $l; }
+    foreach ($ls as $l) { $l['unit_title'] = $units[(int)($l['unit_id'] ?? 0)] ?? ''; $k = isset($out[(int)$l['section_id']]) ? (int)$l['section_id'] : 0; $out[$k]['lessons'][] = $l; }
     if (!$out[0]['lessons']) unset($out[0]);
     return array_values($out);
 }
 function sh_files(PDO $pdo, int $pid): array
 {
-    $q = $pdo->prepare("SELECT * FROM sh_files WHERE product_id = ? ORDER BY sort, id");
+    $q = $pdo->prepare("SELECT * FROM sh_files WHERE product_id = ? AND lesson_id IS NULL ORDER BY sort, id"); // lecture notes belong to their lecture (sh_lesson_notes)
     $q->execute([$pid]);
     return $q->fetchAll(PDO::FETCH_ASSOC);
 }
@@ -537,7 +561,7 @@ function sh_staff(): bool
 }
 
 /* ---------- staff permissions (Users → Advance Access → Online Store) ---------- */
-const SH_PERMS = ['products' => 'Courses & notes (add, edit, upload)', 'orders' => 'Orders & sales reports', 'customers' => 'Customers (accounts, give access)', 'settings' => 'Store settings (Razorpay keys)'];
+const SH_PERMS = ['products' => 'Courses & notes (add, edit, upload)', 'orders' => 'Orders & sales reports', 'customers' => 'Customers (accounts, give access)', 'settings' => 'Store settings (Razorpay keys)', 'teacher' => 'Teacher (can teach a course, answers doubts)'];
 
 /** May this staff user do $key in the store? Admins always. The older single "Manage online store" permission = all but settings. */
 function sh_perm(array $u, string $key = ''): bool
@@ -546,7 +570,7 @@ function sh_perm(array $u, string $key = ''): bool
     $p = is_array($u['permissions'] ?? null) ? $u['permissions'] : (json_decode((string)($u['permissions'] ?? '{}'), true) ?: []);
     $legacy = !empty($p['institute']['shop']);
     if ($key === '') { foreach (array_keys(SH_PERMS) as $k) if (!empty($p['store'][$k])) return true; return $legacy; }
-    return !empty($p['store'][$key]) || ($legacy && $key !== 'settings');
+    return !empty($p['store'][$key]) || ($legacy && !in_array($key, ['settings', 'teacher'], true));
 }
 /** Admin store page guard: needs one of $keys. */
 function sh_page_start(PDO $pdo, array $keys): array
@@ -629,4 +653,98 @@ function sh_account_nav(array $u, string $on): string
     $h .= '<a href="/store/">' . $i('grid') . '<span>All Courses</span></a>';
     $h .= '<form method="post" action="/account/logout">' . sh_csrf_field() . '<button type="submit">' . $i('logout') . '<span>Log out</span></button></form></nav>';
     return $h;
+}
+
+
+/* ---------- teachers, course FAQ / includes, lecture extras ---------- */
+
+/** Staff who can be chosen as a course teacher: [user id => display name] (author name when they have an author profile). */
+function sh_teachers(PDO $pdo): array
+{
+    $out = [];
+    foreach ($pdo->query("SELECT u.id, u.username, u.role, u.permissions, u.status, a.name AS author_name FROM users u LEFT JOIN authors a ON a.user_id = u.id ORDER BY u.username")->fetchAll(PDO::FETCH_ASSOC) as $u) {
+        if ($u['status'] !== 'active') continue;
+        $p = json_decode((string)$u['permissions'], true) ?: [];
+        if (!empty($p['store']['teacher']) || $u['role'] === 'teacher') $out[(int)$u['id']] = trim((string)$u['author_name']) ?: $u['username'];
+    }
+    return $out;
+}
+function sh_teacher_name(PDO $pdo, ?int $id): string
+{
+    if (!$id) return '';
+    $q = $pdo->prepare("SELECT u.username, a.name FROM users u LEFT JOIN authors a ON a.user_id = u.id WHERE u.id = ?"); $q->execute([$id]);
+    $r = $q->fetch(PDO::FETCH_ASSOC);
+    return $r ? (trim((string)$r['name']) ?: (string)$r['username']) : '';
+}
+/** JSON list helpers (always arrays). */
+function sh_json_list($v): array { $d = is_array($v) ? $v : json_decode((string)$v, true); return is_array($d) ? $d : []; }
+/** VVI: ['qa' => [[q, a], …], 'links' => [[title, url], …]] */
+function sh_vvi(array $l): array
+{
+    $d = sh_json_list($l['vvi'] ?? '');
+    $qa = array_values(array_filter(array_map(fn($x) => [trim((string)($x['q'] ?? '')), trim((string)($x['a'] ?? ''))], sh_json_list($d['qa'] ?? [])), fn($x) => $x[0] !== ''));
+    $links = array_values(array_filter(array_map(fn($x) => [trim((string)($x['t'] ?? '')), trim((string)($x['u'] ?? ''))], sh_json_list($d['links'] ?? [])), fn($x) => preg_match('#^https?://#', $x[1])));
+    return ['qa' => $qa, 'links' => $links];
+}
+/** Quiz: ['items' => [[q, [o1..o4], answerIndex, explain], …], 'links' => [[title, url], …]] */
+function sh_quiz(array $l): array
+{
+    $d = sh_json_list($l['quiz'] ?? '');
+    $items = [];
+    foreach (sh_json_list($d['items'] ?? []) as $x) {
+        $q = trim((string)($x['q'] ?? '')); $o = array_values(array_filter(array_map(fn($v) => trim((string)$v), sh_json_list($x['o'] ?? [])), fn($v) => $v !== ''));
+        $a = (int)($x['a'] ?? 0);
+        if ($q !== '' && count($o) >= 2 && $a >= 0 && $a < count($o)) $items[] = [$q, $o, $a, trim((string)($x['e'] ?? ''))];
+    }
+    $links = array_values(array_filter(array_map(fn($x) => [trim((string)($x['t'] ?? '')), trim((string)($x['u'] ?? ''))], sh_json_list($d['links'] ?? [])), fn($x) => preg_match('#^https?://#', $x[1])));
+    return ['items' => $items, 'links' => $links];
+}
+
+/** What a video link is: ['ok' => bool, 'kind' => youtube|vimeo|drive|file|embed, 'embed' => url, 'title' => …, 'duration' => …, 'error' => …]. */
+function sh_video_probe(string $url): array
+{
+    $url = trim($url);
+    if (!preg_match('#^https?://#i', $url)) return ['ok' => false, 'error' => 'Paste a full link starting with https://'];
+    if ($id = sh_yt_id($url)) {
+        $j = json_decode(sh_http_get('https://www.youtube.com/oembed?format=json&url=' . rawurlencode('https://www.youtube.com/watch?v=' . $id), 8), true);
+        if (empty($j['title'])) return ['ok' => false, 'kind' => 'youtube', 'error' => 'This YouTube video could not be found. Check that it is Public or Unlisted (not Private).'];
+        return ['ok' => true, 'kind' => 'youtube', 'title' => (string)$j['title'], 'by' => (string)($j['author_name'] ?? ''), 'duration' => sh_yt_duration($id), 'thumb' => 'https://i.ytimg.com/vi/' . $id . '/hqdefault.jpg'];
+    }
+    if (preg_match('~vimeo\.com/(?:video/)?(\d+)~', $url, $m)) {
+        $j = json_decode(sh_http_get('https://vimeo.com/api/oembed.json?url=' . rawurlencode('https://vimeo.com/' . $m[1]), 8), true);
+        if (empty($j['title'])) return ['ok' => false, 'kind' => 'vimeo', 'error' => 'This Vimeo video could not be found (it may be private).'];
+        $s = (int)($j['duration'] ?? 0);
+        return ['ok' => true, 'kind' => 'vimeo', 'title' => (string)$j['title'], 'duration' => $s ? sprintf('%d:%02d', intdiv($s, 60), $s % 60) : '', 'thumb' => (string)($j['thumbnail_url'] ?? '')];
+    }
+    if (preg_match('~drive\.google\.com/(?:file/d/|open\?id=|uc\?(?:.*&)?id=)([\w-]{20,})~', $url, $m)) {
+        $html = sh_http_get('https://drive.google.com/file/d/' . $m[1] . '/view', 10);
+        if ($html === '' || stripos($html, 'accounts.google.com') !== false && stripos($html, 'og:title') === false) return ['ok' => false, 'kind' => 'drive', 'error' => 'Google Drive did not share this file. Set it to "Anyone with the link can view".'];
+        preg_match('~<meta property="og:title" content="([^"]+)"~', $html, $t);
+        return ['ok' => true, 'kind' => 'drive', 'title' => html_entity_decode($t[1] ?? 'Google Drive video', ENT_QUOTES), 'duration' => ''];
+    }
+    // a direct video file on any server (MP4 / WebM)
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [CURLOPT_NOBODY => true, CURLOPT_FOLLOWLOCATION => true, CURLOPT_MAXREDIRS => 4, CURLOPT_TIMEOUT => 10, CURLOPT_RETURNTRANSFER => true, CURLOPT_USERAGENT => 'Mozilla/5.0 (compatible; StoreBot/1.0)']);
+    curl_exec($ch);
+    $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE); $type = (string)curl_getinfo($ch, CURLINFO_CONTENT_TYPE); $len = (float)curl_getinfo($ch, CURLINFO_CONTENT_LENGTH_DOWNLOAD);
+    curl_close($ch);
+    if ($code >= 200 && $code < 300 && preg_match('#^video/#i', $type)) return ['ok' => true, 'kind' => 'file', 'title' => basename((string)parse_url($url, PHP_URL_PATH)), 'size' => $len > 0 ? round($len / 1048576, 1) . ' MB' : '', 'duration' => ''];
+    if ($code >= 200 && $code < 400) return ['ok' => true, 'kind' => 'embed', 'title' => 'Video page', 'duration' => '', 'note' => 'This is not a direct video file — it will be shown inside a frame. If it does not play, use a YouTube, Drive or MP4 link.'];
+    return ['ok' => false, 'error' => 'The link did not open (HTTP ' . ($code ?: 'no answer') . '). Check it in your browser.'];
+}
+/** Address used to show a lesson video link: YouTube / Vimeo / Drive embed, or the link itself. */
+function sh_embed_url(string $url): string
+{
+    if ($id = sh_yt_id($url)) return 'https://www.youtube-nocookie.com/embed/' . $id . '?rel=0&modestbranding=1&playsinline=1';
+    if (preg_match('~vimeo\.com/(?:video/)?(\d+)~', $url, $m)) return 'https://player.vimeo.com/video/' . $m[1];
+    if (preg_match('~drive\.google\.com/(?:file/d/|open\?id=|uc\?(?:.*&)?id=)([\w-]{20,})~', $url, $m)) return 'https://drive.google.com/file/d/' . $m[1] . '/preview';
+    return $url;
+}
+function sh_is_direct_video(string $url): bool { return (bool)preg_match('#\.(mp4|m4v|webm|mov)(\?|$)#i', $url); }
+
+/** Notes PDFs of one lecture. */
+function sh_lesson_notes(PDO $pdo, int $lid): array
+{
+    $q = $pdo->prepare("SELECT * FROM sh_files WHERE lesson_id = ? ORDER BY sort, id"); $q->execute([$lid]);
+    return $q->fetchAll(PDO::FETCH_ASSOC);
 }

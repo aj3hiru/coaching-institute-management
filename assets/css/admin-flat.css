@@ -112,3 +112,9 @@ input.dk-date.dk-date-bad{border-color:#dc2626!important;background:#fff7f7;box-
 .sb-school-t b{font-family:Poppins,Roboto,Arial,sans-serif;font-weight:700;font-size:17px;color:#9e1b32;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sb-school-t small{margin-top:3px;font-size:10.5px;font-weight:500;color:#1a1a1a;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .sb-school-t small{white-space:normal;word-break:normal}
+/* store admin: inputs inside repeatable rows (FAQ, VVI, quiz, links) look like the other fields */
+.slc-row input:not([type=radio]):not([type=checkbox]),.slc-row textarea,.shp-row input,.shp-row textarea,.slc-new input,.srp-note input,.sd-ans textarea{
+  box-sizing:border-box;width:100%;min-height:38px;padding:8px 10px;border:1px solid #d1d5db;background:#fff;font:inherit;font-size:14px;color:#111827;outline:none;border-radius:0}
+.slc-row textarea,.shp-row textarea,.sd-ans textarea{min-height:64px;resize:vertical;line-height:1.5}
+.slc-row input:focus,.slc-row textarea:focus,.shp-row input:focus,.shp-row textarea:focus,.slc-new input:focus,.srp-note input:focus,.sd-ans textarea:focus{border-color:var(--primary,#4a3369);box-shadow:0 0 0 3px rgba(74,51,105,.12)}
+.slc-opt input[type=radio]{width:16px;height:16px;flex:0 0 auto}

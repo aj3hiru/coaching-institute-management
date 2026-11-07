@@ -121,6 +121,7 @@ function sh_demo_add(PDO $pdo, int $byUser = 0): string
     foreach ($l as $lid) $pdo->prepare("INSERT IGNORE INTO sh_progress (user_id, lesson_id, done) VALUES (?, ?, 1)")->execute([$u1, $lid]);
     sh_demo_reviews($pdo, $info);
     edu_settings_save('shop', ['demo' => json_encode($info)]);
+    sh_demo_extras($pdo);
     return '4 demo courses / notes, 3 demo students and 3 paid demo orders added. Demo login: 9000000001 / ' . SH_DEMO_PASS;
 }
 
@@ -144,6 +145,58 @@ function sh_demo_reviews(PDO $pdo, ?array $info = null): int
     return $n;
 }
 
+/** Course FAQ / what you get, lecture numbers, a unit, VVI questions, quizzes and lecture notes on the demo course
+    (also upgrades a demo added before these existed). Safe to run again. */
+function sh_demo_extras(PDO $pdo): string
+{
+    sh_tables($pdo);
+    $d = sh_demo_info();
+    if (!$d['products']) return 'No demo data.';
+    [$c1, $c2] = array_map('intval', array_slice($d['products'], 0, 2));
+    $j = fn($v) => json_encode($v, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    $pdo->prepare("UPDATE sh_products SET faq = COALESCE(faq, ?), includes = COALESCE(includes, ?) WHERE id = ?")->execute([
+        $j([['q' => 'Is this course in Hindi or English?', 'a' => 'Classes are explained in simple Hindi with English terms, so both kinds of students can follow.'],
+            ['q' => 'Does it follow the NCERT / CBSE syllabus?', 'a' => 'Yes — chapters follow the NCERT Class 10 Maths book, chapter by chapter.']]),
+        $j(['Chapter-wise recorded lectures', 'VVI questions and a quiz under each lecture', 'Ask doubts to the teacher under any lecture', 'Formula notes PDF']), $c1]);
+    $pdo->prepare("UPDATE sh_products SET faq = COALESCE(faq, ?), includes = COALESCE(includes, ?) WHERE id = ?")->execute([
+        $j([['q' => 'Which board is this for?', 'a' => 'CBSE and state boards that follow NCERT Class 12 Physics.']]), $j(['Short, clear lectures', 'Quick revision PDF']), $c2]);
+    // lecture numbers inside each chapter
+    foreach ([$c1, $c2] as $pid) {
+        $n = [];
+        foreach ($pdo->query("SELECT id, section_id FROM sh_lessons WHERE product_id = $pid ORDER BY sort, id")->fetchAll(PDO::FETCH_ASSOC) as $l) {
+            $k = (int)$l['section_id']; $n[$k] = ($n[$k] ?? 0) + 1;
+            $pdo->prepare("UPDATE sh_lessons SET lecture_no = COALESCE(lecture_no, ?) WHERE id = ?")->execute([$n[$k], $l['id']]);
+        }
+    }
+    $ls = $pdo->query("SELECT id, section_id FROM sh_lessons WHERE product_id = $c1 ORDER BY sort, id LIMIT 2")->fetchAll(PDO::FETCH_ASSOC);
+    if (count($ls) < 2) return 'Demo course has no lessons.';
+    // a unit for the first two lectures of chapter 1
+    $has = (int)$pdo->query("SELECT COUNT(*) FROM sh_units WHERE product_id = $c1")->fetchColumn();
+    if (!$has) { $pdo->prepare("INSERT INTO sh_units (product_id, section_id, title, sort) VALUES (?, ?, ?, 1)")->execute([$c1, $ls[0]['section_id'], "Euclid's Division Lemma"]); $uid = (int)$pdo->lastInsertId();
+        $pdo->prepare("UPDATE sh_lessons SET unit_id = ? WHERE id IN (?, ?)")->execute([$uid, $ls[0]['id'], $ls[1]['id']]); }
+    $vvi1 = ['qa' => [
+        ['q' => "State Euclid's division lemma.", 'a' => "For any two positive integers a and b, there exist unique whole numbers q and r such that a = bq + r, where 0 ≤ r < b."],
+        ['q' => 'Use Euclid\'s algorithm to find the HCF of 135 and 225.', 'a' => "225 = 135 × 1 + 90, 135 = 90 × 1 + 45, 90 = 45 × 2 + 0. So the HCF is 45."],
+        ['q' => 'Show that every positive even integer is of the form 2q.', 'a' => "Take b = 2 in a = bq + r: r is 0 or 1. If r = 0, a = 2q is even; so every even integer is 2q."]],
+        'links' => [['t' => 'More important questions — Latest Update', 'u' => rtrim(SITE_URL, '/') . '/latest-update']]];
+    $quiz1 = ['items' => [
+        ['q' => 'In a = bq + r, what is true about r?', 'o' => ['r < 0', '0 ≤ r < b', 'r > b', 'r = b'], 'a' => 1, 'e' => 'The remainder is always at least 0 and smaller than the divisor b.'],
+        ['q' => 'HCF of 96 and 404 is…', 'o' => ['2', '4', '8', '12'], 'a' => 1, 'e' => '404 = 96 × 4 + 20, 96 = 20 × 4 + 16, 20 = 16 × 1 + 4, 16 = 4 × 4. HCF = 4.'],
+        ['q' => 'If 17 = 5 × 3 + r, then r is…', 'o' => ['1', '2', '3', '5'], 'a' => 1, 'e' => '5 × 3 = 15, so r = 17 − 15 = 2.']], 'links' => []];
+    $vvi2 = ['qa' => [['q' => 'What is the HCF of two consecutive integers?', 'a' => '1 — consecutive integers have no common factor other than 1.']], 'links' => []];
+    $quiz2 = ['items' => [['q' => 'Euclid\'s algorithm is used to find the…', 'o' => ['LCM', 'HCF', 'Square root', 'Prime factors'], 'a' => 1, 'e' => 'It finds the HCF by repeated division.']], 'links' => []];
+    $pdo->prepare("UPDATE sh_lessons SET vvi = COALESCE(vvi, ?), quiz = COALESCE(quiz, ?), doubts_on = 1 WHERE id = ?")->execute([$j($vvi1), $j($quiz1), $ls[0]['id']]);
+    $pdo->prepare("UPDATE sh_lessons SET vvi = COALESCE(vvi, ?), quiz = COALESCE(quiz, ?), doubts_on = 1 WHERE id = ?")->execute([$j($vvi2), $j($quiz2), $ls[1]['id']]);
+    // the formula notes as the notes PDF of lecture 1
+    if (!(int)$pdo->query("SELECT COUNT(*) FROM sh_files WHERE lesson_id = " . (int)$ls[0]['id'])->fetchColumn()) {
+        $src = __DIR__ . '/demo/demo-class10-maths-formulas.pdf';
+        $rel = $c1 . '/demo-notes-' . bin2hex(random_bytes(4)) . '.pdf';
+        if (is_file($src) && @copy($src, sh_media_dir() . '/' . $rel))
+            $pdo->prepare("INSERT INTO sh_files (product_id, title, file, size, pages, free, sort, lesson_id) VALUES (?, ?, ?, ?, 3, 0, 1, ?)")->execute([$c1, 'Real Numbers — formula notes', $rel, filesize($src), $ls[0]['id']]);
+    }
+    return 'Demo lectures now have notes, VVI questions and quizzes.';
+}
+
 /** Removes exactly what sh_demo_add made (products with their videos / PDFs, demo accounts, demo orders). */
 function sh_demo_remove(PDO $pdo): string
 {
@@ -161,7 +214,8 @@ function sh_demo_remove(PDO $pdo): string
     $pdo->exec("DELETE FROM sh_access WHERE user_id IN (" . $in($uids) . ") OR product_id IN (" . $in($pids) . ")");
     $pdo->exec("DELETE FROM sh_reviews WHERE user_id IN (" . $in($uids) . ") OR product_id IN (" . $in($pids) . ")");
     $pdo->exec("DELETE FROM sh_orders WHERE id IN (" . $in($oids) . ") OR user_id IN (" . $in($uids) . ") OR product_id IN (" . $in($pids) . ")");
-    foreach (['sh_lessons', 'sh_sections', 'sh_files'] as $t) $pdo->exec("DELETE FROM $t WHERE product_id IN (" . $in($pids) . ")");
+    $pdo->exec("DELETE FROM sh_doubts WHERE product_id IN (" . $in($pids) . ")");
+    foreach (['sh_lessons', 'sh_sections', 'sh_units', 'sh_files'] as $t) $pdo->exec("DELETE FROM $t WHERE product_id IN (" . $in($pids) . ")");
     $pdo->exec("DELETE FROM sh_products WHERE id IN (" . $in($pids) . ")");
     $pdo->exec("DELETE FROM sh_users WHERE id IN (" . $in($uids) . ")");
     foreach ($files as $f) { $p = sh_media_path($f); if (is_file($p)) @unlink($p); } // every file of the demo products (also ones uploaded later)

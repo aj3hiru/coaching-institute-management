@@ -86,7 +86,10 @@ function admin_shell_nav(): array
         ['label' => 'Online Store', 'items' => (function () use ($cu, $link) {
             require_once ($_SERVER['DOCUMENT_ROOT'] ?? '') . '/includes/shop.php';
             return [
-                $link(sh_perm($cu, 'products'), 'Products', '/admin/shop-products.php', 'fa-photo-film'),
+                $link(sh_perm($cu, 'products'), 'Online Courses', '/admin/shop-products.php?type=course', 'fa-photo-film'),
+                $link(sh_perm($cu, 'products'), 'Add Lecture', '/admin/shop-lecture.php', 'fa-film'),
+                $link(sh_perm($cu, 'products'), 'PDF Notes', '/admin/shop-products.php?type=notes', 'fa-file-pdf'),
+                $link(sh_perm($cu, 'teacher') || sh_perm($cu, 'products') || sh_perm($cu, 'customers'), 'Doubts', '/admin/shop-doubts.php', 'fa-circle-question'),
                 $link(sh_perm($cu, 'orders'), 'Orders', '/admin/shop-orders.php', 'fa-cart-shopping'),
                 $link(sh_perm($cu, 'customers'), 'Customers', '/admin/shop-customers.php', 'fa-users'),
                 $link(sh_perm($cu, 'products'), 'Reviews', '/admin/shop-reviews.php', 'fa-star'),

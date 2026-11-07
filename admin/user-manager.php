@@ -21,7 +21,7 @@ const UM_PERMS = [
     'files' => ['access_file_manager' => 'File Manager'],
     'security' => ['view_logs' => 'View Logs', 'manage_blacklist' => 'Blacklist', 'manage_recaptcha' => 'reCAPTCHA'],
     'institute' => ['add_student' => 'Add student', 'edit_student' => 'Edit student', 'batches' => 'Manage batches', 'courses' => 'Manage courses', 'fees' => 'Manage fee & dues', 'sessions' => 'Manage sessions', 'classes' => 'Manage classes'],
-    'store' => ['products' => 'Courses & notes (add, edit, upload)', 'orders' => 'Orders & sales reports', 'customers' => 'Customers (accounts, give access)', 'settings' => 'Store settings (Razorpay keys)'],
+    'store' => ['products' => 'Courses & notes (add, edit, upload)', 'orders' => 'Orders & sales reports', 'customers' => 'Customers (accounts, give access)', 'settings' => 'Store settings (Razorpay keys)', 'teacher' => 'Teacher (can teach a course, answers doubts)'],
 ];
 const UM_ICONS = ['dashboard_access' => 'fa-tachometer-alt', 'blogs' => 'fa-blog', 'media' => 'fa-photo-video', 'push_notifications' => 'fa-bell', 'users' => 'fa-users', 'authors' => 'fa-feather-alt', 'analytics' => 'fa-chart-bar', 'ads' => 'fa-ad', 'settings' => 'fa-cog', 'pages' => 'fa-file-alt', 'files' => 'fa-folder', 'security' => 'fa-shield-alt'];
 

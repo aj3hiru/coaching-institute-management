@@ -38,6 +38,11 @@ $mine = null;
 if ($u) { $q = $pdo->prepare("SELECT * FROM sh_reviews WHERE product_id = ? AND user_id = ?"); $q->execute([$pid, $u['id']]); $mine = $q->fetch(PDO::FETCH_ASSOC) ?: null; }
 $canReview = $u && (bool)$pdo->query("SELECT 1 FROM sh_access WHERE user_id = " . (int)$u['id'] . " AND product_id = $pid AND revoked = 0")->fetchColumn();
 $flash = $_SESSION['sh_flash'] ?? null; unset($_SESSION['sh_flash']);
+$teacher = sh_teacher_name($pdo, (int)($p['teacher_id'] ?? 0));
+$className = '';
+if (!empty($p['class_id'])) { try { $cq = $pdo->prepare("SELECT name FROM ci_classes WHERE id = ?"); $cq->execute([$p['class_id']]); $className = (string)$cq->fetchColumn(); } catch (Throwable) {} }
+$myFaq = array_values(array_filter(sh_json_list($p['faq'] ?? ''), fn($f) => !empty($f['q']) && !empty($f['a'])));
+$myInc = array_values(array_filter(array_map('strval', sh_json_list($p['includes'] ?? '')), fn($v) => trim($v) !== ''));
 $short = function (string $n) { $p = preg_split('/\s+/', trim(preg_replace('/\(.*?\)/', '', $n))); return trim(($p[0] ?? '') . (isset($p[1]) ? ' ' . mb_substr($p[1], 0, 1) . '.' : '')); };
 $stTitle = $p['title'];
 $stDesc = $p['subtitle'] ?: mb_substr(trim(strip_tags($desc)), 0, 160);
@@ -49,7 +54,7 @@ $tabs = array_filter(['about' => $desc !== '' ? 'About' : '', 'content' => $isCo
 <?php if ($pv): ?><div class="sp-pv"><?= $ico('eye') ?> Staff preview — every video and PDF is open for you<?= $p['status'] !== 'published' ? ' · this item is <b>' . sh_e($p['status']) . '</b>, students cannot see it' : '' ?>. <a href="<?= sh_e(sh_url($p)) ?>">See it as a student</a></div><?php endif; ?>
 <section class="sp-hero"><div class="sp-wrap"><div class="sp-hero-in">
   <nav class="sp-crumb"><a href="/store/">Store</a><span>›</span><a href="/store/?t=<?= sh_e($p['type']) ?>"><?= $isCourse ? 'Video Courses' : 'PDF Notes' ?></a></nav>
-  <span class="sp-kind"><?= $ico($isCourse ? 'video' : 'file') ?> <?= $isCourse ? 'Video course' : 'PDF notes' ?></span>
+  <span class="sp-kind"><?= $ico($isCourse ? 'video' : 'file') ?> <?= $isCourse ? 'Video course' : 'PDF notes' ?><?= $className !== '' ? ' · ' . sh_e($className) : '' ?></span>
   <h1><?= sh_e($p['title']) ?></h1>
   <?php if ($p['subtitle']): ?><p class="sp-sub"><?= sh_e($p['subtitle']) ?></p><?php endif; ?>
   <?php if ($rt['count']): ?><a class="sp-rate" href="#reviews"><b><?= number_format($rt['avg'], 1) ?></b><?= sh_stars($rt['avg']) ?><span><?= $rt['count'] ?> rating<?= $rt['count'] === 1 ? '' : 's' ?></span></a><?php endif; ?>
@@ -58,6 +63,7 @@ $tabs = array_filter(['about' => $desc !== '' ? 'About' : '', 'content' => $isCo
     <?php if ($files): ?><li><?= $ico('file') ?> <?= count($files) ?> PDF<?= count($files) === 1 ? '' : 's' ?></li><?php endif; ?>
     <li><?= $ico($vd ? 'calendar' : 'infinity') ?> <?= $validity ?></li>
   </ul>
+  <?php if ($teacher !== ''): ?><p class="sp-teach"><?= $ico('user') ?> Taught by <b><?= sh_e($teacher) ?></b></p><?php endif; ?>
   <p class="sp-meta"><?= $buyers ? '<b>' . $buyers . '</b> student' . ($buyers === 1 ? '' : 's') . ' enrolled · ' : '' ?>Updated <?= date('M Y', strtotime($updated)) ?></p>
 </div></div></section>
 
@@ -111,8 +117,9 @@ $tabs = array_filter(['about' => $desc !== '' ? 'About' : '', 'content' => $isCo
             <span class="sp-ch-t"><b><?= sh_e($s['title'] !== '' ? $s['title'] : 'Lessons') ?></b><small><?= count($s['lessons']) ?> video<?= count($s['lessons']) === 1 ? '' : 's' ?><?= $sd ? ' · ' . sh_dur_text($sd) : '' ?><?= $nf && !$own ? ' · <em>' . $nf . ' free</em>' : '' ?></small></span>
             <span class="sp-chev" aria-hidden="true"></span></button>
           <div class="sp-ch-b"><ul>
-          <?php foreach ($s['lessons'] as $l): $open = $own || $l['free'] || $pv; ?>
-            <li class="<?= $open ? 'is-open' : 'is-locked' ?>"><span class="sp-li-i"><?= $ico($open ? 'playsolid' : 'lock') ?></span>
+          <?php $lastUnit = null; foreach ($s['lessons'] as $l): $open = $own || $l['free'] || $pv; ?>
+            <?php if (($l['unit_title'] ?? '') !== '' && $l['unit_title'] !== $lastUnit): $lastUnit = $l['unit_title']; ?><li class="sp-unit"><?= sh_e($l['unit_title']) ?></li><?php endif; ?>
+            <li class="<?= $open ? 'is-open' : 'is-locked' ?>"><span class="sp-li-i"><?= $ico(!$open ? 'lock' : (($l['kind'] ?? 'video') === 'pdf' ? 'file' : 'playsolid')) ?></span>
               <?php if ($open): ?><a href="<?= sh_e($learn . '&l=' . (int)$l['id']) ?>"><?= sh_e($l['title']) ?></a><?php else: ?><span class="sp-li-t"><?= sh_e($l['title']) ?></span><?php endif; ?>
               <?php if ($l['free'] && !$own): ?><a class="sp-prev" href="<?= sh_e($learn . '&l=' . (int)$l['id']) ?>">Preview</a><?php endif; ?>
               <em><?= sh_e($l['duration'] ?: '') ?></em></li>
@@ -139,6 +146,7 @@ $tabs = array_filter(['about' => $desc !== '' ? 'About' : '', 'content' => $isCo
     <?php endif; ?>
 
     <section class="sp-sec" id="included"><h2>What's included</h2>
+      <?php if ($myInc): ?><ul class="sp-own-inc"><?php foreach ($myInc as $v): ?><li><?= $ico('check') ?> <?= sh_e($v) ?></li><?php endforeach; ?></ul><?php endif; ?>
       <div class="sp-inc-g">
         <?php if ($isCourse): ?><div><?= $ico('video') ?><b><?= $nLessons ?> recorded video<?= $nLessons === 1 ? '' : 's' ?></b><span><?= $total ? sh_dur_text($total) . ' of classes' : 'Watch any time' ?></span></div><?php endif; ?>
         <?php if ($files): ?><div><?= $ico('file') ?><b><?= count($files) ?> PDF note<?= count($files) === 1 ? '' : 's' ?></b><span>Read on screen, with your own watermark</span></div><?php endif; ?>
@@ -188,6 +196,7 @@ $tabs = array_filter(['about' => $desc !== '' ? 'About' : '', 'content' => $isCo
 
     <section class="sp-sec" id="faq"><h2>Frequently asked questions</h2>
       <div class="sp-faq">
+        <?php foreach ($myFaq as $f): ?><details><summary><?= sh_e($f['q']) ?></summary><div class="sp-faq-b"><p><?= nl2br(sh_e($f['a'])) ?></p></div></details><?php endforeach; ?>
         <details><summary>How do I start after paying?</summary><div class="sp-faq-b"><p>Right after the payment the <?= $isCourse ? 'course' : 'notes pack' ?> opens in <b>My Library</b>. Log in any time with your mobile number or email to continue where you stopped.</p></div></details>
         <details><summary>Can I study on my phone?</summary><div class="sp-faq-b"><p>Yes — videos and PDFs open in the browser on any phone, tablet or computer. No app is needed.</p></div></details>
         <details><summary>How long can I use it?</summary><div class="sp-faq-b"><p><?= $vd ? 'You get ' . sh_e($validity) . ' from the day you buy.' : 'For as long as you like — the access never ends.' ?></p></div></details>
