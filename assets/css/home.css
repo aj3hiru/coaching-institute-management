@@ -329,3 +329,61 @@
 .hm-why-g li{align-items:center!important;flex-direction:row!important;padding:16px!important}
 .hm-why-g b{margin:0!important;font-size:15.5px;line-height:1.3}
 @media (max-width:640px){.hm-why-g li{gap:9px!important;padding:11px 10px!important}.hm-why-g b{font-size:13px}.hm-why-i{width:30px;height:30px}}
+
+/* ===== round 48: course cards, buttons, splash, impact ===== */
+/* card top line: CLASS 10 | UPCOMING (small tag, not on the thumbnail) */
+.hc-top{display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-height:18px}
+.hc-sep{font-style:normal;color:#cbd5e1;font-size:12px}
+.hc-top .hc-up{position:static;font-style:normal;font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;line-height:1;padding:3px 6px;border-radius:3px;background:#fef3c7;color:#92400e}
+.hc-m{display:flex;align-items:center;gap:5px}.hc-m svg{width:14px;height:14px;flex:0 0 auto;color:#94a3b8}
+.hc-pdf svg{color:#dc2626!important;width:16px!important;height:16px!important}
+/* price: original (cut) · discount · selling price */
+.hc-p s{order:0!important}.hc-p .off{order:1!important;display:inline!important;font-size:11.5px!important;padding:1px 5px;border-radius:3px;background:#dcfce7}.hc-p b{order:2!important}
+.hm-btc-p s{order:0}.hm-btc-p .off{order:1;background:#dcfce7;padding:2px 7px;border-radius:4px}.hm-btc-p b{order:2}
+/* View details + Free tag row */
+.hc-f{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:auto;padding-top:10px}
+.hc-p + .hc-f{margin-top:0}
+.hc-f .hc-go{margin-top:0!important}
+.hc-go{position:relative;overflow:hidden;isolation:isolate;transition:color .25s,border-color .25s!important;background:transparent!important}
+.hc-go::before{content:"";position:absolute;inset:0;z-index:-1;background:var(--sa,#0c6878);transform:scaleX(0);transform-origin:left;transition:transform .3s ease}
+.hc-go svg{width:13px;height:13px;transition:transform .25s}
+.hc:hover .hc-go{color:#fff!important}.hc:hover .hc-go::before{transform:scaleX(1)}.hc:hover .hc-go svg{transform:translateX(3px)}
+.hc-f .hc-free{position:relative;overflow:hidden;font-style:normal;font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:5px 10px;border-radius:999px;background:#16a34a;color:#fff;line-height:1.2}
+/* splash: a light sweep every few seconds + a ripple where it is clicked */
+.hm-splash{position:relative;overflow:hidden;isolation:isolate}
+.hm-splash::after{content:"";position:absolute;top:-20%;bottom:-20%;left:-60%;width:40%;z-index:1;pointer-events:none;background:linear-gradient(100deg,transparent,rgba(255,255,255,.55),transparent);transform:skewX(-20deg);animation:hmSweep 3.2s ease-in-out infinite}
+@keyframes hmSweep{0%,55%{left:-60%}100%{left:130%}}
+.hm-ripple{position:absolute;border-radius:50%;background:rgba(255,255,255,.45);transform:scale(0);animation:hmRip .6s ease-out forwards;pointer-events:none;z-index:2}
+@keyframes hmRip{to{transform:scale(4);opacity:0}}
+@media (prefers-reduced-motion:reduce){.hm-splash::after{animation:none;display:none}}
+.hm-btc-f .hm-btn svg{transition:transform .25s}.hm-btc-f .hm-btn:hover svg{transform:translateX(4px)}
+/* latest courses: no "Video Course" label on the picture */
+.hm-btc-i .st-type{display:none!important}
+/* professional buttons: View more courses / Explore study materials */
+.hm-pro{min-height:48px;padding:0 8px 0 24px!important;gap:12px;border:0!important;border-radius:10px!important;background:linear-gradient(135deg,var(--sa,#0c6878),#0e8a9e)!important;color:#fff!important;box-shadow:0 8px 20px rgba(12,104,120,.22)}
+.hm-pro:hover{transform:translateY(-2px);box-shadow:0 12px 26px rgba(12,104,120,.3);filter:none}
+.hm-pro-a{display:grid;place-items:center;width:34px;height:34px;border-radius:8px;background:rgba(255,255,255,.18);transition:transform .25s,background .25s}
+.hm-pro-a svg{width:17px!important;height:17px!important}
+.hm-pro:hover .hm-pro-a{transform:translateX(3px);background:rgba(255,255,255,.28)}
+.hm-pro-n{padding-left:10px!important;background:linear-gradient(135deg,#7c2d12,#dc2626)!important;box-shadow:0 8px 20px rgba(220,38,38,.2)}
+.hm-pro-n:hover{box-shadow:0 12px 26px rgba(220,38,38,.28)}
+.hm-pro-l{display:grid;place-items:center;width:34px;height:34px;border-radius:8px;background:#fff;color:#dc2626}.hm-pro-l svg{width:19px!important;height:19px!important}
+@media (max-width:560px){.hm-pro{width:100%;justify-content:space-between}}
+/* Our impact: compact */
+.hm-imp{margin-top:36px;padding:28px 0 30px}
+.hm-imp .hm-h{margin-bottom:14px}.hm-imp .hm-h h2{font-size:24px}
+.hm-imp-g{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.hm-imp-g > div{flex-direction:row;align-items:center;text-align:left;gap:12px;padding:14px 16px;border-radius:8px}
+.hm-imp-g > div > b,.hm-imp-g > div > small{display:block}
+.hm-imp-t{display:flex;flex-direction:column;min-width:0}
+.hm-imp-i{flex:0 0 auto;width:40px;height:40px}.hm-imp-i svg{width:19px;height:19px}
+.hm-imp-g b{font-size:24px;line-height:1.1}.hm-imp-g small{font-size:12.5px;line-height:1.3}
+@media (max-width:760px){
+  .hm-imp{margin-top:26px;padding:20px 0 22px}.hm-imp .hm-h{margin-bottom:10px}.hm-imp .hm-h h2{font-size:19px}
+  .hm-imp-g{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .hm-imp-g > div{gap:9px;padding:10px}.hm-imp-g > div:last-child:nth-child(odd){grid-column:1/-1;justify-content:center}
+  .hm-imp-i{width:32px;height:32px}.hm-imp-i svg{width:16px;height:16px}
+  .hm-imp-g b{font-size:18px}.hm-imp-g small{font-size:11.5px}
+}
+.hc-f{flex-wrap:nowrap}
+@media (max-width:760px){.hc-f{gap:5px}.hc-f .hc-free{padding:4px 7px;font-size:9.5px;letter-spacing:.03em}.hc-go{white-space:nowrap}}

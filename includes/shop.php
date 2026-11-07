@@ -561,6 +561,8 @@ function sh_icon(string $n): string
 {
     static $p = [
         'play' => '<circle cx="12" cy="12" r="10"/><path d="m10 8 6 4-6 4Z"/>',
+        'arrow' => '<path d="M5 12h14M13 6l6 6-6 6"/>',
+        'pdf' => '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M7.5 17v-4h1.2a1.2 1.2 0 0 1 0 2.4H7.5M11.5 17v-4h.9a2 2 0 0 1 0 4ZM15.5 17v-4h2M15.5 15h1.5"/>',
         'board' => '<rect x="2" y="3" width="20" height="13" rx="2"/><path d="M8 21h8M12 16v5M6 12l3-3 3 2 5-5"/>',
         'quiz' => '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="m8 8 1.5 1.5L12 7M8 14l1.5 1.5L12 13M14 8h3M14 14h3"/>',
         'trend' => '<path d="m3 17 6-6 4 4 8-8"/><path d="M15 7h6v6"/>',
@@ -602,9 +604,9 @@ function sh_icon(string $n): string
 function sh_price_html(array $p): string
 {
     if ((float)$p['price'] <= 0) return '<b>Free</b>';
-    // original price (struck out) first, then the sale price, then the discount
+    // original price (struck out), then the discount, then the selling price
     if ($p['mrp'] !== null && (float)$p['mrp'] > (float)$p['price'])
-        return '<s>' . sh_money($p['mrp']) . '</s><b>' . sh_money($p['price']) . '</b><span class="off">' . (int)round(100 - (float)$p['price'] * 100 / (float)$p['mrp']) . '% off</span>';
+        return '<s>' . sh_money($p['mrp']) . '</s><span class="off">' . (int)round(100 - (float)$p['price'] * 100 / (float)$p['mrp']) . '% off</span><b>' . sh_money($p['price']) . '</b>';
     return '<b>' . sh_money($p['price']) . '</b>';
 }
 function sh_thumb_html(array $p): string
@@ -928,9 +930,14 @@ function sh_mini_card(array $p, string $cat = ''): string
 {
     [$bt, $up] = sh_batch($p);
     $meta = $p['type'] === 'notes' ? (int)($p['files'] ?? 0) . ' PDF' . ((int)($p['files'] ?? 0) === 1 ? '' : 's') : (int)($p['lessons'] ?? 0) . ' lecture' . ((int)($p['lessons'] ?? 0) === 1 ? '' : 's');
-    return '<a class="hc" href="' . sh_e(sh_url($p)) . '"><span class="hc-img">' . sh_thumb_html($p) . ($up ? '<em class="hc-up">Upcoming</em>' : ((float)$p['price'] <= 0 ? '<em class="hc-free">Free</em>' : '')) . '</span>'
-        . '<span class="hc-b">' . ($cat !== '' ? '<small class="hc-cat">' . sh_e($cat) . '</small>' : '') . '<b class="hc-t">' . sh_e($p['title']) . '</b>'
-        . '<small class="hc-m">' . sh_e($bt !== '' ? $bt : $meta) . '</small><span class="hc-p">' . sh_price_html($p) . '</span><span class="hc-go">View details ›</span></span></a>';
+    // nothing on the thumbnail: "Upcoming" sits beside the class (CLASS 10 | UPCOMING), "Free" beside View details
+    $free = (float)$p['price'] <= 0;
+    $top = ($cat !== '' ? '<small class="hc-cat">' . sh_e($cat) . '</small>' : '') . ($up ? ($cat !== '' ? '<i class="hc-sep">|</i>' : '') . '<em class="hc-up">Upcoming</em>' : '');
+    $mi = $bt !== '' ? sh_icon('calendar') : ($p['type'] === 'notes' ? sh_icon('pdf') : sh_icon('video'));
+    return '<a class="hc" href="' . sh_e(sh_url($p)) . '"><span class="hc-img">' . sh_thumb_html($p) . '</span>'
+        . '<span class="hc-b">' . ($top !== '' ? '<span class="hc-top">' . $top . '</span>' : '') . '<b class="hc-t">' . sh_e($p['title']) . '</b>'
+        . '<small class="hc-m' . ($bt === '' && $p['type'] === 'notes' ? ' hc-pdf' : '') . '">' . $mi . sh_e($bt !== '' ? $bt : $meta) . '</small>' . ($free ? '' : '<span class="hc-p">' . sh_price_html($p) . '</span>')
+        . '<span class="hc-f"><span class="hc-go">View details ' . sh_icon('arrow') . '</span>' . ($free ? '<em class="hc-free hm-splash">Free</em>' : '') . '</span></span></a>';
 }
 /** Published courses, newest first (for the homepage list and its "View more"). */
 function sh_latest(PDO $pdo, string $type, int $limit, int $offset = 0, int $cat = 0): array

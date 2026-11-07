@@ -84,6 +84,14 @@
     });
   }
 
+  // ---- splash: ripple where a .hm-splash button is pressed ----
+  document.addEventListener('pointerdown', function (e) {
+    var b = e.target.closest && e.target.closest('.hm-splash'); if (!b || reduce) return;
+    var r = b.getBoundingClientRect(), d = Math.max(r.width, r.height), s = document.createElement('span');
+    s.className = 'hm-ripple'; s.style.width = s.style.height = d + 'px'; s.style.left = (e.clientX - r.left - d / 2) + 'px'; s.style.top = (e.clientY - r.top - d / 2) + 'px';
+    b.appendChild(s); setTimeout(function () { s.remove(); }, 650);
+  });
+
   // ---- Our Impact: numbers count up once, when they come on screen ----
   var nums = document.querySelectorAll('.hm-imp [data-count]');
   if (nums.length && 'IntersectionObserver' in window && !reduce) {

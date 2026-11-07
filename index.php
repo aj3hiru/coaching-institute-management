@@ -103,7 +103,7 @@ $short0 = function (string $n) { $p = preg_split('/\s+/', trim(preg_replace('/\(
   <div class="hm-h"><div><h2>Our Courses</h2></div><a href="/courses/">View all ›</a></div>
   <?php if (!$courses): ?><div class="st-empty">New courses are coming soon.</div><?php else: ?>
   <div class="hm-grid" id="hmCourses"><?php foreach ($courses as $p) echo sh_mini_card($p, $catName($p)); ?></div>
-  <div class="hm-more"><?php if ($moreCourses || count($courses) > 4): ?><button type="button" class="hm-btn ghost" id="hmMore" data-o="8" data-more="<?= $moreCourses ? 1 : 0 ?>"><?= $ico('grid') ?> View more courses</button><?php endif; ?><a class="hm-btn ghost" id="hmAll" href="/courses/"<?= $moreCourses || count($courses) > 4 ? ' hidden' : '' ?>>See all courses ›</a></div>
+  <div class="hm-more"><?php if ($moreCourses || count($courses) > 4): ?><button type="button" class="hm-btn hm-pro" id="hmMore" data-o="8" data-more="<?= $moreCourses ? 1 : 0 ?>">View more courses <span class="hm-pro-a"><?= $ico('arrow') ?></span></button><?php endif; ?><a class="hm-btn hm-pro" id="hmAll" href="/courses/"<?= $moreCourses || count($courses) > 4 ? ' hidden' : '' ?>>See all courses <span class="hm-pro-a"><?= $ico('arrow') ?></span></a></div>
   <?php endif; ?>
 </div></section>
 
@@ -128,7 +128,7 @@ $short0 = function (string $n) { $p = preg_split('/\s+/', trim(preg_replace('/\(
           <h3><a href="<?= sh_e(sh_url($p)) ?>"><?= sh_e($p['title']) ?></a></h3>
           <?php if ($p['subtitle']): ?><p><?= sh_e($p['subtitle']) ?></p><?php endif; ?>
           <ul class="hm-btc-m"><?php if ($bt !== ''): ?><li><?= $ico('calendar') ?> <?= sh_e($bt) ?></li><?php endif; ?><?php if ($tn !== ''): ?><li><?= $ico('user') ?> <?= sh_e($tn) ?></li><?php endif; ?><li><?= $ico('video') ?> <?= (int)$p['lessons'] ?> lecture<?= (int)$p['lessons'] === 1 ? '' : 's' ?></li></ul>
-          <div class="hm-btc-f"><span class="hm-btc-p"><?= sh_price_html($p) ?></span><a class="hm-btn" href="<?= sh_e(sh_url($p)) ?>"><?= $isUp ? 'Join this batch' : 'View course' ?> ›</a></div>
+          <div class="hm-btc-f"><span class="hm-btc-p"><?= sh_price_html($p) ?></span><a class="hm-btn hm-splash" href="<?= sh_e(sh_url($p)) ?>"><?= $isUp ? 'Join this batch' : 'View course' ?> <?= $ico('arrow') ?></a></div>
         </div></div></div>
     <?php endforeach; ?></div>
     <?php if (count($batches) > 1): ?><button type="button" class="hs-prev" aria-label="Previous">‹</button><button type="button" class="hs-next" aria-label="Next">›</button><div class="hs-dots"></div><?php endif; ?>
@@ -142,7 +142,7 @@ $short0 = function (string $n) { $p = preg_split('/\s+/', trim(preg_replace('/\(
   <div class="hm-h"><div><h2>Study Materials</h2></div><a href="/notes/">Explore ›</a></div>
   <div class="hm-ns" data-hs><div class="hs-track"><?php foreach ($notes as $p): ?><div class="hs-s"><?= sh_mini_card($p, $catName($p)) ?></div><?php endforeach; ?></div>
     <button type="button" class="hs-prev" aria-label="Previous">‹</button><button type="button" class="hs-next" aria-label="Next">›</button><div class="hs-dots"></div></div>
-  <div class="hm-more"><a class="hm-btn ghost" href="/notes/"><?= $ico('notes') ?> Explore study materials</a></div>
+  <div class="hm-more"><a class="hm-btn hm-pro hm-pro-n" href="/notes/"><span class="hm-pro-l"><?= $ico('pdf') ?></span> Explore study materials <span class="hm-pro-a"><?= $ico('arrow') ?></span></a></div>
 </div></section>
 <?php endif; ?>
 
@@ -174,7 +174,7 @@ $short0 = function (string $n) { $p = preg_split('/\s+/', trim(preg_replace('/\(
 <?php if ($impact): ?>
 <section class="hm-imp"><div class="sp-wrap">
   <div class="hm-h c"><h2>Our Impact</h2></div>
-  <div class="hm-imp-g"><?php $ii = ['students' => 'user', 'courses' => 'video', 'free' => 'playsolid', 'notes' => 'notes']; foreach ($impact as [$l, $v, $k]): ?><div><span class="hm-imp-i"><?= $ico($ii[$k] ?? 'gauge') ?></span><b data-count="<?= sh_e($v) ?>"><?= sh_e($v) ?></b><small><?= sh_e($l) ?></small></div><?php endforeach; ?></div>
+  <div class="hm-imp-g"><?php $ii = ['students' => 'user', 'courses' => 'video', 'free' => 'playsolid', 'notes' => 'notes']; foreach ($impact as [$l, $v, $k]): ?><div><span class="hm-imp-i"><?= $ico($ii[$k] ?? 'gauge') ?></span><span class="hm-imp-t"><b data-count="<?= sh_e($v) ?>"><?= sh_e($v) ?></b><small><?= sh_e($l) ?></small></span></div><?php endforeach; ?></div>
 </div></section>
 <?php endif; ?>
 
