@@ -387,3 +387,14 @@
 }
 .hc-f{flex-wrap:nowrap}
 @media (max-width:760px){.hc-f{gap:5px}.hc-f .hc-free{padding:4px 7px;font-size:9.5px;letter-spacing:.03em}.hc-go{white-space:nowrap}}
+
+/* View more courses / Explore study materials — small, centred pill buttons (premium, not heavy) */
+.hm-more{justify-content:center!important}
+.hm-pro{min-height:40px!important;padding:0 18px!important;gap:8px!important;border-radius:999px!important;border:0!important;background:var(--sa,#0c6878)!important;color:#fff!important;font-size:14px!important;font-weight:700!important;box-shadow:0 4px 12px rgba(12,104,120,.18)!important;width:auto!important;justify-content:center!important;transition:transform .2s,box-shadow .2s,background .2s!important}
+.hm-pro:hover{transform:translateY(-1px);box-shadow:0 8px 18px rgba(12,104,120,.26)!important;background:#0a5a68!important}
+.hm-pro > svg{width:16px!important;height:16px!important}
+.hm-pro-a{display:inline-flex!important;width:auto!important;height:auto!important;background:none!important;border-radius:0!important}
+.hm-pro-a svg{width:15px!important;height:15px!important}
+.hm-pro:hover .hm-pro-a{transform:translateX(3px)}
+/* buttons with the splash effect: no border */
+.hm-splash{border:0!important}

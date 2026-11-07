@@ -142,7 +142,7 @@ $short0 = function (string $n) { $p = preg_split('/\s+/', trim(preg_replace('/\(
   <div class="hm-h"><div><h2>Study Materials</h2></div><a href="/notes/">Explore ›</a></div>
   <div class="hm-ns" data-hs><div class="hs-track"><?php foreach ($notes as $p): ?><div class="hs-s"><?= sh_mini_card($p, $catName($p)) ?></div><?php endforeach; ?></div>
     <button type="button" class="hs-prev" aria-label="Previous">‹</button><button type="button" class="hs-next" aria-label="Next">›</button><div class="hs-dots"></div></div>
-  <div class="hm-more"><a class="hm-btn hm-pro hm-pro-n" href="/notes/"><span class="hm-pro-l"><?= $ico('pdf') ?></span> Explore study materials <span class="hm-pro-a"><?= $ico('arrow') ?></span></a></div>
+  <div class="hm-more"><a class="hm-btn hm-pro" href="/notes/"><?= $ico('pdf') ?> Explore study materials <span class="hm-pro-a"><?= $ico('arrow') ?></span></a></div>
 </div></section>
 <?php endif; ?>
 
