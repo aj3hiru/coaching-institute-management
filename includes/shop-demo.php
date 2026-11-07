@@ -12,7 +12,7 @@ const SH_DEMO_PASS = 'Demo@1234';
 function sh_demo_info(): array
 {
     $d = json_decode((string)es('shop', 'demo', ''), true);
-    $empty = ['products' => [], 'users' => [], 'orders' => [], 'staff' => [], 'slides' => [], 'free' => [], 'icons' => []];
+    $empty = ['products' => [], 'users' => [], 'orders' => [], 'staff' => [], 'slides' => [], 'free' => [], 'icons' => [], 'toppers' => [], 'tinfo' => []];
     return is_array($d) ? $d + $empty : $empty;
 }
 function sh_demo_on(): bool { return (bool)sh_demo_info()['products']; }
@@ -227,10 +227,11 @@ function sh_demo_showcase(PDO $pdo, int $byUser = 0): string
         foreach ($J['teachers'] as $k => $name) {
             $i++;
             $email = "demo.teacher$i@example.com";
-            $q = $pdo->prepare("SELECT id FROM users WHERE email = ? OR username = ?"); $q->execute([$email, $name]);
+            $uname = strtolower(preg_replace('/[^A-Za-z0-9]+/', '.', $name)); // the user form needs a username without spaces
+            $q = $pdo->prepare("SELECT id FROM users WHERE email = ? OR username = ?"); $q->execute([$email, $uname]);
             if ($id = (int)$q->fetchColumn()) { $T[$k] = $id; continue; }
             $pdo->prepare("INSERT INTO users (username, email, password_hash, role, status, permissions) VALUES (?, ?, ?, 'author', 'active', ?)")
-                ->execute([$name, $email, password_hash(bin2hex(random_bytes(24)), PASSWORD_DEFAULT), $j(['store' => ['teacher' => true]])]);
+                ->execute([$uname, $email, password_hash(bin2hex(random_bytes(24)), PASSWORD_DEFAULT), $j(['store' => ['teacher' => true]])]);
             $T[$k] = $info['staff'][] = (int)$pdo->lastInsertId();
         }
         // category icons (only where the admin has not set one)
@@ -393,7 +394,46 @@ function sh_demo_showcase(PDO $pdo, int $byUser = 0): string
         throw $e;
     }
     sh_home_refresh();
+    try { sh_demo_people($pdo); } catch (Throwable $e) { error_log('demo people: ' . $e->getMessage()); }
     return 'Showcase added: ' . count($J['courses']) . ' courses, ' . count($J['notes']) . ' notes packs, ' . count($U) . ' more students, slider, free courses and category icons.';
+}
+
+/** Demo teacher profiles (photo, subject, qualification, experience) and toppers for "Meet our teachers / toppers".
+    Runs as part of the showcase; can also be run on its own for a showcase added before these sections. */
+function sh_demo_people(PDO $pdo): string
+{
+    sh_tables($pdo);
+    $info = sh_demo_info();
+    if (!empty($info['people'])) return 'Teachers and toppers are already added.';
+    $dir = __DIR__ . '/demo/showcase';
+    $J = json_decode((string)@file_get_contents("$dir/people.json"), true);
+    if (!$J) throw new RuntimeException('Demo people are missing (includes/demo/showcase/people.json).');
+    $pub = function (string $file, string $sub) use ($dir): string {
+        $to = ROOT_PATH . '/uploads/' . $sub; @mkdir($to, 0755, true);
+        $name = 'demo-' . bin2hex(random_bytes(3)) . '-' . $file;
+        if (!@copy("$dir/$file", "$to/$name")) throw new RuntimeException("Could not copy $file");
+        return 'uploads/' . $sub . '/' . $name;
+    };
+    $SC = json_decode((string)@file_get_contents("$dir/showcase.json"), true) ?: [];
+    foreach ($J['teachers'] as $i => $t) {
+        $uid = (int)$pdo->query("SELECT id FROM users WHERE email = " . $pdo->quote('demo.teacher' . ($i + 1) . '@example.com'))->fetchColumn();
+        if (!$uid) continue;
+        $shown = (string)($SC['teachers'][$t['key']] ?? '');
+        $pdo->prepare("UPDATE users SET username = ? WHERE id = ? AND username LIKE '% %'")->execute([strtolower(preg_replace('/[^A-Za-z0-9]+/', '.', $shown ?: 'teacher' . ($i + 1))), $uid]); // older demos had spaces
+        if (sh_teacher_info($pdo, $uid)) { if ($shown !== '') $pdo->prepare("UPDATE sh_teacher_info SET display_name = COALESCE(display_name, ?) WHERE user_id = ?")->execute([$shown, $uid]); continue; }
+        $pdo->prepare("INSERT INTO sh_teacher_info (user_id, display_name, photo, qualification, subject, experience, about, show_home, sort) VALUES (?,?,?,?,?,?,?,1,?)")
+            ->execute([$uid, $shown ?: null, $pub($t['file'], 'teachers'), $t['qualification'], $t['subject'], $t['experience'], $t['about'], $i + 1]);
+        $info['tinfo'][] = $uid;
+    }
+    $n = (int)$pdo->query("SELECT COALESCE(MAX(sort),0) FROM hm_toppers")->fetchColumn();
+    foreach ($J['toppers'] as $t) {
+        $pdo->prepare("INSERT INTO hm_toppers (name, photo, result, class_name, year, sort, active) VALUES (?,?,?,?,?,?,1)")->execute([$t['name'], $pub($t['file'], 'toppers'), $t['result'], $t['class'], $t['year'], ++$n]);
+        $info['toppers'][] = (int)$pdo->lastInsertId();
+    }
+    $info['people'] = 1;
+    edu_settings_save('shop', ['demo' => json_encode($info)]);
+    sh_home_refresh();
+    return count($info['tinfo']) . ' teacher profiles and ' . count($J['toppers']) . ' toppers added.';
 }
 
 /** Removes exactly what sh_demo_add made (products with their videos / PDFs, demo accounts, demo orders). */
@@ -429,9 +469,13 @@ function sh_demo_remove(PDO $pdo): string
         $q = $pdo->prepare("UPDATE sh_categories SET icon = NULL WHERE id = ? AND icon = ?"); $q->execute([(int)$cid, $rel]);
         if ($q->rowCount()) sh_image_drop($rel);
     }
+    foreach (array_map('intval', $d['toppers']) as $tid) { $ph = (string)$pdo->query("SELECT photo FROM hm_toppers WHERE id = $tid")->fetchColumn(); $pdo->exec("DELETE FROM hm_toppers WHERE id = $tid"); sh_image_drop($ph); }
+    foreach (array_map('intval', $d['tinfo']) as $tu) { $ph = (string)$pdo->query("SELECT photo FROM sh_teacher_info WHERE user_id = $tu")->fetchColumn(); $pdo->exec("DELETE FROM sh_teacher_info WHERE user_id = $tu"); sh_image_drop($ph); }
     $staff = array_map('intval', $d['staff']);
     if ($staff) {
         $pdo->exec("UPDATE sh_products SET teacher_id = NULL WHERE teacher_id IN (" . $in($staff) . ")");
+        $demoT = $pdo->query("SELECT id FROM users WHERE id IN (" . $in($staff) . ") AND email LIKE 'demo.teacher%@example.com'")->fetchAll(PDO::FETCH_COLUMN);
+        if ($demoT) { $pdo->exec("DELETE FROM authors WHERE user_id IN (" . $in(array_map('intval', $demoT)) . ")"); $pdo->exec("DELETE FROM sh_teacher_info WHERE user_id IN (" . $in(array_map('intval', $demoT)) . ")"); }
         $pdo->exec("DELETE FROM users WHERE id IN (" . $in($staff) . ") AND email LIKE 'demo.teacher%@example.com'");
     }
     if (!empty($d['showcase'])) edu_settings_save('home', ['impact' => (string)($d['home_prev'] ?? '')]);

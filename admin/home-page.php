@@ -43,6 +43,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $go = 'free';
             $pdo->prepare("UPDATE hm_free SET title=?, category_id=?, sort=?, active=? WHERE id=?")->execute([mb_substr(trim((string)($_POST['title'] ?? '')), 0, 250) ?: 'Free course', (int)($_POST['category_id'] ?? 0) ?: null, (int)($_POST['sort'] ?? 0), !empty($_POST['active']) ? 1 : 0, $id]);
             admin_flash('Saved.');
+        } elseif ($a === 'top_save') {
+            $go = 'toppers';
+            $row = $id ? $pdo->query("SELECT * FROM hm_toppers WHERE id = $id")->fetch(PDO::FETCH_ASSOC) : null;
+            $ph = (string)($row['photo'] ?? '');
+            if (!empty($_FILES['photo']['name'])) { [$n, $e] = sh_image_save($_FILES['photo'], 'toppers', 4); if ($e) throw new RuntimeException($e); sh_image_drop($ph); $ph = $n; }
+            $name = mb_substr(trim((string)($_POST['name'] ?? '')), 0, 120);
+            if ($name === '') throw new RuntimeException('Please type the student\'s name.');
+            $v = [$name, $ph ?: null, mb_substr(trim((string)($_POST['result'] ?? '')), 0, 160) ?: null, mb_substr(trim((string)($_POST['class_name'] ?? '')), 0, 80) ?: null,
+                mb_substr(trim((string)($_POST['year'] ?? '')), 0, 10) ?: null, (int)($_POST['sort'] ?? 0), !empty($_POST['active']) ? 1 : 0];
+            if ($row) { $v[] = $id; $pdo->prepare("UPDATE hm_toppers SET name=?, photo=?, result=?, class_name=?, year=?, sort=?, active=? WHERE id=?")->execute($v); }
+            else $pdo->prepare("INSERT INTO hm_toppers (name, photo, result, class_name, year, sort, active) VALUES (?,?,?,?,?,?,?)")->execute($v);
+            admin_flash('Topper saved.');
+        } elseif ($a === 'top_delete') {
+            $go = 'toppers';
+            $ph = (string)$pdo->query("SELECT photo FROM hm_toppers WHERE id = $id")->fetchColumn();
+            $pdo->exec("DELETE FROM hm_toppers WHERE id = $id"); sh_image_drop($ph);
+            admin_flash('Topper removed.');
         } elseif ($a === 'free_delete') { $go = 'free'; $pdo->exec("DELETE FROM hm_free WHERE id = $id"); admin_flash('Free course removed.'); }
         elseif ($a === 'texts') {
             $go = 'impact';
@@ -60,6 +77,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 $slides = $pdo->query("SELECT * FROM hm_slides ORDER BY sort, id")->fetchAll(PDO::FETCH_ASSOC);
 $free = $pdo->query("SELECT * FROM hm_free ORDER BY sort, id DESC")->fetchAll(PDO::FETCH_ASSOC);
+$tops = $pdo->query("SELECT * FROM hm_toppers ORDER BY sort, id")->fetchAll(PDO::FETCH_ASSOC);
+$tf = fn(array $x): string => ci_e(json_encode(['id' => (int)$x['id'], 'name' => $x['name'], 'result' => (string)$x['result'], 'class_name' => (string)$x['class_name'], 'year' => (string)$x['year'], 'sort' => (int)$x['sort'], 'active' => (int)$x['active']], JSON_UNESCAPED_UNICODE));
 $cats = sh_categories($pdo, true);
 $cfg = sh_home_cfg();
 $eS = isset($_GET['slide']) ? ($pdo->query("SELECT * FROM hm_slides WHERE id = " . (int)$_GET['slide'])->fetch(PDO::FETCH_ASSOC) ?: null) : null;
@@ -78,6 +97,10 @@ $catSel = function (int $cur) use ($cats) { $h = '<select name="category_id"><op
 .hp-fr{display:grid;grid-template-columns:120px 1fr;gap:12px;align-items:start;border:1px solid #e5e7eb;background:#fff;padding:10px;margin-bottom:10px}
 .hp-fr img{width:120px;aspect-ratio:16/9;object-fit:cover;display:block;background:#f3f4f6}.hp-fr form.hp-fe{display:grid;grid-template-columns:2fr 1fr 80px auto;gap:8px;align-items:end}
 .hp-fr small{color:#6b7280;font-size:12px}.hp-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}.hp-why{display:grid;grid-template-columns:1fr 2fr;gap:8px;margin-bottom:8px}
+.hp-tops{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+.hp-top{display:grid;grid-template-columns:52px 1fr auto;gap:10px;align-items:center;border:1px solid #e5e7eb;padding:8px 10px;background:#fff;border-radius:8px}.hp-top.off{opacity:.55}
+.hp-top-i{width:52px;height:64px;border-radius:6px;overflow:hidden;background:#f3f4f6;display:grid;place-items:center;color:#9ca3af}.hp-top-i img{width:100%;height:100%;object-fit:cover}
+.hp-top b{display:block;font-size:14px}.hp-top small{color:#6b7280;font-size:12px}
 .hp-row input,.hp-why input,.hp-why textarea,.hp-fe input,.hp-fe select{box-sizing:border-box;width:100%;min-height:38px;padding:8px 10px;border:1px solid #d1d5db;font:inherit;font-size:14px;background:#fff}
 @media (max-width:760px){.hp-fr{grid-template-columns:1fr}.hp-fr form.hp-fe,.hp-why,.hp-row{grid-template-columns:1fr}}
 </style>
@@ -131,6 +154,30 @@ $catSel = function (int $cur) use ($cats) { $h = '<select name="category_id"><op
         <div class="ci-icos" style="margin-top:6px"><?= ci_post_ico('refresh', 'Fetch again', ['action' => 'free_refresh', 'id' => $f['id']]) ?><?= ci_post_ico('trash', 'Delete', ['action' => 'free_delete', 'id' => $f['id']], 'Remove this free course?') ?></div></div></div>
   <?php endforeach; ?>
 </div></div>
+
+<div class="ci-card" id="toppers"><div class="ci-card-h"><h3>Meet our Toppers (<?= count($tops) ?>)</h3><button type="button" class="ci-btn ci-sm" data-mopen="#topForm" data-mtitle="Add a topper" data-fill='{"id":0,"active":1}'><i class="fas fa-plus"></i> Add topper</button></div><div class="ci-card-b">
+  <?php if (!$tops): ?><p class="ci-muted" style="margin:0">No toppers yet. Add students with a passport-size photo, their result (e.g. 96.4% · Class 10 Board) and the year.</p><?php endif; ?>
+  <div class="hp-tops"><?php foreach ($tops as $x): ?>
+    <div class="hp-top<?= $x['active'] ? '' : ' off' ?>"><span class="hp-top-i"><?php if ($x['photo']): ?><img src="<?= ci_e(sh_upload_url($x['photo'])) ?>" alt=""><?php else: ?><i class="fas fa-user-graduate"></i><?php endif; ?></span>
+      <div><b><?= ci_e($x['name']) ?></b><small><?= ci_e(trim($x['result'] . ($x['class_name'] ? ' · ' . $x['class_name'] : '') . ($x['year'] ? ' · ' . $x['year'] : ''), ' ·')) ?><?= $x['active'] ? '' : ' · hidden' ?></small></div>
+      <div class="ci-icos"><?= ci_ico('edit', null, 'Edit', 'button', ' data-mopen="#topForm" data-mtitle="Edit topper" data-fill="' . $tf($x) . '"') ?><?= ci_post_ico('trash', 'Delete', ['action' => 'top_delete', 'id' => $x['id']], 'Remove this topper?') ?></div></div>
+  <?php endforeach; ?></div>
+  <p class="ci-muted" style="margin:12px 0 0;font-size:12.5px">Teachers for "Meet our teachers" come from <a href="/admin/user-manager.php">Users</a>: give a user the Teacher permission and fill the teacher profile.</p>
+</div></div>
+<div class="ci-modal" id="topForm" data-mform hidden><div class="ci-modal-box" role="dialog" aria-modal="true" aria-labelledby="topFormH">
+<div class="ci-card-h"><h3 id="topFormH" data-mtitle-target>Add a topper</h3><button type="button" class="ci-x" data-close aria-label="Close"><i class="fas fa-times"></i></button></div><div class="ci-card-b">
+<form method="post" enctype="multipart/form-data"><?= csrf_field() ?><input type="hidden" name="action" value="top_save"><input type="hidden" name="id" value="0">
+  <div class="ci-grid2 ci-mgrid">
+    <div class="ci-f" style="grid-column:1/-1"><label>Photo <span class="ci-muted" style="font-weight:400">(passport size, e.g. 300 × 400)</span></label><input type="file" name="photo" accept="image/png,image/jpeg,image/webp"><span class="ci-hint">When editing, leave empty to keep the photo.</span></div>
+    <div class="ci-f" style="grid-column:1/-1"><label>Student's name <span class="ci-req">*</span></label><input name="name" maxlength="120" required></div>
+    <div class="ci-f" style="grid-column:1/-1"><label>Result</label><input name="result" maxlength="160" placeholder="e.g. 96.4% in Class 10 Board · State rank 12"></div>
+    <div class="ci-f"><label>Class / exam</label><input name="class_name" maxlength="80" placeholder="e.g. Class 10"></div>
+    <div class="ci-f"><label>Year</label><input name="year" maxlength="10" placeholder="e.g. 2026"></div>
+    <div class="ci-f"><label>Order</label><input type="number" name="sort" value="0"></div>
+    <div class="ci-f"><label>&nbsp;</label><label style="display:flex;gap:6px;align-items:center;font-weight:500;margin:0"><input type="checkbox" name="active" value="1"> Show on the homepage</label></div>
+  </div>
+  <div class="ci-mfoot"><button type="button" class="ci-btn ci-ghost" data-close>Cancel</button><button class="ci-btn" type="submit"><i class="fas fa-check"></i> Save topper</button></div>
+</form></div></div></div>
 
 <form method="post" id="impact"><?= csrf_field() ?><input type="hidden" name="action" value="texts">
 <div class="ci-card"><div class="ci-card-h"><h3>8. Our Impact — numbers</h3></div><div class="ci-card-b">

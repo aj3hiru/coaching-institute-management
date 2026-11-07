@@ -14,7 +14,7 @@
  */
 require_once __DIR__ . '/settings.php';
 
-const SH_SCHEMA = 9;
+const SH_SCHEMA = 10;
 
 function sh_db(): PDO
 {
@@ -138,6 +138,14 @@ function sh_tables(PDO $pdo): void
             $pdo->prepare("UPDATE sh_products SET category_id = ? WHERE class_id = ? AND category_id IS NULL")->execute([(int)$pdo->lastInsertId(), $cid]);
         }
     }
+    // v10: teacher profiles for "Meet our teachers" and the toppers list
+    $pdo->exec("CREATE TABLE IF NOT EXISTS sh_teacher_info (
+        user_id INT UNSIGNED NOT NULL PRIMARY KEY, display_name VARCHAR(120) NULL, photo VARCHAR(255) NULL, qualification VARCHAR(255) NULL,
+        subject VARCHAR(255) NULL, experience VARCHAR(120) NULL, about VARCHAR(500) NULL, show_home TINYINT(1) NOT NULL DEFAULT 1, sort INT NOT NULL DEFAULT 0)$t");
+    $pdo->exec("CREATE TABLE IF NOT EXISTS hm_toppers (
+        id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, name VARCHAR(120) NOT NULL, photo VARCHAR(255) NULL, result VARCHAR(160) NULL,
+        class_name VARCHAR(80) NULL, year VARCHAR(10) NULL, note VARCHAR(255) NULL, sort INT NOT NULL DEFAULT 0, active TINYINT(1) NOT NULL DEFAULT 1,
+        created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP)$t");
     edu_settings_save('shop', ['schema' => SH_SCHEMA]);
 }
 
@@ -589,11 +597,10 @@ function sh_icon(string $n): string
 function sh_price_html(array $p): string
 {
     if ((float)$p['price'] <= 0) return '<b>Free</b>';
-    $h = '<b>' . sh_money($p['price']) . '</b>';
-    if ($p['mrp'] !== null && (float)$p['mrp'] > (float)$p['price']) {
-        $h .= '<s>' . sh_money($p['mrp']) . '</s><span class="off">' . (int)round(100 - (float)$p['price'] * 100 / (float)$p['mrp']) . '% off</span>';
-    }
-    return $h;
+    // original price (struck out) first, then the sale price, then the discount
+    if ($p['mrp'] !== null && (float)$p['mrp'] > (float)$p['price'])
+        return '<s>' . sh_money($p['mrp']) . '</s><b>' . sh_money($p['price']) . '</b><span class="off">' . (int)round(100 - (float)$p['price'] * 100 / (float)$p['mrp']) . '% off</span>';
+    return '<b>' . sh_money($p['price']) . '</b>';
 }
 function sh_thumb_html(array $p): string
 {
@@ -784,9 +791,10 @@ function sh_teachers(PDO $pdo): array
 function sh_teacher_name(PDO $pdo, ?int $id): string
 {
     if (!$id) return '';
-    $q = $pdo->prepare("SELECT u.username, a.name FROM users u LEFT JOIN authors a ON a.user_id = u.id WHERE u.id = ?"); $q->execute([$id]);
+    try { $q = $pdo->prepare("SELECT u.username, a.name, t.display_name FROM users u LEFT JOIN authors a ON a.user_id = u.id LEFT JOIN sh_teacher_info t ON t.user_id = u.id WHERE u.id = ?"); $q->execute([$id]); }
+    catch (Throwable) { $q = $pdo->prepare("SELECT u.username, a.name, NULL AS display_name FROM users u LEFT JOIN authors a ON a.user_id = u.id WHERE u.id = ?"); $q->execute([$id]); }
     $r = $q->fetch(PDO::FETCH_ASSOC);
-    return $r ? (trim((string)$r['name']) ?: (string)$r['username']) : '';
+    return $r ? (trim((string)$r['display_name']) ?: trim((string)$r['name']) ?: (string)$r['username']) : '';
 }
 /** JSON list helpers (always arrays). */
 function sh_json_list($v): array { $d = is_array($v) ? $v : json_decode((string)$v, true); return is_array($d) ? $d : []; }
@@ -899,7 +907,7 @@ function sh_image_save(array $file, string $dir, int $maxMb = 5, bool $svg = fal
 function sh_image_drop(?string $rel): void
 {
     $rel = (string)$rel;
-    if ($rel !== '' && preg_match('#^uploads/(slides|categories)/[\w.-]+$#', $rel)) @unlink(rtrim((string)$_SERVER['DOCUMENT_ROOT'], '/') . '/' . $rel);
+    if ($rel !== '' && preg_match('#^uploads/(slides|categories|toppers|teachers)/[\w.-]+$#', $rel)) @unlink(rtrim((string)$_SERVER['DOCUMENT_ROOT'], '/') . '/' . $rel);
 }
 /** The homepage is cached: refresh it after a change. */
 function sh_home_refresh(): void { foreach (glob(ROOT_PATH . '/cache/index_home*.html') ?: [] as $f) @unlink($f); }
@@ -1013,4 +1021,28 @@ function sh_manual_order(PDO $pdo, array $who, int $pid, ?float $amount, string 
         $pdo->commit();
     } catch (Throwable $e) { if ($pdo->inTransaction()) $pdo->rollBack(); throw $e; }
     return ['uid' => $uid, 'order_id' => $oid, 'order_no' => $no, 'password' => $pass, 'name' => $u['name'], 'title' => $p['title'], 'amount' => $amount];
+}
+
+
+/* ---------- Meet our teachers / toppers ---------- */
+
+/** Teachers for the homepage: staff with the Teacher permission whose profile says "show". */
+function sh_home_teachers(PDO $pdo): array
+{
+    $ids = array_keys(sh_teachers($pdo));
+    if (!$ids) return [];
+    $q = $pdo->query("SELECT u.id, u.username, a.name AS author_name, a.profile_image, a.qualifications, a.experience, t.display_name, t.photo, t.qualification, t.subject, t.experience AS t_exp, t.about, t.show_home, t.sort
+        FROM users u LEFT JOIN authors a ON a.user_id = u.id LEFT JOIN sh_teacher_info t ON t.user_id = u.id WHERE u.id IN (" . implode(',', array_map('intval', $ids)) . ") ORDER BY COALESCE(t.sort, 0), u.id");
+    $out = [];
+    foreach ($q->fetchAll(PDO::FETCH_ASSOC) as $r) {
+        if ($r['show_home'] !== null && !(int)$r['show_home']) continue;
+        $photo = (string)($r['photo'] ?: $r['profile_image']);
+        $out[] = ['id' => (int)$r['id'], 'name' => trim((string)($r['display_name'] ?: $r['author_name'] ?: $r['username'])), 'photo' => $photo !== '' ? sh_upload_url($photo) : '',
+            'qualification' => (string)($r['qualification'] ?: $r['qualifications']), 'subject' => (string)$r['subject'], 'experience' => (string)($r['t_exp'] ?: $r['experience']), 'about' => (string)$r['about']];
+    }
+    return $out;
+}
+function sh_teacher_info(PDO $pdo, int $uid): array
+{
+    try { $q = $pdo->prepare("SELECT * FROM sh_teacher_info WHERE user_id = ?"); $q->execute([$uid]); return $q->fetch(PDO::FETCH_ASSOC) ?: []; } catch (Throwable) { return []; }
 }

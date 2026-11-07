@@ -90,7 +90,7 @@ $tabs = array_filter(['about' => $desc !== '' ? 'About' : '', 'content' => $isCo
         <a class="sp-btn" href="<?= sh_e($lu()) ?>"><?= $isCourse ? 'Continue learning' : 'Open notes' ?></a>
         <?php if (!$mine): ?><a class="sp-btn sp-ghost" href="#reviews" data-write>Rate this <?= $isCourse ? 'course' : 'pack' ?></a><?php endif; ?>
       <?php else: ?>
-        <div class="sp-price"><b><?= $priceTxt ?></b><?php if ($off): ?><s><?= sh_money($p['mrp']) ?></s><span class="sp-off"><?= $off ?>% off</span><?php endif; ?></div>
+        <div class="sp-price"><?php if ($off): ?><s><?= sh_money($p['mrp']) ?></s><?php endif; ?><b><?= $priceTxt ?></b><?php if ($off): ?><span class="sp-off"><?= $off ?>% off</span><?php endif; ?></div>
         <div class="st-msg err" id="stBuyMsg" hidden></div>
         <?php if ($u): ?>
           <button type="button" class="sp-btn" data-buy="<?= $pid ?>" data-t="<?= sh_e(sh_csrf()) ?>"><?= (float)$p['price'] > 0 ? 'Buy now' : 'Enrol for free' ?></button>
@@ -212,7 +212,7 @@ $tabs = array_filter(['about' => $desc !== '' ? 'About' : '', 'content' => $isCo
   </div>
 </div>
 
-<div class="st-mbar"><div class="sp-price"><?= $own ? '<span class="sp-owned">' . $ico('check') . ' In your library</span>' : '<b>' . $priceTxt . '</b>' . ($off ? '<s>' . sh_money($p['mrp']) . '</s>' : '') ?></div>
+<div class="st-mbar"><div class="sp-price"><?= $own ? '<span class="sp-owned">' . $ico('check') . ' In your library</span>' : ($off ? '<s>' . sh_money($p['mrp']) . '</s>' : '') . '<b>' . $priceTxt . '</b>' ?></div>
   <?php if ($own): ?><a class="sp-btn" href="<?= sh_e($lu()) ?>"><?= $isCourse ? 'Continue' : 'Open notes' ?></a><?php else: ?><button type="button" class="sp-btn" onclick="var b=document.querySelector('.sp-card [data-buy], .sp-card a.sp-btn');b.scrollIntoView({block:'center'});b.click();"><?= (float)$p['price'] > 0 ? 'Buy now' : 'Enrol free' ?></button><?php endif; ?></div>
 <?php if ($u && !$own): ?><script>window.ST_BUYER = <?= json_encode(['name' => $u['name'], 'email' => $u['email'], 'contact' => $u['mobile']], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) ?>; window.ST_SITE = <?= json_encode(edu_site_name(), JSON_HEX_TAG) ?>;</script><?php endif; ?>
 <?php require ROOT_PATH . '/components/store-close.php'; ?>

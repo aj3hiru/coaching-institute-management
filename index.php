@@ -50,6 +50,8 @@ $auto = [
     'notes' => (int)$pdo->query("SELECT COUNT(*) FROM sh_files f JOIN sh_products p ON p.id = f.product_id WHERE p.status = 'published'")->fetchColumn(),
 ];
 $cfg = sh_home_cfg();
+$teachers = sh_home_teachers($pdo);
+$toppers = $pdo->query("SELECT * FROM hm_toppers WHERE active = 1 ORDER BY sort, id")->fetchAll(PDO::FETCH_ASSOC);
 $impact = [];
 foreach ($cfg['impact'] as $it) { $v = trim((string)$it['v']); if ($v === '' && isset($auto[$it['k'] ?? ''])) $v = number_format($auto[$it['k']]) . ($auto[$it['k']] >= 10 ? '+' : ''); if ($v !== '') $impact[] = [$it['l'], $v, $it['k'] ?? '']; }
 $classes = [];
@@ -98,20 +100,17 @@ $short0 = function (string $n) { $p = preg_split('/\s+/', trim(preg_replace('/\(
 
 <?php /* 2. our courses: newest first, 2 rows (2 × 2 on phones), slider + View more */ ?>
 <section class="hm-sec" id="courses"><div class="sp-wrap">
-  <div class="hm-h"><div><span class="hm-k">Courses</span><h2>Our Courses</h2></div><a href="/courses/">View all ›</a></div>
+  <div class="hm-h"><div><h2>Our Courses</h2></div><a href="/courses/">View all ›</a></div>
   <?php if (!$courses): ?><div class="st-empty">New courses are coming soon.</div><?php else: ?>
-  <div class="hm-cs" data-hs>
-    <div class="hs-track" id="hmCourses"><div class="hs-s hm-pg"><?php foreach ($courses as $p) echo sh_mini_card($p, $catName($p)); ?></div></div>
-    <button type="button" class="hs-prev" aria-label="Previous">‹</button><button type="button" class="hs-next" aria-label="Next">›</button><div class="hs-dots"></div>
-  </div>
-  <div class="hm-more"><?php if ($moreCourses): ?><button type="button" class="hm-btn ghost" id="hmMore" data-o="8"><?= $ico('grid') ?> View more courses</button><?php endif; ?><a class="hm-btn ghost<?= $moreCourses ? '' : ' show' ?>" id="hmAll" href="/courses/"<?= $moreCourses ? ' hidden' : '' ?>>See all courses ›</a></div>
+  <div class="hm-grid" id="hmCourses"><?php foreach ($courses as $p) echo sh_mini_card($p, $catName($p)); ?></div>
+  <div class="hm-more"><?php if ($moreCourses || count($courses) > 4): ?><button type="button" class="hm-btn ghost" id="hmMore" data-o="8" data-more="<?= $moreCourses ? 1 : 0 ?>"><?= $ico('grid') ?> View more courses</button><?php endif; ?><a class="hm-btn ghost" id="hmAll" href="/courses/"<?= $moreCourses || count($courses) > 4 ? ' hidden' : '' ?>>See all courses ›</a></div>
   <?php endif; ?>
 </div></section>
 
 <?php /* 3. categories */ ?>
 <?php if ($cats): ?>
 <section class="hm-sec hm-cats-s"><div class="sp-wrap">
-  <div class="hm-h"><div><span class="hm-k">Categories</span><h2>Choose your category</h2></div><a href="/courses/">All ›</a></div>
+  <div class="hm-h"><div><h2>Categories</h2></div><a href="/courses/">All ›</a></div>
   <div class="hm-cats"><?php foreach ($cats as $c): ?><a class="hm-cat" href="<?= sh_e(sh_cat_url($c['slug'])) ?>"><span class="hm-cat-i"><?php if ($c['icon']): ?><img src="<?= sh_e(sh_upload_url($c['icon'])) ?>" alt="" loading="lazy" width="44" height="44"><?php else: ?><b><?= sh_e(mb_strtoupper(mb_substr(preg_replace('/^Class\s+/i', '', $c['name']), 0, 2))) ?></b><?php endif; ?></span><span class="hm-cat-n"><?= sh_e($c['name']) ?></span><?= (int)$c['items'] ? '<small>' . (int)$c['items'] . ' course' . ((int)$c['items'] === 1 ? '' : 's') . '</small>' : '<small class="soon">Coming soon</small>' ?></a><?php endforeach; ?></div>
 </div></section>
 <?php endif; ?>
@@ -119,7 +118,7 @@ $short0 = function (string $n) { $p = preg_split('/\s+/', trim(preg_replace('/\(
 <?php /* 4. latest courses / upcoming batches — one at a time */ ?>
 <?php if ($batches): ?>
 <section class="hm-sec hm-bt-s"><div class="sp-wrap">
-  <div class="hm-h"><div><span class="hm-k"><?= $up ? 'Upcoming batches' : 'Latest courses' ?></span><h2><?= $up ? 'Latest courses &amp; upcoming batches' : 'Latest courses' ?></h2></div></div>
+  <div class="hm-h"><div><h2><?= $up ? 'Latest courses &amp; upcoming batches' : 'Latest courses' ?></h2></div></div>
   <div class="hm-bt" data-hs data-auto="6500">
     <div class="hs-track"><?php foreach ($batches as $p): [$bt, $isUp] = sh_batch($p); $tn = $teacherNames[(int)($p['teacher_id'] ?? 0)] ?? ''; ?>
       <div class="hs-s"><div class="hm-btc">
@@ -140,7 +139,7 @@ $short0 = function (string $n) { $p = preg_split('/\s+/', trim(preg_replace('/\(
 <?php /* 5. study materials (PDF notes) */ ?>
 <?php if ($notes): ?>
 <section class="hm-sec"><div class="sp-wrap">
-  <div class="hm-h"><div><span class="hm-k">Study Materials</span><h2>Notes &amp; study materials</h2></div><a href="/notes/">Explore ›</a></div>
+  <div class="hm-h"><div><h2>Study Materials</h2></div><a href="/notes/">Explore ›</a></div>
   <div class="hm-ns" data-hs><div class="hs-track"><?php foreach ($notes as $p): ?><div class="hs-s"><?= sh_mini_card($p, $catName($p)) ?></div><?php endforeach; ?></div>
     <button type="button" class="hs-prev" aria-label="Previous">‹</button><button type="button" class="hs-next" aria-label="Next">›</button><div class="hs-dots"></div></div>
   <div class="hm-more"><a class="hm-btn ghost" href="/notes/"><?= $ico('notes') ?> Explore study materials</a></div>
@@ -150,7 +149,7 @@ $short0 = function (string $n) { $p = preg_split('/\s+/', trim(preg_replace('/\(
 <?php /* 6. latest update — newest blog posts */ ?>
 <?php if ($posts): ?>
 <section class="hm-sec hm-ps-s"><div class="sp-wrap">
-  <div class="hm-h"><div><span class="hm-k">Latest Update</span><h2>News, jobs &amp; results</h2></div><a href="/latest-update">See all ›</a></div>
+  <div class="hm-h"><div><h2>Latest Update</h2></div><a href="/latest-update">See all ›</a></div>
   <div class="hm-ps" data-hs><div class="hs-track"><?php foreach ($posts as $po): $pimg = (string)$po['img']; ?>
     <div class="hs-s"><a class="hm-post" href="<?= htmlspecialchars(postUrl($po['slug'], $po['id'])) ?>"><span class="hm-post-i"><?php if ($pimg !== ''): ?><img src="<?= htmlspecialchars(preg_match('#^https?://#', $pimg) ? $pimg : '/' . ltrim($pimg, '/')) ?>" alt="" loading="lazy" onerror="this.remove()"><?php endif; ?></span>
       <span class="hm-post-b"><?php if ($po['cat']): ?><small class="hm-post-c"><?= htmlspecialchars($po['cat']) ?></small><?php endif; ?><b><?= htmlspecialchars($po['title']) ?></b><small><?= date('d M Y', strtotime($po['date'])) ?></small></span></a></div>
@@ -162,7 +161,7 @@ $short0 = function (string $n) { $p = preg_split('/\s+/', trim(preg_replace('/\(
 <?php /* 7. free courses — YouTube playlists */ ?>
 <?php if ($free): ?>
 <section class="hm-sec"><div class="sp-wrap">
-  <div class="hm-h"><div><span class="hm-k">Free Courses</span><h2>Start learning for free</h2></div><a href="/free-courses/">All free courses ›</a></div>
+  <div class="hm-h"><div><h2>Free Courses</h2></div><a href="/free-courses/">All free courses ›</a></div>
   <div class="hm-fs" data-hs><div class="hs-track"><?php foreach ($free as $f): ?>
     <div class="hs-s"><a class="hm-fc" href="<?= sh_e(sh_free_url($f)) ?>"><span class="hm-fc-i"><img src="<?= sh_e($f['thumb'] ?: '') ?>" alt="" loading="lazy" onerror="this.remove()"><span class="hm-fc-pl"><?= $ico('playsolid') ?></span><?php if ($f['videos']): ?><em><?= (int)$f['videos'] >= 100 ? '100+' : (int)$f['videos'] ?> videos</em><?php endif; ?></span>
       <span class="hm-fc-b"><small>FREE<?= $f['category_id'] && isset($cats[(int)$f['category_id']]) ? ' · ' . sh_e($cats[(int)$f['category_id']]['name']) : '' ?></small><b><?= sh_e($f['title']) ?></b></span></a></div>
@@ -174,16 +173,56 @@ $short0 = function (string $n) { $p = preg_split('/\s+/', trim(preg_replace('/\(
 <?php /* 8. our impact */ ?>
 <?php if ($impact): ?>
 <section class="hm-imp"><div class="sp-wrap">
-  <div class="hm-h c"><span class="hm-k">Our Impact</span><h2>Growing every day with our students</h2></div>
+  <div class="hm-h c"><h2>Our Impact</h2></div>
   <div class="hm-imp-g"><?php $ii = ['students' => 'user', 'courses' => 'video', 'free' => 'playsolid', 'notes' => 'notes']; foreach ($impact as [$l, $v, $k]): ?><div><span class="hm-imp-i"><?= $ico($ii[$k] ?? 'gauge') ?></span><b data-count="<?= sh_e($v) ?>"><?= sh_e($v) ?></b><small><?= sh_e($l) ?></small></div><?php endforeach; ?></div>
 </div></section>
 <?php endif; ?>
 
 <?php /* 9. why choose us */ ?>
-<section class="hm-sec hm-why"><div class="sp-wrap">
-  <div class="hm-h c"><span class="hm-k">Why choose us</span><h2><?= htmlspecialchars($cfg['why_title'] !== '' ? $cfg['why_title'] : 'Why choose ' . $brand) ?></h2></div>
-  <div class="hm-why-g"><?php $wi = ['user', 'layers', 'play', 'pen', 'notes', 'shield', 'check', 'gauge']; foreach ($cfg['why'] as $i => $w): ?><div><span><?= $ico($wi[$i % count($wi)]) ?></span><b><?= htmlspecialchars($w['t']) ?></b><?php if ($w['d'] !== ''): ?><p><?= htmlspecialchars($w['d']) ?></p><?php endif; ?></div><?php endforeach; ?></div>
+<section class="hm-sec hm-why"><div class="sp-wrap hm-why-in">
+  <div class="hm-why-l">
+    <h2><?= htmlspecialchars($cfg['why_title'] !== '' ? $cfg['why_title'] : 'Why choose ' . $brand) ?></h2>
+    <p>Classroom teaching and online learning in one place — so every student gets the help they need to do well in school and in board exams.</p>
+    <div class="hm-why-cta"><a class="hm-btn" href="/courses/"><?= $ico('compass') ?> Explore courses</a></div>
+  </div>
+  <ol class="hm-why-g"><?php $wi = ['user', 'layers', 'play', 'pen', 'notes', 'shield', 'check', 'gauge']; foreach ($cfg['why'] as $i => $w): ?>
+    <li><span class="hm-why-i"><?= $ico($wi[$i % count($wi)]) ?></span><div><b><?= htmlspecialchars($w['t']) ?></b><?php if ($w['d'] !== ''): ?><p><?= htmlspecialchars($w['d']) ?></p><?php endif; ?></div></li>
+  <?php endforeach; ?></ol>
 </div></section>
+
+<?php /* 10. meet our teachers */ ?>
+<?php if ($teachers): ?>
+<section class="hm-sec hm-tch-s"><div class="sp-wrap">
+  <div class="hm-h"><div><h2>Meet our teachers</h2></div></div>
+  <div class="hm-tch" data-hs><div class="hs-track"><?php foreach ($teachers as $t): ?>
+    <div class="hs-s"><div class="hm-pc">
+      <span class="hm-pc-ph"><?php if ($t['photo'] !== ''): ?><img src="<?= sh_e($t['photo']) ?>" alt="<?= sh_e($t['name']) ?>" loading="lazy"><?php else: ?><b><?= sh_e(mb_strtoupper(mb_substr($t['name'], 0, 1))) ?></b><?php endif; ?></span>
+      <b class="hm-pc-n"><?= sh_e($t['name']) ?></b>
+      <?php if ($t['subject'] !== ''): ?><span class="hm-pc-tag"><?= sh_e($t['subject']) ?></span><?php endif; ?>
+      <?php if ($t['qualification'] !== ''): ?><small class="hm-pc-l"><?= $ico('notes') ?> <?= sh_e($t['qualification']) ?></small><?php endif; ?>
+      <?php if ($t['experience'] !== ''): ?><small class="hm-pc-l"><?= $ico('calendar') ?> <?= sh_e($t['experience']) ?></small><?php endif; ?>
+      <?php if ($t['about'] !== ''): ?><p class="hm-pc-a"><?= sh_e($t['about']) ?></p><?php endif; ?>
+    </div></div>
+  <?php endforeach; ?></div>
+    <button type="button" class="hs-prev" aria-label="Previous">‹</button><button type="button" class="hs-next" aria-label="Next">›</button><div class="hs-dots"></div></div>
+</div></section>
+<?php endif; ?>
+
+<?php /* 11. meet our toppers */ ?>
+<?php if ($toppers): ?>
+<section class="hm-sec hm-top-s"><div class="sp-wrap">
+  <div class="hm-h"><div><h2>Meet our toppers</h2></div></div>
+  <div class="hm-top" data-hs data-auto="4500"><div class="hs-track"><?php foreach ($toppers as $t): ?>
+    <div class="hs-s"><div class="hm-pc hm-pc-top">
+      <span class="hm-pc-ph"><?php if ($t['photo']): ?><img src="<?= sh_e(sh_upload_url($t['photo'])) ?>" alt="<?= sh_e($t['name']) ?>" loading="lazy"><?php else: ?><b><?= sh_e(mb_strtoupper(mb_substr($t['name'], 0, 1))) ?></b><?php endif; ?><?php if ($t['year']): ?><em><?= sh_e($t['year']) ?></em><?php endif; ?></span>
+      <b class="hm-pc-n"><?= sh_e($t['name']) ?></b>
+      <?php if ($t['result']): ?><span class="hm-pc-res"><?= sh_e($t['result']) ?></span><?php endif; ?>
+      <?php if ($t['class_name']): ?><small class="hm-pc-l"><?= $ico('layers') ?> <?= sh_e($t['class_name']) ?></small><?php endif; ?>
+    </div></div>
+  <?php endforeach; ?></div>
+    <button type="button" class="hs-prev" aria-label="Previous">‹</button><button type="button" class="hs-next" aria-label="Next">›</button><div class="hs-dots"></div></div>
+</div></section>
+<?php endif; ?>
 
 </main>
 <?php require_once ROOT_PATH . '/components/footer.php'; ?>

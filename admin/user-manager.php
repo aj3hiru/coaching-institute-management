@@ -175,6 +175,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $pdo->prepare("INSERT INTO authors (" . implode(', ', array_keys($vals)) . ") VALUES (" . rtrim(str_repeat('?, ', count($vals)), ', ') . ")")->execute(array_values($vals));
             }
             $pdo->commit();
+            // teacher profile (Online Store → Teacher): subject and the "Meet our teachers" card on the homepage
+            $tp = json_decode((string)$perms, true) ?: [];
+            if (!empty($tp['store']['teacher']) && is_file(INCLUDES_PATH . '/shop.php')) {
+                require_once INCLUDES_PATH . '/shop.php'; sh_tables($pdo);
+                $pdo->prepare("INSERT INTO sh_teacher_info (user_id, subject, about, show_home, sort) VALUES (?, ?, ?, ?, ?)
+                    ON DUPLICATE KEY UPDATE subject = VALUES(subject), about = VALUES(about), show_home = VALUES(show_home), sort = VALUES(sort)")
+                    ->execute([$uid, $t('t_subject', 255) ?: null, $t('t_about', 500) ?: null, !empty($_POST['t_show']) ? 1 : 0, (int)($_POST['t_sort'] ?? 0)]);
+                if (function_exists('sh_home_refresh')) sh_home_refresh();
+            }
             if ($self) $_SESSION['username'] = $username;
             edu_clear_page_cache();
             admin_log($id ? 'user_edit' : 'user_create', ($id ? 'Edited' : 'Created') . " user: $username ($role, $status)");
@@ -248,10 +257,14 @@ foreach ($all as $u) { $cnt['admins'] += $u['role'] === 'admin'; $cnt['active'] 
 $img = fn($p) => $p ? '/' . ltrim($p, '/') : '';
 $esc = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 $jsRows = [];
+$teach = [];
+try { foreach ($pdo->query("SELECT * FROM sh_teacher_info") as $tr) $teach[(int)$tr['user_id']] = $tr; } catch (Throwable) {}
 foreach ($rows as $r) {
     $r['perms'] = json_decode((string)$r['permissions'], true) ?: um_role_perms($r['role']);
     unset($r['permissions']);
     $r['self'] = (int)$r['id'] === (int)$me['id'];
+    $ti = $teach[(int)$r['id']] ?? [];
+    $r['t_subject'] = (string)($ti['subject'] ?? ''); $r['t_about'] = (string)($ti['about'] ?? ''); $r['t_show'] = $ti ? (int)$ti['show_home'] : 1; $r['t_sort'] = (int)($ti['sort'] ?? 0);
     $jsRows[$r['id']] = $r;
 }
 ?>
@@ -410,10 +423,20 @@ foreach ($rows as $r) {
           <div class="perm-group"><div class="perm-group-title"><i class="fas fa-user-graduate"></i> Institute Management</div><div class="perm-grid">
             <?php foreach (UM_PERMS['institute'] as $k => $l): ?><label class="perm-item"><input type="checkbox" name="p_inst[<?= $k ?>]" value="1" data-simple="inst.<?= $k ?>"> <?= $esc($l) ?></label><?php endforeach; ?>
           </div></div>
-          <div class="perm-group"><div class="perm-group-title"><i class="fas fa-store"></i> Online Store</div><div class="perm-grid">
+          <div class="perm-group"><div class="perm-group-title"><i class="fas fa-store"></i> Online Store</div><div class="perm-grid" id="umStorePerms">
             <?php foreach (UM_PERMS['store'] as $k => $l): ?><label class="perm-item"><input type="checkbox" name="p_store[<?= $k ?>]" value="1" data-simple="store.<?= $k ?>"> <?= $esc($l) ?></label><?php endforeach; ?>
           </div></div>
         </div></div>
+        <div class="um-teach" id="umTeach" hidden>
+          <div class="form-section-title"><i class="fas fa-chalkboard-user"></i> Teacher profile <span style="font-size:.72rem;font-weight:400;color:var(--gray-500)">— the card in "Meet our teachers" on the homepage and "Taught by" on courses</span></div>
+          <p class="um-hint" style="margin:0 0 .6rem">The photo, display name, qualifications and experience come from the <b>Author Profile</b> above — use a passport-size photo.</p>
+          <div class="form-row">
+            <div class="form-group"><label>Subject(s) taught</label><input type="text" name="t_subject" class="form-control" maxlength="255" placeholder="e.g. Mathematics, Physics"></div>
+            <div class="form-group"><label>Order on the homepage</label><input type="number" name="t_sort" class="form-control" value="0"></div>
+          </div>
+          <div class="form-group"><label>One line about the teacher <span style="font-weight:400;color:var(--gray-500)">(optional)</span></label><input type="text" name="t_about" class="form-control" maxlength="500" placeholder="e.g. Makes Maths easy with simple tricks"></div>
+          <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;margin:.25rem 0 .5rem"><input type="checkbox" name="t_show" value="1" checked> Show in "Meet our teachers" on the homepage</label>
+        </div>
         </div>
         <?php endif; ?>
       </div>
@@ -459,7 +482,8 @@ window.UM = (function () {
     });
     f.querySelectorAll('[data-simple]').forEach(function (c) { c.closest('.perm-item').classList.toggle('checked', c.checked); });
   }
-  f.addEventListener('change', function (e) { if (e.target.matches('[data-simple]')) f.querySelectorAll('[data-simple]').forEach(function (c) { c.closest('.perm-item').classList.toggle('checked', c.checked); }); });
+  f.addEventListener('change', function (e) { if (e.target.matches('[data-simple]')) { f.querySelectorAll('[data-simple]').forEach(function (c) { c.closest('.perm-item').classList.toggle('checked', c.checked); }); teachBox(); } });
+  function teachBox() { var b = document.getElementById('umTeach'), c = f.querySelector('[name="p_store[teacher]"]'); if (b) b.hidden = !(c && c.checked); }
   function slugify(s) { return (s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''); }
   function slugPrev() { document.getElementById('umSlugPrev').textContent = slugify(f.slug.value) || slugify(f.name.value) || slugify(f.username.value) || '…'; }
   ['slug', 'name', 'username'].forEach(function (n) { f[n].addEventListener('input', slugPrev); });
@@ -480,6 +504,7 @@ window.UM = (function () {
       if (r) {
         ['username', 'email', 'role', 'status', 'name', 'full_name', 'slug', 'designation', 'bio', 'qualifications', 'experience', 'languages_known', 'certifications', 'mobile_number', 'address', 'facebook', 'twitter', 'instagram', 'linkedin', 'threads'].forEach(function (k) { if (f[k]) f[k].value = r[k] == null ? '' : r[k]; });
         f.author_email.value = r.author_email || '';
+        if (f.t_subject) { f.t_subject.value = r.t_subject || ''; f.t_about.value = r.t_about || ''; f.t_sort.value = r.t_sort || 0; f.t_show.checked = r.t_show != 0; }
         f.is_featured.checked = r.is_featured == 1;
         if (!f.role.querySelector('option[value="' + r.role + '"]')) f.role.value = 'author';
         setPerms(r.perms);
@@ -487,7 +512,7 @@ window.UM = (function () {
       var self = !!(r && r.self);
       f.role.disabled = self; f.status.disabled = self; document.getElementById('umSelfHint').hidden = !self;
       if (permBox) permBox.hidden = self;
-      photo(r ? r.profile_image : ''); slugPrev();
+      photo(r ? r.profile_image : ''); slugPrev(); teachBox();
       m.classList.add('open'); document.body.style.overflow = 'hidden';
       setTimeout(function () { (r ? f.name : f.username).focus(); }, 50);
     },

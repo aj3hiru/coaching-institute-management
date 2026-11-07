@@ -1,0 +1,86 @@
+{
+ "teachers": [
+  {
+   "key": "rk",
+   "file": "teacher-rk.jpg",
+   "subject": "Mathematics",
+   "qualification": "M.Sc. Mathematics, B.Ed",
+   "experience": "12 years of teaching",
+   "about": "Makes Maths easy with short tricks and lots of practice."
+  },
+  {
+   "key": "ns",
+   "file": "teacher-ns.jpg",
+   "subject": "Science & Biology",
+   "qualification": "M.Sc. Botany, B.Ed",
+   "experience": "9 years of teaching",
+   "about": "Explains every diagram step by step — loved by board students."
+  },
+  {
+   "key": "av",
+   "file": "teacher-av.jpg",
+   "subject": "Chemistry & Social Science",
+   "qualification": "M.Sc. Chemistry",
+   "experience": "7 years of teaching",
+   "about": "Connects every chapter to daily life."
+  }
+ ],
+ "toppers": [
+  {
+   "file": "topper-1.jpg",
+   "name": "Ananya Kumari (Demo)",
+   "result": "97.4% · Class 10 Board",
+   "class": "Class 10",
+   "year": "2026"
+  },
+  {
+   "file": "topper-2.jpg",
+   "name": "Rohit Raj (Demo)",
+   "result": "96.8% · Class 10 Board",
+   "class": "Class 10",
+   "year": "2026"
+  },
+  {
+   "file": "topper-3.jpg",
+   "name": "Priya Bharti (Demo)",
+   "result": "95.6% · Class 12 Science",
+   "class": "Class 12",
+   "year": "2026"
+  },
+  {
+   "file": "topper-4.jpg",
+   "name": "Aman Kumar (Demo)",
+   "result": "94.2% · Class 12 Science",
+   "class": "Class 12",
+   "year": "2026"
+  },
+  {
+   "file": "topper-5.jpg",
+   "name": "Sneha Gupta (Demo)",
+   "result": "98% in Maths · Class 9",
+   "class": "Class 9",
+   "year": "2026"
+  },
+  {
+   "file": "topper-6.jpg",
+   "name": "Vikash Yadav (Demo)",
+   "result": "District rank 3 · Class 10",
+   "class": "Class 10",
+   "year": "2025"
+  },
+  {
+   "file": "topper-7.jpg",
+   "name": "Nikita Jha (Demo)",
+   "result": "93.8% · Class 12 Commerce",
+   "class": "Class 12",
+   "year": "2025"
+  },
+  {
+   "file": "topper-8.jpg",
+   "name": "Arjun Prasad (Demo)",
+   "result": "95% · Class 8 Olympiad",
+   "class": "Class 8",
+   "year": "2025"
+  }
+ ]
+}

@@ -59,41 +59,30 @@
   }
   [].forEach.call(document.querySelectorAll('[data-hs]'), slider);
 
-  // ---- Our Courses: pages of 2 rows (cards fill each row left to right), and View more (8 at a time) ----
-  var more = document.getElementById('hmMore'), track = document.getElementById('hmCourses');
-  var csBox = track && track.closest('[data-hs]');
-  function perPage() { var c = parseInt(getComputedStyle(csBox).getPropertyValue('--hc-cols'), 10) || 4; return c * 2; }
-  function repage(newFrom) {
-    if (!track) return;
-    var cards = [].slice.call(track.querySelectorAll('.hc')), per = perPage(), firstNew = null;
-    track.innerHTML = '';
-    for (var i = 0; i < cards.length; i += per) {
-      var pg = document.createElement('div'); pg.className = 'hs-s hm-pg';
-      cards.slice(i, i + per).forEach(function (c, k) { pg.appendChild(c); if (newFrom != null && i + k === newFrom) { firstNew = pg; } });
-      track.appendChild(pg);
-    }
-    track._per = per;
-    if (csBox && csBox._hsBuild) csBox._hsBuild();
-    return firstNew;
+  // ---- Our Courses: a grid (2 a row on phones, 4 shown first; 4 a row on computers, 8 shown first).
+  //      View more shows the next ones right below — first those already on the page, then 8 more from the server.
+  var more = document.getElementById('hmMore'), grid = document.getElementById('hmCourses');
+  function hiddenCards() { return [].slice.call(grid.querySelectorAll('.hc')).filter(function (c) { return c.offsetParent === null; }); }
+  if (more && grid) {
+    var allBtn = document.getElementById('hmAll'), done = more.getAttribute('data-more') === '0';
+    var sync = function () { var left = hiddenCards().length; if (done && !left) { more.remove(); if (allBtn) allBtn.hidden = false; } };
+    sync(); // e.g. a computer shows all 8 at once and the server has no more
+    window.addEventListener('resize', function () { if (document.body.contains(more)) sync(); });
+    more.addEventListener('click', function () {
+      var hid = hiddenCards();
+      if (hid.length) { hid.slice(0, 8).forEach(function (c) { c.classList.add('shown', 'hm-new'); }); sync(); return; }
+      var o = +more.getAttribute('data-o') || 0, label = more.innerHTML;
+      more.disabled = true; more.textContent = 'Loading…';
+      fetch('/store/more?o=' + o + '&n=8').then(function (r) { return r.json(); }).then(function (d) {
+        var tmp = document.createElement('div'); tmp.innerHTML = d.html || '';
+        [].slice.call(tmp.children).forEach(function (c) { c.classList.add('shown', 'hm-new'); grid.appendChild(c); });
+        more.setAttribute('data-o', o + (d.count || 0));
+        more.disabled = false; more.innerHTML = label;
+        if (!d.more) done = true;
+        sync();
+      }).catch(function () { more.disabled = false; more.innerHTML = label; });
+    });
   }
-  if (track) {
-    repage();
-    var rp = 0; window.addEventListener('resize', function () { clearTimeout(rp); rp = setTimeout(function () { if (perPage() !== track._per) { var at = Math.round(track.scrollLeft / Math.max(1, track.clientWidth)) * (track._per || 8); var pg = repage(at); if (pg) track.scrollLeft = pg.offsetLeft - track.offsetLeft; } }, 200); });
-  }
-  if (more && track) more.addEventListener('click', function () {
-    var o = +more.getAttribute('data-o') || 0, label = more.innerHTML;
-    more.disabled = true; more.textContent = 'Loading…';
-    fetch('/store/more?o=' + o + '&n=8').then(function (r) { return r.json(); }).then(function (d) {
-      var tmp = document.createElement('div'); tmp.innerHTML = d.html || '';
-      var had = track.querySelectorAll('.hc').length, last = track.lastElementChild;
-      [].slice.call(tmp.children).forEach(function (c) { c.classList.add('hm-new'); last.appendChild(c); });
-      more.setAttribute('data-o', o + (d.count || 0));
-      var pg = repage(had);
-      if (pg) track.scrollTo({ left: pg.offsetLeft - track.offsetLeft, behavior: reduce ? 'auto' : 'smooth' });
-      if (!d.more) { more.remove(); var all = document.getElementById('hmAll'); if (all) all.hidden = false; }
-      else { more.disabled = false; more.innerHTML = label; }
-    }).catch(function () { more.disabled = false; more.innerHTML = label; });
-  });
 
   // ---- Our Impact: numbers count up once, when they come on screen ----
   var nums = document.querySelectorAll('.hm-imp [data-count]');
