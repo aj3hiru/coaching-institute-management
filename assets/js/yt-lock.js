@@ -17,15 +17,25 @@
   function sizeFrame(box) {
     var f = frame(box), q = box._q || 'auto'; if (!f) return;
     var props = ['width', 'height', 'top', 'left', 'transform', 'transform-origin', 'max-width'];
-    if (q === 'auto' || !QMAP[q]) { props.forEach(function (k) { f.style.removeProperty(k); }); return; }
-    // YouTube picks the quality from the frame's width: the frame is laid out as wide as the chosen video (1280 for 720p …).
-    // When it loads a video again (used for stepping down) it also counts a sharp phone screen's extra pixels, so 480p / 360p
-    // are divided by the screen's pixel ratio.
+    // the picture area inside our box: 16:9, as big as fits (full screen on a wider / taller screen gets black side bars like YouTube)
+    var wr = box.querySelector('.plyr__video-wrapper'), W = (wr && wr.clientWidth) || box.clientWidth || 1, H = (wr && wr.clientHeight) || box.clientHeight || 1;
+    var pw = W, ph = W * 9 / 16; if (ph > H + 1) { ph = H; pw = H * 16 / 9; }
+    var left = (W - pw) / 2, top = (H - ph) / 2;
+    var set = function (k, v) { f.style.setProperty(k, v, 'important'); };
+    var plain = q === 'auto' || !QMAP[q];
+    if (plain && Math.abs(W / H - 16 / 9) < 0.02) { props.forEach(function (k) { f.style.removeProperty(k); }); return; } // normal 16:9 box: the CSS does it
+    if (plain) { // frame twice as tall as the picture, centred on it (YouTube's bars fall outside)
+      ['transform', 'transform-origin'].forEach(function (k) { f.style.removeProperty(k); });
+      set('max-width', 'none'); set('width', pw + 'px'); set('height', (2 * ph) + 'px'); set('left', left + 'px'); set('top', (top - ph / 2) + 'px');
+      return;
+    }
+    // YouTube picks the quality from the frame's width: the frame is laid out as wide as the chosen video (1280 for 720p …)
+    // and scaled to the picture. When it loads a video again (used for stepping down) it also counts a sharp phone screen's
+    // extra pixels, so 480p / 360p are divided by the screen's pixel ratio.
     var dpr = Math.max(1, window.devicePixelRatio || 1), w = QMAP[q][1], h = QMAP[q][2];
     if (q === 'medium' || q === 'large') { w = Math.round(w / dpr); h = Math.round(h / dpr); }
-    var bw = box.clientWidth || 1, sc = bw / w;
-    var set = function (k, v) { f.style.setProperty(k, v, 'important'); };
-    set('max-width', 'none'); set('width', w + 'px'); set('height', (2 * h) + 'px'); set('left', '0'); set('top', (-(h * sc) / 2) + 'px');
+    var sc = pw / w;
+    set('max-width', 'none'); set('width', w + 'px'); set('height', (2 * h) + 'px'); set('left', left + 'px'); set('top', (top - (h * sc) / 2) + 'px');
     set('transform-origin', '0 0'); set('transform', 'scale(' + sc + ')');
   }
   // After a change. Going UP: a small seek is enough (YouTube fetches the next piece bigger).
@@ -106,6 +116,33 @@
   // menus never taller than the video (phones): they scroll inside
   function menuRoom(box) { box.style.setProperty('--yt-menu-h', Math.max(96, (box.clientHeight || 200) - 58) + 'px'); }
 
+  /* Full screen on a phone turns the video sideways (landscape), like YouTube.
+     Android / Chrome: the screen is locked to landscape while in full screen.
+     iPhone (no lock, Plyr's full-window mode): if the phone is held upright, the player is turned 90° to fill the screen;
+     when the phone itself is turned, the turn is taken off. */
+  var isPhone = function () { return Math.min(screen.width || 0, screen.height || 0) <= 820 && ('ontouchstart' in window || navigator.maxTouchPoints > 0); };
+  function rotFit(box) {
+    var pl = box.querySelector('.plyr'); if (!pl) return;
+    var on = box._fs && box._fsRot && window.innerHeight > window.innerWidth;
+    pl.classList.toggle('yt-rot', !!on);
+    if (on) { pl.style.setProperty('--yt-w', window.innerHeight + 'px'); pl.style.setProperty('--yt-h', window.innerWidth + 'px'); }
+    setTimeout(function () { sizeFrame(box); menuRoom(box); }, 60);
+  }
+  function landscape(box, enter) {
+    box._fs = enter; box._fsRot = false;
+    if (!isPhone()) return;
+    var o = screen.orientation;
+    if (enter) {
+      var fallback = function () { box._fsRot = true; rotFit(box); };
+      if (o && o.lock && document.fullscreenElement) { try { o.lock('landscape').then(function () { box._fsRot = false; rotFit(box); }, fallback); } catch (e) { fallback(); } }
+      else fallback();
+      if (!box._rotL) { box._rotL = function () { rotFit(box); }; window.addEventListener('resize', box._rotL); window.addEventListener('orientationchange', box._rotL); }
+    } else {
+      try { if (o && o.unlock) o.unlock(); } catch (e) {}
+      rotFit(box);
+    }
+  }
+
   function make(box, id) {
     var el = document.createElement('div');
     el.className = 'plyr__video-embed';
@@ -116,7 +153,7 @@
       settings: ['speed'], speed: { selected: 1, options: [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2] }, seekTime: 10, ratio: '16:9',
       iconUrl: '/assets/plyr/plyr.svg', blankVideo: '', loadSprite: true, i18n: I18N,
       keyboard: { focused: true, global: false }, tooltips: { controls: true, seek: true }, invertTime: false,
-      fullscreen: { enabled: true, fallback: true, iosNative: false }, // full screen on our box, so the lock stays
+      fullscreen: { enabled: true, fallback: true, iosNative: false, container: '.yt-lock' }, // full screen on our box (the lock stays, and the player inside can be turned sideways)
       youtube: { noCookie: true, rel: 0, showinfo: 0, iv_load_policy: 3, modestbranding: 1, playsinline: 1, disablekb: 1, cc_load_policy: 0, fs: 0 }
     });
     box._p = p; box.setAttribute('data-yt', id);
@@ -142,8 +179,8 @@
     p.on('playing', function () { box.classList.add('yt-started'); }); // the picture goes when YouTube really plays
     p.on('playing', function () { if (!box._qSeen) { box._qSeen = true; if (box._q !== 'auto') nudge(box, 5); } paintQ(box); });
     p.on('qualitychange', function () { paintQ(box); });
-    p.on('enterfullscreen', function () { setTimeout(function () { sizeFrame(box); }, 60); });
-    p.on('exitfullscreen', function () { setTimeout(function () { sizeFrame(box); }, 60); });
+    p.on('enterfullscreen', function () { landscape(box, true); setTimeout(function () { sizeFrame(box); menuRoom(box); }, 80); });
+    p.on('exitfullscreen', function () { landscape(box, false); setTimeout(function () { sizeFrame(box); menuRoom(box); }, 80); });
     if (window.ResizeObserver && !box._ro) { box._ro = new ResizeObserver(function () { sizeFrame(box); menuRoom(box); }); box._ro.observe(box); }
     p.on('ended', function () { box.classList.add('is-ended'); box.classList.remove('yt-started', 'yt-go'); try { p.stop(); } catch (e) {} box.dispatchEvent(new CustomEvent('yt-ended')); }); // no YouTube end screen
     p.on('playing', function () { box.classList.remove('is-ended'); });
