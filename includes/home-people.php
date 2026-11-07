@@ -2,8 +2,8 @@
 // Homepage "Meet our teachers" and "Meet our toppers" — three designs each (chosen in Online Store → Homepage).
 // $t rows come from sh_home_teachers(); $p rows from hm_toppers. Each function returns one <section>.
 
-const HM_TEACHER_STYLES = ['1' => 'Faculty cards (with section label)', '2' => 'Photo overlay', '3' => 'Profile rows (with section label)'];
-const HM_TOPPER_STYLES = ['1' => 'Score cards (with section label)', '2' => 'Hall of fame posters (with section label)', '3' => 'Moving strip'];
+const HM_TEACHER_STYLES = ['1' => 'Faculty cards (with section label)', '2' => 'Photo overlay', '3' => 'Profile rows with passport photo (with section label)'];
+const HM_TOPPER_STYLES = ['4' => 'Passport cards (the first design)', '1' => 'Score cards (with section label)', '2' => 'Hall of fame posters (with section label)', '3' => 'Moving strip'];
 
 function hm_e($s): string { return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
 function hm_initial(string $n): string { return hm_e(mb_strtoupper(mb_substr(trim(preg_replace('/\(.*?\)/', '', $n)), 0, 1))); }
@@ -67,6 +67,12 @@ function hm_toppers_html(array $p, string $style): string
                 . '<div class="pB-rib">' . ($sc !== '' ? '<b>' . hm_e($sc) . '</b>' : '') . '<span>' . hm_e($rest !== '' ? $rest : (string)$x['class_name']) . '</span></div>'
                 . '<div class="pB-b"><b>' . hm_e($n) . '</b>' . ($x['class_name'] ? '<small>' . hm_e($x['class_name']) . '</small>' : '') . '</div></div></div>'; }
         return '<section class="hm-sec hm-top-s pB"><div class="sp-wrap">' . hm_head('Meet our toppers', 'Hall of fame', 'Our students who made us proud.') . hm_slider('hm-top', $s, 4500) . '</div></section>';
+    }
+    if ($style === '4') { // the first design: passport photo with the year, name, result box, class
+        foreach ($p as $x) { $n = hm_clean_name($x['name']);
+            $s .= '<div class="hs-s"><div class="hm-pc hm-pc-top"><span class="hm-pc-ph">' . ($src($x) !== '' ? '<img src="' . hm_e($src($x)) . '" alt="' . hm_e($n) . '" loading="lazy">' : '<b>' . hm_initial($n) . '</b>') . ($x['year'] ? '<em>' . hm_e($x['year']) . '</em>' : '') . '</span>'
+                . '<b class="hm-pc-n">' . hm_e($n) . '</b>' . ($x['result'] ? '<span class="hm-pc-res">' . hm_e($x['result']) . '</span>' : '') . ($x['class_name'] ? '<small class="hm-pc-l">' . hm_ico('layers') . ' ' . hm_e($x['class_name']) . '</small>' : '') . '</div></div>'; }
+        return '<section class="hm-sec hm-top-s p4"><div class="sp-wrap">' . hm_head('Meet our toppers') . hm_slider('hm-top', $s, 4500) . '</div></section>';
     }
     if ($style === '3') {
         $chip = function ($x) use ($src) { [$sc, $rest] = hm_score((string)$x['result']); $n = hm_clean_name($x['name']);

@@ -269,3 +269,14 @@
 .pC-sc{margin-left:6px;font-weight:900;font-size:15px;color:#15803d;background:#f0fdf4;padding:4px 10px;border-radius:999px}.pC-txt{font-size:12px;font-weight:700}
 @media (prefers-reduced-motion:reduce){.pC-move{animation:none}.pC-row{overflow-x:auto}}
 [data-theme="dark"] .tA-card,[data-theme="dark"] .tC-card,[data-theme="dark"] .pA-card,[data-theme="dark"] .pB-card,[data-theme="dark"] .pC-chip{background:#151b23;border-color:#263040}
+
+/* Teachers 3 — passport-size photo (3:4) instead of a circle */
+.tC-ring{width:96px;height:128px;border-radius:10px;padding:3px;background:#fff;box-shadow:0 0 0 1px #e2e8f0,0 8px 18px rgba(15,23,42,.10)}
+.tC-ph{border-radius:7px;border:0}
+.tC-card{align-items:flex-start}
+@media (max-width:420px){.tC-ring{width:84px;height:112px}}
+/* Toppers 4 — the first design (passport cards), 5 a row on computers */
+.p4 .hm-top .hs-s{flex-basis:calc((100% - 64px) / 5)}
+@media (max-width:1100px){.p4 .hm-top .hs-s{flex-basis:calc((100% - 48px) / 4)}}
+@media (max-width:860px){.p4 .hm-top .hs-s{flex-basis:calc((100% - 24px) / 3)}}
+@media (max-width:560px){.p4 .hm-top .hs-s{flex-basis:calc((100% - 12px) / 2.15)}}

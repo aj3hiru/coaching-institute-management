@@ -196,8 +196,8 @@ if (isset($_GET['designs'])):
     foreach (HM_TEACHER_STYLES as $k => $l) echo '<div class="hm-dsg sp-wrap"><b>Meet our teachers — Design ' . $k . '</b><span>' . hm_e($l) . '</span></div>' . hm_teachers_html($teachers, (string)$k);
     foreach (HM_TOPPER_STYLES as $k => $l) echo '<div class="hm-dsg sp-wrap"><b>Meet our toppers — Design ' . $k . '</b><span>' . hm_e($l) . '</span></div>' . hm_toppers_html($toppers, (string)$k);
 else:
-    echo hm_teachers_html($teachers, (string)es('home', 'teacher_style', '1'));
-    echo hm_toppers_html($toppers, (string)es('home', 'topper_style', '1'));
+    echo hm_teachers_html($teachers, (string)es('home', 'teacher_style', '3'));
+    echo hm_toppers_html($toppers, (string)es('home', 'topper_style', '4'));
 endif; ?>
 
 </main>

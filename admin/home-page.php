@@ -161,7 +161,7 @@ $catSel = function (int $cur) use ($cats) { $h = '<select name="category_id"><op
   <?php endforeach; ?>
 </div></div>
 
-<?php require_once INCLUDES_PATH . '/home-people.php'; $tS = (string)es('home', 'teacher_style', '1'); $pS = (string)es('home', 'topper_style', '1'); ?>
+<?php require_once INCLUDES_PATH . '/home-people.php'; $tS = (string)es('home', 'teacher_style', '3'); $pS = (string)es('home', 'topper_style', '4'); ?>
 <div class="ci-card" id="design"><div class="ci-card-h"><h3>Design of "Meet our teachers" &amp; "Meet our toppers"</h3><a class="ci-btn ci-ghost ci-sm" href="/?designs=1" target="_blank"><i class="fas fa-eye"></i> See all designs</a></div><div class="ci-card-b">
   <form method="post" class="ci-grid3" style="align-items:end"><?= csrf_field() ?><input type="hidden" name="action" value="styles">
     <div class="ci-f"><label>Meet our teachers</label><select name="teacher_style"><?php foreach (HM_TEACHER_STYLES as $k => $l): ?><option value="<?= $k ?>" <?= $tS === (string)$k ? 'selected' : '' ?>>Design <?= $k ?> — <?= ci_e($l) ?></option><?php endforeach; ?></select></div>
