@@ -406,3 +406,8 @@
 .hm-btn:not(.hm-pro){border-radius:5px}
 .hm-btc-tags span,.hc-top .hc-up{border-radius:3px}
 @media (max-width:900px){.hm-why-in{border-radius:5px!important}}
+
+/* top slider: a gap between the slides */
+.hm-hs{background:transparent!important}
+.hm-hs .hs-track{gap:14px!important}
+@media (max-width:760px){.hm-hs .hs-track{gap:10px!important}}

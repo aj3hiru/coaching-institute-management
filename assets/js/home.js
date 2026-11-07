@@ -7,18 +7,28 @@
   function slider(box) {
     var t = box.querySelector('.hs-track'), dotsBox = box.querySelector('.hs-dots'), prev = box.querySelector('.hs-prev'), next = box.querySelector('.hs-next');
     if (!t) return;
-    var pages = 1, timer = 0, paused = false;
-    var page = function () { return Math.max(1, t.clientWidth); };
-    var cur = function () { return Math.round(t.scrollLeft / page()); };
+    var pages = 1, timer = 0, paused = false, stops = [0];
+    var vw = function () { return Math.max(1, t.clientWidth); };
+    // stops = where each "next" lands: the first slide that is not fully in view starts the next view
+    // (works for 4-a-row cards, 1 card with a peek of the next, and full-width slides with a gap)
+    function measure() {
+      var w = vw(), max = Math.max(0, t.scrollWidth - w), offs = [].map.call(t.children, function (s) { return s.offsetLeft - t.offsetLeft; });
+      stops = [0];
+      for (var k = 0; k < offs.length; k++) {
+        var last = stops[stops.length - 1], right = offs[k] + t.children[k].offsetWidth;
+        if (offs[k] > last + 2 && right > last + w + 2) stops.push(Math.min(offs[k], max));
+        if (stops[stops.length - 1] >= max - 2) break;
+      }
+      if (max > 2 && stops[stops.length - 1] < max - 2) stops.push(max);
+      for (var q = stops.length - 1; q > 0; q--) if (stops[q] - stops[q - 1] < 3) stops.splice(q, 1);
+    }
+    var cur = function () { var x = t.scrollLeft, b = 0; stops.forEach(function (o, i) { if (Math.abs(o - x) < Math.abs(stops[b] - x)) b = i; }); return b; };
     var go = function (i, smooth) {
       if (i < 0) i = pages - 1; if (i >= pages) i = 0;
-      // snap to the first slide that starts on that page, so a card is never cut at the left edge
-      var x = i * page(), best = 0;
-      [].forEach.call(t.children, function (s) { var o = s.offsetLeft - t.offsetLeft; if (o <= x + 4) best = o; });
-      t.scrollTo({ left: i === pages - 1 ? t.scrollWidth : best, behavior: smooth === false || reduce ? 'auto' : 'smooth' });
+      t.scrollTo({ left: stops[i] || 0, behavior: smooth === false || reduce ? 'auto' : 'smooth' });
     };
     function build() {
-      pages = Math.max(1, Math.ceil((t.scrollWidth - 8) / page()));
+      measure(); pages = stops.length;
       box.classList.toggle('hs-one', pages < 2);
       if (!dotsBox) return;
       dotsBox.innerHTML = '';
@@ -27,14 +37,14 @@
       paint();
     }
     function paint() {
-      var c = t.scrollLeft + page() >= t.scrollWidth - 4 ? pages - 1 : cur();
+      var c = cur();
       if (dotsBox) [].forEach.call(dotsBox.children, function (b, i) { b.classList.toggle('on', i === c); b.setAttribute('aria-current', i === c ? 'true' : 'false'); });
       if (prev) prev.disabled = !box.hasAttribute('data-auto') && t.scrollLeft < 4;
-      if (next) next.disabled = !box.hasAttribute('data-auto') && t.scrollLeft + page() >= t.scrollWidth - 4;
+      if (next) next.disabled = !box.hasAttribute('data-auto') && t.scrollLeft + vw() >= t.scrollWidth - 4;
     }
     var raf = 0; t.addEventListener('scroll', function () { cancelAnimationFrame(raf); raf = requestAnimationFrame(paint); }, { passive: true });
     if (prev) prev.addEventListener('click', function () { go(cur() - 1); restart(); });
-    if (next) next.addEventListener('click', function () { var c = t.scrollLeft + page() >= t.scrollWidth - 4 ? pages - 1 : cur(); go(c + 1); restart(); });
+    if (next) next.addEventListener('click', function () { go(cur() + 1); restart(); });
     // mouse drag (touch scrolls by itself); a drag never opens a card
     var down = false, moved = false, sx = 0, sl = 0;
     t.addEventListener('mousedown', function (e) { if (e.button) return; down = true; moved = false; sx = e.pageX; sl = t.scrollLeft; });
