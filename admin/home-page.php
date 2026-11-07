@@ -1,11 +1,25 @@
 <?php
-// Homepage: the top slider (image + link), Free Courses (YouTube playlists), "Our Impact" numbers and "Why choose" points.
-// Courses, categories, study materials and latest updates on the homepage fill in by themselves.
+// Homepage data: the top slider (image + link), Free Courses (YouTube playlists) and toppers.
+// Admins edit the whole homepage in Customize → Homepage (live preview); this file answers its lists (?json=1) and saves (ajax=1).
+// Staff who have the Settings permission but are not admins still get the page below.
 require_once __DIR__ . '/components/guard.php';
 require_once INCLUDES_PATH . '/institute.php';
 require_once INCLUDES_PATH . '/shop.php';
 $me = sh_page_start($pdo, ['settings']);
 $back = fn(string $h) => header('Location: /admin/home-page.php#' . $h);
+$ajax = !empty($_POST['ajax']);
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['json'])) { // lists for the Customizer
+    header('Content-Type: application/json; charset=utf-8'); header('Cache-Control: no-store');
+    $up = fn($rows, $keys) => array_map(function ($r) use ($keys) { foreach ($keys as $k) $r[$k . '_url'] = $r[$k] ? sh_upload_url($r[$k]) : ''; return $r; }, $rows);
+    echo json_encode([
+        'slides' => $up($pdo->query("SELECT * FROM hm_slides ORDER BY sort, id")->fetchAll(PDO::FETCH_ASSOC), ['image', 'mobile_image']),
+        'free' => array_map(fn($f) => $f + ['site_url' => sh_free_url($f)], $pdo->query("SELECT * FROM hm_free ORDER BY sort, id DESC")->fetchAll(PDO::FETCH_ASSOC)),
+        'toppers' => $up($pdo->query("SELECT * FROM hm_toppers ORDER BY sort, id")->fetchAll(PDO::FETCH_ASSOC), ['photo']),
+        'cats' => array_map(fn($k, $c) => ['id' => (int)$k, 'name' => $c['name']], array_keys(sh_categories($pdo, true)), sh_categories($pdo, true)),
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
+}
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && ($me['role'] ?? '') === 'admin' && !isset($_GET['old'])) { header('Location: /admin/customize.php?panel=homepage'); exit; }
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_check();
     $a = (string)($_POST['action'] ?? ''); $id = (int)($_POST['id'] ?? 0); $go = 'slides';
@@ -71,8 +85,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             admin_flash('Saved.');
         }
         admin_log('home_page', "Homepage: $a" . ($id ? " #$id" : ''));
-    } catch (RuntimeException $e) { admin_flash($e->getMessage(), 'error'); }
+    } catch (RuntimeException $e) {
+        if ($ajax) { header('Content-Type: application/json; charset=utf-8'); echo json_encode(['ok' => false, 'message' => $e->getMessage()]); exit; }
+        admin_flash($e->getMessage(), 'error');
+    }
     sh_home_refresh();
+    if ($ajax) { unset($_SESSION['edu_flash']); header('Content-Type: application/json; charset=utf-8'); echo json_encode(['ok' => true]); exit; }
     $back($go); exit;
 }
 $slides = $pdo->query("SELECT * FROM hm_slides ORDER BY sort, id")->fetchAll(PDO::FETCH_ASSOC);

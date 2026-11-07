@@ -3,6 +3,7 @@
 // Changes go to a draft in the admin's session (the preview shows it via ?czp=1); "Publish" saves them for everyone.
 require_once __DIR__ . '/components/guard.php';
 require_once INCLUDES_PATH . '/theme.php';
+require_once INCLUDES_PATH . '/shop.php';
 admin_guard(['admin']);
 
 $identityKeys = ['site_title', 'tagline', 'logo', 'logo_w', 'header_logo', 'favicon'];
@@ -69,8 +70,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     foreach (['site_title' => 100, 'tagline' => 200] as $gk => $max) if (isset($general[$gk])) $general[$gk] = mb_substr(trim((string)$general[$gk]), 0, $max);
     if (isset($general['logo_w'])) $general['logo_w'] = max(20, min(600, (int)$general['logo_w']));
 
+    $home = isset($data['home']) && is_array($data['home']) ? sh_home_sanitize($data['home']) : null; // Homepage panel
     if ($action === 'draft') {
-        $_SESSION['edu_draft'] = ['theme' => $theme, 'general' => $general];
+        $_SESSION['edu_draft'] = ['theme' => $theme, 'general' => $general] + ($home ? ['home' => $home] : []);
         echo json_encode(['ok' => true]);
         exit;
     }
@@ -79,6 +81,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['edu_theme_backup'] = ['at' => date('c'), 'theme' => $old];
         edu_settings_save('theme', $theme);
         if ($general) edu_settings_save('general', $general);
+        if ($home) { edu_settings_save('home', $home); sh_home_refresh(); }
         unset($_SESSION['edu_draft']);
         admin_log('theme_publish', 'Published Customizer changes');
         echo json_encode(['ok' => true]);
@@ -112,6 +115,9 @@ $theme = edu_theme();
 $general = array_intersect_key(edu_settings('general'), array_flip($identityKeys)) + ['site_title' => '', 'tagline' => '', 'logo' => '', 'header_logo' => '1', 'favicon' => ''];
 $general['logo_w'] = edu_logo_size()[0]; // until saved once: the size the logo has today
 $backup = edu_settings('theme_backup');
+$hc = sh_home_cfg();
+$homeState = ['sections' => array_map(fn($id) => ['id' => $id, 'on' => $hc['on'][$id] ? 1 : 0, 'title' => $hc['titles'][$id]], $hc['order']),
+    'why' => array_map(fn($w) => ['t' => (string)$w['t']], $hc['why']), 'impact' => $hc['impact'], 'why_text' => $hc['why_text']];
 $latest = $pdo->query("SELECT id, slug FROM posts WHERE status = 'published' ORDER BY date DESC LIMIT 1")->fetch(PDO::FETCH_ASSOC);
 $latestUrl = $latest ? postUrl($latest['slug'], $latest['id']) : '/';
 ?>
@@ -133,6 +139,38 @@ body{margin:0;overflow:hidden}
 .cz-media-box{border:1px dashed #c3c4c7;border-radius:6px;min-height:70px;display:flex;align-items:center;justify-content:center;background:#f6f7f7;overflow:hidden;margin-bottom:6px;color:#8c8f94;font-size:12px}
 .cz-media-box img{max-width:100%;max-height:110px;display:block}
 .cz-codearea{font:12px/1.5 ui-monospace,Menlo,monospace;min-height:220px}
+/* Homepage panel */
+.hm-secs{display:flex;flex-direction:column;margin:0 -14px;border-top:1px solid var(--cz-line,#dcdcde)}
+.hm-sec-it{background:#fff;border-bottom:1px solid var(--cz-line,#dcdcde)}
+.hm-sec-it.open{background:#f6f7f7}
+.hm-sec-row{display:flex;align-items:center;gap:6px;padding:8px 10px 8px 14px}
+.hm-sec-name{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:1px;padding:4px 0;border:0;background:none;cursor:pointer;text-align:left;font:inherit;color:#1d2327}
+.hm-sec-name b{font-size:14px;font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hm-sec-name small{font-size:11.5px;color:#646970}
+.hm-sec-it.off .hm-sec-name b{color:#8c8f94;text-decoration:line-through}
+.hm-sec-name:hover b{color:var(--cz-accent,#2271b1)}
+.hm-sec-btns{display:flex;gap:4px;flex:0 0 auto}
+.hm-sec-btns .cz-circle{width:28px;height:28px;font-size:11.5px;border-color:#c3c4c7;color:#50575e}
+.hm-sec-btns .cz-circle:disabled{opacity:.35;cursor:default}
+.hm-eye.is-off{color:#b32d2e;border-color:#e3a7a7}
+.hm-sec-body{display:flex;flex-direction:column;gap:12px;padding:4px 14px 16px;border-top:1px dashed #dcdcde}
+.hm-sec-body .cz-hint a{white-space:nowrap}
+.hm-note{margin:0;padding:7px 10px;border-left:3px solid #dba617;background:#fcf9e8;font-size:12px;color:#50575e}
+.hm-media-it{display:flex;align-items:center;gap:10px;padding:8px;border:1px solid #dcdcde;border-radius:4px;background:#fff}
+.hm-media-it.off{opacity:.6}
+.hm-media-it img{width:74px;height:42px;object-fit:cover;border-radius:3px;background:#f0f0f1;flex:0 0 auto}
+.hm-person img{width:40px;height:52px}
+.hm-media-t{flex:1;min-width:0}.hm-media-t b{display:block;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.hm-media-t small{display:block;font-size:11.5px;color:#646970;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hm-form{display:flex;flex-direction:column;gap:10px;padding:12px;border:1px solid #c3c4c7;border-radius:4px;background:#fff}
+.hm-form > strong{font-size:13.5px}
+.hm-form input[type=text],.hm-form input[type=url],.hm-form input[type=number],.hm-form select{width:100%;box-sizing:border-box}
+.hm-file{font-size:12.5px}
+.hm-chk{display:flex;align-items:center;gap:8px;font-size:13px;color:#1d2327;cursor:pointer}
+.hm-pair{display:grid;grid-template-columns:1fr 90px auto;gap:6px;align-items:center}
+.hm-pair-1{grid-template-columns:1fr auto auto}
+.hm-pair input{min-width:0;height:32px;box-sizing:border-box}
+.hm-count{font-weight:400;color:#646970}
+.cz-btn-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 </style>
 </head>
 <body>
@@ -178,7 +216,10 @@ body{margin:0;overflow:hidden}
 <script>
 const CSRF = <?= json_encode(csrf_token()) ?>;
 const DEFAULTS = <?= json_encode(edu_theme_defaults(), JSON_UNESCAPED_UNICODE) ?>;
-const state = { theme: <?= json_encode($theme, JSON_UNESCAPED_UNICODE) ?>, general: <?= json_encode($general, JSON_UNESCAPED_UNICODE) ?> };
+const state = { theme: <?= json_encode($theme, JSON_UNESCAPED_UNICODE) ?>, general: <?= json_encode($general, JSON_UNESCAPED_UNICODE) ?>, home: <?= json_encode($homeState, JSON_UNESCAPED_UNICODE) ?> };
+const HOME_SECTIONS = <?= json_encode(SH_HOME_SECTIONS, JSON_UNESCAPED_UNICODE) ?>;
+const HOME_BRAND = <?php require_once INCLUDES_PATH . '/institute.php'; $hb = ci_institute()['brand']['title'] ?? ''; echo json_encode($hb !== '' ? $hb : edu_site_name(), JSON_UNESCAPED_UNICODE); ?>; // same name as the homepage heading
+const START_PANEL = <?= json_encode((string)($_GET['panel'] ?? '')) ?>;
 const HAS_BACKUP = <?= !empty($backup['theme']) ? 'true' : 'false' ?>;
 const BACKUP_AT = <?= json_encode($backup['at'] ?? '') ?>;
 const FONTS = [['system', 'System font (fastest)'], ['Inter', 'Inter'], ['Roboto', 'Roboto'], ['Poppins', 'Poppins'], ['Noto Sans', 'Noto Sans (Hindi too)'], ['Mukta', 'Mukta (Hindi)'], ['Hind', 'Hind (Hindi)'], ['Open Sans', 'Open Sans'], ['Lato', 'Lato'], ['Merriweather', 'Merriweather (serif)'], ['Georgia', 'Georgia (serif)']];
@@ -189,6 +230,7 @@ const SHORTCODES = <?= json_encode(edu_shortcode_help(), JSON_UNESCAPED_UNICODE)
 
 // --- panel definitions: [type, key, label, extra] ; keys starting with "g." edit General Settings (identity) ---
 const PANELS = [
+  { id: 'homepage', icon: 'fa-house', label: 'Homepage', sub: 'Sections, slider, free courses, toppers, numbers', render: renderHomepage },
   { id: 'identity', icon: 'fa-id-card', label: 'Site Identity', sub: 'Title, tagline, logo, site icon', sections: [
     ['Site Title & Tagline', [
       ['text', 'g.site_title', 'Site Title', { placeholder: SITE_NAME_DEFAULT, hint: 'Empty = ' + SITE_NAME_DEFAULT + '. Used in the header, footer, page titles, feeds and [site_title].' }],
@@ -269,8 +311,8 @@ const PANELS = [
     ['toggle', 'rp_bar', 'Thin progress bar at the top of articles'],
     ['hint', 'Switch the preview to Mobile (bottom of this panel) to see the button. The sections list shows the article’s H2 headings.'],
   ]},
-  { id: 'home', icon: 'fa-table-cells-large', label: 'Homepage & Archives', sub: 'Post grids and lists', sections: [
-    ['Homepage', [['toggle', 'home_hero', 'Search box & category buttons'], ['text', 'home_heading', 'Heading above the posts (optional)'], ['range', 'home_posts', 'Posts on the homepage', { min: 0, max: 30 }], ['toggle', 'home_lead', 'First post as a large card'], ['toggle', 'home_grid_more', '“Read more” button on the 3-per-row cards'], ['toggle', 'home_tables', 'Job tables (Recent Updates, Admit Card, Answer Key, Result)'], ['toggle', 'home_faqs', 'FAQs']]],
+  { id: 'home', icon: 'fa-table-cells-large', label: 'Blog & Archives', sub: 'Latest Update page, post grids and lists', sections: [
+    ['Latest Update page (blog)', [['toggle', 'home_hero', 'Search box & category buttons'], ['text', 'home_heading', 'Heading above the posts (optional)'], ['range', 'home_posts', 'Posts on the homepage', { min: 0, max: 30 }], ['toggle', 'home_lead', 'First post as a large card'], ['toggle', 'home_grid_more', '“Read more” button on the 3-per-row cards'], ['toggle', 'home_tables', 'Job tables (Recent Updates, Admit Card, Answer Key, Result)'], ['toggle', 'home_faqs', 'FAQs']]],
     ['Archives (categories, tags, authors, search)', [['range', 'arch_columns', 'Columns', { min: 2, max: 4 }]]],
   ]},
   { id: 'consent', icon: 'fa-cookie-bite', label: 'Cookie Consent', sub: 'Privacy popup for Google & AdSense', sections: [
@@ -861,6 +903,211 @@ function renderShortcodes(wrap) {
   wrap.appendChild(box);
 }
 
+/* ---------- Homepage (sections, slider, free courses, toppers, numbers, why choose us) ---------- */
+// Section order / headings / show-hide, Our Impact and Why choose us are part of the draft (Publish saves them).
+// Slides, free courses and toppers have pictures, so they are saved the moment you add or change them.
+let HMDB = null, hmOpen = null, hmEdit = null, hmBusy = false;
+const HM_AUTO = {
+  courses: ['Fills in by itself: published courses, newest first.', '/admin/shop-products.php?type=course', 'Manage courses'],
+  categories: ['Made from the classes, with an icon each.', '/admin/shop-categories.php', 'Manage categories'],
+  batches: ['Courses with a “Batch starts on” date first, then the newest courses.', '/admin/shop-products.php?type=course', 'Manage courses'],
+  notes: ['Fills in by itself: published PDF notes.', '/admin/shop-products.php?type=notes', 'Manage PDF notes'],
+  posts: ['Your newest blog posts.', '/admin/post-manager.php?view=all', 'Manage posts'],
+  teachers: ['Users with the Teacher permission and “Show on the homepage” in their teacher profile.', '/admin/user-manager.php', 'Manage users'],
+};
+function hmLoad(then) { fetch('/admin/home-page.php?json=1', { credentials: 'same-origin' }).then(r => r.json()).then(d => { HMDB = d; if (then) then(); }).catch(() => { HMDB = { slides: [], free: [], toppers: [], cats: [], error: 1 }; if (then) then(); }); }
+function hmSend(fields, files, done) {
+  if (hmBusy) return; hmBusy = true;
+  const fd = new FormData(); fd.append('_csrf', CSRF); fd.append('ajax', '1');
+  Object.entries(fields).forEach(([k, v]) => fd.append(k, v));
+  (files || []).forEach(([k, inp]) => { if (inp && inp.files && inp.files[0]) fd.append(k, inp.files[0]); });
+  $('cz-refreshing').hidden = false;
+  fetch('/admin/home-page.php', { method: 'POST', body: fd, credentials: 'same-origin' }).then(r => r.json()).then(r => {
+    hmBusy = false;
+    if (!r.ok) { $('cz-refreshing').hidden = true; alert(r.message || 'Could not save. Please try again.'); return; }
+    if (done) done();
+    hmLoad(() => { rerender(); reloadFrame(); });
+  }).catch(() => { hmBusy = false; $('cz-refreshing').hidden = true; alert('Could not save. Please check the internet and try again.'); });
+}
+function hmScroll(id) {
+  try { const d = $('cz-frame').contentDocument, el = d && d.querySelector('[data-hm="' + id + '"]'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) {}
+}
+function hmInput(label, type, val, attrs) { return html('<label class="cz-field"><span class="cz-label">' + esc(label) + '</span><input type="' + type + '" ' + (attrs || '') + ' value="' + esc(val ?? '') + '"></label>'); }
+function hmCheck(label, on) { return html('<label class="hm-chk"><input type="checkbox"' + (on ? ' checked' : '') + '> ' + esc(label) + '</label>'); }
+function hmFile(label, hint) { return html('<label class="cz-field"><span class="cz-label">' + esc(label) + '</span><input type="file" accept="image/png,image/jpeg,image/webp" class="hm-file">' + (hint ? '<small class="cz-hint">' + esc(hint) + '</small>' : '') + '</label>'); }
+function hmSaved(text) { return html('<p class="hm-note"><i class="fas fa-bolt"></i> ' + esc(text) + '</p>'); }
+
+function renderHomepage(wrap) {
+  const H = state.home;
+  if (!HMDB) { hmLoad(rerender); }
+  wrap.appendChild(hintEl('Click a section to open it. The preview on the right jumps to it. Use the arrows to change the order and the eye to show or hide it.'));
+
+  // ---- the sections, in order ----
+  const list = html('<div class="hm-secs"></div>');
+  H.sections.forEach((x, i) => {
+    const open = hmOpen === x.id, name = x.title || (x.id === 'why' ? 'Why choose ' + HOME_BRAND : HOME_SECTIONS[x.id]);
+    const it = html('<div class="hm-sec-it' + (open ? ' open' : '') + (x.on ? '' : ' off') + '"><div class="hm-sec-row"><button type="button" class="hm-sec-name"><b></b><small></small></button><span class="hm-sec-btns"></span></div></div>');
+    it.querySelector('b').textContent = name;
+    it.querySelector('small').textContent = x.on ? (x.title ? HOME_SECTIONS[x.id] : '') : 'Hidden on the homepage';
+    it.querySelector('.hm-sec-name').onclick = () => { hmOpen = open ? null : x.id; hmEdit = null; rerender(); if (!open) setTimeout(() => hmScroll(x.id), 50); };
+    const btns = it.querySelector('.hm-sec-btns');
+    const up = circleBtn('fa-arrow-up', 'Move up', () => { if (i > 0) { [H.sections[i - 1], H.sections[i]] = [H.sections[i], H.sections[i - 1]]; touch(); rerender(); } }); up.disabled = i === 0;
+    const dn = circleBtn('fa-arrow-down', 'Move down', () => { if (i < H.sections.length - 1) { [H.sections[i + 1], H.sections[i]] = [H.sections[i], H.sections[i + 1]]; touch(); rerender(); } }); dn.disabled = i === H.sections.length - 1;
+    const eye = circleBtn(x.on ? 'fa-eye' : 'fa-eye-slash', x.on ? 'Hide this section' : 'Show this section', () => { x.on = x.on ? 0 : 1; touch(); rerender(); });
+    eye.classList.add('hm-eye'); if (!x.on) eye.classList.add('is-off');
+    btns.append(up, dn, eye);
+    if (open) { const body = html('<div class="hm-sec-body"></div>'); hmSectionBody(x, body); it.appendChild(body); }
+    list.appendChild(it);
+  });
+  wrap.appendChild(list);
+}
+function hmSectionBody(x, body) {
+  const H = state.home;
+  if (x.id !== 'slider') body.appendChild(cText('Heading', () => x.title, v => x.title = v, { placeholder: x.id === 'why' ? 'Why choose ' + HOME_BRAND : (x.id === 'batches' ? 'Latest courses & upcoming batches' : HOME_SECTIONS[x.id]), hint: 'Empty = the heading shown in grey.' }));
+  if (HM_AUTO[x.id]) { const [t, u, l] = HM_AUTO[x.id]; body.appendChild(html('<p class="cz-hint">' + esc(t) + ' <a href="' + u + '" target="_blank">' + esc(l) + ' <i class="fas fa-arrow-up-right-from-square"></i></a></p>')); }
+  if (x.id === 'slider') hmSlides(body);
+  if (x.id === 'free') hmFree(body);
+  if (x.id === 'toppers') hmToppers(body);
+  if (x.id === 'impact') hmImpact(body, H);
+  if (x.id === 'why') hmWhy(body, H);
+}
+
+function hmSlides(body) {
+  if (!HMDB) { body.appendChild(hintEl('Loading…')); return; }
+  body.appendChild(hmSaved('Slides are saved as soon as you add or change them.'));
+  const rows = HMDB.slides;
+  if (!rows.length) body.appendChild(hintEl('No slides yet — the homepage shows ready-made picture banners until you add one.'));
+  rows.forEach(r => {
+    const it = html('<div class="hm-media-it' + (+r.active ? '' : ' off') + '"><img alt=""><div class="hm-media-t"><b></b><small></small></div><span class="hm-sec-btns"></span></div>');
+    it.querySelector('img').src = r.image_url;
+    it.querySelector('b').textContent = '#' + r.sort + (r.title ? ' · ' + r.title : '');
+    it.querySelector('small').textContent = (r.link || 'No link') + (+r.active ? '' : ' · hidden') + (r.mobile_image ? ' · phone image' : '');
+    it.querySelector('.hm-sec-btns').append(
+      circleBtn('fa-pen', 'Edit slide', () => { hmEdit = hmEdit === 's' + r.id ? null : 's' + r.id; rerender(); }),
+      circleBtn('fa-trash-can', 'Delete slide', () => { if (confirm('Delete this slide?')) hmSend({ action: 'slide_delete', id: r.id }); }, true));
+    body.appendChild(it);
+    if (hmEdit === 's' + r.id) body.appendChild(hmSlideForm(r));
+  });
+  if (hmEdit === 's0') body.appendChild(hmSlideForm(null));
+  else { const add = html('<button type="button" class="cz-btn-primary"><i class="fas fa-plus"></i> Add a slide</button>'); add.onclick = () => { hmEdit = 's0'; rerender(); }; body.appendChild(add); }
+}
+function hmSlideForm(r) {
+  const f = html('<div class="hm-form"><strong>' + (r ? 'Edit slide' : 'New slide') + '</strong></div>');
+  const img = hmFile('Picture' + (r ? ' (leave empty to keep it)' : ''), '1600 × 500 px works best.');
+  const mob = hmFile('Phone picture (optional)', '800 × 400 px.');
+  const link = hmInput('Link when clicked (optional)', 'text', r ? r.link : '', 'placeholder="/courses/class-10-maths or https://…"');
+  const alt = hmInput('Text for Google / screen readers', 'text', r ? r.title : '', 'maxlength="200"');
+  const sort = hmInput('Order', 'number', r ? r.sort : (HMDB.slides.length + 1));
+  const nt = hmCheck('Open the link in a new tab', r && +r.new_tab), act = hmCheck('Show on the homepage', !r || +r.active);
+  const rm = r && r.mobile_image ? hmCheck('Remove the phone picture', false) : null;
+  f.append(img, mob); if (rm) f.appendChild(rm); f.append(link, alt, sort, nt, act);
+  const row = html('<div class="cz-btn-row"><button type="button" class="cz-btn-primary"><i class="fas fa-check"></i> ' + (r ? 'Save slide' : 'Add slide') + '</button><button type="button" class="cz-btn-outline">Cancel</button></div>');
+  row.children[0].onclick = () => {
+    if (!r && !(img.querySelector('input').files || [])[0]) { alert('Please choose the slide picture.'); return; }
+    const v = { action: 'slide_save', id: r ? r.id : 0, link: link.querySelector('input').value, title: alt.querySelector('input').value, sort: sort.querySelector('input').value };
+    if (nt.querySelector('input').checked) v.new_tab = 1; if (act.querySelector('input').checked) v.active = 1; if (rm && rm.querySelector('input').checked) v.mobile_rm = 1;
+    hmSend(v, [['image', img.querySelector('input')], ['mobile_image', mob.querySelector('input')]], () => { hmEdit = null; });
+  };
+  row.children[1].onclick = () => { hmEdit = null; rerender(); };
+  f.appendChild(row);
+  return f;
+}
+
+function hmCatSelect(cur) {
+  return html('<label class="cz-field"><span class="cz-label">Category</span><select><option value="0">— No category —</option>' + (HMDB.cats || []).map(c => '<option value="' + c.id + '"' + (+cur === c.id ? ' selected' : '') + '>' + esc(c.name) + '</option>').join('') + '</select></label>');
+}
+function hmFree(body) {
+  if (!HMDB) { body.appendChild(hintEl('Loading…')); return; }
+  body.appendChild(hmSaved('Free courses are saved as soon as you add or change them.'));
+  HMDB.free.forEach(r => {
+    const it = html('<div class="hm-media-it' + (+r.active ? '' : ' off') + '"><img alt=""><div class="hm-media-t"><b></b><small></small></div><span class="hm-sec-btns"></span></div>');
+    it.querySelector('img').src = r.thumb || ''; it.querySelector('img').onerror = function () { this.style.visibility = 'hidden'; };
+    it.querySelector('b').textContent = r.title;
+    it.querySelector('small').textContent = (r.videos ? (+r.videos >= 100 ? '100+' : r.videos) + ' videos' : 'YouTube') + (+r.active ? '' : ' · hidden');
+    it.querySelector('.hm-sec-btns').append(
+      circleBtn('fa-pen', 'Edit', () => { hmEdit = hmEdit === 'f' + r.id ? null : 'f' + r.id; rerender(); }),
+      circleBtn('fa-rotate', 'Fetch again from YouTube', () => hmSend({ action: 'free_refresh', id: r.id })),
+      circleBtn('fa-trash-can', 'Remove', () => { if (confirm('Remove this free course?')) hmSend({ action: 'free_delete', id: r.id }); }, true));
+    body.appendChild(it);
+    if (hmEdit === 'f' + r.id) {
+      const f = html('<div class="hm-form"><strong>Edit free course</strong></div>');
+      const t = hmInput('Title', 'text', r.title, 'maxlength="250"'), c = hmCatSelect(r.category_id), o = hmInput('Order', 'number', r.sort), a = hmCheck('Show on the homepage', +r.active);
+      const row = html('<div class="cz-btn-row"><button type="button" class="cz-btn-primary"><i class="fas fa-check"></i> Save</button><button type="button" class="cz-btn-outline">Cancel</button><a class="cz-btn-outline" target="_blank">Open on YouTube</a></div>');
+      row.children[2].href = r.url;
+      row.children[0].onclick = () => { const v = { action: 'free_save', id: r.id, title: t.querySelector('input').value, category_id: c.querySelector('select').value, sort: o.querySelector('input').value }; if (a.querySelector('input').checked) v.active = 1; hmSend(v, [], () => { hmEdit = null; }); };
+      row.children[1].onclick = () => { hmEdit = null; rerender(); };
+      f.append(t, c, o, a, row); body.appendChild(f);
+    }
+  });
+  const f = html('<div class="hm-form"><strong>Add a YouTube playlist</strong></div>');
+  const u = hmInput('Playlist link', 'url', '', 'placeholder="https://www.youtube.com/playlist?list=…"'), t = hmInput('Title (optional — empty = YouTube’s title)', 'text', '', 'maxlength="250"'), c = hmCatSelect(0);
+  const b = html('<button type="button" class="cz-btn-primary"><i class="fab fa-youtube"></i> Fetch &amp; add</button>');
+  b.onclick = () => { const url = u.querySelector('input').value.trim(); if (!url) { alert('Paste the playlist link first.'); return; } b.disabled = true; b.textContent = 'Fetching…'; hmSend({ action: 'free_add', url, title: t.querySelector('input').value, category_id: c.querySelector('select').value, sort: 0 }); setTimeout(() => { b.disabled = false; }, 4000); };
+  f.append(u, t, c, hintEl('Title, picture and the number of videos come from YouTube. The playlist must be Public or Unlisted.'), b);
+  body.appendChild(f);
+}
+
+function hmToppers(body) {
+  if (!HMDB) { body.appendChild(hintEl('Loading…')); return; }
+  body.appendChild(hmSaved('Toppers are saved as soon as you add or change them.'));
+  HMDB.toppers.forEach(r => {
+    const it = html('<div class="hm-media-it hm-person' + (+r.active ? '' : ' off') + '"><img alt=""><div class="hm-media-t"><b></b><small></small></div><span class="hm-sec-btns"></span></div>');
+    if (r.photo_url) it.querySelector('img').src = r.photo_url; else it.querySelector('img').style.visibility = 'hidden';
+    it.querySelector('b').textContent = r.name;
+    it.querySelector('small').textContent = [r.result ? 'Marks: ' + r.result : '', r.class_name, r.year].filter(Boolean).join(' · ') + (+r.active ? '' : ' · hidden');
+    it.querySelector('.hm-sec-btns').append(
+      circleBtn('fa-pen', 'Edit', () => { hmEdit = hmEdit === 't' + r.id ? null : 't' + r.id; rerender(); }),
+      circleBtn('fa-trash-can', 'Remove', () => { if (confirm('Remove this topper?')) hmSend({ action: 'top_delete', id: r.id }); }, true));
+    body.appendChild(it);
+    if (hmEdit === 't' + r.id) body.appendChild(hmTopForm(r));
+  });
+  if (hmEdit === 't0') body.appendChild(hmTopForm(null));
+  else { const add = html('<button type="button" class="cz-btn-primary"><i class="fas fa-plus"></i> Add a topper</button>'); add.onclick = () => { hmEdit = 't0'; rerender(); }; body.appendChild(add); }
+}
+function hmTopForm(r) {
+  const f = html('<div class="hm-form"><strong>' + (r ? 'Edit topper' : 'New topper') + '</strong></div>');
+  const ph = hmFile('Photo' + (r ? ' (leave empty to keep it)' : ''), 'Passport size, e.g. 300 × 400 px.');
+  const n = hmInput('Student’s name', 'text', r ? r.name : '', 'maxlength="120"'), m = hmInput('Marks', 'text', r ? r.result : '', 'maxlength="160" placeholder="e.g. 454 or 487/500 or 96.4%"');
+  const c = hmInput('Class / exam', 'text', r ? r.class_name : '', 'maxlength="80" placeholder="e.g. Class 10"'), y = hmInput('Year', 'text', r ? r.year : '', 'maxlength="10" placeholder="e.g. 2026"');
+  const o = hmInput('Order', 'number', r ? r.sort : 0), a = hmCheck('Show on the homepage', !r || +r.active);
+  const row = html('<div class="cz-btn-row"><button type="button" class="cz-btn-primary"><i class="fas fa-check"></i> ' + (r ? 'Save topper' : 'Add topper') + '</button><button type="button" class="cz-btn-outline">Cancel</button></div>');
+  row.children[0].onclick = () => {
+    const name = n.querySelector('input').value.trim(); if (!name) { alert('Please type the student’s name.'); return; }
+    const v = { action: 'top_save', id: r ? r.id : 0, name, result: m.querySelector('input').value, class_name: c.querySelector('input').value, year: y.querySelector('input').value, sort: o.querySelector('input').value };
+    if (a.querySelector('input').checked) v.active = 1;
+    hmSend(v, [['photo', ph.querySelector('input')]], () => { hmEdit = null; });
+  };
+  row.children[1].onclick = () => { hmEdit = null; rerender(); };
+  f.append(ph, n, m, c, y, o, a, row);
+  return f;
+}
+
+function hmImpact(body, H) {
+  body.appendChild(hintEl('Leave a number empty and the site counts it for you (students, courses, free videos, PDF notes). Type your own, like 5000+, to show that instead.'));
+  H.impact.forEach((it, i) => {
+    const r = html('<div class="hm-pair"></div>');
+    const l = html('<input type="text" placeholder="Label" maxlength="60">'), v = html('<input type="text" placeholder="' + (it.k && it.k !== 'years' ? 'auto' : 'e.g. 10+') + '" maxlength="20">');
+    l.value = it.l || ''; v.value = it.v || '';
+    l.oninput = () => { it.l = l.value; touch(); }; v.oninput = () => { it.v = v.value; touch(); };
+    r.append(l, v, circleBtn('fa-trash-can', 'Remove', () => { H.impact.splice(i, 1); touch(); rerender(); }, true));
+    body.appendChild(r);
+  });
+  if (H.impact.length < 8) { const add = html('<button type="button" class="cz-btn-outline"><i class="fas fa-plus"></i> Add a number</button>'); add.onclick = () => { H.impact.push({ k: '', l: '', v: '' }); touch(); rerender(); }; body.appendChild(add); }
+}
+function hmWhy(body, H) {
+  body.appendChild(cText('Text under the heading', () => H.why_text, v => H.why_text = v, { multi: true, hint: 'Empty = no text.' }));
+  body.appendChild(html('<span class="cz-label">Points <small class="hm-count">(' + H.why.length + ')</small></span>'));
+  H.why.forEach((w, i) => {
+    const r = html('<div class="hm-pair hm-pair-1"></div>'), t = html('<input type="text" maxlength="80" placeholder="e.g. Weekly tests">'); t.value = w.t || '';
+    t.oninput = () => { w.t = t.value; touch(); };
+    const up = circleBtn('fa-arrow-up', 'Move up', () => { if (i > 0) { [H.why[i - 1], H.why[i]] = [H.why[i], H.why[i - 1]]; touch(); rerender(); } }); up.disabled = i === 0;
+    r.append(t, up, circleBtn('fa-trash-can', 'Remove', () => { H.why.splice(i, 1); touch(); rerender(); }, true));
+    body.appendChild(r);
+  });
+  if (H.why.length < 12) { const add = html('<button type="button" class="cz-btn-outline"><i class="fas fa-plus"></i> Add a point</button>'); add.onclick = () => { H.why.push({ t: '' }); touch(); rerender(); }; body.appendChild(add); }
+  body.appendChild(hintEl('Each point gets a fitting icon from its words (board, quiz, test, growth, doubt …).'));
+}
+
 function showHome() {
   panel = null; addingFor = null; document.querySelectorAll('.cz-additems').forEach(x => x.remove()); $('cz-back').hidden = true; $('cz-head-small').textContent = 'You are customizing'; $('cz-head-title').textContent = <?= json_encode(edu_site_name()) ?>;
   const b = $('cz-body'); b.innerHTML = '';
@@ -893,7 +1140,8 @@ function showPanel(p, keep) {
   b.appendChild(wrap);
   if (keep) return;
   if (p.id === 'post' || p.id === 'alsoread' || p.id === 'progress' || p.id === 'sidebar' || p.id === 'typography') goTo(<?= json_encode($latestUrl) ?>);
-  else if (p.id === 'home') goTo('/');
+  else if (p.id === 'home') goTo('/latest-update');
+  else if (p.id === 'homepage') goTo('/');
 }
 function goTo(path) { if (path === framePath) return; framePath = path; reloadFrame(); }
 $('cz-back').onclick = showHome;
@@ -908,6 +1156,7 @@ $('cz-show').onclick = () => { $('cz-root').classList.remove('cz-collapsed'); $(
 document.querySelectorAll('#cz-devices button').forEach(b => b.onclick = () => setDevice(b.dataset.dev));
 window.addEventListener('beforeunload', e => { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
 showHome();
+if (START_PANEL) { const sp = PANELS.find(x => x.id === START_PANEL); if (sp) showPanel(sp); }
 </script>
 </body>
 </html>

@@ -96,7 +96,7 @@ function admin_shell_nav(): array
                 $link(sh_perm($cu, 'products'), 'Reviews', '/admin/shop-reviews.php', 'fa-star'),
                 $link(sh_perm($cu, 'customers'), 'Student Reports', '/admin/shop-reports.php', 'fa-flag'),
                 $link(sh_perm($cu, 'orders') && !$ci, 'Reports', '/admin/ci-reports.php?type=store', 'fa-file-pdf'), // one Reports page (Institute → Reports has Online sales too)
-                $link(sh_perm($cu, 'settings'), 'Homepage', '/admin/home-page.php', 'fa-house'),
+                $link(sh_perm($cu, 'settings'), 'Homepage', ($cu['role'] ?? '') === 'admin' ? '/admin/customize.php?panel=homepage' : '/admin/home-page.php', 'fa-house'), // admins: Customize → Homepage
                 $link(sh_perm($cu, 'settings'), 'Store Settings', '/admin/shop-settings.php', 'fa-sliders'),
             ];
         })()],

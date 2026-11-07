@@ -961,11 +961,26 @@ function sh_yt_free_info(string $url): array
     $thumb = (string)($o['thumbnail_url'] ?? ''); if ($thumb === '' && $vid !== '') $thumb = 'https://i.ytimg.com/vi/' . $vid . '/hqdefault.jpg';
     return ['list' => $list, 'video' => $vid, 'title' => (string)$o['title'], 'thumb' => $thumb, 'channel' => (string)($o['author_name'] ?? ''), 'videos' => $videos, 'error' => ''];
 }
-/** Homepage texts / numbers kept in settings (with sensible defaults). */
+/** Homepage sections in their default order: id => default heading (Customize → Homepage changes order, headings, show / hide). */
+const SH_HOME_SECTIONS = [
+    'slider' => 'Top slider', 'courses' => 'Our Courses', 'categories' => 'Categories', 'batches' => 'Latest courses & upcoming batches',
+    'notes' => 'Study Materials', 'posts' => 'Latest Update', 'free' => 'Free Courses', 'impact' => 'Our Impact', 'why' => 'Why choose us',
+    'teachers' => 'Meet our teachers', 'toppers' => 'Meet our toppers',
+];
+const SH_HOME_WHY_TEXT = 'Classroom teaching and online learning in one place — so every student gets the help they need to do well in school and in board exams.';
+/** Homepage texts / numbers / section layout kept in settings (with sensible defaults). The Customizer preview shows its draft. */
 function sh_home_cfg(): array
 {
     $j = fn($k) => json_decode((string)es('home', $k, ''), true);
-    $impact = $j('impact'); $why = $j('why');
+    $impact = $j('impact'); $why = $j('why'); $secs = $j('sections');
+    $order = []; $on = []; $titles = [];
+    foreach (is_array($secs) ? $secs : [] as $x) {
+        $id = (string)($x['id'] ?? '');
+        if (!isset(SH_HOME_SECTIONS[$id]) || isset($on[$id])) continue;
+        $order[] = $id; $on[$id] = !empty($x['on']); $titles[$id] = trim((string)($x['title'] ?? ''));
+    }
+    foreach (SH_HOME_SECTIONS as $id => $_) if (!isset($on[$id])) { $order[] = $id; $on[$id] = true; $titles[$id] = ''; }
+    if ($titles['why'] === '' && (string)es('home', 'why_title', '') !== '') $titles['why'] = (string)es('home', 'why_title', ''); // older setting
     return [
         'impact' => is_array($impact) && $impact ? $impact : [['k' => 'students', 'l' => 'Registered students', 'v' => ''], ['k' => 'courses', 'l' => 'Active courses', 'v' => ''], ['k' => 'free', 'l' => 'Free videos', 'v' => ''], ['k' => 'notes', 'l' => 'PDF notes', 'v' => ''], ['k' => 'years', 'l' => 'Years of teaching', 'v' => '10+']],
         'why' => is_array($why) && $why ? $why : [
@@ -977,8 +992,32 @@ function sh_home_cfg(): array
             ['t' => 'From zero to competitive level', 'd' => 'Basics first, then step by step up to competitive exam level.'],
             ['t' => 'Doubt solving', 'd' => 'Ask your doubt under any lecture and get the teacher\'s answer right there.'],
             ['t' => 'Learn at your own pace', 'd' => 'Watch recorded classes any time — pause, repeat, and change the speed.']],
-        'why_title' => (string)es('home', 'why_title', ''),
+        'why_title' => $titles['why'],
+        'why_text' => (string)es('home', 'why_text', SH_HOME_WHY_TEXT),
+        'order' => $order, 'on' => $on, 'titles' => $titles,
     ];
+}
+/** What the Customizer sends for the homepage → clean settings (strings) for the 'home' group. */
+function sh_home_sanitize(array $h): array
+{
+    $str = fn($v, $max) => mb_substr(trim(strip_tags((string)$v)), 0, $max);
+    $secs = []; $seen = [];
+    foreach (array_slice((array)($h['sections'] ?? []), 0, 30) as $x) {
+        $id = (string)($x['id'] ?? '');
+        if (!isset(SH_HOME_SECTIONS[$id]) || isset($seen[$id])) continue;
+        $seen[$id] = 1; $secs[] = ['id' => $id, 'on' => !empty($x['on']) ? 1 : 0, 'title' => $str($x['title'] ?? '', 120)];
+    }
+    foreach (SH_HOME_SECTIONS as $id => $_) if (!isset($seen[$id])) $secs[] = ['id' => $id, 'on' => 1, 'title' => ''];
+    $why = [];
+    foreach (array_slice((array)($h['why'] ?? []), 0, 12) as $w) { $t = $str($w['t'] ?? '', 80); if ($t !== '') $why[] = ['t' => $t, 'd' => '']; }
+    $imp = [];
+    foreach (array_slice((array)($h['impact'] ?? []), 0, 8) as $it) {
+        $l = $str($it['l'] ?? '', 60); if ($l === '') continue;
+        $k = (string)($it['k'] ?? ''); $imp[] = ['k' => in_array($k, ['students', 'courses', 'free', 'notes', 'years'], true) ? $k : '', 'l' => $l, 'v' => $str($it['v'] ?? '', 20)];
+    }
+    $flag = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES;
+    return ['sections' => json_encode($secs, $flag), 'why' => json_encode($why, $flag), 'impact' => json_encode($imp, $flag),
+        'why_text' => $str($h['why_text'] ?? '', 300), 'why_title' => ''];
 }
 
 /* ---------- orders made by staff (student pays at the office: cash / UPI / card …) ---------- */
