@@ -1,5 +1,6 @@
 <?php
-// Home page — DK Academy (coaching institute): courses, PDF notes, why us, reviews, latest updates, visit / call.
+// Home page — DK Academy: slider, our courses (newest, 2×2 on phones + View more), categories, latest / upcoming batches,
+// study materials, latest update (blog), free courses (YouTube), our impact, why choose us. Admin: Online Store → Homepage / Categories.
 // The old blog / job-news front page now lives at /latest-update (latest-update.php).
 require_once __DIR__ . '/includes/redirects.php';
 edu_redirect_check();
@@ -20,24 +21,37 @@ require_once INCLUDES_PATH . '/shop.php';
 $pdo = sh_db();
 $inst = ci_institute();
 $brand = $inst['brand']['title'] ?: edu_site_name();
-$courses = sh_popular($pdo, [], 10, 'course');
-$notes = sh_popular($pdo, [], 4, 'notes');
-$rv = $pdo->query("SELECT r.rating, r.body, u.name, p.title FROM sh_reviews r JOIN sh_users u ON u.id = r.user_id JOIN sh_products p ON p.id = r.product_id
-    WHERE r.status = 'published' AND r.body IS NOT NULL AND p.status = 'published' ORDER BY r.rating DESC, r.created_at DESC LIMIT 12")->fetchAll(PDO::FETCH_ASSOC);
-$avg = $pdo->query("SELECT ROUND(AVG(rating),1) a, COUNT(*) n FROM sh_reviews WHERE status = 'published'")->fetch(PDO::FETCH_ASSOC);
+$cats = sh_categories($pdo);
+$catName = fn(array $p) => $cats[(int)($p['category_id'] ?? 0)]['name'] ?? '';
+$slides = $pdo->query("SELECT * FROM hm_slides WHERE active = 1 ORDER BY sort, id")->fetchAll(PDO::FETCH_ASSOC);
+$courses = sh_latest($pdo, 'course', 9);            // 8 shown, the 9th tells if "View more" has anything
+$moreCourses = count($courses) > 8; $courses = array_slice($courses, 0, 8);
+$up = $pdo->query("SELECT p.*, (SELECT COUNT(*) FROM sh_lessons l WHERE l.product_id = p.id) AS lessons, (SELECT COUNT(*) FROM sh_files f WHERE f.product_id = p.id) AS files
+    FROM sh_products p WHERE p.status = 'published' AND p.type = 'course' AND p.starts_at >= CURDATE() ORDER BY p.starts_at LIMIT 6")->fetchAll(PDO::FETCH_ASSOC);
+$batches = $up; $seen = array_column($up, 'id');
+foreach (sh_latest($pdo, 'course', 8) as $p) { if (count($batches) >= 6) break; if (!in_array($p['id'], $seen)) $batches[] = $p; }
+$notes = sh_latest($pdo, 'notes', 12);
+$free = $pdo->query("SELECT * FROM hm_free WHERE active = 1 ORDER BY sort, id DESC LIMIT 12")->fetchAll(PDO::FETCH_ASSOC);
+$posts = $pdo->query("SELECT p.id, p.title, p.slug, p.date, m.file_path AS img, c.name AS cat FROM posts p LEFT JOIN media m ON m.id = p.featured_image_id
+    LEFT JOIN categories c ON c.id = p.category_id WHERE p.status = 'published' ORDER BY p.date DESC LIMIT 10")->fetchAll(PDO::FETCH_ASSOC);
+$teacherNames = [];
+foreach ($batches as $p) if (!empty($p['teacher_id'])) $teacherNames[(int)$p['teacher_id']] ??= sh_teacher_name($pdo, (int)$p['teacher_id']);
+// "Our Impact": numbers counted by the site unless the admin typed their own
 $nStudents = (int)$pdo->query("SELECT COUNT(*) FROM sh_users")->fetchColumn();
 try { $nStudents += (int)$pdo->query("SELECT COUNT(*) FROM ci_students s WHERE NOT EXISTS (SELECT 1 FROM sh_users u WHERE u.student_id = s.id)")->fetchColumn(); } catch (Throwable) {}
-$nCourses = (int)$pdo->query("SELECT COUNT(*) FROM sh_products WHERE status = 'published' AND type = 'course'")->fetchColumn();
-$nNotes = (int)$pdo->query("SELECT COUNT(*) FROM sh_products WHERE status = 'published' AND type = 'notes'")->fetchColumn();
-$nLessons = (int)$pdo->query("SELECT COUNT(*) FROM sh_lessons l JOIN sh_products p ON p.id = l.product_id WHERE p.status = 'published'")->fetchColumn();
+$auto = [
+    'students' => $nStudents,
+    'courses' => (int)$pdo->query("SELECT COUNT(*) FROM sh_products WHERE status = 'published' AND type = 'course'")->fetchColumn(),
+    'free' => (int)$pdo->query("SELECT COUNT(*) FROM sh_lessons l JOIN sh_products p ON p.id = l.product_id WHERE p.status = 'published' AND (l.free = 1 OR p.price <= 0)")->fetchColumn() + (int)$pdo->query("SELECT COALESCE(SUM(videos),0) FROM hm_free WHERE active = 1")->fetchColumn(),
+    'notes' => (int)$pdo->query("SELECT COUNT(*) FROM sh_files f JOIN sh_products p ON p.id = f.product_id WHERE p.status = 'published'")->fetchColumn(),
+];
+$cfg = sh_home_cfg();
+$impact = [];
+foreach ($cfg['impact'] as $it) { $v = trim((string)$it['v']); if ($v === '' && isset($auto[$it['k'] ?? ''])) $v = number_format($auto[$it['k']]) . ($auto[$it['k']] >= 10 ? '+' : ''); if ($v !== '') $impact[] = [$it['l'], $v, $it['k'] ?? '']; }
 $classes = [];
 try { $classes = $pdo->query("SELECT name FROM ci_classes ORDER BY sort, name")->fetchAll(PDO::FETCH_COLUMN); } catch (Throwable) {}
-$posts = $pdo->query("SELECT p.id, p.title, p.slug, p.date, m.file_path AS img, c.name AS cat FROM posts p LEFT JOIN media m ON m.id = p.featured_image_id
-    LEFT JOIN categories c ON c.id = p.category_id WHERE p.status = 'published' ORDER BY p.date DESC LIMIT 6")->fetchAll(PDO::FETCH_ASSOC);
-$phone = preg_replace('/[^\d+]/', '', (string)$inst['phone']);
-$wa = preg_replace('/\D/', '', $phone); if (strlen($wa) === 10) $wa = '91' . $wa;
-$hero = $courses[0] ?? null;
 $range = $classes ? reset($classes) . ' – ' . end($classes) : '5th – 12th';
+$feat = $courses[0] ?? null;
 $seo = [
     'title' => $brand . ' — Coaching for Classes ' . $range . ' | Online Courses & PDF Notes',
     'description' => es('general', 'home_description') !== '' ? es('general', 'home_description') : $brand . ' — expert teachers, recorded video courses and PDF notes for school students. Learn at the institute or online on any phone.',
@@ -47,7 +61,7 @@ require_once INCLUDES_PATH . '/seo.php';
 $seo = edu_seo_apply($seo, []);
 $seo_ctx = ['kind' => 'home'];
 $ico = fn($n) => sh_icon($n);
-$short = function (string $n) { $p = preg_split('/\s+/', trim(preg_replace('/\(.*?\)/', '', $n))); return trim(($p[0] ?? '') . (isset($p[1]) ? ' ' . mb_substr($p[1], 0, 1) . '.' : '')); };
+$short0 = function (string $n) { $p = preg_split('/\s+/', trim(preg_replace('/\(.*?\)/', '', $n))); return trim(($p[0] ?? '') . (isset($p[1]) ? ' ' . mb_substr($p[1], 0, 1) . '.' : '')); };
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -58,6 +72,7 @@ $short = function (string $n) { $p = preg_split('/\s+/', trim(preg_replace('/\(.
 <?php require_once ROOT_PATH . '/components/head_script.php'; ?>
 <link rel="stylesheet" href="/assets/css/store.css?v=<?= @filemtime(ROOT_PATH . '/assets/css/store.css') ?: 1 ?>">
 <link rel="stylesheet" href="/assets/css/home.css?v=<?= @filemtime(ROOT_PATH . '/assets/css/home.css') ?: 1 ?>">
+<?php if ($slides): $s0 = $slides[0]; ?><link rel="preload" as="image" href="<?= sh_e(sh_upload_url($s0['image'])) ?>"<?= $s0['mobile_image'] ? ' media="(min-width:701px)"' : '' ?>><?php if ($s0['mobile_image']): ?><link rel="preload" as="image" href="<?= sh_e(sh_upload_url($s0['mobile_image'])) ?>" media="(max-width:700px)"><?php endif; ?><?php endif; ?>
 <script type="application/ld+json"><?= json_encode(array_filter(['@context' => 'https://schema.org', '@type' => 'EducationalOrganization', 'name' => $brand, 'url' => SITE_URL,
     'address' => $inst['address'] ?: null, 'telephone' => $inst['phone'] ?: null, 'email' => $inst['email'] ?: null]), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) ?></script>
 </head>
@@ -65,108 +80,119 @@ $short = function (string $n) { $p = preg_split('/\s+/', trim(preg_replace('/\(.
 <?php require_once ROOT_PATH . '/components/header.php'; ?>
 <main class="st hm">
 
-<section class="hm-hero"><div class="sp-wrap hm-hero-in">
-  <div class="hm-hero-t">
-    <span class="hm-pill"><?= $ico('shield') ?> <?= htmlspecialchars($brand) ?> · Classes <?= htmlspecialchars($range) ?></span>
-    <h1>Learn smarter.<br><span>Score higher.</span></h1>
-    <p>Expert teachers, chapter-wise recorded classes and PDF notes — study at our institute or online on any phone.</p>
-    <div class="hm-cta"><a class="hm-btn" href="/store/"><?= $ico('compass') ?> Explore courses</a><a class="hm-btn ghost" href="/store/notes"><?= $ico('notes') ?> Free &amp; premium notes</a></div>
-    <ul class="hm-trust">
-      <?php if ((int)$avg['n']): ?><li><b><?= number_format((float)$avg['a'], 1) ?> ★</b><span>Student rating</span></li><?php endif; ?>
-      <?php if ($nStudents): ?><li><b><?= number_format($nStudents) ?>+</b><span>Students</span></li><?php endif; ?>
-      <li><b><?= $nLessons ?: '—' ?></b><span>Video lessons</span></li>
-    </ul>
+<?php /* 1. slider */ ?>
+<section class="hm-hs" data-hs data-auto="5000" aria-roledescription="carousel" aria-label="Highlights">
+  <div class="hs-track">
+  <?php if ($slides): foreach ($slides as $i => $sl): $img = sh_e(sh_upload_url($sl['image'])); $alt = sh_e($sl['title'] ?: $brand); ?>
+    <div class="hs-s hm-slide" role="group" aria-label="Slide <?= $i + 1 ?> of <?= count($slides) ?>"><?php if ($sl['link']): ?><a href="<?= sh_e($sl['link']) ?>"<?= $sl['new_tab'] ? ' target="_blank" rel="noopener"' : '' ?>><?php endif; ?>
+      <picture><?php if ($sl['mobile_image']): ?><source media="(max-width:700px)" srcset="<?= sh_e(sh_upload_url($sl['mobile_image'])) ?>"><?php endif; ?><img src="<?= $img ?>" alt="<?= $alt ?>"<?= $i ? ' loading="lazy"' : ' fetchpriority="high"' ?>></picture>
+    <?php if ($sl['link']): ?></a><?php endif; ?></div>
+  <?php endforeach; else: ?>
+    <div class="hs-s hm-slide hm-slide-def"><div class="sp-wrap hm-def">
+      <div><span class="hm-pill"><?= $ico('shield') ?> <?= htmlspecialchars($brand) ?> · Classes <?= htmlspecialchars($range) ?></span>
+        <h1>Learn smarter. <span>Score higher.</span></h1>
+        <p>Expert teachers, chapter-wise recorded classes, notes and quizzes — at our institute or online on any phone.</p>
+        <div class="hm-cta"><a class="hm-btn" href="/store/?t=course"><?= $ico('compass') ?> Explore courses</a><a class="hm-btn ghost" href="/store/notes"><?= $ico('notes') ?> Study materials</a></div></div>
+      <?php if ($feat): ?><a class="hm-def-c" href="<?= sh_e(sh_url($feat)) ?>" tabindex="-1" aria-hidden="true"><?= sh_thumb_html($feat) ?><span><b><?= sh_e($feat['title']) ?></b><small><?= sh_price_html($feat) ?></small></span></a><?php endif; ?>
+    </div></div>
+  <?php endif; ?>
   </div>
-  <div class="hm-hero-v" aria-hidden="true">
-    <div class="hm-orb"></div>
-    <?php if ($hero): ?><a class="hm-float" href="<?= sh_e(sh_url($hero)) ?>" tabindex="-1"><?= sh_thumb_html($hero) ?><div class="hm-float-b"><b><?= sh_e($hero['title']) ?></b><span><?= (int)$hero['lessons'] ?> videos · <?= (float)$hero['price'] > 0 ? sh_money($hero['price']) : 'Free' ?></span></div></a><?php endif; ?>
-    <div class="hm-chip c1"><?= $ico('play') ?> Speed up to 2x</div>
-    <div class="hm-chip c2"><?= $ico('check') ?> Track your progress</div>
-    <div class="hm-chip c3"><?= $ico('notes') ?> PDF notes included</div>
+  <?php if (count($slides) > 1): ?><button type="button" class="hs-prev" aria-label="Previous slide">‹</button><button type="button" class="hs-next" aria-label="Next slide">›</button><div class="hs-dots"></div><?php endif; ?>
+</section>
+
+<?php /* 2. our courses: newest first, 2 rows (2 × 2 on phones), slider + View more */ ?>
+<section class="hm-sec" id="courses"><div class="sp-wrap">
+  <div class="hm-h"><div><span class="hm-k">Courses</span><h2>Our Courses</h2></div><a href="/store/?t=course">View all ›</a></div>
+  <?php if (!$courses): ?><div class="st-empty">New courses are coming soon.</div><?php else: ?>
+  <div class="hm-cs" data-hs>
+    <div class="hs-track" id="hmCourses"><?php foreach (array_chunk($courses, 2) as $pair): ?><div class="hs-s hm-col"><?php foreach ($pair as $p) echo sh_mini_card($p, $catName($p)); ?></div><?php endforeach; ?></div>
+    <button type="button" class="hs-prev" aria-label="Previous">‹</button><button type="button" class="hs-next" aria-label="Next">›</button><div class="hs-dots"></div>
   </div>
+  <div class="hm-more"><?php if ($moreCourses): ?><button type="button" class="hm-btn ghost" id="hmMore" data-o="8"><?= $ico('grid') ?> View more courses</button><?php endif; ?><a class="hm-btn ghost<?= $moreCourses ? '' : ' show' ?>" id="hmAll" href="/store/?t=course"<?= $moreCourses ? ' hidden' : '' ?>>See all courses ›</a></div>
+  <?php endif; ?>
 </div></section>
 
-<section class="hm-stats"><div class="sp-wrap"><div class="hm-stats-in">
-  <div><?= $ico('user') ?><b><?= $nStudents ? number_format($nStudents) . '+' : 'New' ?></b><span>Students learning</span></div>
-  <div><?= $ico('video') ?><b><?= $nCourses ?></b><span>Video courses</span></div>
-  <div><?= $ico('notes') ?><b><?= $nNotes ?></b><span>Notes packs</span></div>
-  <div><?= $ico('layers') ?><b><?= $classes ? count($classes) : 8 ?></b><span>Classes covered</span></div>
-</div></div></section>
+<?php /* 3. categories */ ?>
+<?php if ($cats): ?>
+<section class="hm-sec hm-cats-s"><div class="sp-wrap">
+  <div class="hm-h"><div><span class="hm-k">Categories</span><h2>Choose your category</h2></div><a href="/store/">All ›</a></div>
+  <div class="hm-cats"><?php foreach ($cats as $c): ?><a class="hm-cat" href="/store/?c=<?= rawurlencode($c['slug']) ?>"><span class="hm-cat-i"><?php if ($c['icon']): ?><img src="<?= sh_e(sh_upload_url($c['icon'])) ?>" alt="" loading="lazy" width="44" height="44"><?php else: ?><b><?= sh_e(mb_strtoupper(mb_substr(preg_replace('/^Class\s+/i', '', $c['name']), 0, 2))) ?></b><?php endif; ?></span><span class="hm-cat-n"><?= sh_e($c['name']) ?></span><?= (int)$c['items'] ? '<small>' . (int)$c['items'] . ' course' . ((int)$c['items'] === 1 ? '' : 's') . '</small>' : '<small class="soon">Coming soon</small>' ?></a><?php endforeach; ?></div>
+</div></section>
+<?php endif; ?>
 
-<?php if ($courses): ?>
-<section class="hm-sec"><div class="sp-wrap">
-  <div class="st-car" data-car style="margin:0">
-    <div class="st-car-h hm-h"><div><span class="hm-k">Courses</span><h2>Popular courses</h2></div><a href="/store/">View all ›</a></div>
-    <div class="st-car-track" tabindex="0" aria-label="Popular courses — swipe for more"><?php foreach ($courses as $p) echo '<div class="st-car-s">' . sh_card_html($p) . '</div>'; ?></div>
-    <div class="st-car-dots"><?php foreach ($courses as $i => $_): ?><button type="button" aria-label="Slide <?= $i + 1 ?>"<?= $i === 0 ? ' class="is-active"' : '' ?>></button><?php endforeach; ?></div>
+<?php /* 4. latest courses / upcoming batches — one at a time */ ?>
+<?php if ($batches): ?>
+<section class="hm-sec hm-bt-s"><div class="sp-wrap">
+  <div class="hm-h"><div><span class="hm-k"><?= $up ? 'Upcoming batches' : 'Latest courses' ?></span><h2><?= $up ? 'Latest courses &amp; upcoming batches' : 'Latest courses' ?></h2></div></div>
+  <div class="hm-bt" data-hs data-auto="6500">
+    <div class="hs-track"><?php foreach ($batches as $p): [$bt, $isUp] = sh_batch($p); $tn = $teacherNames[(int)($p['teacher_id'] ?? 0)] ?? ''; ?>
+      <div class="hs-s"><div class="hm-btc">
+        <a class="hm-btc-i" href="<?= sh_e(sh_url($p)) ?>" tabindex="-1" aria-hidden="true"><?= sh_thumb_html($p) ?></a>
+        <div class="hm-btc-b">
+          <div class="hm-btc-tags"><?= $isUp ? '<span class="t-up">Upcoming batch</span>' : '<span class="t-new">New</span>' ?><?= $catName($p) !== '' ? '<span>' . sh_e($catName($p)) . '</span>' : '' ?></div>
+          <h3><a href="<?= sh_e(sh_url($p)) ?>"><?= sh_e($p['title']) ?></a></h3>
+          <?php if ($p['subtitle']): ?><p><?= sh_e($p['subtitle']) ?></p><?php endif; ?>
+          <ul class="hm-btc-m"><?php if ($bt !== ''): ?><li><?= $ico('calendar') ?> <?= sh_e($bt) ?></li><?php endif; ?><?php if ($tn !== ''): ?><li><?= $ico('user') ?> <?= sh_e($tn) ?></li><?php endif; ?><li><?= $ico('video') ?> <?= (int)$p['lessons'] ?> lecture<?= (int)$p['lessons'] === 1 ? '' : 's' ?></li></ul>
+          <div class="hm-btc-f"><span class="hm-btc-p"><?= sh_price_html($p) ?></span><a class="hm-btn" href="<?= sh_e(sh_url($p)) ?>"><?= $isUp ? 'Join this batch' : 'View course' ?> ›</a></div>
+        </div></div></div>
+    <?php endforeach; ?></div>
+    <?php if (count($batches) > 1): ?><button type="button" class="hs-prev" aria-label="Previous">‹</button><button type="button" class="hs-next" aria-label="Next">›</button><div class="hs-dots"></div><?php endif; ?>
   </div>
 </div></section>
 <?php endif; ?>
 
-<section class="hm-sec hm-why"><div class="sp-wrap">
-  <div class="hm-h c"><span class="hm-k">Why <?= htmlspecialchars($brand) ?></span><h2>Everything you need to do well</h2></div>
-  <div class="hm-why-g">
-    <div><span><?= $ico('user') ?></span><b>Experienced teachers</b><p>Concepts explained simply, step by step, the way our classroom students learn.</p></div>
-    <div><span><?= $ico('video') ?></span><b>Recorded classes</b><p>Watch any lesson again, at your speed — up to 2x — on any phone or computer.</p></div>
-    <div><span><?= $ico('notes') ?></span><b>PDF notes</b><p>Chapter-wise notes and formula sheets for quick revision before tests.</p></div>
-    <div><span><?= $ico('check') ?></span><b>Track progress</b><p>Mark lessons done and continue right where you stopped last time.</p></div>
-    <div><span><?= $ico('shield') ?></span><b>Safe payments</b><p>Pay by UPI, card or net banking through Razorpay. Access opens at once.</p></div>
-    <div><span><?= $ico('layers') ?></span><b>Institute + online</b><p>Our institute students use the same mobile number to study online too.</p></div>
-  </div>
-</div></section>
-
+<?php /* 5. study materials (PDF notes) */ ?>
 <?php if ($notes): ?>
 <section class="hm-sec"><div class="sp-wrap">
-  <div class="st-car-h hm-h"><div><span class="hm-k">PDF Notes</span><h2>Notes for quick revision</h2></div><a href="/store/notes">All notes ›</a></div>
-  <div class="hm-notes"><?php foreach ($notes as $p): ?>
-    <a class="hm-note" href="<?= sh_e(sh_url($p)) ?>"><span class="hm-note-i"><?= $ico('notes') ?></span><div><b><?= sh_e($p['title']) ?></b><small><?= (int)$p['files'] ?> PDF<?= (int)$p['files'] === 1 ? '' : 's' ?><?= $p['rating'] ? ' · ★ ' . number_format((float)$p['rating'], 1) : '' ?></small></div><em><?= (float)$p['price'] > 0 ? sh_money($p['price']) : 'Free' ?></em></a>
-  <?php endforeach; ?></div>
+  <div class="hm-h"><div><span class="hm-k">Study Materials</span><h2>Notes &amp; study materials</h2></div><a href="/store/notes">Explore ›</a></div>
+  <div class="hm-ns" data-hs><div class="hs-track"><?php foreach ($notes as $p): ?><div class="hs-s"><?= sh_mini_card($p, $catName($p)) ?></div><?php endforeach; ?></div>
+    <button type="button" class="hs-prev" aria-label="Previous">‹</button><button type="button" class="hs-next" aria-label="Next">›</button><div class="hs-dots"></div></div>
+  <div class="hm-more"><a class="hm-btn ghost" href="/store/notes"><?= $ico('notes') ?> Explore study materials</a></div>
 </div></section>
 <?php endif; ?>
 
-<section class="hm-sec hm-steps"><div class="sp-wrap">
-  <div class="hm-h c"><span class="hm-k">How it works</span><h2>Start learning in 3 steps</h2></div>
-  <div class="hm-steps-g">
-    <div><span>1</span><b>Create a free account</b><p>With your mobile number and email — takes a minute.</p></div>
-    <div><span>2</span><b>Pick a course or notes</b><p>Watch the free preview first, then join with a safe payment.</p></div>
-    <div><span>3</span><b>Learn anywhere</b><p>Open <b>My Courses</b> on any phone or computer and start.</p></div>
-  </div>
-</div></section>
-
-<?php if ($rv): ?>
-<section class="hm-sec hm-rv"><div class="sp-wrap">
-  <div class="hm-h c"><span class="hm-k">Reviews</span><h2>What our students say</h2><?php if ((int)$avg['n']): ?><p class="hm-sub"><?= sh_stars((float)$avg['a']) ?> <b><?= number_format((float)$avg['a'], 1) ?></b> from <?= (int)$avg['n'] ?> rating<?= (int)$avg['n'] === 1 ? '' : 's' ?></p><?php endif; ?></div>
-  <div class="sp-rvs"><div class="sp-rvs-track" tabindex="0" aria-label="Student reviews — swipe for more">
-  <?php foreach ($rv as $i => $r): $nm = $short($r['name']) ?: 'Student'; ?>
-    <article class="sp-rvc hm-rvc"><div class="sp-rvc-who"><span class="sp-av sp-av<?= $i % 3 ?>"><?= sh_e(mb_strtoupper(mb_substr($nm, 0, 1))) ?></span><div class="sp-rvc-nm"><b><?= sh_e($nm) ?></b><?= sh_stars((float)$r['rating'], 'sp-stars sm') ?></div></div>
-      <p class="sp-rvc-q"><?= sh_e($r['body']) ?></p><small class="hm-rvc-c"><?= sh_e($r['title']) ?></small></article>
-  <?php endforeach; ?>
-  </div><?php if (count($rv) > 1): ?><div class="sp-rvs-dots"><?php foreach ($rv as $i => $_): ?><button type="button" aria-label="Review <?= $i + 1 ?>"<?= $i === 0 ? ' class="is-active"' : '' ?>></button><?php endforeach; ?></div><?php endif; ?></div>
-</div></section>
-<?php endif; ?>
-
+<?php /* 6. latest update — newest blog posts */ ?>
 <?php if ($posts): ?>
-<section class="hm-sec"><div class="sp-wrap">
-  <div class="st-car-h hm-h"><div><span class="hm-k">Latest Update</span><h2>News, jobs &amp; results</h2></div><a href="/latest-update">See all updates ›</a></div>
-  <div class="hm-posts"><?php foreach ($posts as $po): ?>
-    <a class="hm-post" href="<?= htmlspecialchars(postUrl($po['slug'], $po['id'])) ?>"><?php if ($po['img']): ?><img src="<?= htmlspecialchars(preg_match('#^https?://#', (string)$po['img']) ? (string)$po['img'] : '/' . ltrim((string)$po['img'], '/')) ?>" alt="" loading="lazy" onerror="this.remove()"><?php endif; ?>
-      <div><?php if ($po['cat']): ?><span class="hm-k"><?= htmlspecialchars($po['cat']) ?></span><?php endif; ?><b><?= htmlspecialchars($po['title']) ?></b><small><?= date('d M Y', strtotime($po['date'])) ?></small></div></a>
+<section class="hm-sec hm-ps-s"><div class="sp-wrap">
+  <div class="hm-h"><div><span class="hm-k">Latest Update</span><h2>News, jobs &amp; results</h2></div><a href="/latest-update">See all ›</a></div>
+  <div class="hm-ps" data-hs><div class="hs-track"><?php foreach ($posts as $po): $pimg = (string)$po['img']; ?>
+    <div class="hs-s"><a class="hm-post" href="<?= htmlspecialchars(postUrl($po['slug'], $po['id'])) ?>"><span class="hm-post-i"><?php if ($pimg !== ''): ?><img src="<?= htmlspecialchars(preg_match('#^https?://#', $pimg) ? $pimg : '/' . ltrim($pimg, '/')) ?>" alt="" loading="lazy" onerror="this.remove()"><?php endif; ?></span>
+      <span class="hm-post-b"><?php if ($po['cat']): ?><small class="hm-post-c"><?= htmlspecialchars($po['cat']) ?></small><?php endif; ?><b><?= htmlspecialchars($po['title']) ?></b><small><?= date('d M Y', strtotime($po['date'])) ?></small></span></a></div>
   <?php endforeach; ?></div>
+    <button type="button" class="hs-prev" aria-label="Previous">‹</button><button type="button" class="hs-next" aria-label="Next">›</button><div class="hs-dots"></div></div>
 </div></section>
 <?php endif; ?>
 
-<section class="hm-visit"><div class="sp-wrap hm-visit-in">
-  <div><span class="hm-k">Visit us</span><h2>Join <?= htmlspecialchars($brand) ?> — at the institute or online</h2>
-    <?php if ($inst['address']): ?><p><?= htmlspecialchars($inst['address']) ?></p><?php endif; ?></div>
-  <div class="hm-visit-b">
-    <?php if ($phone): ?><a class="hm-btn light" href="tel:<?= htmlspecialchars($phone) ?>">Call <?= htmlspecialchars($inst['phone']) ?></a><?php endif; ?>
-    <?php if (strlen($wa) >= 11): ?><a class="hm-btn wa" href="https://wa.me/<?= htmlspecialchars($wa) ?>" target="_blank" rel="noopener">WhatsApp us</a><?php endif; ?>
-    <a class="hm-btn ghost" href="/account/register">Create free account</a>
-  </div>
+<?php /* 7. free courses — YouTube playlists */ ?>
+<?php if ($free): ?>
+<section class="hm-sec"><div class="sp-wrap">
+  <div class="hm-h"><div><span class="hm-k">Free Courses</span><h2>Start learning for free</h2></div><a href="/store/free">All free courses ›</a></div>
+  <div class="hm-fs" data-hs><div class="hs-track"><?php foreach ($free as $f): ?>
+    <div class="hs-s"><a class="hm-fc" href="/store/free?id=<?= (int)$f['id'] ?>"><span class="hm-fc-i"><img src="<?= sh_e($f['thumb'] ?: '') ?>" alt="" loading="lazy" onerror="this.remove()"><span class="hm-fc-pl"><?= $ico('playsolid') ?></span><?php if ($f['videos']): ?><em><?= (int)$f['videos'] >= 100 ? '100+' : (int)$f['videos'] ?> videos</em><?php endif; ?></span>
+      <span class="hm-fc-b"><small>FREE<?= $f['category_id'] && isset($cats[(int)$f['category_id']]) ? ' · ' . sh_e($cats[(int)$f['category_id']]['name']) : '' ?></small><b><?= sh_e($f['title']) ?></b></span></a></div>
+  <?php endforeach; ?></div>
+    <button type="button" class="hs-prev" aria-label="Previous">‹</button><button type="button" class="hs-next" aria-label="Next">›</button><div class="hs-dots"></div></div>
 </div></section>
+<?php endif; ?>
+
+<?php /* 8. our impact */ ?>
+<?php if ($impact): ?>
+<section class="hm-imp"><div class="sp-wrap">
+  <div class="hm-h c"><span class="hm-k">Our Impact</span><h2>Growing every day with our students</h2></div>
+  <div class="hm-imp-g"><?php $ii = ['students' => 'user', 'courses' => 'video', 'free' => 'playsolid', 'notes' => 'notes']; foreach ($impact as [$l, $v, $k]): ?><div><span class="hm-imp-i"><?= $ico($ii[$k] ?? 'gauge') ?></span><b data-count="<?= sh_e($v) ?>"><?= sh_e($v) ?></b><small><?= sh_e($l) ?></small></div><?php endforeach; ?></div>
+</div></section>
+<?php endif; ?>
+
+<?php /* 9. why choose us */ ?>
+<section class="hm-sec hm-why"><div class="sp-wrap">
+  <div class="hm-h c"><span class="hm-k">Why choose us</span><h2><?= htmlspecialchars($cfg['why_title'] !== '' ? $cfg['why_title'] : 'Why choose ' . $brand) ?></h2></div>
+  <div class="hm-why-g"><?php $wi = ['user', 'layers', 'play', 'pen', 'notes', 'shield', 'check', 'gauge']; foreach ($cfg['why'] as $i => $w): ?><div><span><?= $ico($wi[$i % count($wi)]) ?></span><b><?= htmlspecialchars($w['t']) ?></b><?php if ($w['d'] !== ''): ?><p><?= htmlspecialchars($w['d']) ?></p><?php endif; ?></div><?php endforeach; ?></div>
+</div></section>
+
 </main>
 <?php require_once ROOT_PATH . '/components/footer.php'; ?>
 <script src="/assets/js/store.js?v=<?= @filemtime(ROOT_PATH . '/assets/js/store.js') ?: 1 ?>" defer></script>
+<script src="/assets/js/home.js?v=<?= @filemtime(ROOT_PATH . '/assets/js/home.js') ?: 1 ?>" defer></script>
 </body>
 </html>
 <?php $minified = minifyHTML(ob_get_clean()); if (empty($__czp)) { @file_put_contents($cf, $minified); } echo $minified; ?>

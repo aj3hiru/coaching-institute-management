@@ -40,7 +40,8 @@ $canReview = $u && (bool)$pdo->query("SELECT 1 FROM sh_access WHERE user_id = " 
 $flash = $_SESSION['sh_flash'] ?? null; unset($_SESSION['sh_flash']);
 $teacher = sh_teacher_name($pdo, (int)($p['teacher_id'] ?? 0));
 $className = '';
-if (!empty($p['class_id'])) { try { $cq = $pdo->prepare("SELECT name FROM ci_classes WHERE id = ?"); $cq->execute([$p['class_id']]); $className = (string)$cq->fetchColumn(); } catch (Throwable) {} }
+$className = sh_category_name($pdo, (int)($p['category_id'] ?? 0));
+[$batchText, $batchUp] = sh_batch($p);
 $myFaq = array_values(array_filter(sh_json_list($p['faq'] ?? ''), fn($f) => !empty($f['q']) && !empty($f['a'])));
 $myInc = array_values(array_filter(array_map('strval', sh_json_list($p['includes'] ?? '')), fn($v) => trim($v) !== ''));
 $short = function (string $n) { $p = preg_split('/\s+/', trim(preg_replace('/\(.*?\)/', '', $n))); return trim(($p[0] ?? '') . (isset($p[1]) ? ' ' . mb_substr($p[1], 0, 1) . '.' : '')); };
@@ -63,6 +64,7 @@ $tabs = array_filter(['about' => $desc !== '' ? 'About' : '', 'content' => $isCo
     <?php if ($files): ?><li><?= $ico('file') ?> <?= count($files) ?> PDF<?= count($files) === 1 ? '' : 's' ?></li><?php endif; ?>
     <li><?= $ico($vd ? 'calendar' : 'infinity') ?> <?= $validity ?></li>
   </ul>
+  <?php if ($batchText !== ''): ?><p class="sp-batch<?= $batchUp ? ' up' : '' ?>"><?= $ico('calendar') ?> <?= $batchUp ? '<b>Upcoming batch</b> · ' : '' ?><?= sh_e($batchText) ?></p><?php endif; ?>
   <?php if ($teacher !== ''): ?><p class="sp-teach"><?= $ico('user') ?> Taught by <b><?= sh_e($teacher) ?></b></p><?php endif; ?>
   <p class="sp-meta"><?= $buyers ? '<b>' . $buyers . '</b> student' . ($buyers === 1 ? '' : 's') . ' enrolled · ' : '' ?>Updated <?= date('M Y', strtotime($updated)) ?></p>
 </div></div></section>

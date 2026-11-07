@@ -6,9 +6,9 @@ require_once INCLUDES_PATH . '/seo.php';
 require_once INCLUDES_PATH . '/ads.php';
 header('Cache-Control: private, no-store');
 $seo = [
-    'title' => ($stTitle ?? 'Store') . ' | ' . edu_site_name(),
+    'title' => !empty($stFullTitle) ? $stFullTitle : ($stTitle ?? 'Store') . ' | ' . edu_site_name(), // $stFullTitle: a page's own SEO title
     'description' => $stDesc ?? ($stTitle ?? 'Courses and notes'),
-    'image' => defined('SEO_DEFAULT_IMAGE') ? SEO_DEFAULT_IMAGE : '',
+    'image' => !empty($stImage) ? $stImage : (defined('SEO_DEFAULT_IMAGE') ? SEO_DEFAULT_IMAGE : ''),
     'type' => 'website',
     'robots' => !empty($stIndex) ? 'index, follow' : 'noindex, nofollow',
 ];

@@ -127,7 +127,8 @@ $quiz = $L ? sh_quiz($L) : ['items' => [], 'links' => []];
 $notesF = $L ? $pdo->query("SELECT id, title, pages, size FROM sh_files WHERE lesson_id = " . (int)$L['id'] . " ORDER BY sort, id")->fetchAll(PDO::FETCH_ASSOC) : [];
 $isLink = $L ? (!$L['video_file'] && $L['video_url']) : false;
 $kind = $L['kind'] ?? 'video';
-$clsName = $P && $P['class_id'] && isset($classes[$P['class_id']]) ? (string)$classes[$P['class_id']] : '';
+$clsName = $P && !empty($P['category_id']) ? sh_category_name($pdo, (int)$P['category_id']) : '';
+if ($clsName === '' && $P && $P['class_id'] && isset($classes[$P['class_id']])) $clsName = (string)$classes[$P['class_id']];
 if (preg_match('/^(\d{1,2})(st|nd|rd|th)$/i', $clsName, $cm)) $clsName = 'Class ' . $cm[1]; // "10th" → "Class 10"
 $cTitle = $P ? trim(preg_replace('/\s*[—–-]?\s*(Complete|Full)?\s*Course\b.*$/i', '', preg_replace('/\s*\(Demo\)\s*/', '', $P['title']))) : '';
 $prefix = trim(($clsName !== '' && stripos($cTitle, $clsName) === false ? $clsName . ' ' : '') . $cTitle);

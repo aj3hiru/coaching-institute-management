@@ -14,7 +14,7 @@
  */
 require_once __DIR__ . '/settings.php';
 
-const SH_SCHEMA = 8;
+const SH_SCHEMA = 9;
 
 function sh_db(): PDO
 {
@@ -112,6 +112,32 @@ function sh_tables(PDO $pdo): void
     $add('sh_users', 'address', 'VARCHAR(300) NULL');
     $add('sh_users', 'pincode', 'VARCHAR(10) NULL');
     $add('sh_users', 'avatar', 'VARCHAR(150) NULL');
+    // v9: course categories (made from the classes), batch start date, homepage slider and free YouTube courses
+    $pdo->exec("CREATE TABLE IF NOT EXISTS sh_categories (
+        id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, name VARCHAR(120) NOT NULL, slug VARCHAR(140) NOT NULL, icon VARCHAR(190) NULL,
+        description TEXT NULL, seo_title VARCHAR(200) NULL, seo_desc VARCHAR(320) NULL, sort INT NOT NULL DEFAULT 0, status VARCHAR(10) NOT NULL DEFAULT 'active',
+        created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP, UNIQUE KEY uq_slug (slug))$t");
+    $add('sh_products', 'category_id', 'INT UNSIGNED NULL');
+    $add('sh_products', 'starts_at', 'DATE NULL');
+    $pdo->exec("CREATE TABLE IF NOT EXISTS hm_slides (
+        id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, image VARCHAR(190) NOT NULL, mobile_image VARCHAR(190) NULL, link VARCHAR(500) NULL, title VARCHAR(200) NULL,
+        new_tab TINYINT(1) NOT NULL DEFAULT 0, sort INT NOT NULL DEFAULT 0, active TINYINT(1) NOT NULL DEFAULT 1, created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP)$t");
+    $pdo->exec("CREATE TABLE IF NOT EXISTS hm_free (
+        id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, url VARCHAR(500) NOT NULL, list_id VARCHAR(64) NULL, video_id VARCHAR(20) NULL, title VARCHAR(250) NOT NULL,
+        thumb VARCHAR(500) NULL, channel VARCHAR(150) NULL, videos INT UNSIGNED NULL, category_id INT UNSIGNED NULL, sort INT NOT NULL DEFAULT 0, active TINYINT(1) NOT NULL DEFAULT 1,
+        created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP)$t");
+    // first time: one category for each class, and courses keep their class as their category
+    if (!(int)$pdo->query("SELECT COUNT(*) FROM sh_categories")->fetchColumn()) {
+        try { $cls = $pdo->query("SELECT id, name FROM ci_classes ORDER BY sort, name")->fetchAll(PDO::FETCH_KEY_PAIR); } catch (Throwable) { $cls = []; }
+        $i = 0;
+        foreach ($cls as $cid => $cn) {
+            $name = preg_match('/^(\d{1,2})(st|nd|rd|th)$/i', trim($cn), $m) ? 'Class ' . $m[1] : trim($cn);
+            $slug = sh_slug($name) ?: 'category-' . $cid;
+            if ((int)$pdo->query("SELECT COUNT(*) FROM sh_categories WHERE slug = " . $pdo->quote($slug))->fetchColumn()) continue;
+            $pdo->prepare("INSERT INTO sh_categories (name, slug, sort) VALUES (?, ?, ?)")->execute([$name, $slug, ++$i]);
+            $pdo->prepare("UPDATE sh_products SET category_id = ? WHERE class_id = ? AND category_id IS NULL")->execute([(int)$pdo->lastInsertId(), $cid]);
+        }
+    }
     edu_settings_save('shop', ['schema' => SH_SCHEMA]);
 }
 
@@ -784,4 +810,100 @@ function sh_lesson_notes(PDO $pdo, int $lid): array
 {
     $q = $pdo->prepare("SELECT * FROM sh_files WHERE lesson_id = ? ORDER BY sort, id"); $q->execute([$lid]);
     return $q->fetchAll(PDO::FETCH_ASSOC);
+}
+
+
+/* ---------- categories, batches, homepage ---------- */
+
+/** Active categories [id => row] (with the number of published courses / notes in each). */
+function sh_categories(PDO $pdo, bool $all = false): array
+{
+    $rows = $pdo->query("SELECT c.*, (SELECT COUNT(*) FROM sh_products p WHERE p.category_id = c.id AND p.status = 'published') AS items FROM sh_categories c"
+        . ($all ? '' : " WHERE c.status = 'active'") . " ORDER BY c.sort, c.name")->fetchAll(PDO::FETCH_ASSOC);
+    $out = []; foreach ($rows as $r) $out[(int)$r['id']] = $r; return $out;
+}
+function sh_category_name(PDO $pdo, int $id): string
+{
+    if (!$id) return '';
+    static $c = []; if (!isset($c[$id])) { $q = $pdo->prepare("SELECT name FROM sh_categories WHERE id = ?"); $q->execute([$id]); $c[$id] = (string)$q->fetchColumn(); }
+    return $c[$id];
+}
+function sh_upload_url(string $f): string { return $f === '' ? '' : (preg_match('#^https?://#', $f) ? $f : '/' . ltrim($f, '/')); }
+/** Saves an uploaded image (PNG / JPG / WebP / SVG for icons) under uploads/<dir>/. Returns [relative path, error]. */
+function sh_image_save(array $file, string $dir, int $maxMb = 5, bool $svg = false): array
+{
+    if (($file['error'] ?? 4) !== UPLOAD_ERR_OK) return ['', 'The image could not be uploaded.'];
+    if ($file['size'] > $maxMb * 1048576) return ['', "Please choose an image smaller than $maxMb MB."];
+    $ext = strtolower(pathinfo((string)$file['name'], PATHINFO_EXTENSION));
+    $info = @getimagesize($file['tmp_name']);
+    $map = [IMAGETYPE_JPEG => 'jpg', IMAGETYPE_PNG => 'png', IMAGETYPE_WEBP => 'webp', IMAGETYPE_GIF => 'gif'];
+    if ($info && isset($map[$info[2]])) $ext = $map[$info[2]];
+    elseif ($svg && $ext === 'svg') { $x = (string)file_get_contents($file['tmp_name'], false, null, 0, 200000); if (!str_contains($x, '<svg') || preg_match('/<script|on\w+\s*=|javascript:/i', $x)) return ['', 'This SVG is not allowed.']; }
+    else return ['', 'Please upload a PNG, JPG or WebP image' . ($svg ? ' (or SVG)' : '') . '.'];
+    $base = rtrim((string)$_SERVER['DOCUMENT_ROOT'], '/') . '/uploads/' . $dir;
+    if (!is_dir($base)) @mkdir($base, 0755, true);
+    $name = date('ymd') . '-' . bin2hex(random_bytes(5)) . '.' . $ext;
+    if (!@move_uploaded_file($file['tmp_name'], "$base/$name")) return ['', 'The image could not be saved.'];
+    @chmod("$base/$name", 0644);
+    return ["uploads/$dir/$name", ''];
+}
+function sh_image_drop(?string $rel): void
+{
+    $rel = (string)$rel;
+    if ($rel !== '' && preg_match('#^uploads/(slides|categories)/[\w.-]+$#', $rel)) @unlink(rtrim((string)$_SERVER['DOCUMENT_ROOT'], '/') . '/' . $rel);
+}
+/** The homepage is cached: refresh it after a change. */
+function sh_home_refresh(): void { foreach (glob(ROOT_PATH . '/cache/index_home*.html') ?: [] as $f) @unlink($f); }
+/** Batch start: [text, upcoming?] for a course with a start date. */
+function sh_batch(array $p): array
+{
+    if (empty($p['starts_at'])) return ['', false];
+    $t = strtotime($p['starts_at']); $up = $t >= strtotime('today');
+    return [($up ? 'Batch starts ' : 'Started ') . date('d M Y', $t), $up];
+}
+/** Compact course card for the homepage (2 per row on phones). */
+function sh_mini_card(array $p, string $cat = ''): string
+{
+    [$bt, $up] = sh_batch($p);
+    $meta = $p['type'] === 'notes' ? (int)($p['files'] ?? 0) . ' PDF' . ((int)($p['files'] ?? 0) === 1 ? '' : 's') : (int)($p['lessons'] ?? 0) . ' lecture' . ((int)($p['lessons'] ?? 0) === 1 ? '' : 's');
+    return '<a class="hc" href="' . sh_e(sh_url($p)) . '"><span class="hc-img">' . sh_thumb_html($p) . ($up ? '<em class="hc-up">Upcoming</em>' : ((float)$p['price'] <= 0 ? '<em class="hc-free">Free</em>' : '')) . '</span>'
+        . '<span class="hc-b">' . ($cat !== '' ? '<small class="hc-cat">' . sh_e($cat) . '</small>' : '') . '<b class="hc-t">' . sh_e($p['title']) . '</b>'
+        . '<small class="hc-m">' . sh_e($bt !== '' ? $bt : $meta) . '</small><span class="hc-p">' . sh_price_html($p) . '</span><span class="hc-go">View details ›</span></span></a>';
+}
+/** Published courses, newest first (for the homepage list and its "View more"). */
+function sh_latest(PDO $pdo, string $type, int $limit, int $offset = 0, int $cat = 0): array
+{
+    $sql = "SELECT p.*, (SELECT COUNT(*) FROM sh_lessons l WHERE l.product_id = p.id) AS lessons, (SELECT COUNT(*) FROM sh_files f WHERE f.product_id = p.id) AS files
+        FROM sh_products p WHERE p.status = 'published' AND p.type = " . $pdo->quote($type) . ($cat ? ' AND p.category_id = ' . $cat : '') . " ORDER BY p.id DESC LIMIT " . max(1, $limit) . ' OFFSET ' . max(0, $offset);
+    return $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+}
+/** YouTube playlist (or single video) details for a Free course: [list, video, title, thumb, channel, videos, error]. */
+function sh_yt_free_info(string $url): array
+{
+    $url = trim($url);
+    $list = preg_match('/[?&]list=([A-Za-z0-9_-]{10,64})/', $url, $m) ? $m[1] : '';
+    $vid = preg_match('~(?:youtu\.be/|v=|/embed/|/shorts/|/live/)([A-Za-z0-9_-]{11})~', $url, $m) ? $m[1] : '';
+    if ($list === '' && $vid === '') return ['error' => 'Paste a YouTube playlist link (it has "list=" in it) or a video link.'];
+    $page = $list !== '' ? 'https://www.youtube.com/playlist?list=' . $list : 'https://www.youtube.com/watch?v=' . $vid;
+    $o = json_decode(sh_http_get('https://www.youtube.com/oembed?format=json&url=' . rawurlencode($page), 12), true) ?: [];
+    if (empty($o['title'])) return ['error' => 'Could not read this link. Make sure the playlist is Public or Unlisted on YouTube, then try again.'];
+    $videos = null;
+    if ($list !== '') { $pl = sh_yt_playlist($list); if ($pl) { $videos = count($pl); if ($vid === '') $vid = (string)array_values($pl)[0][0]; } }
+    $thumb = (string)($o['thumbnail_url'] ?? ''); if ($thumb === '' && $vid !== '') $thumb = 'https://i.ytimg.com/vi/' . $vid . '/hqdefault.jpg';
+    return ['list' => $list, 'video' => $vid, 'title' => (string)$o['title'], 'thumb' => $thumb, 'channel' => (string)($o['author_name'] ?? ''), 'videos' => $videos, 'error' => ''];
+}
+/** Homepage texts / numbers kept in settings (with sensible defaults). */
+function sh_home_cfg(): array
+{
+    $j = fn($k) => json_decode((string)es('home', $k, ''), true);
+    $impact = $j('impact'); $why = $j('why');
+    return [
+        'impact' => is_array($impact) && $impact ? $impact : [['k' => 'students', 'l' => 'Registered students', 'v' => ''], ['k' => 'courses', 'l' => 'Active courses', 'v' => ''], ['k' => 'free', 'l' => 'Free videos', 'v' => ''], ['k' => 'notes', 'l' => 'PDF notes', 'v' => ''], ['k' => 'years', 'l' => 'Years of teaching', 'v' => '10+']],
+        'why' => is_array($why) && $why ? $why : [
+            ['t' => 'Expert teachers', 'd' => 'Experienced teachers who explain every chapter step by step, in simple language.'],
+            ['t' => 'Chapter-wise courses', 'd' => 'Well-planned courses for every class, with notes, VVI questions and quizzes under each lecture.'],
+            ['t' => 'Learn at your own pace', 'd' => 'Watch recorded classes any time on your phone or computer — pause, repeat, and change the speed.'],
+            ['t' => 'Doubt solving', 'd' => 'Ask your doubt under any lecture and get the teacher\'s answer right there.']],
+        'why_title' => (string)es('home', 'why_title', ''),
+    ];
 }
