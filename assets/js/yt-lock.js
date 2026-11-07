@@ -101,7 +101,6 @@
   function dress(box) {
     var big = box.querySelector('.plyr__control--overlaid');
     if (big && !big._yt) { big._yt = true; big.classList.add('ytb'); big.innerHTML = YT_BTN + '<span class="plyr__sr-only">Play</span>'; }
-    if (box._p && box._p.touch) box.classList.add('is-touch'); // (no extra middle button: YouTube shows its own)
     menuRoom(box);
   }
   // menus never taller than the video (phones): they scroll inside
@@ -129,19 +128,12 @@
       if (e.target.closest && e.target.closest('.plyr__menu, .ytq')) return;
       e.stopPropagation(); e.preventDefault(); closeMenus(box);
     }, true);
-    // Phones (like the YouTube app): a tap on the picture shows / hides the controls — it never plays or pauses.
-    // Play / pause = the play button in the bar.
-    // With a mouse Plyr keeps YouTube's computer behaviour: a click on the picture plays / pauses.
-    if (!box._tap) {
-      box._tap = true;
-      box.addEventListener('touchstart', function () { var pl = box.querySelector('.plyr'); box._ctrlWas = !!pl && !pl.classList.contains('plyr--hide-controls'); }, { passive: true, capture: true });
-      box.addEventListener('click', function (e) {
-        var p = box._p; if (!p || !(p.touch && p.config.hideControls) || !p.ready || !box.classList.contains('yt-go')) return;
-        var t = e.target;
-        if (!t.closest || !t.closest('.plyr__video-wrapper, .plyr__poster') || t.closest('.plyr__controls, .plyr__control, .plyr__menu')) return;
-        if (box._ctrlWas) p.toggleControls(false); // shown → hide; hidden → Plyr has just shown them
-      });
-    }
+    if (!box._tap) box._tap = true, box.addEventListener('click', function (e) { // added once per box (a new lesson reuses it)
+      var p = box._p; if (!p || !(p.touch && p.config.hideControls) || !p.ready) return;
+      var t = e.target;
+      if (!t.closest || !t.closest('.plyr__video-wrapper, .plyr__poster') || t.closest('.plyr__controls, .plyr__control, .plyr__menu')) return;
+      if (p.ended) { p.currentTime = 0; p.play(); } else p.togglePlay();
+    });
     if (box._q === undefined) box._q = store.get();
     box.classList.remove('yt-started', 'yt-go');
     p.on('ready', function () { addQ(box); dress(box); sizeFrame(box); });
