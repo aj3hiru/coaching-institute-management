@@ -324,3 +324,8 @@
   .hm-why-cta{order:3}
 }
 @media (max-width:640px){.hm-why-l{display:contents}.hm-why-l h2,.hm-why-l p{margin:0}.hm-why-g{order:2}.hm-why-cta{order:3}.hm-why-in{gap:12px!important}}
+
+/* Why choose us — only the point names, icon beside the text (computers and phones) */
+.hm-why-g li{align-items:center!important;flex-direction:row!important;padding:16px!important}
+.hm-why-g b{margin:0!important;font-size:15.5px;line-height:1.3}
+@media (max-width:640px){.hm-why-g li{gap:9px!important;padding:11px 10px!important}.hm-why-g b{font-size:13px}.hm-why-i{width:30px;height:30px}}

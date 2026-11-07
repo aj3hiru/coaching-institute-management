@@ -189,7 +189,7 @@ $short0 = function (string $n) { $p = preg_split('/\s+/', trim(preg_replace('/\(
     // icon from the point's words, so a point typed in admin still gets a fitting one
     $wk = ['board|smart|digital' => 'board', 'mcq|quiz' => 'quiz', 'test|exam' => 'calendar', 'growth|guidance|progress' => 'trend', 'competitive|zero|level|rank' => 'trophy', 'doubt' => 'chat', 'teacher|faculty' => 'user', 'pace|record|any ?time|video' => 'play', 'note|pdf' => 'notes', 'course|chapter' => 'layers'];
     foreach ($cfg['why'] as $i => $w): $wn = $wi[$i % count($wi)]; foreach ($wk as $rx => $n) if (preg_match('/' . $rx . '/i', $w['t'])) { $wn = $n; break; } ?>
-    <li><span class="hm-why-i"><?= $ico($wn) ?></span><div><b><?= htmlspecialchars($w['t']) ?></b><?php if ($w['d'] !== ''): ?><p><?= htmlspecialchars($w['d']) ?></p><?php endif; ?></div></li>
+    <li><span class="hm-why-i"><?= $ico($wn) ?></span><b><?= htmlspecialchars($w['t']) ?></b></li>
   <?php endforeach; ?></ol>
 </div></section>
 
