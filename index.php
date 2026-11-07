@@ -24,6 +24,10 @@ $brand = $inst['brand']['title'] ?: edu_site_name();
 $cats = sh_categories($pdo);
 $catName = fn(array $p) => $cats[(int)($p['category_id'] ?? 0)]['name'] ?? '';
 $slides = $pdo->query("SELECT * FROM hm_slides WHERE active = 1 ORDER BY sort, id")->fetchAll(PDO::FETCH_ASSOC);
+if (!$slides) $slides = [ // until the admin adds slides (Online Store → Homepage): ready-made picture banners
+    ['image' => 'assets/img/home/default-board.jpg', 'mobile_image' => 'assets/img/home/default-board-m.jpg', 'link' => '/store/?t=course', 'title' => 'New batches — admissions open', 'new_tab' => 0],
+    ['image' => 'assets/img/home/default-free.jpg', 'mobile_image' => 'assets/img/home/default-free-m.jpg', 'link' => '/store/free', 'title' => 'Free courses for every student', 'new_tab' => 0],
+    ['image' => 'assets/img/home/default-notes.jpg', 'mobile_image' => 'assets/img/home/default-notes-m.jpg', 'link' => '/store/notes', 'title' => 'Notes and study materials', 'new_tab' => 0]];
 $courses = sh_latest($pdo, 'course', 9);            // 8 shown, the 9th tells if "View more" has anything
 $moreCourses = count($courses) > 8; $courses = array_slice($courses, 0, 8);
 $up = $pdo->query("SELECT p.*, (SELECT COUNT(*) FROM sh_lessons l WHERE l.product_id = p.id) AS lessons, (SELECT COUNT(*) FROM sh_files f WHERE f.product_id = p.id) AS files
@@ -87,15 +91,7 @@ $short0 = function (string $n) { $p = preg_split('/\s+/', trim(preg_replace('/\(
     <div class="hs-s hm-slide" role="group" aria-label="Slide <?= $i + 1 ?> of <?= count($slides) ?>"><?php if ($sl['link']): ?><a href="<?= sh_e($sl['link']) ?>"<?= $sl['new_tab'] ? ' target="_blank" rel="noopener"' : '' ?>><?php endif; ?>
       <picture><?php if ($sl['mobile_image']): ?><source media="(max-width:700px)" srcset="<?= sh_e(sh_upload_url($sl['mobile_image'])) ?>"><?php endif; ?><img src="<?= $img ?>" alt="<?= $alt ?>"<?= $i ? ' loading="lazy"' : ' fetchpriority="high"' ?>></picture>
     <?php if ($sl['link']): ?></a><?php endif; ?></div>
-  <?php endforeach; else: ?>
-    <div class="hs-s hm-slide hm-slide-def"><div class="sp-wrap hm-def">
-      <div><span class="hm-pill"><?= $ico('shield') ?> <?= htmlspecialchars($brand) ?> · Classes <?= htmlspecialchars($range) ?></span>
-        <h1>Learn smarter. <span>Score higher.</span></h1>
-        <p>Expert teachers, chapter-wise recorded classes, notes and quizzes — at our institute or online on any phone.</p>
-        <div class="hm-cta"><a class="hm-btn" href="/store/?t=course"><?= $ico('compass') ?> Explore courses</a><a class="hm-btn ghost" href="/store/notes"><?= $ico('notes') ?> Study materials</a></div></div>
-      <?php if ($feat): ?><a class="hm-def-c" href="<?= sh_e(sh_url($feat)) ?>" tabindex="-1" aria-hidden="true"><?= sh_thumb_html($feat) ?><span><b><?= sh_e($feat['title']) ?></b><small><?= sh_price_html($feat) ?></small></span></a><?php endif; ?>
-    </div></div>
-  <?php endif; ?>
+  <?php endforeach; endif; ?>
   </div>
   <?php if (count($slides) > 1): ?><button type="button" class="hs-prev" aria-label="Previous slide">‹</button><button type="button" class="hs-next" aria-label="Next slide">›</button><div class="hs-dots"></div><?php endif; ?>
 </section>
