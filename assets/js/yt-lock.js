@@ -20,6 +20,14 @@
       youtube: { noCookie: true, rel: 0, showinfo: 0, iv_load_policy: 3, modestbranding: 1, playsinline: 1, disablekb: 1, cc_load_policy: 0, fs: 0 }
     });
     box._p = p; box.setAttribute('data-yt', id);
+    // Tap on the picture = play / pause on phones too. Plyr does this itself only with a mouse (on touch screens a tap
+    // just shows its controls), so this runs exactly when Plyr's own click does not — never both.
+    if (!box._tap) box._tap = true, box.addEventListener('click', function (e) { // added once per box (a new lesson reuses it)
+      var p = box._p; if (!p || !(p.touch && p.config.hideControls) || !p.ready) return;
+      var t = e.target;
+      if (!t.closest || !t.closest('.plyr__video-wrapper, .plyr__poster') || t.closest('.plyr__controls, .plyr__control, .plyr__menu')) return;
+      if (p.ended) { p.currentTime = 0; p.play(); } else p.togglePlay();
+    });
     p.on('ended', function () { box.classList.add('is-ended'); try { p.stop(); } catch (e) {} box.dispatchEvent(new CustomEvent('yt-ended')); }); // no YouTube end screen
     p.on('playing', function () { box.classList.remove('is-ended'); });
     return p;
