@@ -103,7 +103,7 @@ $short0 = function (string $n) { $p = preg_split('/\s+/', trim(preg_replace('/\(
   <div class="hm-h"><div><h2>Our Courses</h2></div><a href="/courses/">View all ›</a></div>
   <?php if (!$courses): ?><div class="st-empty">New courses are coming soon.</div><?php else: ?>
   <div class="hm-grid" id="hmCourses"><?php foreach ($courses as $p) echo sh_mini_card($p, $catName($p)); ?></div>
-  <div class="hm-more"><?php if ($moreCourses || count($courses) > 4): ?><button type="button" class="hm-btn hm-pro" id="hmMore" data-o="8" data-more="<?= $moreCourses ? 1 : 0 ?>">View more courses <span class="hm-pro-a"><?= $ico('arrow') ?></span></button><?php endif; ?><a class="hm-btn hm-pro" id="hmAll" href="/courses/"<?= $moreCourses || count($courses) > 4 ? ' hidden' : '' ?>>See all courses <span class="hm-pro-a"><?= $ico('arrow') ?></span></a></div>
+  <div class="hm-more"><?php if ($moreCourses || count($courses) > 4): ?><button type="button" class="hm-btn hm-pro hm-splash" id="hmMore" data-o="8" data-more="<?= $moreCourses ? 1 : 0 ?>">View more courses <span class="hm-pro-a"><?= $ico('arrow') ?></span></button><?php endif; ?><a class="hm-btn hm-pro hm-splash" id="hmAll" href="/courses/"<?= $moreCourses || count($courses) > 4 ? ' hidden' : '' ?>>See all courses <span class="hm-pro-a"><?= $ico('arrow') ?></span></a></div>
   <?php endif; ?>
 </div></section>
 
@@ -142,7 +142,7 @@ $short0 = function (string $n) { $p = preg_split('/\s+/', trim(preg_replace('/\(
   <div class="hm-h"><div><h2>Study Materials</h2></div><a href="/notes/">Explore ›</a></div>
   <div class="hm-ns" data-hs><div class="hs-track"><?php foreach ($notes as $p): ?><div class="hs-s"><?= sh_mini_card($p, $catName($p)) ?></div><?php endforeach; ?></div>
     <button type="button" class="hs-prev" aria-label="Previous">‹</button><button type="button" class="hs-next" aria-label="Next">›</button><div class="hs-dots"></div></div>
-  <div class="hm-more"><a class="hm-btn hm-pro" href="/notes/"><?= $ico('pdf') ?> Explore study materials <span class="hm-pro-a"><?= $ico('arrow') ?></span></a></div>
+  <div class="hm-more"><a class="hm-btn hm-pro hm-splash" href="/notes/">Study materials <span class="hm-pro-a"><?= $ico('arrow') ?></span></a></div>
 </div></section>
 <?php endif; ?>
 
