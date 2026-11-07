@@ -28,14 +28,14 @@
   function nudge(box, tries) {
     var p = box._p; if (!p || !p.embed || !p.embed.seekTo) return;
     var e = p.embed, want = box._q, t = e.getCurrentTime ? e.getCurrentTime() : 0;
-    if (t > 0.5) e.seekTo(t, true);
+    if (t > 0.5) e.seekTo(t + 0.05, true); // a fresh piece of video → YouTube fetches it in the new size's quality
     clearTimeout(box._nt);
     box._nt = setTimeout(function () {
       paintQ(box);
       if (want !== 'auto' && box._q === want && e.getPlaybackQuality && e.getPlaybackQuality() !== want && tries > 1 && p.playing) nudge(box, tries - 1);
-    }, 4000);
+    }, 3000);
   }
-  function setQ(box, q) { box._q = q; store.set(q); sizeFrame(box); nudge(box, 3); paintQ(box); }
+  function setQ(box, q) { box._q = q; store.set(q); sizeFrame(box); nudge(box, 5); paintQ(box); }
   function levels(box) {
     var e = box._p && box._p.embed, a = e && e.getAvailableQualityLevels ? e.getAvailableQualityLevels() || [] : [];
     return QORDER.filter(function (k) { return a.indexOf(k) !== -1; });
@@ -92,7 +92,7 @@
     });
     if (box._q === undefined) box._q = store.get();
     p.on('ready', function () { addQ(box); sizeFrame(box); });
-    p.on('playing', function () { if (!box._qSeen) { box._qSeen = true; if (box._q !== 'auto') nudge(box, 3); } paintQ(box); });
+    p.on('playing', function () { if (!box._qSeen) { box._qSeen = true; if (box._q !== 'auto') nudge(box, 5); } paintQ(box); });
     p.on('qualitychange', function () { paintQ(box); });
     p.on('enterfullscreen', function () { setTimeout(function () { sizeFrame(box); }, 60); });
     p.on('exitfullscreen', function () { setTimeout(function () { sizeFrame(box); }, 60); });
