@@ -222,8 +222,9 @@ $tel = fn(?string $m) => $m ? '<a href="tel:' . ci_e($m) . '">' . ci_e($m) . '</
       $oq = $pdo->prepare("SELECT u.id, u.email, (SELECT COUNT(*) FROM sh_access a WHERE a.user_id = u.id AND a.revoked = 0 AND (a.expires_at IS NULL OR a.expires_at > NOW())) AS items FROM sh_users u WHERE u.student_id = ? OR u.mobile = ? ORDER BY u.student_id = ? DESC LIMIT 1");
       $oq->execute([$s['id'], $s['mobile'], $s['id']]); $oacc = $oq->fetch(PDO::FETCH_ASSOC); ?>
     <div class="ci-card" data-ds="Online account"><div class="ci-card-h"><h3>Online account</h3></div><div class="ci-card-b">
-      <?php if ($oacc): ?><p style="margin:0 0 8px"><?= ci_e($oacc['email']) ?> · <?= (int)$oacc['items'] ?> course<?= (int)$oacc['items'] === 1 ? '' : 's' ?> / notes</p><a class="ci-btn ci-ghost ci-sm" href="/admin/shop-customers.php?id=<?= (int)$oacc['id'] ?>"><i class="fas fa-key"></i> Open · give courses</a>
-      <?php else: ?><p class="ci-muted" style="margin:0 0 8px">No online account yet. The student can sign up with mobile <?= ci_e($s['mobile']) ?>, or you can make one.</p><a class="ci-btn ci-ghost ci-sm" href="/admin/shop-customers.php?new=1&student=<?= (int)$s['id'] ?>"><i class="fas fa-user-plus"></i> Make online account</a><?php endif; ?>
+      <?php $canSell = sh_perm($me, 'orders'); ?>
+      <?php if ($oacc): ?><p style="margin:0 0 8px"><?= str_ends_with((string)$oacc['email'], '@noemail.invalid') ? 'Mobile login' : ci_e($oacc['email']) ?> · <?= (int)$oacc['items'] ?> online course<?= (int)$oacc['items'] === 1 ? '' : 's' ?> / notes</p><div style="display:flex;gap:6px;flex-wrap:wrap"><?php if ($canSell): ?><button type="button" class="ci-btn ci-sm" data-enroll="Online course / notes for <?= ci_e($s['name']) ?>" data-enroll-sid="<?= (int)$s['id'] ?>" data-enroll-name="<?= ci_e($s['name']) ?>"><i class="fas fa-cart-plus"></i> Sell / give online course</button><?php endif; ?><a class="ci-btn ci-ghost ci-sm" href="/admin/shop-customers.php?id=<?= (int)$oacc['id'] ?>"><i class="fas fa-key"></i> Open account</a></div>
+      <?php else: ?><p class="ci-muted" style="margin:0 0 8px">No online account yet. The student can sign up with mobile <?= ci_e($s['mobile']) ?>, or you can make one.</p><div style="display:flex;gap:6px;flex-wrap:wrap"><?php if ($canSell): ?><button type="button" class="ci-btn ci-sm" data-enroll="Online course / notes for <?= ci_e($s['name']) ?>" data-enroll-sid="<?= (int)$s['id'] ?>" data-enroll-name="<?= ci_e($s['name']) ?>"><i class="fas fa-cart-plus"></i> Sell / give online course</button><?php endif; ?><a class="ci-btn ci-ghost ci-sm" href="/admin/shop-customers.php?new=1&student=<?= (int)$s['id'] ?>"><i class="fas fa-user-plus"></i> Only make the account</a></div><?php endif; ?>
     </div></div>
     <?php endif; ?>
     <div class="ci-card" data-ds="Class history"><div class="ci-card-h"><h3>Class history</h3></div><div class="ci-card-b">
@@ -317,6 +318,8 @@ $tel = fn(?string $m) => $m ? '<a href="tel:' . ci_e($m) . '">' . ci_e($m) . '</
 </div></div>
 <?php endif; ?>
 </div>
+<?php if (function_exists('sh_perm') && sh_perm($me, 'orders')) require __DIR__ . '/components/sh-enroll.php'; ?>
+<?php if (!empty($_GET['online'])): ?><script>window.addEventListener('load',function(){var b=document.querySelector('[data-enroll-sid]');if(b)b.click();});</script><?php endif; ?>
 <?php admin_shell_close(); ?>
 <script>
 (function () {

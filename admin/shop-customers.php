@@ -96,7 +96,7 @@ if ($id) {
 <?php admin_shell_head(); ci_head(); ?>
 </head>
 <body>
-<?php admin_shell_open($cu ? ci_e($cu['name']) : 'Store Customers', $cu ? 'Buyer account' : 'Online accounts of students and buyers', $cu ? '<a class="ci-btn ci-ghost" href="/admin/shop-customers.php"><i class="fas fa-arrow-left"></i> All customers</a>' : '<a class="ci-btn" href="?new=1#mk"><i class="fas fa-user-plus"></i> Add Student / Customer</a>'); ?>
+<?php admin_shell_open($cu ? ci_e($cu['name']) : 'Store Customers', $cu ? 'Buyer account' : 'Online accounts of students and buyers', $cu ? '<a class="ci-btn ci-ghost" href="/admin/shop-customers.php"><i class="fas fa-arrow-left"></i> All customers</a>' : (sh_perm($me, 'orders') ? '<button type="button" class="ci-btn" data-enroll="Enroll a student"><i class="fas fa-cart-plus"></i> Enroll student</button> ' : '') . '<a class="ci-btn ci-ghost" href="?new=1#mk"><i class="fas fa-user-plus"></i> Account only</a>'); ?>
 <div class="ci">
 <?= admin_flash() ?>
 <?php if ($cu): ?>
@@ -119,9 +119,9 @@ if ($id) {
   </div></div>
 </div>
 
-<div class="ci-card"><div class="ci-card-h"><h3>Can open</h3></div><div class="ci-card-b">
+<div class="ci-card"><div class="ci-card-h"><h3>Can open</h3><?php if (sh_perm($me, 'orders')): ?><button type="button" class="ci-btn ci-sm" data-enroll="Enroll <?= ci_e($cu['name']) ?>" data-enroll-uid="<?= $id ?>" data-enroll-name="<?= ci_e($cu['name']) ?>"><i class="fas fa-cart-plus"></i> Enroll in a course / notes (paid)</button><?php endif; ?></div><div class="ci-card-b">
   <form method="post" class="ci-filters" style="margin:0 0 12px"><?= csrf_field() ?><input type="hidden" name="action" value="grant"><input type="hidden" name="uid" value="<?= $id ?>">
-    <div class="ci-f" style="min-width:260px"><label>Give a course / notes</label><select name="product_id" required data-search><option value=""></option><?php foreach ($products as $pp): ?><option value="<?= (int)$pp['id'] ?>"><?= ci_e($pp['title'] . ' — ' . ((float)$pp['price'] > 0 ? ci_money0($pp['price']) : 'Free') . ($pp['status'] !== 'published' ? ' (' . $pp['status'] . ')' : '')) ?></option><?php endforeach; ?></select></div>
+    <div class="ci-f" style="min-width:260px"><label>Give a course / notes free</label><select name="product_id" required data-search><option value=""></option><?php foreach ($products as $pp): ?><option value="<?= (int)$pp['id'] ?>"><?= ci_e($pp['title'] . ' — ' . ((float)$pp['price'] > 0 ? ci_money0($pp['price']) : 'Free') . ($pp['status'] !== 'published' ? ' (' . $pp['status'] . ')' : '')) ?></option><?php endforeach; ?></select></div>
     <div class="ci-f"><label>For how long</label><select name="days"><option value="">Product's own access period</option><option value="0">Lifetime</option><option value="30">1 month</option><option value="90">3 months</option><option value="180">6 months</option><option value="365">1 year</option></select></div>
     <div class="ci-f"><label>Note</label><input name="note" maxlength="200" placeholder="e.g. Offline batch student, paid cash"></div>
     <div class="ci-f"><label>&nbsp;</label><button class="ci-btn" type="submit"><i class="fas fa-key"></i> Give access</button></div>
@@ -163,6 +163,7 @@ if ($id) {
 </tbody></table></div></div>
 <?php endif; ?>
 </div>
+<?php if (sh_perm($me, 'orders')) require __DIR__ . '/components/sh-enroll.php'; ?>
 <?php admin_shell_close(); ?>
 </body>
 </html>

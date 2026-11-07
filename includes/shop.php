@@ -915,3 +915,61 @@ function sh_home_cfg(): array
         'why_title' => (string)es('home', 'why_title', ''),
     ];
 }
+
+/* ---------- orders made by staff (student pays at the office: cash / UPI / card …) ---------- */
+
+const SH_PAY_MODES = ['cash' => 'Cash', 'upi' => 'UPI', 'card' => 'Card', 'bank' => 'Bank transfer', 'cheque' => 'Cheque', 'online' => 'Online (other)', 'free' => 'Free (no payment)'];
+
+/** The online account for an institute student (found by link or mobile, else made). Returns [user id, new password or '']. */
+function sh_account_for_student(PDO $pdo, int $sid, int $by = 0): array
+{
+    $s = $pdo->prepare("SELECT id, name, mobile, email FROM ci_students WHERE id = ?"); $s->execute([$sid]);
+    $st = $s->fetch(PDO::FETCH_ASSOC);
+    if (!$st) throw new RuntimeException('Student not found.');
+    $q = $pdo->prepare("SELECT id FROM sh_users WHERE student_id = ? OR mobile = ? ORDER BY student_id = ? DESC LIMIT 1"); $q->execute([$sid, sh_clean_mobile((string)$st['mobile']), $sid]);
+    if ($uid = (int)$q->fetchColumn()) { $pdo->prepare("UPDATE sh_users SET student_id = COALESCE(student_id, ?) WHERE id = ?")->execute([$sid, $uid]); return [$uid, '']; }
+    [$uid, $pass] = sh_account_new($pdo, (string)$st['name'], (string)$st['mobile'], (string)$st['email'], '', $by);
+    $pdo->prepare("UPDATE sh_users SET student_id = ? WHERE id = ?")->execute([$sid, $uid]);
+    return [$uid, $pass];
+}
+/** A new online account made by staff; email may be empty (a placeholder is used, the student can change it in My Profile). */
+function sh_account_new(PDO $pdo, string $name, string $mobile, string $email, string $pass, int $by = 0): array
+{
+    $mobile = sh_clean_mobile($mobile);
+    $email = strtolower(trim($email));
+    if ($email === '' && preg_match('/^[6-9]\d{9}$/', $mobile)) $email = 'm' . $mobile . '@noemail.invalid';
+    $made = $pass === '';
+    if ($made) $pass = (string)random_int(100000, 999999); // 6 digits — easy to tell the student at the desk
+    $uid = sh_register($pdo, $name, $mobile, $email, $pass, $by ?: null);
+    return [$uid, $made ? $pass : ''];
+}
+/** Staff order: gives the course / notes and records the payment. $who = ['uid'=>N] | ['sid'=>N] | ['new'=>[name, mobile, email, pass]].
+    Returns ['uid', 'order_id', 'order_no', 'password' (when an account was made), 'name']. */
+function sh_manual_order(PDO $pdo, array $who, int $pid, ?float $amount, string $mode, ?string $paidOn, string $note, ?int $days, int $by): array
+{
+    $p = sh_product($pdo, $pid, false);
+    if (!$p) throw new RuntimeException('Choose a course or notes.');
+    if (!isset(SH_PAY_MODES[$mode])) throw new RuntimeException('Choose how the student paid.');
+    $amount = $mode === 'free' ? 0.0 : round(max(0, $amount ?? (float)$p['price']), 2);
+    $pass = '';
+    $pdo->beginTransaction();
+    try {
+        if (!empty($who['uid'])) $uid = (int)$who['uid'];
+        elseif (!empty($who['sid'])) [$uid, $pass] = sh_account_for_student($pdo, (int)$who['sid'], $by);
+        else { $n = $who['new'] ?? []; [$uid, $pass] = sh_account_new($pdo, (string)($n['name'] ?? ''), (string)($n['mobile'] ?? ''), (string)($n['email'] ?? ''), (string)($n['pass'] ?? ''), $by); }
+        $u = $pdo->prepare("SELECT id, name FROM sh_users WHERE id = ?"); $u->execute([$uid]); $u = $u->fetch(PDO::FETCH_ASSOC);
+        if (!$u) throw new RuntimeException('Account not found.');
+        $at = $paidOn && preg_match('/^\d{4}-\d{2}-\d{2}$/', $paidOn) && $paidOn <= date('Y-m-d') ? $paidOn . date(' H:i:s') : date('Y-m-d H:i:s');
+        $oid = null; $no = '';
+        if ($mode === 'free') sh_grant($pdo, $uid, $pid, 'admin', null, $by, trim('Given free at the office. ' . $note), $days);
+        else {
+            $pdo->prepare("INSERT INTO sh_orders (user_id, product_id, title, amount, status, rzp_order, rzp_payment, method, error, created_at, paid_at) VALUES (?,?,?,?, 'paid', ?, ?, ?, ?, ?, ?)")
+                ->execute([$uid, $pid, $p['title'], $amount, 'manual_' . bin2hex(random_bytes(6)), 'OFFICE-' . strtoupper(bin2hex(random_bytes(4))), 'office · ' . $mode, $note !== '' ? mb_substr('Note: ' . $note, 0, 300) : null, $at, $at]);
+            $oid = (int)$pdo->lastInsertId(); $no = 'DKO-' . str_pad((string)$oid, 6, '0', STR_PAD_LEFT);
+            $pdo->prepare("UPDATE sh_orders SET order_no = ? WHERE id = ?")->execute([$no, $oid]);
+            sh_grant($pdo, $uid, $pid, 'purchase', $oid, $by, $note, $days);
+        }
+        $pdo->commit();
+    } catch (Throwable $e) { if ($pdo->inTransaction()) $pdo->rollBack(); throw $e; }
+    return ['uid' => $uid, 'order_id' => $oid, 'order_no' => $no, 'password' => $pass, 'name' => $u['name'], 'title' => $p['title'], 'amount' => $amount];
+}

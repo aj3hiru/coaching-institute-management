@@ -170,7 +170,8 @@ $tabs = array_filter(['about' => $desc !== '' ? 'About' : '', 'content' => $isCo
         <textarea name="body" rows="3" maxlength="2000" placeholder="What did you like? How did it help you? (optional)"><?= sh_e($mine['body'] ?? '') ?></textarea>
         <div class="sp-rv-act"><button class="sp-btn" type="submit"><?= $mine ? 'Update review' : 'Post review' ?></button>
           <?php if ($mine): ?><button class="sp-link" type="submit" name="a" value="delete" formnovalidate onclick="return confirm('Remove your review?')">Remove</button><?php endif; ?></div>
-        <?php if ($mine && $mine['status'] !== 'published'): ?><p class="sp-note" style="text-align:left">Your review is hidden by the institute.</p><?php endif; ?>
+        <?php if ($mine && $mine['status'] === 'pending'): ?><p class="sp-note sp-wait" style="text-align:left">⏳ Waiting for approval — your review shows here after the institute approves it.</p>
+        <?php elseif ($mine && $mine['status'] !== 'published'): ?><p class="sp-note" style="text-align:left">Your review is hidden by the institute.</p><?php endif; ?>
       </form>
       <?php elseif ($u): ?><p class="sp-rv-note"><span class="sp-pen"><?= $ico('pen') ?></span><span>Reviews are written by <b>enrolled students</b>. Join this <?= $isCourse ? 'course' : 'notes pack' ?> to share your experience.</span></p>
       <?php else: ?><p class="sp-rv-note"><span class="sp-pen"><?= $ico('pen') ?></span><span>Enrolled in this <?= $isCourse ? 'course' : 'notes pack' ?>? <a href="/account/login?next=<?= rawurlencode(sh_url($p) . '#reviews') ?>">Log in</a> to write your review.</span></p><?php endif; ?>

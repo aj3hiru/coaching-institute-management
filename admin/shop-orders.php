@@ -1,5 +1,6 @@
 <?php
-// Online store → Orders: every purchase attempt with Razorpay payment id, filters and totals.
+// Online store → Orders: every purchase (online with Razorpay, or made at the office: cash / UPI / card …), filters and totals.
+// "+ New order" (components/sh-enroll.php) records an office payment and gives the course / notes at once.
 require_once __DIR__ . '/components/guard.php';
 require_once INCLUDES_PATH . '/institute.php';
 require_once INCLUDES_PATH . '/shop.php';
@@ -9,6 +10,21 @@ sh_tables($pdo);
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_check();
     $id = (int)($_POST['id'] ?? 0);
+    if (($_POST['action'] ?? '') === 'manual') { // an order made at the office
+        $back = (string)($_POST['back'] ?? ''); if (!preg_match('#^/admin/[\w./?=&%-]*$#', $back)) $back = '/admin/shop-orders.php';
+        try {
+            $w = (string)($_POST['who'] ?? '');
+            $who = $w === 'acc' ? ['uid' => (int)($_POST['uid'] ?? 0)] : ($w === 'stu' ? ['sid' => (int)($_POST['sid'] ?? 0)] : ['new' => ['name' => $_POST['n_name'] ?? '', 'mobile' => $_POST['n_mobile'] ?? '', 'email' => $_POST['n_email'] ?? '', 'pass' => $_POST['n_pass'] ?? '']]);
+            if (($w === 'acc' && !$who['uid']) || ($w === 'stu' && !$who['sid'])) throw new RuntimeException('Choose the student first.');
+            $days = ($_POST['days'] ?? '') === '' ? null : max(0, (int)$_POST['days']);
+            $amt = ($_POST['amount'] ?? '') === '' ? null : (float)$_POST['amount'];
+            $r = sh_manual_order($pdo, $who, (int)($_POST['product_id'] ?? 0), $amt, (string)($_POST['mode'] ?? ''), ci_clean_date($_POST['paid_on'] ?? ''), trim((string)($_POST['note'] ?? '')), $days, (int)$me['id']);
+            admin_log('shop_order', ($r['order_no'] ?: 'Free access') . " — {$r['title']} for {$r['name']} (office)");
+            admin_flash(($r['order_no'] ? 'Order ' . $r['order_no'] . ' saved: ' . ci_money0($r['amount']) . ' received' : 'Given free') . ' — ' . $r['name'] . ' can open "' . $r['title'] . '" now.'
+                . ($r['password'] ? ' New online account — login: mobile number, password: ' . $r['password'] . ' (tell the student now).' : ''));
+        } catch (RuntimeException $e) { admin_flash($e->getMessage(), 'error'); }
+        header('Location: ' . $back); exit;
+    }
     if (($_POST['action'] ?? '') === 'mark_paid' && $id && sh_perm($me, 'settings')) { // money reached Razorpay but the order did not update
         $pay = trim((string)($_POST['payment'] ?? ''));
         if (!preg_match('/^pay_[A-Za-z0-9]{6,40}$/', $pay)) admin_flash('Enter the Razorpay payment id (starts with pay_) from your Razorpay dashboard.', 'error');
@@ -47,7 +63,7 @@ $badge = fn($s) => '<span class="ci-badge ' . ['paid' => 'ci-b-green', 'created'
 <?php admin_shell_head(); ci_head(); ?>
 </head>
 <body>
-<?php admin_shell_open('Store Orders', 'Online purchases of courses and notes'); ?>
+<?php admin_shell_open('Store Orders', 'Purchases of courses and notes — online or at the office', sh_perm($me, 'orders') ? '<button type="button" class="ci-btn" data-enroll="New order"><i class="fas fa-plus"></i> New order</button>' : ''); ?>
 <div class="ci">
 <?= admin_flash() ?>
 <div class="ci-stats">
@@ -71,12 +87,13 @@ $badge = fn($s) => '<span class="ci-badge ' . ['paid' => 'ci-b-green', 'created'
 <tr><td class="ci-nw"><b><?= ci_e($o['order_no'] ?: '#' . $o['id']) ?></b></td>
 <td><a href="/admin/shop-customers.php?id=<?= (int)$o['user_id'] ?>"><?= ci_e($o['name'] ?? 'Deleted') ?></a><small class="ci-muted" style="display:block"><?= ci_e($o['mobile'] ?? '') ?></small></td>
 <td><?= ci_e($o['title']) ?></td><td class="ci-num"><?= ci_money0($o['amount']) ?></td><td><?= $badge($o['status']) ?><?= $o['error'] && $o['status'] !== 'paid' ? '<small class="ci-muted" style="display:block">' . ci_e(mb_strimwidth($o['error'], 0, 60, '…')) . '</small>' : '' ?></td>
-<td class="ci-nw"><?= str_starts_with((string)$o['rzp_order'], 'demo_') ? '<span class="ci-badge ci-b-amber">Demo</span> ' : '' ?><small><?= ci_e($o['rzp_payment'] ?: ($o['rzp_order'] ?: '—')) ?></small><?= $o['method'] ? '<small class="ci-muted" style="display:block">' . ci_e($o['method']) . '</small>' : '' ?>
+<td class="ci-nw"><?= str_starts_with((string)$o['rzp_order'], 'demo_') ? '<span class="ci-badge ci-b-amber">Demo</span> ' : (str_starts_with((string)$o['rzp_order'], 'manual_') ? '<span class="ci-badge ci-b-blue">Office</span> ' : '') ?><small><?= ci_e($o['rzp_payment'] ?: ($o['rzp_order'] ?: '—')) ?></small><?= $o['method'] ? '<small class="ci-muted" style="display:block">' . ci_e($o['method']) . '</small>' : '' ?>
 <?php if ($o['status'] !== 'paid' && $o['rzp_order'] && sh_perm($me, 'settings')): ?><details><summary class="ci-muted" style="cursor:pointer;font-size:12px">Paid but not updated?</summary><form method="post" style="display:flex;gap:4px;margin-top:4px" onsubmit="return confirm('Only do this after checking the payment in your Razorpay dashboard. Give access?')"><?= csrf_field() ?><input type="hidden" name="action" value="mark_paid"><input type="hidden" name="id" value="<?= (int)$o['id'] ?>"><input name="payment" placeholder="pay_…" required style="width:140px;height:30px;padding:0 6px;border:1px solid #d1d5db"><button class="ci-btn ci-sm" type="submit">Mark paid</button></form></details><?php endif; ?></td>
 <td class="ci-nw"><?= date('d M Y, h:i A', strtotime($o['paid_at'] ?: $o['created_at'])) ?></td></tr>
 <?php endforeach; ?>
 </tbody></table></div></div>
 </div>
+<?php require __DIR__ . '/components/sh-enroll.php'; ?>
 <?php admin_shell_close(); ?>
 </body>
 </html>

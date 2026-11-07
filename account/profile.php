@@ -17,6 +17,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             $addr = trim(preg_replace('/\s+/', ' ', (string)($_POST['address'] ?? '')));
             $pin = preg_replace('/\D/', '', (string)($_POST['pincode'] ?? ''));
             if (mb_strlen($name) < 2) throw new RuntimeException('Please enter your name.');
+            if ($email === '' && str_ends_with((string)$u['email'], '@noemail.invalid')) $email = (string)$u['email']; // made at the office without an email
             if (!filter_var($email, FILTER_VALIDATE_EMAIL)) throw new RuntimeException('Please enter a correct email address.');
             $q = $pdo->prepare("SELECT id FROM sh_users WHERE email = ? AND id <> ?"); $q->execute([$email, $u['id']]);
             if ($q->fetchColumn()) throw new RuntimeException('This email is already used by another account.');
@@ -68,7 +69,7 @@ $ico = fn($n) => sh_icon($n);
         </div>
         <div class="ac-two">
           <div class="st-f"><label for="pf-n">Full name</label><input id="pf-n" name="name" required maxlength="150" value="<?= sh_e($u['name']) ?>"></div>
-          <div class="st-f"><label for="pf-e">Email</label><input id="pf-e" type="email" name="email" required maxlength="190" value="<?= sh_e($u['email']) ?>"></div>
+          <div class="st-f"><label for="pf-e">Email</label><?php $noMail = str_ends_with((string)$u['email'], '@noemail.invalid'); ?><input id="pf-e" type="email" name="email" <?= $noMail ? 'placeholder="Add your email (for password reset)"' : 'required' ?> maxlength="190" value="<?= $noMail ? '' : sh_e($u['email']) ?>"></div>
         </div>
         <div class="ac-two">
           <div class="st-f"><label>Mobile number (login)</label><input value="<?= sh_e($u['mobile']) ?>" disabled></div>

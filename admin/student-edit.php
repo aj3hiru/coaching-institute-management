@@ -168,7 +168,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($oldPhoto && $oldPhoto !== $form['photo']) ci_delete_photo($oldPhoto); // only after the save went through
             admin_log('ci_student', ($student ? 'Updated' : 'Added') . " student {$form['reg_no']} {$form['name']}");
             if (!$receipt) admin_flash($student ? 'Student saved.' : 'Student added: ' . $form['reg_no'] . '.'); // with a payment the profile shows "Saved — Print receipt"
-            header('Location: /admin/student-view.php?id=' . $id . ($receipt ? '&receipt=' . $receipt . '#payments' : '#fee'));
+            $online = !empty($_POST['then_online']) ? '&online=1' : ''; // open the online course / notes popup on the profile
+            header('Location: /admin/student-view.php?id=' . $id . $online . ($receipt ? '&receipt=' . $receipt . '#payments' : '#fee'));
             exit;
         } catch (Throwable $e) {
             $pdo->rollBack();
@@ -296,6 +297,9 @@ $v = fn($k) => ci_e($form[$k] ?? '');
 <?php foreach (array_values($drawRows) as $n => $r) echo $rowHtml($r + ['student_id' => $id], $n); ?>
 </div></div>
 
+<?php if (is_file(INCLUDES_PATH . '/shop.php') && (require_once INCLUDES_PATH . '/shop.php') && sh_perm($me, 'orders')): ?>
+<label class="ci-then-online"><input type="checkbox" name="then_online" value="1"> <span><b>Also give an online course / notes</b><small>After saving, a form opens to sell or give a recorded course or PDF notes (cash, UPI, free …).</small></span></label>
+<?php endif; ?>
 <div style="display:flex;gap:10px;margin:0 0 30px">
   <button class="ci-btn" type="submit"><i class="fas fa-check"></i> <?= $student ? 'Save changes' : 'Save' ?></button>
   <a class="ci-btn ci-ghost" href="<?= $student ? '/admin/student-view.php?id=' . (int)$student['id'] : '/admin/students.php' ?>">Cancel</a>
