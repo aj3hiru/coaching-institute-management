@@ -213,7 +213,7 @@ $btn = function (string $action, int $id, string $icon, string $label, array $mo
 </style>
 </head>
 <body>
-<?php admin_shell_open(ci_e($p['title']), ($isCourse ? 'Video course' : 'PDF notes') . ' — chapters, videos and PDFs', '<a class="ci-btn ci-ghost" href="/admin/shop-products.php?edit=' . $pid . '"><i class="fas fa-pen"></i> Details &amp; price</a><a class="ci-btn ci-ghost" href="' . ci_e(sh_url($p)) . '" target="_blank"><i class="fas fa-eye"></i> View</a>'); ?>
+<?php admin_shell_open(ci_e($p['title']), ($isCourse ? 'Video course' : 'PDF notes') . ' — chapters, videos and PDFs', '<a class="ci-btn ci-ghost" href="/admin/shop-products.php?edit=' . $pid . '"><i class="fas fa-pen"></i> Details &amp; price</a><a class="ci-btn ci-ghost" href="' . ci_e(sh_url($p) . '&preview=1') . '" target="_blank"><i class="fas fa-eye"></i> Preview</a>'); ?>
 <div class="ci">
 <?= admin_flash() ?>
 <?php if ($p['status'] !== 'published'): ?><div class="ci-alert">This product is <b><?= ci_e($p['status']) ?></b> — buyers cannot see it yet. Publish it in <a href="/admin/shop-products.php?edit=<?= $pid ?>">Details &amp; price</a> when the content is ready.</div><?php endif; ?>

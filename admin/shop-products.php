@@ -128,7 +128,7 @@ $badge = fn($s) => '<span class="ci-badge ' . ['published' => 'ci-b-green', 'dra
 <td class="ci-num"><?= (float)$p['price'] > 0 ? ci_money0($p['price']) : 'Free' ?><?= $p['mrp'] !== null ? '<small class="ci-muted" style="display:block;text-decoration:line-through">' . ci_money0($p['mrp']) . '</small>' : '' ?></td>
 <td class="ci-nw"><?= (int)$p['validity_days'] ? (int)$p['validity_days'] . ' days' : 'Lifetime' ?></td>
 <td class="ci-num"><?= (int)$p['buyers'] ?></td><td class="ci-num"><?= ci_money0($p['sales']) ?></td><td><?= $badge($p['status']) ?></td>
-<td><div class="ci-icos"><?= ci_ico('edit', '?edit=' . (int)$p['id'], 'Edit') ?><?= ci_ico('book-plus', '/admin/shop-content.php?id=' . (int)$p['id'], $p['type'] === 'course' ? 'Videos & PDFs' : 'PDFs') ?><?= ci_ico('eye', sh_url($p), 'View on the store', 'link', ' target="_blank"') ?>
+<td><div class="ci-icos"><?= ci_ico('edit', '?edit=' . (int)$p['id'], 'Edit') ?><?= ci_ico('book-plus', '/admin/shop-content.php?id=' . (int)$p['id'], $p['type'] === 'course' ? 'Videos & PDFs' : 'PDFs') ?><?= ci_ico('eye', sh_url($p) . '&preview=1', 'View on the store', 'link', ' target="_blank"') ?>
 <?php if (!(int)$p['buyers']): ?><?= ci_post_ico('trash', 'Delete', ['action' => 'delete', 'id' => $p['id']], 'Delete ' . $p['title'] . ' with all its videos and PDFs?') ?><?php endif; ?></div></td></tr>
 <?php endforeach; ?>
 </tbody></table></div></div>

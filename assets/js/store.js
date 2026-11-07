@@ -61,7 +61,8 @@
       if (!d.ok) return;
       doneBtn.setAttribute('data-done', on ? '1' : '0');
       doneBtn.querySelector('span').textContent = on ? 'Completed' : 'Mark as done';
-      var li = document.querySelector('.st-side .st-li.on'); if (li) li.classList.toggle('done', on);
+      doneBtn.classList.toggle('is-done', on);
+      var li = document.querySelector('.lp-li.on'); if (li) li.classList.toggle('done', on);
     });
   });
   var vid = document.querySelector('.st-player video');
@@ -194,4 +195,23 @@
     if (e.key === '>' && i < steps.length - 1) setSpeed(steps[i + 1]);
     if (e.key === '<' && i > 0) setSpeed(steps[i - 1]);
   });
+})();
+/* product page: "Show more" for a long description, "Expand all" chapters */
+(function () {
+  document.querySelectorAll('[data-more]').forEach(function (b) {
+    var box = document.getElementById(b.getAttribute('data-more')); if (!box) return;
+    if (box.scrollHeight > 190) { box.classList.add('is-clamped'); b.hidden = false; }
+    b.addEventListener('click', function () { var c = box.classList.toggle('is-clamped'); b.textContent = c ? 'Show more' : 'Show less'; });
+  });
+  var ex = document.querySelector('[data-expand]');
+  if (ex) ex.addEventListener('click', function () {
+    var ds = document.querySelectorAll('.sp-acc details'), open = [].some.call(ds, function (d) { return !d.open; });
+    ds.forEach(function (d) { d.open = open; }); ex.textContent = open ? 'Collapse all' : 'Expand all';
+  });
+})();
+/* phones: the bottom Buy bar hides while the buy card's own button is on screen */
+(function () {
+  var bar = document.querySelector('.st-mbar'), btn = document.querySelector('.sp-card .sp-btn');
+  if (!bar || !btn || !('IntersectionObserver' in window)) return;
+  new IntersectionObserver(function (es) { bar.classList.toggle('is-off', es[0].isIntersecting); }).observe(btn);
 })();

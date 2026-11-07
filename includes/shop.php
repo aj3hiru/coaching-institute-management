@@ -423,6 +423,12 @@ function sh_icon(string $n): string
         'device' => '<rect x="5" y="2" width="14" height="20"/><path d="M11 18h2"/>',
         'shield' => '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/>',
         'eye' => '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',
+        'layers' => '<path d="m12 2 10 5-10 5L2 7Z"/><path d="m2 17 10 5 10-5M2 12l10 5 10-5"/>',
+        'calendar' => '<rect x="3" y="4" width="18" height="18"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+        'gauge' => '<path d="M12 14 16 9"/><path d="M3.3 19a10 10 0 1 1 17.4 0"/>',
+        'playsolid' => '<path d="M8 5v14l11-7Z" fill="currentColor" stroke="none"/>',
+        'back' => '<path d="m15 18-6-6 6-6"/>',
+        'menu' => '<path d="M3 6h18M3 12h18M3 18h18"/>',
         'cart' => '<circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6"/>',
     ];
     return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' . ($p[$n] ?? '') . '</svg>';
@@ -526,4 +532,21 @@ function sh_page_start(PDO $pdo, array $keys): array
     if (!array_filter($keys, fn($k) => sh_perm($me, $k))) { http_response_code(403); exit('Access Denied'); }
     sh_tables($pdo);
     return $me;
+}
+
+/** Staff preview: only when a staff member opens a store page with ?preview=1 (from the admin "View" buttons).
+    Without it staff see the page exactly like a visitor, so locks can be checked. */
+function sh_preview(): bool { return isset($_GET['preview']) && sh_staff(); }
+
+/** "9:59" / "1:02:03" → seconds; and seconds → "3h 12m" / "42m" / "45s". */
+function sh_dur_sec(?string $d): int
+{
+    if (!$d || !preg_match('/^(\d+):(\d{2})(?::(\d{2}))?$/', trim($d), $m)) return 0;
+    return isset($m[3]) && $m[3] !== '' ? (int)$m[1] * 3600 + (int)$m[2] * 60 + (int)$m[3] : (int)$m[1] * 60 + (int)$m[2];
+}
+function sh_dur_text(int $s): string
+{
+    if ($s <= 0) return '';
+    if ($s >= 3600) return intdiv($s, 3600) . 'h ' . intdiv($s % 3600, 60) . 'm';
+    return $s >= 60 ? round($s / 60) . 'm' : $s . 's';
 }

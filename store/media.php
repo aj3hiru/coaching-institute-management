@@ -21,7 +21,7 @@ if ($k === 'v' && $qual !== '') { $vv = sh_variants($r); if (!isset($vv[$qual]))
 $p = sh_product($pdo, (int)$r['product_id'], false);
 if ($p && $p['status'] === 'draft' && !sh_staff()) $p = null; // drafts only for staff previews
 if (!$p) $deny(404);
-if (!$r['free'] && !sh_has_access($pdo, $uid, (int)$p['id']) && !sh_staff()) $deny();
+if (!$r['free'] && !sh_has_access($pdo, $uid, (int)$p['id']) && !($uid === 0 && sh_staff())) $deny(); // staff preview links are made for user 0
 $path = sh_media_path((string)$r['file']);
 if (!is_file($path)) $deny(404);
 $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
