@@ -418,3 +418,8 @@
   .hm-hs .hm-slide,.hm-hs .hm-slide img{border-radius:5px}
   .hm-hs .hs-prev{left:12px}.hm-hs .hs-next{right:12px}
 }
+
+/* homepage: no shadow appears on hover anywhere */
+.hm .hc:hover,.hm .hm-cat:hover,.hm .hm-post:hover,.hm .hm-fc:hover,.hm .hm-pc:hover,.hm .tA-card:hover,.hm .tC-card:hover,.hm .hm-btc:hover,.hm .hm-btn:not(.hm-pro):hover{box-shadow:none!important}
+.hm .hm-pro:hover{box-shadow:0 4px 12px rgba(12,104,120,.18)!important} /* same as when not hovered */
+.nb-hr-sub,.nb-hr-sub:hover{box-shadow:none!important} /* header Subscribe: no hover shadow on the homepage */
