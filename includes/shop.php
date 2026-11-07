@@ -594,7 +594,15 @@ function sh_yt_playlist(string $list): array
     $html = sh_http_get('https://www.youtube.com/playlist?list=' . rawurlencode($list), 20);
     if ($html === '') return [];
     $out = [];
-    if (preg_match_all('~"playlistVideoRenderer":\{"videoId":"([\w-]{11})".{0,3000}?"title":\{"runs":\[\{"text":"((?:[^"\\\\]|\\\\.)*)"~s', $html, $m, PREG_SET_ORDER)) {
+    // YouTube's newer page: one "lockupViewModel" per video (thumbnail …/vi/ID/, title, length badge)
+    foreach (array_slice(explode('"lockupViewModel":{', $html), 1) as $seg) {
+        $seg = substr($seg, 0, 15000);
+        if (!preg_match('~i\.ytimg\.com/vi/([\w-]{11})/~', $seg, $mm) && !preg_match('~"videoId":"([\w-]{11})"~', $seg, $mm)) continue;
+        if (isset($out[$mm[1]])) continue;
+        $t = preg_match('~"lockupMetadataViewModel":\{"title":\{"content":"((?:[^"\\\\]|\\\\.)*)"~', $seg, $tm) ? (string)json_decode('"' . $tm[1] . '"') : '';
+        $out[$mm[1]] = [$mm[1], $t];
+    }
+    if (!$out && preg_match_all('~"playlistVideoRenderer":\{"videoId":"([\w-]{11})".{0,3000}?"title":\{"runs":\[\{"text":"((?:[^"\\\\]|\\\\.)*)"~s', $html, $m, PREG_SET_ORDER)) {
         foreach ($m as $x) if (!isset($out[$x[1]])) $out[$x[1]] = [$x[1], (string)json_decode('"' . $x[2] . '"')];
     }
     if (!$out && preg_match_all('~"videoId":"([\w-]{11})"~', $html, $m)) foreach ($m[1] as $id) $out[$id] ??= [$id, ''];

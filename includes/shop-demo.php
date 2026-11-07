@@ -12,7 +12,8 @@ const SH_DEMO_PASS = 'Demo@1234';
 function sh_demo_info(): array
 {
     $d = json_decode((string)es('shop', 'demo', ''), true);
-    return is_array($d) ? $d + ['products' => [], 'users' => [], 'orders' => []] : ['products' => [], 'users' => [], 'orders' => []];
+    $empty = ['products' => [], 'users' => [], 'orders' => [], 'staff' => [], 'slides' => [], 'free' => [], 'icons' => []];
+    return is_array($d) ? $d + $empty : $empty;
 }
 function sh_demo_on(): bool { return (bool)sh_demo_info()['products']; }
 
@@ -197,6 +198,204 @@ function sh_demo_extras(PDO $pdo): string
     return 'Demo lectures now have notes, VVI questions and quizzes.';
 }
 
+/** Client showcase (on top of the demo): 10 more video courses across the categories (with teachers, units, batch dates,
+    FAQ, VVI + quiz), 5 notes packs, 12 more demo students with orders, progress, reviews and answered doubts, the
+    homepage slider, free YouTube courses, category icons and the "students" number. Everything is removed by
+    sh_demo_remove(). Content: includes/demo/showcase/ (showcase.json + pictures + PDFs). */
+function sh_demo_showcase(PDO $pdo, int $byUser = 0): string
+{
+    sh_tables($pdo);
+    if (!sh_demo_on()) sh_demo_add($pdo, $byUser);
+    $info = sh_demo_info();
+    if (!empty($info['showcase'])) return 'The showcase is already added.';
+    $dir = __DIR__ . '/demo/showcase';
+    $J = json_decode((string)@file_get_contents("$dir/showcase.json"), true);
+    if (!$J) throw new RuntimeException('Showcase content is missing (includes/demo/showcase/showcase.json).');
+    $j = fn($v) => json_encode($v, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    $cats = $pdo->query("SELECT slug, id FROM sh_categories")->fetchAll(PDO::FETCH_KEY_PAIR);
+    $pub = function (string $file, string $sub) use ($dir): string { // a picture into the public uploads folder
+        $to = ROOT_PATH . '/uploads/' . $sub; @mkdir($to, 0755, true);
+        $name = 'demo-' . bin2hex(random_bytes(3)) . '-' . $file;
+        if (!@copy("$dir/$file", "$to/$name")) throw new RuntimeException("Could not copy $file");
+        return 'uploads/' . $sub . '/' . $name;
+    };
+    $pdo->beginTransaction();
+    try {
+        // teachers: staff accounts with only the Teacher permission and a random password nobody knows
+        $T = [];
+        $i = 0;
+        foreach ($J['teachers'] as $k => $name) {
+            $i++;
+            $email = "demo.teacher$i@example.com";
+            $q = $pdo->prepare("SELECT id FROM users WHERE email = ? OR username = ?"); $q->execute([$email, $name]);
+            if ($id = (int)$q->fetchColumn()) { $T[$k] = $id; continue; }
+            $pdo->prepare("INSERT INTO users (username, email, password_hash, role, status, permissions) VALUES (?, ?, ?, 'author', 'active', ?)")
+                ->execute([$name, $email, password_hash(bin2hex(random_bytes(24)), PASSWORD_DEFAULT), $j(['store' => ['teacher' => true]])]);
+            $T[$k] = $info['staff'][] = (int)$pdo->lastInsertId();
+        }
+        // category icons (only where the admin has not set one)
+        foreach ($J['icons'] as $slug => $file) {
+            if (empty($cats[$slug])) continue;
+            $cur = (string)$pdo->query("SELECT icon FROM sh_categories WHERE id = " . (int)$cats[$slug])->fetchColumn();
+            if ($cur !== '') continue;
+            $rel = $pub($file, 'categories');
+            $pdo->prepare("UPDATE sh_categories SET icon = ? WHERE id = ?")->execute([$rel, $cats[$slug]]);
+            $info['icons'][(string)$cats[$slug]] = $rel;
+        }
+        // the first demo items get their category too
+        foreach ($info['products'] as $pid) {
+            $t = (string)$pdo->query("SELECT title FROM sh_products WHERE id = " . (int)$pid)->fetchColumn();
+            $slug = preg_match('/Class\s+(\d{1,2})/i', $t, $m) ? 'class-' . $m[1] : (stripos($t, 'Science') !== false ? 'class-10' : '');
+            if ($slug && !empty($cats[$slug])) $pdo->prepare("UPDATE sh_products SET category_id = ? WHERE id = ? AND category_id IS NULL")->execute([$cats[$slug], $pid]);
+        }
+        $first = $info['products'][0] ?? 0;
+        if ($first && !empty($T['rk'])) $pdo->prepare("UPDATE sh_products SET teacher_id = ? WHERE id = ? AND teacher_id IS NULL")->execute([$T['rk'], $first]);
+        if (!empty($info['products'][1]) && !empty($T['av'])) $pdo->prepare("UPDATE sh_products SET teacher_id = ? WHERE id = ? AND teacher_id IS NULL")->execute([$T['av'], $info['products'][1]]);
+        // video courses
+        $keys = []; $firstLesson = [];
+        $sort = 10;
+        foreach (array_reverse($J['courses'], true) as $ci => $c) { // inserted last-first, so the first course is the newest on the homepage
+            $sort = 10 + (int)$ci;
+            $pdo->prepare("INSERT INTO sh_products (type, title, slug, subtitle, description, thumb, price, mrp, validity_days, status, sort, category_id, teacher_id, starts_at, faq, includes)
+                VALUES ('course',?,?,?,?,?,?,?,?, 'published', ?,?,?,?,?,?)")->execute([$c['title'], sh_unique_slug($pdo, $c['title']), $c['subtitle'], $c['desc'], '/' . $pub($c['thumb'], 'store'),
+                $c['price'], $c['mrp'], $c['days'], $sort, $cats[$c['cat']] ?? null, $T[$c['teacher']] ?? null, $c['starts'] ? date('Y-m-d', strtotime('+' . (int)$c['starts'] . ' days')) : null,
+                $j($c['faq']), $j($c['includes'])]);
+            $pid = (int)$pdo->lastInsertId(); $info['products'][] = $pid; $keys[$c['key']] = $pid;
+            $ls = 0; $ss = 0;
+            foreach ($c['chapters'] as $ch) {
+                $pdo->prepare("INSERT INTO sh_sections (product_id, title, sort) VALUES (?,?,?)")->execute([$pid, mb_substr($ch['t'], 0, 200), ++$ss]);
+                $sid = (int)$pdo->lastInsertId(); $no = 0;
+                foreach ($ch['l'] as $l) {
+                    $pdo->prepare("INSERT INTO sh_lessons (product_id, section_id, title, video_url, duration, free, sort, lecture_no, doubts_on) VALUES (?,?,?,?,?,?,?,?,1)")
+                        ->execute([$pid, $sid, mb_substr($l['t'], 0, 200), 'https://www.youtube.com/watch?v=' . $l['id'], $l['d'] ?: null, $ls < 1 ? 1 : 0, ++$ls, ++$no]);
+                    if ($ls === 1) $firstLesson[$pid] = (int)$pdo->lastInsertId();
+                }
+            }
+        }
+        // VVI + quiz on the first lecture of the trigonometry course
+        if (!empty($keys['sc-maths10-trig'])) {
+            $pdo->prepare("UPDATE sh_lessons SET vvi = ?, quiz = ? WHERE id = ?")->execute([
+                $j(['qa' => [['q' => 'What is sin θ in a right triangle?', 'a' => 'sin θ = opposite side ÷ hypotenuse.'],
+                    ['q' => 'Write the value of sin 30°, cos 60° and tan 45°.', 'a' => 'sin 30° = 1/2, cos 60° = 1/2 and tan 45° = 1.'],
+                    ['q' => 'Prove that sin²θ + cos²θ = 1.', 'a' => 'In a right triangle, (opposite)² + (adjacent)² = (hypotenuse)². Divide both sides by (hypotenuse)²: sin²θ + cos²θ = 1.']], 'links' => []]),
+                $j(['items' => [['q' => 'tan θ is equal to…', 'o' => ['sin θ × cos θ', 'sin θ ÷ cos θ', 'cos θ ÷ sin θ', '1 ÷ sin θ'], 'a' => 1, 'e' => 'tan θ = opposite ÷ adjacent = sin θ ÷ cos θ.'],
+                    ['q' => 'The value of sin 90° is…', 'o' => ['0', '1/2', '1', 'not defined'], 'a' => 2, 'e' => 'sin 90° = 1.'],
+                    ['q' => 'If sin A = 3/5, then cos A = ?', 'o' => ['4/5', '3/4', '5/4', '5/3'], 'a' => 0, 'e' => 'cos A = √(1 − 9/25) = √(16/25) = 4/5.']], 'links' => []]),
+                $firstLesson[$keys['sc-maths10-trig']]]);
+        }
+        // notes packs
+        $media = sh_media_dir();
+        foreach (array_reverse($J['notes'], true) as $ni => $n) {
+            $sort = 40 + (int)$ni;
+            $pdo->prepare("INSERT INTO sh_products (type, title, slug, subtitle, description, thumb, price, mrp, validity_days, status, sort, category_id) VALUES ('notes',?,?,?,?,?,?,?,0,'published',?,?)")
+                ->execute([$n['title'], sh_unique_slug($pdo, $n['title']), $n['subtitle'], $n['desc'], '/' . $pub($n['thumb'], 'store'), $n['price'], $n['mrp'], $sort, $cats[$n['cat']] ?? null]);
+            $pid = (int)$pdo->lastInsertId(); $info['products'][] = $pid; $keys[$n['key']] = $pid;
+            @mkdir("$media/$pid", 0750, true);
+            $rel = $pid . '/demo-' . bin2hex(random_bytes(4)) . '-' . $n['pdf'];
+            if (!@copy("$dir/{$n['pdf']}", "$media/$rel")) throw new RuntimeException('Could not copy ' . $n['pdf']);
+            $pdo->prepare("INSERT INTO sh_files (product_id, title, file, size, pages, free, sort) VALUES (?,?,?,?,?,0,1)")->execute([$pid, preg_replace('/\s*\((Free )?Demo\)$/', '', $n['title']), $rel, filesize("$media/$rel"), $n['pages']]);
+        }
+        // more demo students, their orders, progress, reviews and doubts
+        $names = ['Priya Kumari', 'Rohit Raj', 'Ananya Mishra', 'Sahil Ansari', 'Kajal Kumari', 'Vikash Yadav', 'Sneha Gupta', 'Aditya Singh', 'Pooja Bharti', 'Rahul Paswan', 'Nikita Jha', 'Arjun Prasad'];
+        $U = [];
+        foreach ($names as $k => $nm) {
+            $mob = '90000000' . str_pad((string)($k + 4), 2, '0', STR_PAD_LEFT); $em = 'demo.student' . ($k + 4) . '@example.com';
+            $q = $pdo->prepare("SELECT id FROM sh_users WHERE mobile = ? OR email = ?"); $q->execute([$mob, $em]);
+            if ($q->fetchColumn()) continue;
+            $U[] = $info['users'][] = sh_register($pdo, $nm . ' (Demo)', $mob, $em, SH_DEMO_PASS, $byUser ?: null);
+        }
+        $buy = function (int $uid, int $pid, int $daysAgo, string $method) use ($pdo, &$info) {
+            $p = sh_product($pdo, $pid, false); if (!$p) return;
+            $at = date('Y-m-d H:i:s', strtotime("-$daysAgo days " . (9 + $daysAgo % 10) . ':' . str_pad((string)(($daysAgo * 7) % 60), 2, '0', STR_PAD_LEFT)));
+            if ((float)$p['price'] <= 0) { sh_grant($pdo, $uid, $pid, 'free'); return; }
+            $pdo->prepare("INSERT INTO sh_orders (user_id, product_id, title, amount, status, rzp_order, rzp_payment, method, created_at, paid_at) VALUES (?,?,?,?, 'paid', ?, ?, ?, ?, ?)")
+                ->execute([$uid, $pid, $p['title'], $p['price'], 'order_DEMO' . bin2hex(random_bytes(5)), 'pay_DEMO' . bin2hex(random_bytes(5)), $method, $at, $at]);
+            $oid = (int)$pdo->lastInsertId();
+            $pdo->prepare("UPDATE sh_orders SET order_no = ? WHERE id = ?")->execute(['DEMO-' . str_pad((string)$oid, 5, '0', STR_PAD_LEFT), $oid]);
+            sh_grant($pdo, $uid, $pid, 'purchase', $oid);
+            $pdo->prepare("UPDATE sh_access SET granted_at = ? WHERE user_id = ? AND product_id = ?")->execute([$at, $uid, $pid]);
+            $info['orders'][] = $oid;
+        };
+        $plan = [ // student index => [course keys]
+            0 => ['sc-maths10-trig', 'sc-science10'], 1 => ['sc-science10', 'sn-maths6'], 2 => ['sc-maths10-trig', 'sc-science9'], 3 => ['sc-maths9', 'sn-sci9'],
+            4 => ['sc-science9', 'sc-maths9'], 5 => ['sc-maths8', 'sn-maths7'], 6 => ['sc-bio11', 'sn-bio11'], 7 => ['sc-chem12', 'sn-chem12'],
+            8 => ['sc-evs5', 'sc-sst7'], 9 => ['sc-maths10-trig', 'sc-bst11'], 10 => ['sc-science10', 'sc-bio11'], 11 => ['sc-sst7', 'sc-maths8']];
+        $ways = ['upi', 'upi', 'card', 'upi', 'netbanking', 'upi', 'wallet'];
+        $d = 2;
+        foreach ($plan as $k => $list) foreach ($list as $key) if (!empty($U[$k]) && !empty($keys[$key])) { $buy($U[$k], $keys[$key], $d, $ways[$d % 7]); $d = ($d + 3) % 41 + 1; }
+        // progress: the first lectures done
+        foreach ($plan as $k => $list) foreach ($list as $key) if (!empty($U[$k]) && !empty($keys[$key]))
+            foreach ($pdo->query("SELECT id FROM sh_lessons WHERE product_id = " . (int)$keys[$key] . " ORDER BY sort LIMIT " . (1 + $k % 4))->fetchAll(PDO::FETCH_COLUMN) as $lid)
+                $pdo->prepare("INSERT IGNORE INTO sh_progress (user_id, lesson_id, done) VALUES (?, ?, 1)")->execute([$U[$k], $lid]);
+        $rv = [
+            ['sc-maths10-trig', 0, 5, 'Trigonometry was my weakest chapter. After these lectures I solved all the NCERT questions myself. The quiz under each lecture is very helpful.'],
+            ['sc-maths10-trig', 2, 5, 'Heights and distances explained so simply! Sir draws every figure step by step.'],
+            ['sc-maths10-trig', 9, 4, 'Very good crash course. Please add more PYQs for AP.'],
+            ['sc-science10', 0, 5, 'Board Booster batch is worth it — short lectures, clear notes and my doubts were answered the same day.'],
+            ['sc-science10', 1, 4, 'Metallurgy and microbiology chapters are explained very well. Good for revision.'],
+            ['sc-science10', 10, 5, 'I like that I can watch on my phone at 1.5x speed. Ma\'am explains with real-life examples.'],
+            ['sc-science9', 2, 5, 'Carbon and biotechnology chapters became easy. Thank you DK Academy!'],
+            ['sc-science9', 4, 4, 'Nice foundation course for Class 9. Notes would make it perfect.'],
+            ['sc-maths9', 3, 5, 'One lecture per chapter — I revised the whole syllabus in a week before my exam.'],
+            ['sc-maths9', 4, 4, 'Quick and to the point. Good for last-minute revision.'],
+            ['sc-maths8', 5, 5, 'Number Play chapter is explained with fun puzzles. My son enjoys these classes.'],
+            ['sc-maths8', 11, 4, 'Good explanation of every "Figure it out" question.'],
+            ['sc-sst7', 8, 5, 'Stories make history easy to remember. Very nice teaching.'],
+            ['sc-sst7', 11, 4, 'Maps and examples are clear. Helpful for school tests.'],
+            ['sc-evs5', 8, 5, 'Perfect for small kids — simple language and colourful examples.'],
+            ['sc-bio11', 6, 5, 'Photosynthesis finally clicked for me. Great for NEET basics.'],
+            ['sc-bio11', 10, 4, 'Diagrams are explained step by step. Want more chapters soon!'],
+            ['sc-bst11', 9, 4, 'Quick revision of all chapters, very useful before the half-yearly exam.'],
+            ['sc-chem12', 7, 5, 'Polymers is a scoring chapter and this masterclass covers every board question.'],
+            ['sn-sci9', 3, 5, 'Short summaries — exactly what I needed the night before the test.'],
+            ['sn-bio11', 6, 5, null], ['sn-chem12', 7, 4, 'Clear notes. Examples of each polymer type are listed well.'], ['sn-maths7', 5, 5, null], ['sn-maths6', 1, 5, 'Good worksheets for daily practice.'],
+        ];
+        $q = $pdo->prepare("INSERT IGNORE INTO sh_reviews (product_id, user_id, rating, body, created_at) VALUES (?, ?, ?, ?, ?)");
+        foreach ($rv as $n => [$key, $k, $r, $b]) if (!empty($keys[$key]) && !empty($U[$k])) $q->execute([$keys[$key], $U[$k], $r, $b, date('Y-m-d H:i:s', strtotime('-' . (1 + $n % 20) . ' days'))]);
+        $dq = [
+            ['sc-maths10-trig', 0, 'rk', 'Sir, why is sin 90° = 1? I am confused.', 'When the angle becomes 90°, the opposite side becomes equal to the hypotenuse, so opposite ÷ hypotenuse = 1. Draw the triangle and make the angle bigger step by step — you will see it.'],
+            ['sc-maths10-trig', 2, 'rk', 'In heights and distances, how do I know which ratio to use?', 'Look at what you know and what you need. If you know the side next to the angle and need the height, use tan. If the slant line (hypotenuse) is involved, use sin or cos.'],
+            ['sc-science10', 0, 'ns', 'Ma\'am, what is the difference between alloying and galvanization?', 'Alloying mixes a metal with other elements to change its properties (like steel). Galvanization coats iron with zinc to stop rusting.'],
+            ['sc-science9', 4, 'ns', 'Is charcoal a pure form of carbon?', 'Charcoal is an amorphous (non-crystalline) form of carbon. It is mostly carbon, but not as pure as diamond or graphite.'],
+            ['sc-bio11', 6, 'ns', 'Why is chlorophyll green?', 'Chlorophyll absorbs mostly red and blue light and reflects green light — that is why leaves look green.'],
+            ['sc-chem12', 7, 'av', 'Is natural rubber an addition polymer?', 'Yes. Natural rubber is a polymer of isoprene (cis-1,4-polyisoprene), made by addition polymerisation.'],
+        ];
+        foreach ($dq as $n => [$key, $k, $tk, $qq, $aa]) if (!empty($keys[$key]) && !empty($U[$k]) && !empty($firstLesson[$keys[$key]])) {
+            $at = date('Y-m-d H:i:s', strtotime('-' . (2 + $n) . ' days'));
+            $pdo->prepare("INSERT INTO sh_doubts (lesson_id, product_id, user_id, question, answer, answered_by, status, created_at, answered_at) VALUES (?,?,?,?,?,?, 'answered', ?, ?)")
+                ->execute([$firstLesson[$keys[$key]], $keys[$key], $U[$k], $qq, $aa, $T[$tk] ?? null, $at, date('Y-m-d H:i:s', strtotime($at . ' +3 hours'))]);
+        }
+        // homepage slider
+        $si = (int)$pdo->query("SELECT COALESCE(MAX(sort),0) FROM hm_slides")->fetchColumn();
+        foreach ($J['slides'] as $sl) {
+            $link = str_starts_with($sl['link'], 'COURSE:') ? (($p = sh_product($pdo, (int)($keys[substr($sl['link'], 7)] ?? 0), false)) ? sh_url($p) : '/store/') : $sl['link'];
+            $pdo->prepare("INSERT INTO hm_slides (image, mobile_image, link, title, new_tab, sort, active) VALUES (?,?,?,?,0,?,1)")->execute([$pub($sl['image'], 'slides'), $pub($sl['mobile'], 'slides'), $link, $sl['title'], ++$si]);
+            $info['slides'][] = (int)$pdo->lastInsertId();
+        }
+        // free courses (YouTube playlists)
+        $fi = 0;
+        foreach ($J['free'] as $f) {
+            $pdo->prepare("INSERT INTO hm_free (url, list_id, video_id, title, thumb, channel, videos, category_id, sort, active) VALUES (?,?,?,?,?,?,?,?,?,1)")
+                ->execute(['https://www.youtube.com/playlist?list=' . $f['list'], $f['list'], $f['video'] ?: null, $f['title'], $f['thumb'], $f['channel'], $f['videos'], $f['cat'] ? ($cats[$f['cat']] ?? null) : null, ++$fi]);
+            $info['free'][] = (int)$pdo->lastInsertId();
+        }
+        // "Our Impact": a showcase number of students (the others are counted by the site); the old setting comes back on removal
+        $info['home_prev'] = (string)es('home', 'impact', '');
+        $imp = sh_home_cfg()['impact'];
+        foreach ($imp as &$it) if (($it['k'] ?? '') === 'students' && trim((string)$it['v']) === '') $it['v'] = '2,500+';
+        unset($it);
+        edu_settings_save('home', ['impact' => $j($imp)]);
+        $info['showcase'] = 1;
+        edu_settings_save('shop', ['demo' => json_encode($info)]);
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        throw $e;
+    }
+    sh_home_refresh();
+    return 'Showcase added: ' . count($J['courses']) . ' courses, ' . count($J['notes']) . ' notes packs, ' . count($U) . ' more students, slider, free courses and category icons.';
+}
+
 /** Removes exactly what sh_demo_add made (products with their videos / PDFs, demo accounts, demo orders). */
 function sh_demo_remove(PDO $pdo): string
 {
@@ -220,6 +419,23 @@ function sh_demo_remove(PDO $pdo): string
     $pdo->exec("DELETE FROM sh_users WHERE id IN (" . $in($uids) . ")");
     foreach ($files as $f) { $p = sh_media_path($f); if (is_file($p)) @unlink($p); } // every file of the demo products (also ones uploaded later)
     foreach ($pids as $pid) @rmdir(sh_media_dir() . '/' . $pid);
+    // showcase parts: slider, free courses, teacher accounts, category icons, the impact number
+    foreach (array_map('intval', $d['slides']) as $sid) {
+        $r = $pdo->query("SELECT image, mobile_image FROM hm_slides WHERE id = $sid")->fetch(PDO::FETCH_ASSOC);
+        if ($r) { sh_image_drop($r['image']); sh_image_drop($r['mobile_image']); $pdo->exec("DELETE FROM hm_slides WHERE id = $sid"); }
+    }
+    $pdo->exec("DELETE FROM hm_free WHERE id IN (" . $in(array_map('intval', $d['free'])) . ")");
+    foreach ($d['icons'] as $cid => $rel) {
+        $q = $pdo->prepare("UPDATE sh_categories SET icon = NULL WHERE id = ? AND icon = ?"); $q->execute([(int)$cid, $rel]);
+        if ($q->rowCount()) sh_image_drop($rel);
+    }
+    $staff = array_map('intval', $d['staff']);
+    if ($staff) {
+        $pdo->exec("UPDATE sh_products SET teacher_id = NULL WHERE teacher_id IN (" . $in($staff) . ")");
+        $pdo->exec("DELETE FROM users WHERE id IN (" . $in($staff) . ") AND email LIKE 'demo.teacher%@example.com'");
+    }
+    if (!empty($d['showcase'])) edu_settings_save('home', ['impact' => (string)($d['home_prev'] ?? '')]);
     edu_settings_save('shop', ['demo' => '']);
+    if (function_exists('sh_home_refresh')) sh_home_refresh();
     return 'Demo data removed (' . count($pids) . ' products, ' . count($uids) . ' accounts, ' . count($oids) . ' orders).';
 }

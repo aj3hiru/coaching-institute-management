@@ -1,0 +1,1412 @@
+{
+ "courses": [
+  {
+   "key": "sc-maths10-trig",
+   "title": "Class 10 Maths — Trigonometry & AP Crash Course (Demo)",
+   "subtitle": "Trigonometric ratios, heights & distances and arithmetic progressions — exam-focused",
+   "desc": "A short, exam-focused batch for Class 10 board students. Every lecture has VVI questions and a quick quiz, and you can ask doubts under any lecture.",
+   "cat": "class-10",
+   "teacher": "rk",
+   "price": 499,
+   "mrp": 999,
+   "days": 180,
+   "starts": 12,
+   "chapters": [
+    {
+     "t": "Introduction to Trigonometry",
+     "l": [
+      {
+       "id": "JfMNy-2kxbc",
+       "t": "Intro to trigonometric ratios",
+       "d": "9:17",
+       "k": "Intro to Trigonometry",
+       "ch": "Intro to Trigonometry",
+       "ov": false
+      },
+      {
+       "id": "goQkPbfy0uo",
+       "t": "Trigonometric ratios in right triangles",
+       "d": "12:12",
+       "k": "Trigonometry",
+       "ch": "Trigonometry",
+       "ov": false
+      },
+      {
+       "id": "bdGkm3773uI",
+       "t": "Special right triangles intro- 1",
+       "d": "9:41",
+       "k": "Intro to Trigonometry",
+       "ch": "Intro to Trigonometry",
+       "ov": false
+      },
+      {
+       "id": "dNm2L4j5xq8",
+       "t": "Special right triangles intro (part 2)",
+       "d": "9:25",
+       "k": "Trigonometry",
+       "ch": "Trigonometry",
+       "ov": false
+      },
+      {
+       "id": "dWsdnYvZlyw",
+       "t": "30-60-90 triangle example problem",
+       "d": "6:41",
+       "k": "Trigonometry",
+       "ch": "Trigonometry",
+       "ov": false
+      },
+      {
+       "id": "o5IuLY3rZlk",
+       "t": "Intro to Pythagorean trigonometric identities",
+       "d": "10:05",
+       "k": "Intro to Trig",
+       "ch": "Intro to Trig",
+       "ov": false
+      }
+     ]
+    },
+    {
+     "t": "Some Applications of Trigonometry",
+     "l": [
+      {
+       "id": "TgQs7k5p2Ag",
+       "t": "Intro to heights and distances",
+       "d": "12:47",
+       "k": "Applications of trigonometry",
+       "ch": "Applications of trigonometry",
+       "ov": false
+      },
+      {
+       "id": "IM5OLoMSZIE",
+       "t": "Heights and distances word problem 1",
+       "d": "12:08",
+       "k": "Trigonometry Applications",
+       "ch": "Trigonometry Applications",
+       "ov": false
+      },
+      {
+       "id": "fXuV2ZgvnAo",
+       "t": "Heights and distances word problem 2",
+       "d": "10:42",
+       "k": "Trigonometry Applications",
+       "ch": "Trigonometry Applications",
+       "ov": false
+      }
+     ]
+    },
+    {
+     "t": "Arithmetic Progressions",
+     "l": [
+      {
+       "id": "AGQlSuBCQwk",
+       "t": "Intro to arithmetic progressions",
+       "d": "5:23",
+       "k": "Arithmetic progressions",
+       "ch": "Arithmetic progressions",
+       "ov": false
+      },
+      {
+       "id": "kNTXN7Qkb8Y",
+       "t": "Extending arithmetic sequences",
+       "d": "1:07",
+       "k": "Arithmetic Progressions",
+       "ch": "Arithmetic Progressions",
+       "ov": false
+      },
+      {
+       "id": "4488Wh-69Pg",
+       "t": "Nth term of an arithmetic progression",
+       "d": "5:29",
+       "k": "Arithmetic progressions",
+       "ch": "Arithmetic progressions",
+       "ov": false
+      },
+      {
+       "id": "rTe2oKqf2AY",
+       "t": "Arithmetic series intro",
+       "d": "3:56",
+       "k": "Arithmetic progression",
+       "ch": "Arithmetic progression",
+       "ov": false
+      },
+      {
+       "id": "o8NvEAmqCUs",
+       "t": "Arithmetic series formula",
+       "d": "7:46",
+       "k": "Arithmetic progression",
+       "ch": "Arithmetic progression",
+       "ov": false
+      }
+     ]
+    }
+   ],
+   "thumb": "sc-maths10-trig.jpg",
+   "includes": [
+    "Chapter-wise recorded lectures",
+    "VVI questions & quiz under lectures",
+    "Ask doubts to the teacher",
+    "Watch on phone or computer"
+   ],
+   "faq": [
+    {
+     "q": "Is this course in Hindi or English?",
+     "a": "Lectures are explained in simple language with English terms, so every student can follow."
+    },
+    {
+     "q": "Can I watch the lectures again?",
+     "a": "Yes — watch any lecture as many times as you like until your access ends."
+    }
+   ]
+  },
+  {
+   "key": "sc-science10",
+   "title": "Class 10 Science — Board Booster Batch 2027 (Demo)",
+   "subtitle": "Physics, Chemistry and Biology — the important topics for the board exam",
+   "desc": "A complete revision batch for Class 10 Science. Short concept lectures, chapter-wise notes and VVI questions to score full marks.",
+   "cat": "class-10",
+   "teacher": "ns",
+   "price": 1299,
+   "mrp": 2499,
+   "days": 365,
+   "starts": 20,
+   "chapters": [
+    {
+     "t": "Towards Green Energy",
+     "l": [
+      {
+       "id": "-ky55rGQdu0",
+       "t": "Thermal Power Plant",
+       "d": "5:37",
+       "k": "Towards Green Energy",
+       "ch": "Towards Green Energy",
+       "ov": false
+      }
+     ]
+    },
+    {
+     "t": "Metallurgy",
+     "l": [
+      {
+       "id": "1moRsDsfoCc",
+       "t": "Extraction of Al",
+       "d": "8:34",
+       "k": "Metallurgy",
+       "ch": "Metallurgy",
+       "ov": false
+      },
+      {
+       "id": "dQiSXC40Xnk",
+       "t": "Alloying",
+       "d": "3:58",
+       "k": "Metallurgy",
+       "ch": "Metallurgy",
+       "ov": false
+      },
+      {
+       "id": "s05nXU-yWJw",
+       "t": "Galvanization, Annodization & Electroplating",
+       "d": "10:33",
+       "k": "Metallurgy",
+       "ch": "Metallurgy",
+       "ov": false
+      },
+      {
+       "id": "Eseh8Zh73nU",
+       "t": "Concentration of ores",
+       "d": "4:47",
+       "k": "Metallurgy",
+       "ch": "Metallurgy",
+       "ov": false
+      },
+      {
+       "id": "AymDlBseqkg",
+       "t": "Corrosion",
+       "d": "5:09",
+       "k": "Metallurgy",
+       "ch": "Metallurgy",
+       "ov": false
+      }
+     ]
+    },
+    {
+     "t": "Disaster Management",
+     "l": [
+      {
+       "id": "Qtj2DbW9giU",
+       "t": "First Aid",
+       "d": "4:56",
+       "k": "Disaster Management",
+       "ch": "Disaster Management",
+       "ov": false
+      }
+     ]
+    },
+    {
+     "t": "Animal Classification",
+     "l": [
+      {
+       "id": "Y8QmsoeFHlY",
+       "t": "Phylum Urochordata",
+       "d": "4:55",
+       "k": "Animal Classification",
+       "ch": "Animal Classification",
+       "ov": false
+      },
+      {
+       "id": "vDyzhF5W8K0",
+       "t": "Phylum Hemichordata",
+       "d": "4:36",
+       "k": "Animal Classification",
+       "ch": "Animal Classification",
+       "ov": false
+      }
+     ]
+    },
+    {
+     "t": "Introduction to Microbiology",
+     "l": [
+      {
+       "id": "gmK5gjLhpaI",
+       "t": "Microbial Pollution Control&Sewage Management",
+       "d": "7:05",
+       "k": "Introduction to Microbiology",
+       "ch": "Introduction to Microbiology",
+       "ov": false
+      },
+      {
+       "id": "Jlcr_DhzulE",
+       "t": "Biofuels",
+       "d": "3:17",
+       "k": "Introduction to Microbiology",
+       "ch": "Introduction to Microbiology",
+       "ov": false
+      }
+     ]
+    }
+   ],
+   "thumb": "sc-science10.jpg",
+   "includes": [
+    "Chapter-wise recorded lectures",
+    "VVI questions & quiz under lectures",
+    "Ask doubts to the teacher",
+    "Watch on phone or computer",
+    "Board exam pattern practice"
+   ],
+   "faq": [
+    {
+     "q": "Is this course in Hindi or English?",
+     "a": "Lectures are explained in simple language with English terms, so every student can follow."
+    },
+    {
+     "q": "Can I watch the lectures again?",
+     "a": "Yes — watch any lecture as many times as you like until your access ends."
+    }
+   ]
+  },
+  {
+   "key": "sc-science9",
+   "title": "Class 9 Science — Complete Foundation (Demo)",
+   "subtitle": "Build strong basics in Physics, Chemistry and Biology for Class 9",
+   "desc": "Concept-first lectures for Class 9 Science — perfect to build the base for Class 10 boards.",
+   "cat": "class-9",
+   "teacher": "ns",
+   "price": 899,
+   "mrp": 1799,
+   "days": 365,
+   "starts": null,
+   "chapters": [
+    {
+     "t": "Energy Flow in an Ecosystem",
+     "l": [
+      {
+       "id": "ilVmoLQFsMA",
+       "t": "Oxygen Cycle",
+       "d": "5:11",
+       "k": "Energy Flow in an Ecosystem",
+       "ch": "Energy Flow in an Ecosystem",
+       "ov": false
+      }
+     ]
+    },
+    {
+     "t": "Acid bases and Salts",
+     "l": [
+      {
+       "id": "15mCOxm4W4o",
+       "t": "Water of crystallisation",
+       "d": "4:30",
+       "k": "Acid bases and Salts",
+       "ch": "Acid bases and Salts",
+       "ov": false
+      }
+     ]
+    },
+    {
+     "t": "Carbon: An Important Element",
+     "l": [
+      {
+       "id": "ImAWNGOpkik",
+       "t": "Amorphous forms of Carbon - Coal, Charcoal, Coke",
+       "d": "8:59",
+       "k": "Carbon: An Important Element",
+       "ch": "Carbon: An Important Element",
+       "ov": false
+      },
+      {
+       "id": "I7bA83TZeV4",
+       "t": "Carbon Dioxide",
+       "d": "13:12",
+       "k": "Carbon: An Important Element",
+       "ch": "Carbon: An Important Element",
+       "ov": false
+      }
+     ]
+    },
+    {
+     "t": "Introduction to Biotechnology",
+     "l": [
+      {
+       "id": "Gqm6FYsDWU8",
+       "t": "Application of Biotechnology",
+       "d": "6:57",
+       "k": "Introduction to Biotechnology",
+       "ch": "Introduction to Biotechnology",
+       "ov": false
+      },
+      {
+       "id": "8GD5fH7JhQQ",
+       "t": "Tissue Culture",
+       "d": "10:08",
+       "k": "Introduction to Biotechnology",
+       "ch": "Introduction to Biotechnology",
+       "ov": false
+      }
+     ]
+    },
+    {
+     "t": "Substances in Common Use",
+     "l": [
+      {
+       "id": "yL9OD9lz6tM",
+       "t": "Dye",
+       "d": "6:11",
+       "k": "Substances in Common Use",
+       "ch": "Substances in Common Use",
+       "ov": false
+      }
+     ]
+    }
+   ],
+   "thumb": "sc-science9.jpg",
+   "includes": [
+    "Chapter-wise recorded lectures",
+    "VVI questions & quiz under lectures",
+    "Ask doubts to the teacher",
+    "Watch on phone or computer"
+   ],
+   "faq": [
+    {
+     "q": "Is this course in Hindi or English?",
+     "a": "Lectures are explained in simple language with English terms, so every student can follow."
+    },
+    {
+     "q": "Can I watch the lectures again?",
+     "a": "Yes — watch any lecture as many times as you like until your access ends."
+    }
+   ]
+  },
+  {
+   "key": "sc-maths9",
+   "title": "Class 9 Maths — Quick Revision Batch (Demo)",
+   "subtitle": "Every chapter of Class 9 Maths revised quickly before the exam",
+   "desc": "One lecture per chapter — the fastest way to revise the whole Class 9 Maths syllabus.",
+   "cat": "class-9",
+   "teacher": "rk",
+   "price": 699,
+   "mrp": 1299,
+   "days": 180,
+   "starts": null,
+   "chapters": [
+    {
+     "t": "Quick revision — all chapters",
+     "l": [
+      {
+       "id": "g47jZwfjQPs",
+       "t": "Number Systems - Quick Revision",
+       "d": "16:21",
+       "k": "ch1",
+       "ch": "Number Systems",
+       "ov": false
+      },
+      {
+       "id": "uK3LXP4nniI",
+       "t": "Polynomials - Quick Revision",
+       "d": "19:36",
+       "k": "ch2",
+       "ch": "Polynomials",
+       "ov": false
+      },
+      {
+       "id": "1m3ecQLAOAc",
+       "t": "Coordinate Geometry - Quick Revision",
+       "d": "19:41",
+       "k": "ch3",
+       "ch": "Coordinate Geometry",
+       "ov": false
+      },
+      {
+       "id": "YWD-RfdMrw4",
+       "t": "Linear Equations in Two Variables - Quick Revision",
+       "d": "18:44",
+       "k": "ch4",
+       "ch": "Linear Equations in Two Variables",
+       "ov": false
+      },
+      {
+       "id": "20_2D_uByKE",
+       "t": "Introduction to Euclid’s Geometry - Quick Revision",
+       "d": "20:23",
+       "k": "ch5",
+       "ch": "Introduction to Euclid’s Geometry",
+       "ov": false
+      },
+      {
+       "id": "uarQ4XZrAME",
+       "t": "Lines and Angles - Quick Revision",
+       "d": "21:00",
+       "k": "ch6",
+       "ch": "Lines and Angles",
+       "ov": false
+      },
+      {
+       "id": "XpYQojhIZFo",
+       "t": "Triangles - Quick Revision",
+       "d": "24:29",
+       "k": "ch7",
+       "ch": "Triangles",
+       "ov": false
+      },
+      {
+       "id": "2nPKAHEsOw8",
+       "t": "Circles - Quick Revision",
+       "d": "16:24",
+       "k": "ch9",
+       "ch": "Circles",
+       "ov": false
+      },
+      {
+       "id": "AMhcoJ711Tc",
+       "t": "Heron’s Formula - Quick Revision",
+       "d": "17:26",
+       "k": "ch10",
+       "ch": "Heron’s Formula",
+       "ov": false
+      }
+     ]
+    }
+   ],
+   "thumb": "sc-maths9.jpg",
+   "includes": [
+    "Chapter-wise recorded lectures",
+    "VVI questions & quiz under lectures",
+    "Ask doubts to the teacher",
+    "Watch on phone or computer"
+   ],
+   "faq": [
+    {
+     "q": "Is this course in Hindi or English?",
+     "a": "Lectures are explained in simple language with English terms, so every student can follow."
+    },
+    {
+     "q": "Can I watch the lectures again?",
+     "a": "Yes — watch any lecture as many times as you like until your access ends."
+    }
+   ]
+  },
+  {
+   "key": "sc-maths8",
+   "title": "Class 8 Maths — Ganita Prakash Part 1 (Demo)",
+   "subtitle": "New NCERT book explained chapter by chapter, with exercise solutions",
+   "desc": "Class 8 Maths (Ganita Prakash) — every chapter explained with the \"Figure it out\" exercises solved.",
+   "cat": "class-8",
+   "teacher": "rk",
+   "price": 599,
+   "mrp": 1199,
+   "days": 365,
+   "starts": null,
+   "chapters": [
+    {
+     "t": "Book overview",
+     "l": [
+      {
+       "id": "E3-CpFgQx3s",
+       "t": "Class 8th Mathematics Ganita Prakash (Part - 1) – Book Overview and Strategy",
+       "d": "3:24",
+       "k": "overview",
+       "ch": "Book overview",
+       "ov": false
+      }
+     ]
+    },
+    {
+     "t": "Number Play",
+     "l": [
+      {
+       "id": "p6EPQt2TQ4c",
+       "t": "Number Play - Chapter Overview",
+       "d": "4:37",
+       "k": "ch5",
+       "ch": "Number Play",
+       "ov": true
+      },
+      {
+       "id": "g0mEMWmdfnE",
+       "t": "Is This a Multiple Of ? & Figure it Out - Number Play",
+       "d": "1:25:24",
+       "k": "ch5",
+       "ch": "Number Play",
+       "ov": false
+      },
+      {
+       "id": "hiKgmP7eoNU",
+       "t": "Checking Divisibility Quickly & Figure it Out - Number Play",
+       "d": "1:04:56",
+       "k": "ch5",
+       "ch": "Number Play",
+       "ov": false
+      },
+      {
+       "id": "KvT_QdyT1O8",
+       "t": "Digits in Disguise ,Figure it Out - Number Play",
+       "d": "49:48",
+       "k": "ch5",
+       "ch": "Number Play",
+       "ov": false
+      },
+      {
+       "id": "Uf7eA1JaRQM",
+       "t": "Number Play - Multiple Choice Questions",
+       "d": "8:58",
+       "k": "ch5",
+       "ch": "Number Play",
+       "ov": false
+      },
+      {
+       "id": "BPozBo5EJcI",
+       "t": "Number Play - Most Important Questions",
+       "d": "11:32",
+       "k": "ch5",
+       "ch": "Number Play",
+       "ov": false
+      },
+      {
+       "id": "iA9mgvT8zD4",
+       "t": "Number Play - One Shot Revision",
+       "d": "55:15",
+       "k": "ch5",
+       "ch": "Number Play",
+       "ov": false
+      }
+     ]
+    },
+    {
+     "t": "We Distribute, Yet Things Multiply",
+     "l": [
+      {
+       "id": "qN6M1x_igSo",
+       "t": "We Distribute, Yet Things Multiply - Chapter Overview",
+       "d": "7:35",
+       "k": "ch6",
+       "ch": "We Distribute, Yet Things Multiply",
+       "ov": true
+      },
+      {
+       "id": "e4EC-BMHxQg",
+       "t": "Special Cases of the Distributive Property",
+       "d": "1:05:18",
+       "k": "ch6",
+       "ch": "Special Cases of the Distributive Property",
+       "ov": false
+      },
+      {
+       "id": "SrkKMHgKTdw",
+       "t": "Figure it Out & Mind the Mistake, Mend the Mistake",
+       "d": "36:30",
+       "k": "ch6",
+       "ch": "Figure it Out & Mind the Mistake, Mend the Mistake",
+       "ov": false
+      },
+      {
+       "id": "9ygieqquWiw",
+       "t": "This Way or That Way, All Ways Lead to the Bay",
+       "d": "52:15",
+       "k": "ch6",
+       "ch": "This Way or That Way, All Ways Lead to the Bay",
+       "ov": false
+      },
+      {
+       "id": "SCyFUwczxGg",
+       "t": "Figure it Out - We Distribute, Yet Things Multiply",
+       "d": "1:08:16",
+       "k": "ch6",
+       "ch": "We Distribute, Yet Things Multiply",
+       "ov": false
+      },
+      {
+       "id": "UUaxJoaCcAs",
+       "t": "We Distribute, Yet Things Multiply - Multiple Choice Questions",
+       "d": "8:49",
+       "k": "ch6",
+       "ch": "We Distribute, Yet Things Multiply",
+       "ov": false
+      },
+      {
+       "id": "X8KW_oZHfCs",
+       "t": "We Distribute, Yet Things Multiply - Most Important Questions",
+       "d": "10:34",
+       "k": "ch6",
+       "ch": "We Distribute, Yet Things Multiply",
+       "ov": false
+      },
+      {
+       "id": "eqHAWW_iwjQ",
+       "t": "Properties of Multiplication & Figure it Out - We Distribute, Yet Things Multiply",
+       "d": "1:08:34",
+       "k": "Properties of Multiplication & Figure it Out",
+       "ch": "Properties of Multiplication & Figure it Out",
+       "ov": false
+      }
+     ]
+    }
+   ],
+   "thumb": "sc-maths8.jpg",
+   "includes": [
+    "Chapter-wise recorded lectures",
+    "VVI questions & quiz under lectures",
+    "Ask doubts to the teacher",
+    "Watch on phone or computer"
+   ],
+   "faq": [
+    {
+     "q": "Is this course in Hindi or English?",
+     "a": "Lectures are explained in simple language with English terms, so every student can follow."
+    },
+    {
+     "q": "Can I watch the lectures again?",
+     "a": "Yes — watch any lecture as many times as you like until your access ends."
+    }
+   ]
+  },
+  {
+   "key": "sc-sst7",
+   "title": "Class 7 Social Science — Exploring Society (Demo)",
+   "subtitle": "History, Geography and Civics of the new NCERT book",
+   "desc": "Class 7 Social Science (Part 2) explained in easy language with maps, stories and chapter summaries.",
+   "cat": "class-7",
+   "teacher": "av",
+   "price": 499,
+   "mrp": 999,
+   "days": 365,
+   "starts": null,
+   "chapters": [
+    {
+     "t": "Book overview",
+     "l": [
+      {
+       "id": "ulzqEgWIm_0",
+       "t": "Class 7 Social Science (Part  2) – Full Book Overview",
+       "d": "5:25",
+       "k": "overview",
+       "ch": "Book overview",
+       "ov": false
+      }
+     ]
+    },
+    {
+     "t": "The Story of Indian Farming",
+     "l": [
+      {
+       "id": "GL6JCSYiQag",
+       "t": "The Story of Indian Farming - Chapter Overview",
+       "d": "16:01",
+       "k": "ch1",
+       "ch": "The Story of Indian Farming",
+       "ov": true
+      },
+      {
+       "id": "FjGHQkeDATU",
+       "t": "Echoes from the Past - The Story of Indian Farming",
+       "d": "14:47",
+       "k": "ch1",
+       "ch": "The Story of Indian Farming",
+       "ov": false
+      },
+      {
+       "id": "AHsGb7p55Xs",
+       "t": "Climate, Seasons, and Crops: What Grows Where and When?",
+       "d": "19:35",
+       "k": "ch1",
+       "ch": "Climate, Seasons, and Crops: What Grows Where and When?",
+       "ov": false
+      },
+      {
+       "id": "qkPG-1ZrPow",
+       "t": "Agricultural Practices Traditional Wisdom & Modern Innovations",
+       "d": "16:01",
+       "k": "ch1",
+       "ch": "Agricultural Practices Traditional Wisdom & Modern Innovations",
+       "ov": false
+      },
+      {
+       "id": "gT6FLyCW3r0",
+       "t": "The Role of the Government - The Story of Indian Farming",
+       "d": "13:13",
+       "k": "ch1",
+       "ch": "The Story of Indian Farming",
+       "ov": false
+      },
+      {
+       "id": "0yPoDqCUtCk",
+       "t": "The Story of Indian Farming - NCERT Solutions",
+       "d": "38:11",
+       "k": "ch1",
+       "ch": "The Story of Indian Farming",
+       "ov": false
+      },
+      {
+       "id": "Zj4xeJ2__fM",
+       "t": "The Story of Indian Farming - Multiple Choice Questions",
+       "d": "16:10",
+       "k": "ch1",
+       "ch": "The Story of Indian Farming",
+       "ov": false
+      },
+      {
+       "id": "lyGBso6CfDw",
+       "t": "The Story of Indian Farming - Most Important Question",
+       "d": "28:02",
+       "k": "ch1",
+       "ch": "The Story of Indian Farming",
+       "ov": false
+      },
+      {
+       "id": "1QxdXSJhgFQ",
+       "t": "The Story of Indian Farming - One Shot Revision",
+       "d": "48:39",
+       "k": "ch1",
+       "ch": "The Story of Indian Farming",
+       "ov": false
+      },
+      {
+       "id": "Ttmu7Jmm0SE",
+       "t": "Soil & the Foundation of Cultivation - The Story of Indian Farming",
+       "d": "33:28",
+       "k": "Soil & the Foundation of Cultivation",
+       "ch": "Soil & the Foundation of Cultivation",
+       "ov": false
+      }
+     ]
+    },
+    {
+     "t": "India and Her Neighbours",
+     "l": [
+      {
+       "id": "Q3MAMkkIYFQ",
+       "t": "India and Her Neighbours - Chapter Overview",
+       "d": "4:27",
+       "k": "ch2",
+       "ch": "India and Her Neighbours",
+       "ov": true
+      },
+      {
+       "id": "SW5RRnPSucI",
+       "t": "Framing the Neighbourhood - India and Her Neighbours",
+       "d": "51:24",
+       "k": "ch2",
+       "ch": "India and Her Neighbours",
+       "ov": false
+      },
+      {
+       "id": "hcLAqyPs5g0",
+       "t": "India’s Maritime Neighbours -  India and Her Neighbours",
+       "d": "45:05",
+       "k": "ch2",
+       "ch": "India and Her Neighbours",
+       "ov": false
+      },
+      {
+       "id": "HTrwQjV-7ZA",
+       "t": "The Land of Copper - India and Her Neighbours",
+       "d": "9:01",
+       "k": "ch2",
+       "ch": "India and Her Neighbours",
+       "ov": false
+      },
+      {
+       "id": "2slAnSMBy50",
+       "t": "India and Her Neighbours - NCERT Solutions",
+       "d": "26:38",
+       "k": "ch2",
+       "ch": "India and Her Neighbours",
+       "ov": false
+      },
+      {
+       "id": "DGwbI2_LjMc",
+       "t": "India and Her Neighbours - Multiple Choice Questions",
+       "d": "15:37",
+       "k": "ch2",
+       "ch": "India and Her Neighbours",
+       "ov": false
+      },
+      {
+       "id": "PwxfoKpvBQY",
+       "t": "India and Her Neighbours - Most Important Questions",
+       "d": "24:41",
+       "k": "ch2",
+       "ch": "India and Her Neighbours",
+       "ov": false
+      }
+     ]
+    }
+   ],
+   "thumb": "sc-sst7.jpg",
+   "includes": [
+    "Chapter-wise recorded lectures",
+    "VVI questions & quiz under lectures",
+    "Ask doubts to the teacher",
+    "Watch on phone or computer"
+   ],
+   "faq": [
+    {
+     "q": "Is this course in Hindi or English?",
+     "a": "Lectures are explained in simple language with English terms, so every student can follow."
+    },
+    {
+     "q": "Can I watch the lectures again?",
+     "a": "Yes — watch any lecture as many times as you like until your access ends."
+    }
+   ]
+  },
+  {
+   "key": "sc-evs5",
+   "title": "Class 5 EVS — Our Wondrous World (Demo)",
+   "subtitle": "Environmental Studies for Class 5, explained with fun examples",
+   "desc": "Class 5 EVS lectures with simple explanations and exercise solutions — made for young learners.",
+   "cat": "class-5",
+   "teacher": "ns",
+   "price": 299,
+   "mrp": 599,
+   "days": 365,
+   "starts": null,
+   "chapters": [
+    {
+     "t": "Book overview",
+     "l": [
+      {
+       "id": "14JQgH-4cFM",
+       "t": "Class 5th Environmental Studies (Our Wondrous World) - Book Overview",
+       "d": "8:43",
+       "k": "overview",
+       "ch": "Book overview",
+       "ov": false
+      }
+     ]
+    },
+    {
+     "t": "Water : The Essence of  Life",
+     "l": [
+      {
+       "id": "Mrg4fKEpGqQ",
+       "t": "Water : The Essence of  Life - Explanation",
+       "d": "53:55",
+       "k": "ch1",
+       "ch": "Water : The Essence of  Life",
+       "ov": false
+      },
+      {
+       "id": "xppc1fVb4FA",
+       "t": "Water : The Essence of  Life - Exercise",
+       "d": "13:45",
+       "k": "ch1",
+       "ch": "Water : The Essence of  Life",
+       "ov": false
+      }
+     ]
+    },
+    {
+     "t": "Journey of a River",
+     "l": [
+      {
+       "id": "ZBnUADqx8ZA",
+       "t": "Journey of a River - Explanation (Part 1)",
+       "d": "32:37",
+       "k": "ch2",
+       "ch": "Journey of a River",
+       "ov": false
+      },
+      {
+       "id": "QyUV2osr4V0",
+       "t": "Journey of a River - Explanation (Part 2)",
+       "d": "33:30",
+       "k": "ch2",
+       "ch": "Journey of a River",
+       "ov": false
+      },
+      {
+       "id": "TQfm1niNw4s",
+       "t": "Journey of a River - Exercises",
+       "d": "15:22",
+       "k": "ch2",
+       "ch": "Journey of a River",
+       "ov": false
+      }
+     ]
+    }
+   ],
+   "thumb": "sc-evs5.jpg",
+   "includes": [
+    "Chapter-wise recorded lectures",
+    "VVI questions & quiz under lectures",
+    "Ask doubts to the teacher",
+    "Watch on phone or computer"
+   ],
+   "faq": [
+    {
+     "q": "Is this course in Hindi or English?",
+     "a": "Lectures are explained in simple language with English terms, so every student can follow."
+    },
+    {
+     "q": "Can I watch the lectures again?",
+     "a": "Yes — watch any lecture as many times as you like until your access ends."
+    }
+   ]
+  },
+  {
+   "key": "sc-bio11",
+   "title": "Class 11 Biology — Plant Physiology (Demo)",
+   "subtitle": "Photosynthesis, respiration and plant growth — NEET-level concepts",
+   "desc": "The plant physiology unit of Class 11 Biology, with diagrams explained step by step. Useful for boards and NEET.",
+   "cat": "class-11",
+   "teacher": "ns",
+   "price": 1199,
+   "mrp": 2299,
+   "days": 365,
+   "starts": 30,
+   "chapters": [
+    {
+     "t": "Photosynthesis in Higher Plants",
+     "l": [
+      {
+       "id": "gklGaecmuXk",
+       "t": "Photosynthetic Pigments",
+       "d": "10:53",
+       "k": "Photosynthesis in Higher Plants",
+       "ch": "Photosynthesis in Higher Plants",
+       "ov": false
+      },
+      {
+       "id": "kEV2sjWbOrg",
+       "t": "Early experiments in photosynthesis",
+       "d": "12:18",
+       "k": "Photosynthesis",
+       "ch": "Photosynthesis",
+       "ov": false
+      }
+     ]
+    },
+    {
+     "t": "Respiration in Plants",
+     "l": [
+      {
+       "id": "JHs4qH_5fHk",
+       "t": "Respiratory quotient",
+       "d": "9:04",
+       "k": "Respiration in Plants",
+       "ch": "Respiration in Plants",
+       "ov": false
+      }
+     ]
+    },
+    {
+     "t": "Plant Growth and Development",
+     "l": [
+      {
+       "id": "peIX5QVK958",
+       "t": "Differentiation, Dedifferentiation and Re-differentiation",
+       "d": "7:50",
+       "k": "Plant growth and development",
+       "ch": "Plant growth and development",
+       "ov": false
+      }
+     ]
+    }
+   ],
+   "thumb": "sc-bio11.jpg",
+   "includes": [
+    "Chapter-wise recorded lectures",
+    "VVI questions & quiz under lectures",
+    "Ask doubts to the teacher",
+    "Watch on phone or computer",
+    "NEET-level questions"
+   ],
+   "faq": [
+    {
+     "q": "Is this course in Hindi or English?",
+     "a": "Lectures are explained in simple language with English terms, so every student can follow."
+    },
+    {
+     "q": "Can I watch the lectures again?",
+     "a": "Yes — watch any lecture as many times as you like until your access ends."
+    }
+   ]
+  },
+  {
+   "key": "sc-bst11",
+   "title": "Class 11 Business Studies — Quick Revision (Demo)",
+   "subtitle": "All chapters of Class 11 Business Studies revised for the exam",
+   "desc": "One quick-revision lecture per chapter for Class 11 Commerce students.",
+   "cat": "class-11",
+   "teacher": "av",
+   "price": 599,
+   "mrp": 1199,
+   "days": 180,
+   "starts": null,
+   "chapters": [
+    {
+     "t": "Quick revision — all chapters",
+     "l": [
+      {
+       "id": "2qBVJagx2dU",
+       "t": "Nature and Purpose of Business - Quick Revision",
+       "d": "18:32",
+       "k": "ch1",
+       "ch": "Nature and Purpose of Business",
+       "ov": false
+      },
+      {
+       "id": "NKYHR27mW84",
+       "t": "Forms of Business Organisation - Quick Revision",
+       "d": "20:59",
+       "k": "ch2",
+       "ch": "Forms of Business Organisation",
+       "ov": false
+      },
+      {
+       "id": "JZnzQ2kVwnY",
+       "t": "Private, Public and Global Enterprises - Quick Revision",
+       "d": "15:53",
+       "k": "ch3",
+       "ch": "Private, Public and Global Enterprises",
+       "ov": false
+      },
+      {
+       "id": "k0IXp2e5S4A",
+       "t": "Business Services - Quick Revision",
+       "d": "19:20",
+       "k": "ch4",
+       "ch": "Business Services",
+       "ov": false
+      },
+      {
+       "id": "xZZzOhiyzZo",
+       "t": "Emerging Modes of Business - Quick Revision",
+       "d": "15:48",
+       "k": "ch5",
+       "ch": "Emerging Modes of Business",
+       "ov": false
+      },
+      {
+       "id": "fcMKMDnaB_w",
+       "t": "Social Responsibilities of Business and Business Ethics - Quick Revision",
+       "d": "17:52",
+       "k": "Social Responsibilities of Business and Business Ethics",
+       "ch": "Social Responsibilities of Business and Business Ethics",
+       "ov": false
+      },
+      {
+       "id": "fYOWlOZVWAc",
+       "t": "Formation of a Company - Quick Revision",
+       "d": "16:55",
+       "k": "ch7",
+       "ch": "Formation of a Company",
+       "ov": false
+      },
+      {
+       "id": "Eb2L_ipwszM",
+       "t": "Sources of Business Finance - Quick Revision",
+       "d": "20:38",
+       "k": "ch8",
+       "ch": "Sources of Business Finance",
+       "ov": false
+      }
+     ]
+    }
+   ],
+   "thumb": "sc-bst11.jpg",
+   "includes": [
+    "Chapter-wise recorded lectures",
+    "VVI questions & quiz under lectures",
+    "Ask doubts to the teacher",
+    "Watch on phone or computer"
+   ],
+   "faq": [
+    {
+     "q": "Is this course in Hindi or English?",
+     "a": "Lectures are explained in simple language with English terms, so every student can follow."
+    },
+    {
+     "q": "Can I watch the lectures again?",
+     "a": "Yes — watch any lecture as many times as you like until your access ends."
+    }
+   ]
+  },
+  {
+   "key": "sc-chem12",
+   "title": "Class 12 Chemistry — Polymers Masterclass (Demo)",
+   "subtitle": "Classification, polymerisation and rubber — with board questions",
+   "desc": "A focused unit on Polymers for Class 12 Chemistry, with the important board questions solved.",
+   "cat": "class-12",
+   "teacher": "av",
+   "price": 799,
+   "mrp": 1499,
+   "days": 365,
+   "starts": null,
+   "chapters": [
+    {
+     "t": "Polymers",
+     "l": [
+      {
+       "id": "4_WkSMhqqz0",
+       "t": "Rubber",
+       "d": "11:20",
+       "k": "Polymers",
+       "ch": "Polymers",
+       "ov": false
+      },
+      {
+       "id": "4bL7K7fyo-o",
+       "t": "Condensation polymerisation and copolymerisation",
+       "d": "11:46",
+       "k": "Polymers",
+       "ch": "Polymers",
+       "ov": false
+      },
+      {
+       "id": "CmdrIZPG0Y0",
+       "t": "Classification of polymers",
+       "d": "11:06",
+       "k": "Polymers",
+       "ch": "Polymers",
+       "ov": false
+      },
+      {
+       "id": "PKvnNtElp4k",
+       "t": "Addition polymerisation",
+       "d": "12:44",
+       "k": "Polymers",
+       "ch": "Polymers",
+       "ov": false
+      }
+     ]
+    }
+   ],
+   "thumb": "sc-chem12.jpg",
+   "includes": [
+    "Chapter-wise recorded lectures",
+    "VVI questions & quiz under lectures",
+    "Ask doubts to the teacher",
+    "Watch on phone or computer"
+   ],
+   "faq": [
+    {
+     "q": "Is this course in Hindi or English?",
+     "a": "Lectures are explained in simple language with English terms, so every student can follow."
+    },
+    {
+     "q": "Can I watch the lectures again?",
+     "a": "Yes — watch any lecture as many times as you like until your access ends."
+    }
+   ]
+  }
+ ],
+ "notes": [
+  {
+   "key": "sn-maths6",
+   "title": "Class 6 Maths Practice Worksheets (Free Demo)",
+   "subtitle": "Practice questions on numbers, fractions and shapes",
+   "desc": "Free worksheets for Class 6 Maths — print or practise on screen.",
+   "cat": "class-6",
+   "price": 0,
+   "mrp": null,
+   "pdf": "sn-maths6.pdf",
+   "pages": 1,
+   "thumb": "sn-maths6.jpg"
+  },
+  {
+   "key": "sn-sci9",
+   "title": "Class 9 Science Chapter Summaries (Demo)",
+   "subtitle": "One-page summary of every important chapter",
+   "desc": "Short chapter summaries for quick revision of Class 9 Science.",
+   "cat": "class-9",
+   "price": 79,
+   "mrp": 149,
+   "pdf": "sn-sci9.pdf",
+   "pages": 1,
+   "thumb": "sn-sci9.jpg"
+  },
+  {
+   "key": "sn-chem12",
+   "title": "Class 12 Chemistry — Polymers Notes (Demo)",
+   "subtitle": "Definitions, examples and board questions",
+   "desc": "Revision notes for the Polymers chapter of Class 12 Chemistry.",
+   "cat": "class-12",
+   "price": 59,
+   "mrp": 99,
+   "pdf": "sn-chem12.pdf",
+   "pages": 1,
+   "thumb": "sn-chem12.jpg"
+  },
+  {
+   "key": "sn-bio11",
+   "title": "Class 11 Biology — Plant Physiology Notes (Demo)",
+   "subtitle": "Photosynthesis and respiration in plants on a few pages",
+   "desc": "Quick notes for the plant physiology unit — for boards and NEET.",
+   "cat": "class-11",
+   "price": 69,
+   "mrp": 129,
+   "pdf": "sn-bio11.pdf",
+   "pages": 1,
+   "thumb": "sn-bio11.jpg"
+  },
+  {
+   "key": "sn-maths7",
+   "title": "Class 7 Maths Formula Card (Free Demo)",
+   "subtitle": "All the important formulas of Class 7 on one card",
+   "desc": "A free formula card for Class 7 Maths.",
+   "cat": "class-7",
+   "price": 0,
+   "mrp": null,
+   "pdf": "sn-maths7.pdf",
+   "pages": 1,
+   "thumb": "sn-maths7.jpg"
+  }
+ ],
+ "free": [
+  {
+   "list": "PLVLoWQFkZbhWYsg90ByY5256bcotkWMQi",
+   "video": "luGRxE5ysoc",
+   "title": "Class 9 Science — Exploration (Full Course)",
+   "thumb": "https://i.ytimg.com/vi/luGRxE5ysoc/hqdefault.jpg",
+   "channel": "Magnet Brains",
+   "videos": 100,
+   "cat": "class-9"
+  },
+  {
+   "list": "PLVLoWQFkZbhVQXzaqvepVOIo6qaBktSts",
+   "video": "gH8d5wNoBwE",
+   "title": "Class 9 Maths — Ganita Manjari (Full Course)",
+   "thumb": "https://i.ytimg.com/vi/gH8d5wNoBwE/hqdefault.jpg",
+   "channel": "Magnet Brains",
+   "videos": 100,
+   "cat": "class-9"
+  },
+  {
+   "list": "PLVLoWQFkZbhWrMnZNTVc2a9x9lqxiW1QA",
+   "video": "ZfGeqChaTQ0",
+   "title": "Class 9 English — Kaveri (Full Course)",
+   "thumb": "https://i.ytimg.com/vi/ZfGeqChaTQ0/hqdefault.jpg",
+   "channel": "Magnet Brains",
+   "videos": 84,
+   "cat": "class-9"
+  },
+  {
+   "list": "PLVLoWQFkZbhWCEUBGqWpg5yO-KvIX6x0U",
+   "video": "s7m4lHA1iL8",
+   "title": "Class 9 Hindi — Ganga (Full Course)",
+   "thumb": "https://i.ytimg.com/vi/s7m4lHA1iL8/hqdefault.jpg",
+   "channel": "Magnet Brains",
+   "videos": 60,
+   "cat": "class-9"
+  },
+  {
+   "list": "PLVLoWQFkZbhX1yVObiu0oBLu6u3Q7Ueo-",
+   "video": "hyq8hcmjd9o",
+   "title": "Class 8 Social Science (Full Course)",
+   "thumb": "https://i.ytimg.com/vi/hyq8hcmjd9o/hqdefault.jpg",
+   "channel": "Magnet Brains",
+   "videos": 74,
+   "cat": "class-8"
+  },
+  {
+   "list": "PLVLoWQFkZbhXx3UvkVuBRfw9i-LqVCRjg",
+   "video": "gLdR23G2mqc",
+   "title": "Class 7 Maths — Ganita Prakash Part 2",
+   "thumb": "https://i.ytimg.com/vi/gLdR23G2mqc/hqdefault.jpg",
+   "channel": "Magnet Brains",
+   "videos": 53,
+   "cat": "class-7"
+  },
+  {
+   "list": "PLVLoWQFkZbhUxk6gAscoYZrGHtb77IDET",
+   "video": "Orz7HA6C3x4",
+   "title": "Class 5 Maths — Maths Mela (Full Course)",
+   "thumb": "https://i.ytimg.com/vi/Orz7HA6C3x4/hqdefault.jpg",
+   "channel": "Magnet Brains",
+   "videos": 32,
+   "cat": "class-5"
+  },
+  {
+   "list": "PLVLoWQFkZbhVeoqYRKydLyXanZQdQXjCv",
+   "video": "uoj2wGXYvDk",
+   "title": "Vedic Maths — Fast Calculation Tricks",
+   "thumb": "https://i.ytimg.com/vi/uoj2wGXYvDk/hqdefault.jpg",
+   "channel": "Magnet Brains",
+   "videos": 30,
+   "cat": ""
+  },
+  {
+   "list": "PL2ub1_oKCn7q8Y-X9wnoFEE3Zwq_zQfy0",
+   "video": "zHEWXfhwI1U",
+   "title": "Class 10 Maths — Linear Equations (Khan Academy)",
+   "thumb": "https://i.ytimg.com/vi/zHEWXfhwI1U/hqdefault.jpg",
+   "channel": "Khan Academy India - English",
+   "videos": 5,
+   "cat": "class-10"
+  }
+ ],
+ "slides": [
+  {
+   "image": "slide-board.jpg",
+   "mobile": "slide-board-m.jpg",
+   "link": "COURSE:sc-science10",
+   "title": "Class 10 Board Booster Batch"
+  },
+  {
+   "image": "slide-free.jpg",
+   "mobile": "slide-free-m.jpg",
+   "link": "/store/free",
+   "title": "Free courses for Class 5 to 12"
+  },
+  {
+   "image": "slide-notes.jpg",
+   "mobile": "slide-notes-m.jpg",
+   "link": "/store/notes",
+   "title": "Notes, formula cards & worksheets"
+  }
+ ],
+ "icons": {
+  "class-5": "cat-5.png",
+  "class-6": "cat-6.png",
+  "class-7": "cat-7.png",
+  "class-8": "cat-8.png",
+  "class-9": "cat-9.png",
+  "class-10": "cat-10.png",
+  "class-11": "cat-11.png",
+  "class-12": "cat-12.png"
+ },
+ "teachers": {
+  "rk": "Rakesh Kumar",
+  "ns": "Neha Singh",
+  "av": "Amit Verma"
+ }
+}

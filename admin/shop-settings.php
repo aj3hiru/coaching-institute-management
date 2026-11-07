@@ -9,6 +9,12 @@ sh_tables($pdo);
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_check();
     $a = (string)($_POST['action'] ?? 'save');
+    if ($a === 'demo_showcase') {
+        require_once INCLUDES_PATH . '/shop-demo.php';
+        try { $msg = sh_demo_showcase($pdo, (int)$me['id']); admin_log('shop_demo', $msg); admin_flash($msg); }
+        catch (Throwable $e) { admin_flash('Could not add the showcase: ' . $e->getMessage(), 'error'); }
+        header('Location: /admin/shop-settings.php#demo'); exit;
+    }
     if ($a === 'demo_add' || $a === 'demo_remove') {
         require_once INCLUDES_PATH . '/shop-demo.php';
         try {
@@ -104,7 +110,9 @@ $mask = fn($s) => $s === '' ? '' : str_repeat('•', 8) . substr($s, -4);
 <div class="ci-card" id="demo" style="margin-top:16px"><div class="ci-card-h"><h3>Demo data</h3><?= $demo['products'] ? '<span class="ci-badge ci-b-amber">Demo is on</span>' : '' ?></div><div class="ci-card-b">
   <?php if ($demo['products']): ?>
     <p style="margin:0 0 10px">The store has demo content: <?= count($demo['products']) ?> courses / notes, <?= count($demo['users']) ?> demo students, <?= count($demo['orders']) ?> paid demo orders. Demo student login: <b>9000000001</b> (or 9000000002, 9000000003), password <b><?= SH_DEMO_PASS ?></b> at <a href="/account/login" target="_blank">/account/login</a>.</p>
-    <form method="post" onsubmit="return confirm('Remove all demo courses, notes, demo students and demo orders? Your own data is not touched.')"><?= csrf_field() ?><input type="hidden" name="action" value="demo_remove"><button class="ci-btn ci-ghost" type="submit" style="color:#b91c1c;border-color:#fca5a5"><i class="fas fa-trash"></i> Remove demo data</button></form>
+    <?php if (empty($demo['showcase'])): ?><form method="post" style="margin:0 0 10px"><?= csrf_field() ?><input type="hidden" name="action" value="demo_showcase"><button class="ci-btn" type="submit"><i class="fas fa-wand-magic-sparkles"></i> Fill the whole site for a client demo</button><span class="ci-hint" style="display:block;margin-top:4px">Adds 10 more courses with teachers, 5 notes packs, 12 more demo students with orders, reviews and doubts, the homepage slider, free YouTube courses and category icons.</span></form>
+    <?php else: ?><p class="ci-muted" style="margin:0 0 10px">The full client showcase is on (slider, free courses, <?= count($demo['products']) ?> courses / notes, <?= count($demo['users']) ?> demo students, teachers, category icons).</p><?php endif; ?>
+    <form method="post" onsubmit="return confirm('Remove all demo content — courses, notes, students, orders, reviews, slider, free courses, demo teachers and icons? Your own data is not touched.')"><?= csrf_field() ?><input type="hidden" name="action" value="demo_remove"><button class="ci-btn ci-ghost" type="submit" style="color:#b91c1c;border-color:#fca5a5"><i class="fas fa-trash"></i> Remove demo data</button></form>
   <?php else: ?>
     <p class="ci-muted" style="margin:0 0 10px">Adds 2 video courses (one lesson uploaded to the server with 720p + 360p, the rest public Khan Academy YouTube lessons), 2 PDF notes packs, 3 demo student accounts and a few paid demo orders — to show the software to someone. Remove it with one click later.</p>
     <form method="post"><?= csrf_field() ?><input type="hidden" name="action" value="demo_add"><button class="ci-btn" type="submit"><i class="fas fa-wand-magic-sparkles"></i> Add demo data</button></form>
