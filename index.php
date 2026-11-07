@@ -185,8 +185,11 @@ $short0 = function (string $n) { $p = preg_split('/\s+/', trim(preg_replace('/\(
     <p>Classroom teaching and online learning in one place — so every student gets the help they need to do well in school and in board exams.</p>
     <div class="hm-why-cta"><a class="hm-btn" href="/courses/"><?= $ico('compass') ?> Explore courses</a></div>
   </div>
-  <ol class="hm-why-g"><?php $wi = ['user', 'layers', 'play', 'pen', 'notes', 'shield', 'check', 'gauge']; foreach ($cfg['why'] as $i => $w): ?>
-    <li><span class="hm-why-i"><?= $ico($wi[$i % count($wi)]) ?></span><div><b><?= htmlspecialchars($w['t']) ?></b><?php if ($w['d'] !== ''): ?><p><?= htmlspecialchars($w['d']) ?></p><?php endif; ?></div></li>
+  <ol class="hm-why-g"><?php $wi = ['user', 'layers', 'play', 'pen', 'notes', 'shield', 'check', 'gauge'];
+    // icon from the point's words, so a point typed in admin still gets a fitting one
+    $wk = ['board|smart|digital' => 'board', 'mcq|quiz' => 'quiz', 'test|exam' => 'calendar', 'growth|guidance|progress' => 'trend', 'competitive|zero|level|rank' => 'trophy', 'doubt' => 'chat', 'teacher|faculty' => 'user', 'pace|record|any ?time|video' => 'play', 'note|pdf' => 'notes', 'course|chapter' => 'layers'];
+    foreach ($cfg['why'] as $i => $w): $wn = $wi[$i % count($wi)]; foreach ($wk as $rx => $n) if (preg_match('/' . $rx . '/i', $w['t'])) { $wn = $n; break; } ?>
+    <li><span class="hm-why-i"><?= $ico($wn) ?></span><div><b><?= htmlspecialchars($w['t']) ?></b><?php if ($w['d'] !== ''): ?><p><?= htmlspecialchars($w['d']) ?></p><?php endif; ?></div></li>
   <?php endforeach; ?></ol>
 </div></section>
 

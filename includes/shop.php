@@ -561,6 +561,11 @@ function sh_icon(string $n): string
 {
     static $p = [
         'play' => '<circle cx="12" cy="12" r="10"/><path d="m10 8 6 4-6 4Z"/>',
+        'board' => '<rect x="2" y="3" width="20" height="13" rx="2"/><path d="M8 21h8M12 16v5M6 12l3-3 3 2 5-5"/>',
+        'quiz' => '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="m8 8 1.5 1.5L12 7M8 14l1.5 1.5L12 13M14 8h3M14 14h3"/>',
+        'trend' => '<path d="m3 17 6-6 4 4 8-8"/><path d="M15 7h6v6"/>',
+        'trophy' => '<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0Z"/><path d="M7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4"/>',
+        'chat' => '<path d="M21 12a8 8 0 0 1-11.6 7.1L3 21l1.9-6.4A8 8 0 1 1 21 12Z"/><path d="M8 11h8M8 14h5"/>',
         'file' => '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M8 13h8M8 17h6"/>',
         'check' => '<circle cx="12" cy="12" r="10"/><path d="m8 12 3 3 5-6"/>',
         'lock' => '<rect x="4" y="11" width="16" height="10"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
@@ -958,9 +963,13 @@ function sh_home_cfg(): array
         'impact' => is_array($impact) && $impact ? $impact : [['k' => 'students', 'l' => 'Registered students', 'v' => ''], ['k' => 'courses', 'l' => 'Active courses', 'v' => ''], ['k' => 'free', 'l' => 'Free videos', 'v' => ''], ['k' => 'notes', 'l' => 'PDF notes', 'v' => ''], ['k' => 'years', 'l' => 'Years of teaching', 'v' => '10+']],
         'why' => is_array($why) && $why ? $why : [
             ['t' => 'Expert teachers', 'd' => 'Experienced teachers who explain every chapter step by step, in simple language.'],
-            ['t' => 'Chapter-wise courses', 'd' => 'Well-planned courses for every class, with notes, VVI questions and quizzes under each lecture.'],
-            ['t' => 'Learn at your own pace', 'd' => 'Watch recorded classes any time on your phone or computer — pause, repeat, and change the speed.'],
-            ['t' => 'Doubt solving', 'd' => 'Ask your doubt under any lecture and get the teacher\'s answer right there.']],
+            ['t' => 'Digital board classes', 'd' => 'Smart digital board teaching — clear diagrams, colours and easy-to-follow steps.'],
+            ['t' => 'Daily MCQ quiz', 'd' => 'A short MCQ quiz every day to keep practice regular and memory sharp.'],
+            ['t' => 'Weekly tests', 'd' => 'A test every week with marks, so students and parents see the progress.'],
+            ['t' => 'Proper growth & guidance', 'd' => 'Personal attention and the right guidance at every step of the year.'],
+            ['t' => 'From zero to competitive level', 'd' => 'Basics first, then step by step up to competitive exam level.'],
+            ['t' => 'Doubt solving', 'd' => 'Ask your doubt under any lecture and get the teacher\'s answer right there.'],
+            ['t' => 'Learn at your own pace', 'd' => 'Watch recorded classes any time — pause, repeat, and change the speed.']],
         'why_title' => (string)es('home', 'why_title', ''),
     ];
 }

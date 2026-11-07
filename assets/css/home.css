@@ -310,3 +310,17 @@
 @media (max-width:420px){.tC-ring{width:100px!important;height:134px!important}}
 @media (max-width:420px){.tC-exp{display:inline-flex!important}}
 .tC-exp{white-space:nowrap}
+
+/* Why choose us — phones: just the points (no explanations), 2 neat tiles a row */
+@media (max-width:640px){
+  .hm-why-in{gap:14px!important;padding:20px 14px!important}
+  .hm-why-l h2{font-size:21px;margin-bottom:6px}
+  .hm-why-l p{font-size:14px;margin-bottom:12px}
+  .hm-why-g{grid-template-columns:1fr 1fr!important;gap:8px!important}
+  .hm-why-g li{flex-direction:column;align-items:flex-start;gap:8px;padding:12px 11px!important;border-radius:8px;box-shadow:none}
+  .hm-why-g li p{display:none}
+  .hm-why-g b{font-size:13.5px;line-height:1.3;margin:0}
+  .hm-why-i{width:32px;height:32px;border-radius:8px}.hm-why-i svg{width:17px;height:17px}
+  .hm-why-cta{order:3}
+}
+@media (max-width:640px){.hm-why-l{display:contents}.hm-why-l h2,.hm-why-l p{margin:0}.hm-why-g{order:2}.hm-why-cta{order:3}.hm-why-in{gap:12px!important}}
