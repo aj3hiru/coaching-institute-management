@@ -5,8 +5,15 @@
 // a second pass when the store page itself then reports "not found".)
 if (!defined('EDU_NF_ROUTED')) {
     define('EDU_NF_ROUTED', 1);
-    $__u = (string)($_SERVER['REQUEST_URI'] ?? '');
+    // the address the visitor asked for: REQUEST_URI, or (as an ErrorDocument) one of the REDIRECT_* values
+    $__u = '';
+    foreach (['REQUEST_URI', 'REDIRECT_URL', 'REDIRECT_REQUEST_URI', 'REDIRECT_SCRIPT_URL', 'SCRIPT_URL'] as $__k) {
+        $__v = (string)($_SERVER[$__k] ?? '');
+        if (preg_match('#^/(courses|notes|learn|free-courses|category)(/|$)#', $__v)) { $__u = $__v; break; }
+    }
+    if ($__u !== '' && !str_contains($__u, '?') && !empty($_SERVER['REDIRECT_QUERY_STRING'])) $__u .= '?' . $_SERVER['REDIRECT_QUERY_STRING'];
     $__path = (string)parse_url($__u, PHP_URL_PATH);
+    if ($__u !== '') $_SERVER['REQUEST_URI'] = $__u; // the store pages read it (canonical, redirects)
     $__map = [
         '#^/courses/?$#' => ['store/index.php', fn($m) => ['t' => 'course']],
         '#^/courses/([a-zA-Z0-9-]+)/?$#' => ['store/item.php', fn($m) => ['s' => $m[1]]],
