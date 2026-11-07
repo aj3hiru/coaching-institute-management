@@ -73,6 +73,10 @@
       return '<button type="button" role="menuitemradio" aria-checked="' + (box._q === k) + '" data-q="' + k + '"' + (box._q === k ? ' class="on"' : '') + '>' + lab + '</button>';
     }).join('');
   }
+  function settingsOpen(box) { var b = box.querySelector('.plyr__controls [data-plyr="settings"]'); return b && b.getAttribute('aria-expanded') === 'true' ? b : null; }
+  function closeSettings(box) { var b = settingsOpen(box); if (b) b.click(); }
+  function anyMenu(box) { var q = box.querySelector('.ytq-menu'); return !!settingsOpen(box) || !!(q && !q.hidden); }
+  function closeMenus(box) { closeSettings(box); var q = box.querySelector('.ytq-menu'); if (q && !q.hidden) { q.hidden = true; var qb = box.querySelector('.ytq-btn'); if (qb) qb.setAttribute('aria-expanded', 'false'); } }
   function addQ(box) {
     var bar = box.querySelector('.plyr__controls'); if (!bar || box.querySelector('.ytq')) return;
     var w = document.createElement('div'); w.className = 'ytq'; w.hidden = true;
@@ -85,23 +89,19 @@
     menu.addEventListener('click', function (e) { e.stopPropagation(); var b = e.target.closest('[data-q]'); if (b) { setQ(box, b.getAttribute('data-q')); close(); } });
     document.addEventListener('click', function (e) { if (!w.contains(e.target)) close(); });
     box._p.on('controlshidden', close);
+    // opening the speed menu closes Quality (and the other way round, below)
+    var gearBtn = bar.querySelector('[data-plyr="settings"]');
+    if (gearBtn) gearBtn.addEventListener('click', close);
+    btn.addEventListener('click', function () { closeSettings(box); }, true);
   }
 
-  var YT_BTN = '<svg viewBox="0 0 68 48" aria-hidden="true"><path class="ytb-bg" d="M66.52 7.74c-.78-2.93-2.49-5.41-5.42-6.19C55.79.13 34 0 34 0S12.21.13 6.9 1.55C3.97 2.33 2.27 4.81 1.48 7.74.06 13.05 0 24 0 24s.06 10.95 1.48 16.26c.78 2.93 2.49 5.41 5.42 6.19C12.21 47.87 34 48 34 48s21.79-.13 27.1-1.55c2.93-.78 4.64-3.26 5.42-6.19C67.94 34.95 68 24 68 24s-.06-10.95-1.48-16.26z"/><path d="M45 24 27 14v20" fill="#fff"/></svg>';
-  var ICON_PLAY = '<svg viewBox="0 0 36 36" aria-hidden="true"><path d="M12 26 18.5 22 18.5 14 12 10z M18.5 22 25 18 25 18 18.5 14z" fill="#fff"/></svg>';
-  var ICON_PAUSE = '<svg viewBox="0 0 36 36" aria-hidden="true"><path d="M12 26h4V10h-4zm9-16v16h4V10z" fill="#fff"/></svg>';
+  // YouTube's own start screen (thumbnail + its red play button) shows through. Plyr's big play button stays on top of it,
+  // invisible, only to catch the click — so it looks and feels exactly like YouTube, and the frame is still never touched.
+  var YT_BTN = '<svg viewBox="0 0 68 48" aria-hidden="true"><path fill="#f00" d="M66.52 7.74c-.78-2.93-2.49-5.41-5.42-6.19C55.79.13 34 0 34 0S12.21.13 6.9 1.55C3.97 2.33 2.27 4.81 1.48 7.74.06 13.05 0 24 0 24s.06 10.95 1.48 16.26c.78 2.93 2.49 5.41 5.42 6.19C12.21 47.87 34 48 34 48s21.79-.13 27.1-1.55c2.93-.78 4.64-3.26 5.42-6.19C67.94 34.95 68 24 68 24s-.06-10.95-1.48-16.26z"/><path d="M45 24 27 14v20" fill="#fff"/></svg>';
   function dress(box) {
     var big = box.querySelector('.plyr__control--overlaid');
-    if (big && !big._yt) { big._yt = true; big.innerHTML = YT_BTN + '<span class="plyr__sr-only">Play</span>'; big.classList.add('ytb'); }
-    if (!box.querySelector('.ytb-bezel')) { var bz = document.createElement('div'); bz.className = 'ytb-bezel'; bz.setAttribute('aria-hidden', 'true'); (box.querySelector('.plyr') || box).appendChild(bz); }
-    if (!box.querySelector('.ytb-spin')) { var sp = document.createElement('div'); sp.className = 'ytb-spin'; sp.setAttribute('aria-hidden', 'true'); (box.querySelector('.plyr') || box).appendChild(sp); }
+    if (big && !big._yt) { big._yt = true; big.classList.add('ytb'); big.innerHTML = YT_BTN + '<span class="plyr__sr-only">Play</span>'; }
     menuRoom(box);
-  }
-  // the play / pause "bezel" in the middle, like YouTube: the new state's icon grows and fades out
-  function bezel(box, playing) {
-    var bz = box.querySelector('.ytb-bezel'); if (!bz) return;
-    bz.innerHTML = playing ? ICON_PLAY : ICON_PAUSE;
-    bz.classList.remove('go'); void bz.offsetWidth; bz.classList.add('go');
   }
   // menus never taller than the video (phones): they scroll inside
   function menuRoom(box) { box.style.setProperty('--yt-menu-h', Math.max(96, (box.clientHeight || 200) - 58) + 'px'); }
@@ -122,6 +122,12 @@
     box._p = p; box.setAttribute('data-yt', id);
     // Tap on the picture = play / pause on phones too. Plyr does this itself only with a mouse (on touch screens a tap
     // just shows its controls), so this runs exactly when Plyr's own click does not — never both.
+    // a menu is open and the visitor clicks / taps the video: just close the menu (no play / pause)
+    if (!box._menuGuard) box._menuGuard = true, box.addEventListener('click', function (e) {
+      if (!anyMenu(box)) return;
+      if (e.target.closest && e.target.closest('.plyr__menu, .ytq')) return;
+      e.stopPropagation(); e.preventDefault(); closeMenus(box);
+    }, true);
     if (!box._tap) box._tap = true, box.addEventListener('click', function (e) { // added once per box (a new lesson reuses it)
       var p = box._p; if (!p || !(p.touch && p.config.hideControls) || !p.ready) return;
       var t = e.target;
@@ -129,18 +135,17 @@
       if (p.ended) { p.currentTime = 0; p.play(); } else p.togglePlay();
     });
     if (box._q === undefined) box._q = store.get();
-    box.classList.remove('yt-started', 'yt-wait');
+    box.classList.remove('yt-started', 'yt-go');
     p.on('ready', function () { addQ(box); dress(box); sizeFrame(box); });
     // our cover stays until YouTube really plays, so YouTube's own start screen / button never shows through
-    p.on('play', function () { if (!box.classList.contains('yt-started')) box.classList.add('yt-wait'); else if (!box._reloading) bezel(box, true); });
-    p.on('pause', function () { if (box.classList.contains('yt-started') && !box._reloading && !p.ended) bezel(box, false); });
-    p.on('playing', function () { box.classList.remove('yt-wait'); box.classList.add('yt-started'); });
+    p.on('play', function () { box.classList.add('yt-go'); });          // red button goes at the click, like YouTube
+    p.on('playing', function () { box.classList.add('yt-started'); }); // the picture goes when YouTube really plays
     p.on('playing', function () { if (!box._qSeen) { box._qSeen = true; if (box._q !== 'auto') nudge(box, 5); } paintQ(box); });
     p.on('qualitychange', function () { paintQ(box); });
     p.on('enterfullscreen', function () { setTimeout(function () { sizeFrame(box); }, 60); });
     p.on('exitfullscreen', function () { setTimeout(function () { sizeFrame(box); }, 60); });
     if (window.ResizeObserver && !box._ro) { box._ro = new ResizeObserver(function () { sizeFrame(box); menuRoom(box); }); box._ro.observe(box); }
-    p.on('ended', function () { box.classList.add('is-ended'); box.classList.remove('yt-started', 'yt-wait'); try { p.stop(); } catch (e) {} box.dispatchEvent(new CustomEvent('yt-ended')); }); // no YouTube end screen
+    p.on('ended', function () { box.classList.add('is-ended'); box.classList.remove('yt-started', 'yt-go'); try { p.stop(); } catch (e) {} box.dispatchEvent(new CustomEvent('yt-ended')); }); // no YouTube end screen
     p.on('playing', function () { box.classList.remove('is-ended'); });
     return p;
   }
