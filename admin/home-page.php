@@ -6,7 +6,7 @@ require_once __DIR__ . '/components/guard.php';
 require_once INCLUDES_PATH . '/institute.php';
 require_once INCLUDES_PATH . '/shop.php';
 $me = sh_page_start($pdo, ['settings']);
-$back = fn(string $h) => header('Location: /admin/home-page.php#' . $h);
+$back = fn(string $h) => header('Location: /admin/home-page.php' . (($me['role'] ?? '') === 'admin' ? '?old=1' : '') . '#' . $h);
 $ajax = !empty($_POST['ajax']);
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['json'])) { // lists for the Customizer
     header('Content-Type: application/json; charset=utf-8'); header('Cache-Control: no-store');
@@ -19,7 +19,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['json'])) { // lists for
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     exit;
 }
-if ($_SERVER['REQUEST_METHOD'] === 'GET' && ($me['role'] ?? '') === 'admin' && !isset($_GET['old'])) { header('Location: /admin/customize.php?panel=homepage'); exit; }
+// admins edit the homepage in the Customizer; the plain page stays reachable with ?old=1 (or any edit link)
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && ($me['role'] ?? '') === 'admin' && !$_GET) { header('Location: /admin/customize.php?panel=homepage'); exit; }
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_check();
     $a = (string)($_POST['action'] ?? ''); $id = (int)($_POST['id'] ?? 0); $go = 'slides';

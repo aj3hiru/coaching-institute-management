@@ -15,14 +15,37 @@ $stDesc = $f ? 'Free course: ' . $f['title'] . ($f['videos'] ? ' — ' . ((int)$
 if ($f && $f['thumb']) $stImage = $f['thumb'];
 require ROOT_PATH . '/components/store-open.php';
 $ico = fn($n) => sh_icon($n);
-$src = function (array $x) { return 'https://www.youtube-nocookie.com/embed/' . ($x['list_id'] ? ($x['video_id'] ? rawurlencode($x['video_id']) . '?list=' . rawurlencode($x['list_id']) . '&' : 'videoseries?list=' . rawurlencode($x['list_id']) . '&') : rawurlencode((string)$x['video_id']) . '?') . 'rel=0&modestbranding=1'; };
 ?>
 <p class="st-crumb"><a href="/">Home</a> › <a href="/free-courses/">Free Courses</a><?= $f ? ' › ' . sh_e($f['title']) : '' ?></p>
 <?php if ($f): ?>
   <h1 class="fr-h"><?= sh_e($f['title']) ?></h1>
   <p class="st-lead"><?= $f['channel'] ? sh_e($f['channel']) . ' · ' : '' ?><?= $f['videos'] ? ((int)$f['videos'] >= 100 ? '100+' : (int)$f['videos']) . ' videos · ' : '' ?>Free — no account needed<?= sh_category_name($pdo, (int)$f['category_id']) !== '' ? ' · ' . sh_e(sh_category_name($pdo, (int)$f['category_id'])) : '' ?></p>
-  <div class="fr-play"><iframe src="<?= sh_e($src($f)) ?>" title="<?= sh_e($f['title']) ?>" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>
-  <p class="fr-tip">Use the <b>playlist button</b> in the player to choose any lesson of this course.</p>
+  <?php // locked player + our own lesson list (YouTube's playlist menu is not reachable inside the locked player)
+  $vids = $f['list_id'] ? sh_yt_playlist_cached((string)$f['list_id']) : [];
+  if (!$vids && $f['video_id']) $vids = [[(string)$f['video_id'], (string)$f['title']]];
+  $first = (string)($f['video_id'] && array_filter($vids, fn($v) => $v[0] === $f['video_id']) ? $f['video_id'] : ($vids[0][0] ?? '')); ?>
+  <?php if ($first !== ''): ?>
+  <div class="fr-wrap<?= count($vids) > 1 ? ' has-list' : '' ?>">
+    <div class="fr-play"><?= sh_yt_lock_html($first, (string)$f['title'], ' id="frPlayer"') ?></div>
+    <?php if (count($vids) > 1): ?>
+    <aside class="fr-list" aria-label="Lessons"><div class="fr-list-h"><b>Lessons</b><span><?= count($vids) ?> videos</span></div>
+      <ol id="frList"><?php foreach ($vids as $k => [$vid, $vt]): ?><li><button type="button" data-v="<?= sh_e($vid) ?>"<?= $vid === $first ? ' class="on" aria-current="true"' : '' ?>><span class="fr-n"><?= $k + 1 ?></span><img src="https://i.ytimg.com/vi/<?= sh_e($vid) ?>/mqdefault.jpg" alt="" loading="lazy"><span class="fr-t"><?= sh_e($vt !== '' ? $vt : 'Lesson ' . ($k + 1)) ?></span></button></li><?php endforeach; ?></ol>
+    </aside>
+    <script>
+    (function () { // pick a lesson / next lesson plays by itself at the end
+      var box = document.getElementById('frPlayer'), list = document.getElementById('frList');
+      function pick(btn, play) {
+        [].forEach.call(list.querySelectorAll('button'), function (b) { b.classList.toggle('on', b === btn); b.removeAttribute('aria-current'); });
+        btn.setAttribute('aria-current', 'true'); btn.scrollIntoView({ block: 'nearest' });
+        if (window.YtLock) YtLock.load(box, btn.getAttribute('data-v'), play);
+      }
+      list.addEventListener('click', function (e) { var b = e.target.closest('button'); if (b) { pick(b, true); if (window.innerWidth < 900) box.scrollIntoView({ behavior: 'smooth', block: 'start' }); } });
+      box.addEventListener('yt-ended', function () { var on = list.querySelector('button.on'), li = on && on.parentNode.nextElementSibling; if (li) pick(li.querySelector('button'), true); });
+    })();
+    </script>
+    <?php endif; ?>
+  </div>
+  <?php else: ?><div class="st-empty">This course's videos could not be loaded right now. Please try again in a little while.</div><?php endif; ?>
   <?php $more = array_values(array_filter($all, fn($x) => (int)$x['id'] !== (int)$f['id'])); ?>
   <?php if ($more): ?><h2 class="fr-h2">More free courses</h2><?php endif; ?>
 <?php else: ?>

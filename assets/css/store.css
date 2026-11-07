@@ -595,3 +595,18 @@ a.st-li:hover{background:#f7fbfc}a.st-li:hover svg{color:var(--sa)}
 .fr-th{position:relative;display:block;aspect-ratio:16/9;background:#111827;overflow:hidden}.fr-th img{width:100%;height:100%;object-fit:cover;display:block}
 .fr-th em{position:absolute;right:8px;bottom:8px;display:flex;align-items:center;gap:5px;background:rgba(0,0,0,.78);color:#fff;font-style:normal;font-size:12px;font-weight:700;padding:4px 8px}.fr-th em svg{width:12px;height:12px}
 .sp-note.sp-wait{color:#92400e;background:#fef3c7;padding:8px 10px;border-left:3px solid #f59e0b}
+
+/* free course: locked player + lesson list */
+.fr-wrap{margin:6px 0 18px}
+.fr-wrap.has-list{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start}
+.fr-wrap .fr-play{margin:0;border-radius:5px;overflow:hidden}
+.fr-list{border:1px solid #e5e7eb;border-radius:5px;background:#fff;display:flex;flex-direction:column;min-height:0}
+.fr-wrap.has-list .fr-list{max-height:min(560px,calc(100vh - 140px))}
+.fr-list-h{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid #eef0f2}.fr-list-h b{font-size:15px}.fr-list-h span{font-size:12.5px;color:#6b7280}
+.fr-list ol{list-style:none;margin:0;padding:6px;overflow-y:auto;flex:1}
+.fr-list button{width:100%;display:grid;grid-template-columns:22px 96px 1fr;gap:10px;align-items:center;padding:6px;border:0;border-radius:5px;background:none;text-align:left;cursor:pointer;font:inherit;color:#111827}
+.fr-list button:hover{background:#f3f4f6}.fr-list button.on{background:#eef7f8}
+.fr-list .fr-n{font-size:12px;color:#9ca3af;text-align:center}.fr-list button.on .fr-n{color:var(--sa,#0c6878);font-weight:800}
+.fr-list img{width:96px;aspect-ratio:16/9;object-fit:cover;border-radius:4px;background:#e5e7eb;display:block}
+.fr-list .fr-t{font-size:13px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.fr-list button.on .fr-t{font-weight:700}
+@media (max-width:900px){.fr-wrap.has-list{grid-template-columns:1fr}.fr-wrap.has-list .fr-list{max-height:420px}}

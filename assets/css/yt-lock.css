@@ -1,0 +1,19 @@
+/* Locked YouTube player (assets/js/yt-lock.js) */
+.yt-lock{position:relative;width:100%;height:100%;background:#000;overflow:hidden;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
+  --plyr-color-main:var(--sa,#0c6878);--plyr-video-control-background-hover:var(--sa,#0c6878);--plyr-range-fill-background:var(--sa,#0c6878)}
+.yt-lock-ph{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.55}
+.yt-lock .plyr{height:100%;width:100%}
+.yt-lock .plyr__video-wrapper{overflow:hidden;height:100%}
+/* the YouTube frame itself can never be clicked or tapped (Plyr's controls sit on top) */
+.yt-lock iframe{pointer-events:none!important}
+/* make the frame twice as tall and centre it: YouTube's title bar, channel logo, share / "Watch on YouTube" and the
+   "More videos" strip fall outside the box — only the picture shows */
+.yt-lock .plyr__video-embed iframe,.yt-lock .plyr__video-wrapper iframe{top:-50%!important;height:200%!important}
+/* before play and after the video ends: our cover picture, not YouTube's end screen */
+.yt-lock .plyr--stopped .plyr__poster,.yt-lock.is-ended .plyr__poster{opacity:1!important}
+.yt-lock .plyr__poster{background-size:cover}
+.yt-lock .plyr--full-ui.plyr--video .plyr__control--overlaid{width:68px;height:68px;padding:0;display:grid;place-items:center;background:var(--sa,#0c6878);box-shadow:0 6px 22px rgba(0,0,0,.35)}
+.yt-lock .plyr__control--overlaid svg{left:2px;width:24px;height:24px}
+.yt-lock .plyr__controls{padding-top:28px}
+.yt-lock .plyr__menu__container{border-radius:6px}
+@media (max-width:560px){.yt-lock .plyr__controls{padding:18px 6px 6px}.yt-lock .plyr__controls .plyr__control{padding:6px}.yt-lock .plyr__volume{display:none}}

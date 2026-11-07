@@ -867,6 +867,30 @@ function sh_embed_url(string $url): string
     if (preg_match('~drive\.google\.com/(?:file/d/|open\?id=|uc\?(?:.*&)?id=)([\w-]{20,})~', $url, $m)) return 'https://drive.google.com/file/d/' . $m[1] . '/preview';
     return $url;
 }
+/** Locked YouTube player (our controls; YouTube's links, logo and suggestions cut off and not clickable). Prints Plyr once per page. */
+function sh_yt_lock_html(string $id, string $title = '', string $extra = ''): string
+{
+    static $assets = false;
+    $h = '';
+    if (!$assets) {
+        $assets = true;
+        $v = fn($f) => @filemtime(ROOT_PATH . $f) ?: 1;
+        $h = '<link rel="stylesheet" href="/assets/plyr/plyr.css?v=' . $v('/assets/plyr/plyr.css') . '"><link rel="stylesheet" href="/assets/css/yt-lock.css?v=' . $v('/assets/css/yt-lock.css') . '">'
+            . '<script src="/assets/plyr/plyr.min.js?v=' . $v('/assets/plyr/plyr.min.js') . '" defer></script><script src="/assets/js/yt-lock.js?v=' . $v('/assets/js/yt-lock.js') . '" defer></script>';
+    }
+    return $h . '<div class="yt-lock" data-yt="' . sh_e($id) . '" aria-label="' . sh_e($title ?: 'Video') . '"' . $extra . '><img class="yt-lock-ph" src="https://i.ytimg.com/vi/' . sh_e($id) . '/hqdefault.jpg" alt=""></div>';
+}
+/** sh_yt_playlist() kept for 6 hours on disk (an old copy is used if YouTube does not answer). */
+function sh_yt_playlist_cached(string $list): array
+{
+    if (!preg_match('/^[\w-]{10,64}$/', $list)) return [];
+    $dir = ROOT_PATH . '/cache/yt'; $f = "$dir/pl-$list.json";
+    $old = is_file($f) ? (json_decode((string)@file_get_contents($f), true) ?: []) : [];
+    if ($old && time() - filemtime($f) < 21600) return $old;
+    $new = sh_yt_playlist($list);
+    if ($new) { if (!is_dir($dir)) @mkdir($dir, 0755, true); @file_put_contents($f, json_encode($new, JSON_UNESCAPED_UNICODE)); return $new; }
+    return $old;
+}
 function sh_is_direct_video(string $url): bool { return (bool)preg_match('#\.(mp4|m4v|webm|mov)(\?|$)#i', $url); }
 
 /** Notes PDFs of one lecture. */
