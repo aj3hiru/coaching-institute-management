@@ -15,11 +15,12 @@ if (!defined('EDU_NF_ROUTED')) {
     $__path = (string)parse_url($__u, PHP_URL_PATH);
     if ($__u !== '') $_SERVER['REQUEST_URI'] = $__u; // the store pages read it (canonical, redirects)
     $__map = [
-        '#^/courses/?$#' => ['store/index.php', fn($m) => ['t' => 'course']],
+        '#^/courses/?$#' => [fn($q) => isset($q['s']) ? 'store/item.php' : 'store/index.php', fn($m) => ['t' => 'course']],
         '#^/courses/([a-zA-Z0-9-]+)/?$#' => ['store/item.php', fn($m) => ['s' => $m[1]]],
-        '#^/notes/?$#' => ['store/notes.php', fn($m) => []],
+        '#^/notes/?$#' => [fn($q) => isset($q['s']) ? 'store/item.php' : 'store/notes.php', fn($m) => []],
         '#^/notes/([a-zA-Z0-9-]+)/?$#' => ['store/item.php', fn($m) => ['s' => $m[1]]],
         '#^/category/([a-zA-Z0-9-]+)/?$#' => ['store/index.php', fn($m) => ['c' => $m[1]]],
+        '#^/learn/?$#' => ['store/learn.php', fn($m) => []],
         '#^/learn/([a-zA-Z0-9-]+)/?$#' => ['store/learn.php', fn($m) => ['s' => $m[1]]],
         '#^/free-courses/?$#' => ['store/free.php', fn($m) => []],
         '#^/free-courses/([0-9]+)(?:-[a-zA-Z0-9-]*)?/?$#' => ['store/free.php', fn($m) => ['id' => $m[1]]],
@@ -32,6 +33,7 @@ if (!defined('EDU_NF_ROUTED')) {
         define('SH_VIA_404', 1);
         http_response_code(200);
         while (ob_get_level() > 0) @ob_end_clean(); // drop anything the first script buffered
+        if ($__file instanceof Closure) $__file = $__file($_GET);
         $__abs = dirname(__DIR__) . '/' . $__file;
         $_SERVER['SCRIPT_FILENAME'] = $__abs;
         chdir(dirname($__abs));

@@ -8,6 +8,7 @@ $all = $pdo->query("SELECT * FROM hm_free WHERE active = 1 ORDER BY sort, id DES
 $f = null; foreach ($all as $x) if ((int)$x['id'] === $id) $f = $x;
 if ($id && !$f) { http_response_code(404); require ROOT_PATH . '/templates/page_not_found.php'; exit; }
 sh_redirect_clean($f ? sh_free_url($f) : '/free-courses/');
+if ($f) $seo_canonical = rtrim(SITE_URL, '/') . sh_free_url($f);
 $stIndex = true;
 $stTitle = $f ? $f['title'] : 'Free Courses';
 $stDesc = $f ? 'Free course: ' . $f['title'] . ($f['videos'] ? ' — ' . ((int)$f['videos'] >= 100 ? '100+' : (int)$f['videos']) . ' video lessons' : '') . '. Watch free on ' . edu_site_name() . '.' : 'Free video courses from ' . edu_site_name() . ' — full playlists, free to watch.';

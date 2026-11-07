@@ -146,29 +146,40 @@ function sh_tables(PDO $pdo): void
 function sh_e($v): string { return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
 function sh_money($n): string { $n = (float)$n; return '₹' . number_format($n, fmod($n, 1) ? 2 : 0); }
 function sh_on(): bool { return es('shop', 'enabled', '1') === '1'; }
-/* Clean web addresses: /courses/slug, /notes/slug, /learn/slug, /category/slug, /free-courses/ID-name (old /store/… links redirect). */
-function sh_url(array $p): string { return (($p['type'] ?? 'course') === 'notes' ? '/notes/' : '/courses/') . rawurlencode($p['slug']); }
-/** The study page of a course / notes pack: sh_learn_url('slug', 'l=5', true) → /learn/slug?l=5&preview=1 */
-function sh_learn_url(string $slug, string $q = '', bool $preview = false): string
-{
-    $q = trim($q . ($preview ? ($q !== '' ? '&' : '') . 'preview=1' : ''), '&');
-    return '/learn/' . rawurlencode($slug) . ($q !== '' ? '?' . $q : '');
-}
-/** Are the .htaccess rewrite rules for the clean addresses live? (Set the first time a clean address arrives by rewrite,
-    not through the 404 fallback.) Until then category links use /store/?c=… because the old /category rule answers 410. */
+/* Clean web addresses: /courses/slug, /notes/slug, /learn/slug, /category/slug, /free-courses/ID-name (old /store/… links redirect).
+   They need the .htaccess rewrite rules; until LiteSpeed has loaded them (it reads .htaccess again only on a restart) the
+   links use the one-part form that already works (/courses/?s=slug …), and switch by themselves once the rules are live. */
+/** Are the .htaccess rewrite rules for the clean addresses live? Seen when a two-part address (/learn/x, /courses/x …)
+    reaches a store page by rewrite; a self-check (/learn/rw-probe) runs at most every 15 minutes until then. */
 function sh_rw_live(): bool
 {
     static $ok = null;
     if ($ok !== null) return $ok;
     $ok = (string)es('shop', 'rw_ok', '') === '1';
-    if (!$ok && !defined('SH_VIA_404') && preg_match('#^/(courses|notes|learn|free-courses|category)/#', (string)($_SERVER['REQUEST_URI'] ?? ''))) {
-        edu_settings_save('shop', ['rw_ok' => '1']); $ok = true;
-        foreach (glob(ROOT_PATH . '/cache/*.html') ?: [] as $f) @unlink($f); // cached pages pick up the new category links
+    if ($ok) return true;
+    $mark = function () use (&$ok) { edu_settings_save('shop', ['rw_ok' => '1']); $ok = true; foreach (glob(ROOT_PATH . '/cache/*.html') ?: [] as $f) @unlink($f); };
+    if (!defined('SH_VIA_404') && preg_match('#^/(courses|notes|learn|free-courses|category)/[A-Za-z0-9-]+/?(\?|$)#', (string)($_SERVER['REQUEST_URI'] ?? ''))) { $mark(); return true; }
+    if (time() - (int)es('shop', 'rw_check', 0) > 900 && PHP_SAPI !== 'cli') {
+        edu_settings_save('shop', ['rw_check' => (string)time()]);
+        $base = rtrim(defined('SITE_URL') ? SITE_URL : '', '/');
+        if ($base !== '' && function_exists('curl_init')) {
+            $ch = curl_init($base . '/learn/rw-probe'); curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 3, CURLOPT_CONNECTTIMEOUT => 2, CURLOPT_FOLLOWLOCATION => false, CURLOPT_USERAGENT => 'dkacademy-rw-check']);
+            $r = (string)curl_exec($ch); $c = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE); curl_close($ch);
+            if ($c === 200 && trim($r) === 'rw-ok') $mark();
+        }
     }
     return $ok;
 }
+function sh_url(array $p): string { $d = ($p['type'] ?? 'course') === 'notes' ? '/notes/' : '/courses/'; return sh_rw_live() ? $d . rawurlencode($p['slug']) : $d . '?s=' . rawurlencode($p['slug']); }
+/** The study page of a course / notes pack: sh_learn_url('slug', 'l=5', true) → /learn/slug?l=5&preview=1 */
+function sh_learn_url(string $slug, string $q = '', bool $preview = false): string
+{
+    $q = trim($q . ($preview ? ($q !== '' ? '&' : '') . 'preview=1' : ''), '&');
+    if (!sh_rw_live()) return '/learn/?s=' . rawurlencode($slug) . ($q !== '' ? '&' . $q : '');
+    return '/learn/' . rawurlencode($slug) . ($q !== '' ? '?' . $q : '');
+}
 function sh_cat_url(string $slug): string { return sh_rw_live() ? '/category/' . rawurlencode($slug) : '/store/?c=' . rawurlencode($slug); }
-function sh_free_url(array $f): string { return '/free-courses/' . (int)$f['id'] . (($s = sh_slug((string)($f['title'] ?? ''))) !== '' ? '-' . $s : ''); }
+function sh_free_url(array $f): string { return sh_rw_live() ? '/free-courses/' . (int)$f['id'] . (($s = sh_slug((string)($f['title'] ?? ''))) !== '' ? '-' . $s : '') : '/free-courses/?id=' . (int)$f['id']; }
 /** An old /store/… address was opened: send the visitor (and search engines) to the clean one. */
 function sh_redirect_clean(string $to): void
 {

@@ -11,7 +11,8 @@ if (!$p) { http_response_code(404); require ROOT_PATH . '/templates/page_not_fou
 $want = sh_url($p) . (isset($_GET['preview']) ? '?preview=1' : '');
 sh_redirect_clean($want); // old /store/item?s=…
 $path = strtok((string)($_SERVER['REQUEST_URI'] ?? ''), '?');
-if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET' && $path !== sh_url($p) && preg_match('#^/(courses|notes)/#', (string)$path)) { header('Location: ' . $want, true, 301); exit; } // a notes pack opened under /courses/ (or the other way)
+if (sh_rw_live() && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET' && $path !== sh_url($p) && preg_match('#^/(courses|notes)/#', (string)$path)) { header('Location: ' . $want, true, 301); exit; } // a notes pack opened under /courses/ (or the other way)
+$seo_canonical = rtrim(SITE_URL, '/') . sh_url($p); // its own address (also in the /courses/?s=… form)
 $pid = (int)$p['id'];
 $u = sh_user();
 $own = $u && sh_has_access($pdo, (int)$u['id'], $pid);

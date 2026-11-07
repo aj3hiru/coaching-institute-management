@@ -6,6 +6,7 @@
 require_once dirname(__DIR__) . '/includes/config.php';
 require_once INCLUDES_PATH . '/shop.php';
 $pdo = sh_db();
+if (($_GET['s'] ?? '') === 'rw-probe') { header('Cache-Control: no-store'); if (!defined('SH_VIA_404') && sh_rw_live()) exit('rw-ok'); http_response_code(404); exit; } // are the clean-address rules live?
 $staff = sh_preview(); // staff see everything only with ?preview=1 — otherwise the same locks as students
 $p = sh_on() || $staff ? sh_product($pdo, (string)($_GET['s'] ?? ''), !$staff) : null;
 if (!$p) { http_response_code(404); require ROOT_PATH . '/templates/page_not_found.php'; exit; }

@@ -15,11 +15,12 @@ $run = function (string $t, array $get = []) {
 // clean store addresses: parameters are given straight to the page (no local redirect), the address stays clean as on live
 $runq = function (string $t, array $get) { $_GET = $get + $_GET; $_SERVER['SCRIPT_FILENAME'] = __DIR__ . '/' . $t; chdir(dirname(__DIR__ . '/' . $t)); require __DIR__ . '/' . $t; };
 $store = [
-  '#^/courses/?$#' => fn($m) => $runq('store/index.php', ['t' => 'course']),
+  '#^/courses/?$#' => fn($m) => isset($_GET['s']) ? $runq('store/item.php', []) : $runq('store/index.php', ['t' => 'course']),
   '#^/courses/([a-zA-Z0-9-]+)/?$#' => fn($m) => $runq('store/item.php', ['s' => $m[1]]),
-  '#^/notes/?$#' => fn($m) => $runq('store/notes.php', []),
+  '#^/notes/?$#' => fn($m) => isset($_GET['s']) ? $runq('store/item.php', []) : $runq('store/notes.php', []),
   '#^/notes/([a-zA-Z0-9-]+)/?$#' => fn($m) => $runq('store/item.php', ['s' => $m[1]]),
   '#^/category/([a-zA-Z0-9-]+)/?$#' => fn($m) => $runq('store/index.php', ['c' => $m[1]]),
+  '#^/learn/?$#' => fn($m) => $runq('store/learn.php', []),
   '#^/learn/([a-zA-Z0-9-]+)/?$#' => fn($m) => $runq('store/learn.php', ['s' => $m[1]]),
   '#^/free-courses/?$#' => fn($m) => $runq('store/free.php', []),
   '#^/free-courses/([0-9]+)(?:-[a-zA-Z0-9-]*)?/?$#' => fn($m) => $runq('store/free.php', ['id' => $m[1]]),

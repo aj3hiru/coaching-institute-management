@@ -23,6 +23,7 @@ if ($cat) {
     if ($cat['icon']) $stImage = rtrim(SITE_URL, '/') . sh_upload_url($cat['icon']);
 }
 $cats = sh_categories($pdo);
+if ($cat) $seo_canonical = rtrim(SITE_URL, '/') . sh_cat_url($cat['slug']);
 // old addresses (/store/?c=…, /store/?t=course) move to the clean ones
 if ($cat) { if (sh_rw_live()) sh_redirect_clean(sh_cat_url($cat['slug']) . ($t !== '' ? '?t=' . $t : '')); }
 elseif ($t === 'course') sh_redirect_clean('/courses/');
