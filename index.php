@@ -5,7 +5,7 @@
 require_once __DIR__ . '/includes/redirects.php';
 edu_redirect_check();
 $cf = __DIR__ . '/cache/index_home.html'; // index_* so publishing a post / Clear cache refreshes it too
-$__czp = isset($_GET['czp']) || isset($_GET['designs']); // ?designs=1 shows every teacher / topper design (not cached)
+$__czp = isset($_GET['czp']);
 $__cs = @json_decode((string)@file_get_contents(__DIR__ . '/cache/.settings.json'), true) ?: [];
 if (!empty($__cs['off'])) $__czp = true;
 if (!$__czp && file_exists($cf) && time() - filemtime($cf) < min(900, (int)($__cs['home'] ?? 900))) { readfile($cf); exit; }
@@ -61,7 +61,7 @@ $feat = $courses[0] ?? null;
 $seo = [
     'title' => $brand . ' — Coaching for Classes ' . $range . ' | Online Courses & PDF Notes',
     'description' => es('general', 'home_description') !== '' ? es('general', 'home_description') : $brand . ' — expert teachers, recorded video courses and PDF notes for school students. Learn at the institute or online on any phone.',
-    'image' => SEO_DEFAULT_IMAGE, 'type' => 'website', 'robots' => isset($_GET['designs']) ? 'noindex, nofollow' : SEO_DEFAULT_ROBOTS,
+    'image' => SEO_DEFAULT_IMAGE, 'type' => 'website', 'robots' => SEO_DEFAULT_ROBOTS,
 ];
 require_once INCLUDES_PATH . '/seo.php';
 $seo = edu_seo_apply($seo, []);
@@ -190,15 +190,10 @@ $short0 = function (string $n) { $p = preg_split('/\s+/', trim(preg_replace('/\(
   <?php endforeach; ?></ol>
 </div></section>
 
-<?php /* 10. meet our teachers · 11. meet our toppers (designs: Online Store → Homepage) */
+<?php /* 10. meet our teachers · 11. meet our toppers (includes/home-people.php) */
 require_once INCLUDES_PATH . '/home-people.php';
-if (isset($_GET['designs'])):
-    foreach (HM_TEACHER_STYLES as $k => $l) echo '<div class="hm-dsg sp-wrap"><b>Meet our teachers — Design ' . $k . '</b><span>' . hm_e($l) . '</span></div>' . hm_teachers_html($teachers, (string)$k);
-    foreach (HM_TOPPER_STYLES as $k => $l) echo '<div class="hm-dsg sp-wrap"><b>Meet our toppers — Design ' . $k . '</b><span>' . hm_e($l) . '</span></div>' . hm_toppers_html($toppers, (string)$k);
-else:
-    echo hm_teachers_html($teachers, (string)es('home', 'teacher_style', '3'));
-    echo hm_toppers_html($toppers, (string)es('home', 'topper_style', '4'));
-endif; ?>
+echo hm_teachers_html($teachers, '3'); // profile rows with a passport photo
+echo hm_toppers_html($toppers, '4');   // passport cards: photo, name, marks, class ?>
 
 </main>
 <?php require_once ROOT_PATH . '/components/footer.php'; ?>

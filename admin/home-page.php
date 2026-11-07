@@ -60,12 +60,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $ph = (string)$pdo->query("SELECT photo FROM hm_toppers WHERE id = $id")->fetchColumn();
             $pdo->exec("DELETE FROM hm_toppers WHERE id = $id"); sh_image_drop($ph);
             admin_flash('Topper removed.');
-        } elseif ($a === 'styles') {
-            $go = 'design';
-            require_once INCLUDES_PATH . '/home-people.php';
-            $ts = (string)($_POST['teacher_style'] ?? '1'); $ps = (string)($_POST['topper_style'] ?? '1');
-            edu_settings_save('home', ['teacher_style' => isset(HM_TEACHER_STYLES[$ts]) ? $ts : '1', 'topper_style' => isset(HM_TOPPER_STYLES[$ps]) ? $ps : '1']);
-            admin_flash('Design saved — the homepage uses it now.');
         } elseif ($a === 'free_delete') { $go = 'free'; $pdo->exec("DELETE FROM hm_free WHERE id = $id"); admin_flash('Free course removed.'); }
         elseif ($a === 'texts') {
             $go = 'impact';
@@ -159,15 +153,6 @@ $catSel = function (int $cur) use ($cats) { $h = '<select name="category_id"><op
         </form>
         <div class="ci-icos" style="margin-top:6px"><?= ci_post_ico('refresh', 'Fetch again', ['action' => 'free_refresh', 'id' => $f['id']]) ?><?= ci_post_ico('trash', 'Delete', ['action' => 'free_delete', 'id' => $f['id']], 'Remove this free course?') ?></div></div></div>
   <?php endforeach; ?>
-</div></div>
-
-<?php require_once INCLUDES_PATH . '/home-people.php'; $tS = (string)es('home', 'teacher_style', '3'); $pS = (string)es('home', 'topper_style', '4'); ?>
-<div class="ci-card" id="design"><div class="ci-card-h"><h3>Design of "Meet our teachers" &amp; "Meet our toppers"</h3><a class="ci-btn ci-ghost ci-sm" href="/?designs=1" target="_blank"><i class="fas fa-eye"></i> See all designs</a></div><div class="ci-card-b">
-  <form method="post" class="ci-grid3" style="align-items:end"><?= csrf_field() ?><input type="hidden" name="action" value="styles">
-    <div class="ci-f"><label>Meet our teachers</label><select name="teacher_style"><?php foreach (HM_TEACHER_STYLES as $k => $l): ?><option value="<?= $k ?>" <?= $tS === (string)$k ? 'selected' : '' ?>>Design <?= $k ?> — <?= ci_e($l) ?></option><?php endforeach; ?></select></div>
-    <div class="ci-f"><label>Meet our toppers</label><select name="topper_style"><?php foreach (HM_TOPPER_STYLES as $k => $l): ?><option value="<?= $k ?>" <?= $pS === (string)$k ? 'selected' : '' ?>>Design <?= $k ?> — <?= ci_e($l) ?></option><?php endforeach; ?></select></div>
-    <div class="ci-f"><button class="ci-btn" type="submit"><i class="fas fa-check"></i> Use these designs</button></div>
-  </form>
 </div></div>
 
 <div class="ci-card" id="toppers"><div class="ci-card-h"><h3>Meet our Toppers (<?= count($tops) ?>)</h3><button type="button" class="ci-btn ci-sm" data-mopen="#topForm" data-mtitle="Add a topper" data-fill='{"id":0,"active":1}'><i class="fas fa-plus"></i> Add topper</button></div><div class="ci-card-b">
