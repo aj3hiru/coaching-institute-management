@@ -54,8 +54,3 @@
   .yt-lock .plyr__menu__container [role=menu]{padding:4px}
   .yt-lock .ytq-menu{min-width:128px;padding:4px}.yt-lock .ytq-menu button{padding:5px 8px 5px 24px;font-size:13px}.yt-lock .ytq-h{padding:4px 8px 6px;margin-bottom:2px}
 }
-
-/* phones: round play / pause in the middle, only while the controls show (like the YouTube app), no animation */
-.yt-lock .ytb-mid{display:none;position:absolute;left:50%;top:50%;z-index:4;width:60px;height:60px;margin:-30px 0 0 -30px;padding:0;border:0;border-radius:50%;background:rgba(0,0,0,.55);place-items:center;cursor:pointer;-webkit-tap-highlight-color:transparent}
-.yt-lock .ytb-mid svg{width:30px;height:30px;display:block}
-.yt-lock.is-touch.yt-go .plyr:not(.plyr--hide-controls) .ytb-mid{display:grid}

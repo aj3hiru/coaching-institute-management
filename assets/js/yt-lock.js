@@ -98,18 +98,10 @@
   // YouTube's own start screen (thumbnail + its red play button) shows through. Plyr's big play button stays on top of it,
   // invisible, only to catch the click — so it looks and feels exactly like YouTube, and the frame is still never touched.
   var YT_BTN = '<span class="ytb-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="#fff"/></svg></span>'; // plain play icon (no YouTube logo)
-  var ICON_MID_PLAY = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="#fff"/></svg>';
-  var ICON_MID_PAUSE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.5v14H7zm6.5 0H17v14h-3.5z" fill="#fff"/></svg>';
-  function midIcon(box) { var m = box.querySelector('.ytb-mid'); if (m && box._p) m.innerHTML = box._p.playing ? ICON_MID_PAUSE : ICON_MID_PLAY; }
   function dress(box) {
     var big = box.querySelector('.plyr__control--overlaid');
     if (big && !big._yt) { big._yt = true; big.classList.add('ytb'); big.innerHTML = YT_BTN + '<span class="plyr__sr-only">Play</span>'; }
-    var pl = box.querySelector('.plyr');
-    if (pl && box._p && box._p.touch && !box.querySelector('.ytb-mid')) {
-      var mid = document.createElement('button'); mid.type = 'button'; mid.className = 'ytb-mid'; mid.setAttribute('aria-label', 'Play / pause');
-      mid.innerHTML = ICON_MID_PLAY; pl.appendChild(mid); box.classList.add('is-touch');
-      mid.addEventListener('click', function (e) { e.stopPropagation(); e.preventDefault(); var p = box._p; if (!p) return; if (p.ended) { p.currentTime = 0; p.play(); } else p.togglePlay(); });
-    }
+    if (box._p && box._p.touch) box.classList.add('is-touch'); // (no extra middle button: YouTube shows its own)
     menuRoom(box);
   }
   // menus never taller than the video (phones): they scroll inside
@@ -138,7 +130,7 @@
       e.stopPropagation(); e.preventDefault(); closeMenus(box);
     }, true);
     // Phones (like the YouTube app): a tap on the picture shows / hides the controls — it never plays or pauses.
-    // Play / pause = the round button in the middle (shown with the controls) or the one in the bar.
+    // Play / pause = the play button in the bar.
     // With a mouse Plyr keeps YouTube's computer behaviour: a click on the picture plays / pauses.
     if (!box._tap) {
       box._tap = true;
@@ -146,16 +138,15 @@
       box.addEventListener('click', function (e) {
         var p = box._p; if (!p || !(p.touch && p.config.hideControls) || !p.ready || !box.classList.contains('yt-go')) return;
         var t = e.target;
-        if (!t.closest || !t.closest('.plyr__video-wrapper, .plyr__poster') || t.closest('.plyr__controls, .plyr__control, .plyr__menu, .ytb-mid')) return;
-        if (box._ctrlWas && p.playing) { p.toggleControls(false); } // shown → hide (while paused they stay, like YouTube)
+        if (!t.closest || !t.closest('.plyr__video-wrapper, .plyr__poster') || t.closest('.plyr__controls, .plyr__control, .plyr__menu')) return;
+        if (box._ctrlWas) p.toggleControls(false); // shown → hide; hidden → Plyr has just shown them
       });
     }
     if (box._q === undefined) box._q = store.get();
     box.classList.remove('yt-started', 'yt-go');
     p.on('ready', function () { addQ(box); dress(box); sizeFrame(box); });
     // our cover stays until YouTube really plays, so YouTube's own start screen / button never shows through
-    p.on('play', function () { box.classList.add('yt-go'); midIcon(box); });
-    p.on('pause', function () { midIcon(box); });          // red button goes at the click, like YouTube
+    p.on('play', function () { box.classList.add('yt-go'); });          // red button goes at the click, like YouTube
     p.on('playing', function () { box.classList.add('yt-started'); }); // the picture goes when YouTube really plays
     p.on('playing', function () { if (!box._qSeen) { box._qSeen = true; if (box._q !== 'auto') nudge(box, 5); } paintQ(box); });
     p.on('qualitychange', function () { paintQ(box); });
