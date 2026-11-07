@@ -278,3 +278,19 @@
   window.addEventListener('mouseup', function () { if (!down) return; down = false; if (moved) { t.classList.remove('is-dragging'); var c = cur(); t.scrollTo({ left: slides[c].offsetLeft - t.offsetLeft, behavior: 'smooth' }); } });
   t.addEventListener('dragstart', function (e) { e.preventDefault(); });
 })();
+/* FAQ: smooth open / close (the answer box grows and shrinks) */
+(function () {
+  document.querySelectorAll('.sp-faq details').forEach(function (d) {
+    var sum = d.querySelector('summary'), box = d.querySelector('.sp-faq-b'); if (!sum || !box) return;
+    sum.addEventListener('click', function (e) {
+      e.preventDefault();
+      if (d.dataset.busy) return; d.dataset.busy = '1';
+      var opening = !d.open;
+      if (opening) { d.open = true; d.classList.add('is-open'); var h = box.scrollHeight; box.style.height = '0px'; box.offsetHeight; box.style.height = h + 'px'; }
+      else { d.classList.remove('is-open'); box.style.height = box.scrollHeight + 'px'; box.offsetHeight; box.style.height = '0px'; }
+      var end = function (ev) { if (ev.target !== box) return; box.removeEventListener('transitionend', end); if (!opening) d.open = false; box.style.height = ''; delete d.dataset.busy; };
+      box.addEventListener('transitionend', end);
+      setTimeout(function () { if (d.dataset.busy) end({ target: box }); }, 450); // safety if no transition runs
+    });
+  });
+})();

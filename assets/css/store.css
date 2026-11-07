@@ -362,3 +362,17 @@ a.st-li:hover{background:#f7fbfc}a.st-li:hover svg{color:var(--sa)}
 .sp-rvc-who small{font-size:12px;color:#9ca3af;white-space:nowrap;align-self:flex-start;margin-top:2px}
 .sp-rvc .sp-rvc-who .sp-av{width:42px;height:42px;font-size:17px}
 [data-theme="dark"] .sp-rvc-nm b{color:#e5e7eb}[data-theme="dark"] .sp-rvc .sp-rvc-who{border-color:#263040}
+/* review card — minimal */
+.sp-rvc{gap:10px;padding:16px 16px 14px}
+.sp-rvc .sp-rvc-who{gap:9px;padding:0 0 10px}
+.sp-rvc .sp-rvc-who .sp-av{width:30px;height:30px;font-size:13px;font-weight:700}
+.sp-rvc-nm{gap:2px}.sp-rvc-nm b{font-size:13.5px;font-weight:700}
+.sp-rvc-nm .sp-stars svg{width:12px;height:12px}
+.sp-rvc-who small{font-size:11.5px}
+.sp-rvc-q{font-size:14px;line-height:1.6;padding-left:14px}.sp-rvc-q::before{font-size:26px;top:-5px}
+@media (max-width:640px){.sp-rvc{padding:14px}.sp-rvc-q{font-size:13.5px}}
+/* FAQ — smooth open / close */
+.sp-faq details > .sp-faq-b{overflow:hidden;transition:height .3s ease}
+.sp-faq summary::after{transition:transform .25s ease}
+.sp-faq details.is-open summary::after{content:"+";transform:rotate(45deg)}
+.sp-faq details[open]:not(.is-open) summary::after{content:"+"}
