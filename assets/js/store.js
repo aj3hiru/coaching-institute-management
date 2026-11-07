@@ -203,15 +203,61 @@
     if (box.scrollHeight > 190) { box.classList.add('is-clamped'); b.hidden = false; }
     b.addEventListener('click', function () { var c = box.classList.toggle('is-clamped'); b.textContent = c ? 'Show more' : 'Show less'; });
   });
-  var ex = document.querySelector('[data-expand]');
-  if (ex) ex.addEventListener('click', function () {
-    var ds = document.querySelectorAll('.sp-acc details'), open = [].some.call(ds, function (d) { return !d.open; });
-    ds.forEach(function (d) { d.open = open; }); ex.textContent = open ? 'Collapse all' : 'Expand all';
-  });
 })();
 /* phones: the bottom Buy bar hides while the buy card's own button is on screen */
 (function () {
   var bar = document.querySelector('.st-mbar'), btn = document.querySelector('.sp-card .sp-btn');
   if (!bar || !btn || !('IntersectionObserver' in window)) return;
   new IntersectionObserver(function (es) { bar.classList.toggle('is-off', es[0].isIntersecting); }).observe(btn);
+})();
+
+/* product page: section strip (smooth scroll + the tab of the section on screen), smooth chapter accordion,
+   all reviews, "Rate this course" */
+(function () {
+  'use strict';
+  var tabs = document.getElementById('spTabs');
+  var offset = function () { return (tabs ? tabs.offsetHeight : 0) + 12; };
+  function go(id) { var el = document.getElementById(id); if (!el) return; window.scrollTo({ top: el.getBoundingClientRect().top + window.pageYOffset - offset(), behavior: 'smooth' }); }
+  if (tabs) {
+    var links = [].slice.call(tabs.querySelectorAll('a[data-tab]'));
+    var mark = function (id) { links.forEach(function (a) { var on = a.getAttribute('data-tab') === id; a.classList.toggle('on', on); if (on && a.scrollIntoView && tabs.scrollWidth > tabs.clientWidth) a.parentNode.scrollTo({ left: a.offsetLeft - 20, behavior: 'smooth' }); }); };
+    links.forEach(function (a) { a.addEventListener('click', function (e) { e.preventDefault(); var id = a.getAttribute('data-tab'); mark(id); go(id); history.replaceState(null, '', '#' + id); }); });
+    var secs = links.map(function (a) { return document.getElementById(a.getAttribute('data-tab')); }).filter(Boolean);
+    var onScroll = function () {
+      var y = offset() + 40, cur = secs[0] && secs[0].id;
+      secs.forEach(function (s) { if (s.getBoundingClientRect().top <= y) cur = s.id; });
+      if ((window.innerHeight + window.pageYOffset) >= document.body.scrollHeight - 4 && secs.length) cur = secs[secs.length - 1].id;
+      mark(cur);
+      tabs.classList.toggle('is-stuck', tabs.getBoundingClientRect().top <= 1);
+    };
+    window.addEventListener('scroll', onScroll, { passive: true }); onScroll();
+    document.querySelectorAll('a[href="#reviews"], a[href="#content"]').forEach(function (a) { if (!a.hasAttribute('data-tab')) a.addEventListener('click', function (e) { e.preventDefault(); go(a.getAttribute('href').slice(1)); }); });
+    if (location.hash && document.getElementById(location.hash.slice(1))) setTimeout(function () { go(location.hash.slice(1)); }, 150);
+  }
+  // smooth accordion
+  function setOpen(ch, open, quick) {
+    var body = ch.querySelector('.sp-ch-b'), h = ch.querySelector('.sp-ch-h');
+    if (!body) return;
+    h.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (quick) { ch.classList.toggle('open', open); body.style.height = open ? 'auto' : '0px'; return; }
+    var from = body.offsetHeight; ch.classList.toggle('open', open);
+    body.style.height = 'auto'; var to = open ? body.scrollHeight : 0;
+    body.style.height = from + 'px'; body.offsetHeight; // reflow
+    body.style.height = to + 'px';
+    var end = function (e) { if (e.target !== body) return; body.removeEventListener('transitionend', end); if (ch.classList.contains('open')) body.style.height = 'auto'; };
+    body.addEventListener('transitionend', end);
+  }
+  var chs = [].slice.call(document.querySelectorAll('.sp-acc .sp-ch'));
+  chs.forEach(function (ch) {
+    setOpen(ch, ch.classList.contains('open'), true);
+    var h = ch.querySelector('.sp-ch-h'); if (h) h.addEventListener('click', function () { setOpen(ch, !ch.classList.contains('open')); syncEx(); });
+  });
+  var ex = document.querySelector('[data-expand]');
+  function syncEx() { if (ex) ex.textContent = chs.every(function (c) { return c.classList.contains('open'); }) ? 'Collapse all' : 'Expand all'; }
+  if (ex) { ex.addEventListener('click', function () { var openAll = chs.some(function (c) { return !c.classList.contains('open'); }); chs.forEach(function (c) { setOpen(c, openAll); }); syncEx(); }); syncEx(); }
+  // reviews
+  var all = document.querySelector('[data-allrv]');
+  if (all) all.addEventListener('click', function () { document.querySelectorAll('.sp-rv.is-more').forEach(function (r) { r.classList.remove('is-more'); }); all.remove(); });
+  var w = document.querySelector('[data-write]');
+  if (w) w.addEventListener('click', function (e) { e.preventDefault(); go('reviews'); var f = document.getElementById('spRvForm'); if (f) setTimeout(function () { f.classList.add('flash'); var r = f.querySelector('input[type=radio]'); if (r) r.focus(); }, 500); });
 })();

@@ -89,6 +89,7 @@ function admin_shell_nav(): array
                 $link(sh_perm($cu, 'products'), 'Products', '/admin/shop-products.php', 'fa-photo-film'),
                 $link(sh_perm($cu, 'orders'), 'Orders', '/admin/shop-orders.php', 'fa-cart-shopping'),
                 $link(sh_perm($cu, 'customers'), 'Customers', '/admin/shop-customers.php', 'fa-users'),
+                $link(sh_perm($cu, 'products'), 'Reviews', '/admin/shop-reviews.php', 'fa-star'),
                 $link(sh_perm($cu, 'orders'), 'Sales Report', '/admin/ci-reports.php?type=store', 'fa-chart-line'),
                 $link(sh_perm($cu, 'settings'), 'Store Settings', '/admin/shop-settings.php', 'fa-sliders'),
             ];

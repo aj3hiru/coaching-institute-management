@@ -119,8 +119,29 @@ function sh_demo_add(PDO $pdo, int $byUser = 0): string
     // a little progress for the first student
     $l = $pdo->query("SELECT id FROM sh_lessons WHERE product_id = $c1 ORDER BY sort LIMIT 2")->fetchAll(PDO::FETCH_COLUMN);
     foreach ($l as $lid) $pdo->prepare("INSERT IGNORE INTO sh_progress (user_id, lesson_id, done) VALUES (?, ?, 1)")->execute([$u1, $lid]);
+    sh_demo_reviews($pdo, $info);
     edu_settings_save('shop', ['demo' => json_encode($info)]);
     return '4 demo courses / notes, 3 demo students and 3 paid demo orders added. Demo login: 9000000001 / ' . SH_DEMO_PASS;
+}
+
+/** Reviews by the demo students on the demo items they have (also for a demo added before reviews existed). */
+function sh_demo_reviews(PDO $pdo, ?array $info = null): int
+{
+    $info ??= sh_demo_info();
+    if (!$info['products'] || !$info['users']) return 0;
+    [$c1, $c2, $n1, $n2] = array_pad(array_map('intval', $info['products']), 4, 0);
+    [$u1, $u2, $u3] = array_pad(array_map('intval', $info['users']), 3, 0);
+    $rv = [
+        [$c1, $u1, 5, "Very clear explanation of Real Numbers. The 2x speed and the notes PDF helped me revise quickly before my test."],
+        [$c1, $u3, 4, "Good course, the chapter-wise videos are easy to follow. I would like more practice questions."],
+        [$n1, $u1, 5, "All formulas on 3 pages — perfect for the last day before the exam."],
+        [$c2, $u2, 4, "Coulomb's law finally makes sense. Short and to the point."],
+        [$n2, $u2, 5, null],
+    ];
+    $q = $pdo->prepare("INSERT IGNORE INTO sh_reviews (product_id, user_id, rating, body, created_at) VALUES (?, ?, ?, ?, ?)");
+    $n = 0;
+    foreach ($rv as $i => [$p, $u, $r, $b]) if ($p && $u && (int)$pdo->query("SELECT COUNT(*) FROM sh_access WHERE user_id = $u AND product_id = $p AND revoked = 0")->fetchColumn()) { $q->execute([$p, $u, $r, $b, date('Y-m-d H:i:s', strtotime('-' . (4 - min(4, $i)) . ' days'))]); $n += $q->rowCount(); }
+    return $n;
 }
 
 /** Removes exactly what sh_demo_add made (products with their videos / PDFs, demo accounts, demo orders). */
@@ -138,6 +159,7 @@ function sh_demo_remove(PDO $pdo): string
     $lessonIds = $pdo->query("SELECT id FROM sh_lessons WHERE product_id IN (" . $in($pids) . ")")->fetchAll(PDO::FETCH_COLUMN);
     $pdo->exec("DELETE FROM sh_progress WHERE user_id IN (" . $in($uids) . ") OR lesson_id IN (" . $in(array_map('intval', $lessonIds)) . ")");
     $pdo->exec("DELETE FROM sh_access WHERE user_id IN (" . $in($uids) . ") OR product_id IN (" . $in($pids) . ")");
+    $pdo->exec("DELETE FROM sh_reviews WHERE user_id IN (" . $in($uids) . ") OR product_id IN (" . $in($pids) . ")");
     $pdo->exec("DELETE FROM sh_orders WHERE id IN (" . $in($oids) . ") OR user_id IN (" . $in($uids) . ") OR product_id IN (" . $in($pids) . ")");
     foreach (['sh_lessons', 'sh_sections', 'sh_files'] as $t) $pdo->exec("DELETE FROM $t WHERE product_id IN (" . $in($pids) . ")");
     $pdo->exec("DELETE FROM sh_products WHERE id IN (" . $in($pids) . ")");

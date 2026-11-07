@@ -14,7 +14,7 @@
  */
 require_once __DIR__ . '/settings.php';
 
-const SH_SCHEMA = 4;
+const SH_SCHEMA = 5;
 
 function sh_db(): PDO
 {
@@ -74,6 +74,12 @@ function sh_tables(PDO $pdo): void
     $col = fn($t, $c) => (bool)$pdo->query("SHOW COLUMNS FROM `$t` LIKE " . $pdo->quote($c))->fetch();
     if (!$col('sh_lessons', 'variants')) $pdo->exec("ALTER TABLE sh_lessons ADD COLUMN variants TEXT NULL AFTER size");
     if (!$col('sh_lessons', 'height')) $pdo->exec("ALTER TABLE sh_lessons ADD COLUMN height SMALLINT UNSIGNED NULL AFTER variants");
+    // v5: reviews — one per student per course, only by students who have the course
+    $pdo->exec("CREATE TABLE IF NOT EXISTS sh_reviews (
+        id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, product_id INT UNSIGNED NOT NULL, user_id INT UNSIGNED NOT NULL,
+        rating TINYINT UNSIGNED NOT NULL, body TEXT NULL, status VARCHAR(10) NOT NULL DEFAULT 'published',
+        created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME NULL,
+        UNIQUE KEY uq_pu (product_id, user_id), KEY idx_p (product_id, status))$t");
     edu_settings_save('shop', ['schema' => SH_SCHEMA]);
 }
 
@@ -549,4 +555,28 @@ function sh_dur_text(int $s): string
     if ($s <= 0) return '';
     if ($s >= 3600) return intdiv($s, 3600) . 'h ' . intdiv($s % 3600, 60) . 'm';
     return $s >= 60 ? round($s / 60) . 'm' : $s . 's';
+}
+
+
+/* ---------- reviews ---------- */
+
+/** Average rating, count and 5..1 star counts of the published reviews of a product. */
+function sh_rating(PDO $pdo, int $pid): array
+{
+    $q = $pdo->prepare("SELECT rating, COUNT(*) n FROM sh_reviews WHERE product_id = ? AND status = 'published' GROUP BY rating");
+    $q->execute([$pid]);
+    $dist = [5 => 0, 4 => 0, 3 => 0, 2 => 0, 1 => 0]; $sum = 0; $n = 0;
+    foreach ($q as $r) { $dist[(int)$r['rating']] = (int)$r['n']; $sum += (int)$r['rating'] * (int)$r['n']; $n += (int)$r['n']; }
+    return ['avg' => $n ? round($sum / $n, 1) : 0, 'count' => $n, 'dist' => $dist];
+}
+/** Stars as SVG (supports halves): 4.5 → ★★★★½ */
+function sh_stars(float $v, string $cls = 'sp-stars'): string
+{
+    $h = '<span class="' . $cls . '" aria-label="' . $v . ' out of 5">';
+    for ($i = 1; $i <= 5; $i++) {
+        $fill = $v >= $i ? 100 : ($v > $i - 1 ? (int)round(($v - $i + 1) * 100) : 0);
+        $h .= '<svg viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="sg' . $i . 'x' . $fill . '"><stop offset="' . $fill . '%" stop-color="#f59e0b"/><stop offset="' . $fill . '%" stop-color="#d1d5db"/></linearGradient></defs>'
+            . '<path fill="url(#sg' . $i . 'x' . $fill . ')" d="m12 2 2.9 6.6 7.1.6-5.4 4.7 1.6 7L12 17.3 5.8 21l1.6-7L2 9.2l7.1-.6Z"/></svg>';
+    }
+    return $h . '</span>';
 }
