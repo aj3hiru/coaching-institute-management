@@ -71,7 +71,7 @@ function hm_toppers_html(array $p, string $style): string
     if ($style === '4') { // the first design: passport photo with the year, name, result box, class
         foreach ($p as $x) { $n = hm_clean_name($x['name']);
             $s .= '<div class="hs-s"><div class="hm-pc hm-pc-top"><span class="hm-pc-ph">' . ($src($x) !== '' ? '<img src="' . hm_e($src($x)) . '" alt="' . hm_e($n) . '" loading="lazy">' : '<b>' . hm_initial($n) . '</b>') . ($x['year'] ? '<em>' . hm_e($x['year']) . '</em>' : '') . '</span>'
-                . '<b class="hm-pc-n">' . hm_e($n) . '</b>' . ($x['result'] ? '<span class="hm-pc-res">' . hm_e($x['result']) . '</span>' : '') . ($x['class_name'] ? '<small class="hm-pc-l">' . hm_ico('layers') . ' ' . hm_e($x['class_name']) . '</small>' : '') . '</div></div>'; }
+                . '<b class="hm-pc-n">' . hm_e($n) . '</b>' . ($x['result'] ? '<span class="hm-pc-marks">Marks: <b>' . hm_e($x['result']) . '</b></span>' : '') . ($x['class_name'] ? '<small class="hm-pc-cls">' . hm_e($x['class_name']) . ($x['year'] ? ' · ' . hm_e($x['year']) : '') . '</small>' : '') . '</div></div>'; }
         return '<section class="hm-sec hm-top-s p4"><div class="sp-wrap">' . hm_head('Meet our toppers') . hm_slider('hm-top', $s, 4500) . '</div></section>';
     }
     if ($style === '3') {

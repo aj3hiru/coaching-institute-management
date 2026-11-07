@@ -171,7 +171,7 @@ $catSel = function (int $cur) use ($cats) { $h = '<select name="category_id"><op
 </div></div>
 
 <div class="ci-card" id="toppers"><div class="ci-card-h"><h3>Meet our Toppers (<?= count($tops) ?>)</h3><button type="button" class="ci-btn ci-sm" data-mopen="#topForm" data-mtitle="Add a topper" data-fill='{"id":0,"active":1}'><i class="fas fa-plus"></i> Add topper</button></div><div class="ci-card-b">
-  <?php if (!$tops): ?><p class="ci-muted" style="margin:0">No toppers yet. Add students with a passport-size photo, their result (e.g. 96.4% · Class 10 Board) and the year.</p><?php endif; ?>
+  <?php if (!$tops): ?><p class="ci-muted" style="margin:0">No toppers yet. Add students with a passport-size photo, their marks (e.g. 487/500) and the year.</p><?php endif; ?>
   <div class="hp-tops"><?php foreach ($tops as $x): ?>
     <div class="hp-top<?= $x['active'] ? '' : ' off' ?>"><span class="hp-top-i"><?php if ($x['photo']): ?><img src="<?= ci_e(sh_upload_url($x['photo'])) ?>" alt=""><?php else: ?><i class="fas fa-user-graduate"></i><?php endif; ?></span>
       <div><b><?= ci_e($x['name']) ?></b><small><?= ci_e(trim($x['result'] . ($x['class_name'] ? ' · ' . $x['class_name'] : '') . ($x['year'] ? ' · ' . $x['year'] : ''), ' ·')) ?><?= $x['active'] ? '' : ' · hidden' ?></small></div>
@@ -185,7 +185,7 @@ $catSel = function (int $cur) use ($cats) { $h = '<select name="category_id"><op
   <div class="ci-grid2 ci-mgrid">
     <div class="ci-f" style="grid-column:1/-1"><label>Photo <span class="ci-muted" style="font-weight:400">(passport size, e.g. 300 × 400)</span></label><input type="file" name="photo" accept="image/png,image/jpeg,image/webp"><span class="ci-hint">When editing, leave empty to keep the photo.</span></div>
     <div class="ci-f" style="grid-column:1/-1"><label>Student's name <span class="ci-req">*</span></label><input name="name" maxlength="120" required></div>
-    <div class="ci-f" style="grid-column:1/-1"><label>Result</label><input name="result" maxlength="160" placeholder="e.g. 96.4% in Class 10 Board · State rank 12"></div>
+    <div class="ci-f" style="grid-column:1/-1"><label>Marks</label><input name="result" maxlength="160" placeholder="e.g. 454 or 487/500 or 96.4%"></div>
     <div class="ci-f"><label>Class / exam</label><input name="class_name" maxlength="80" placeholder="e.g. Class 10"></div>
     <div class="ci-f"><label>Year</label><input name="year" maxlength="10" placeholder="e.g. 2026"></div>
     <div class="ci-f"><label>Order</label><input type="number" name="sort" value="0"></div>
