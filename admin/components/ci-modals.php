@@ -33,7 +33,7 @@ $__canAdd = ci_perm($me, 'edit_student') || ci_perm($me, 'add_student');
     <div class="ci-grid2" style="gap:16px 12px">
       <div class="ci-f"><label>Course</label><select name="course_id" id="la-course" data-search required><option value=""></option></select></div>
       <div class="ci-f"><label>Batch</label><select name="batch_id" id="la-batch" data-search><option value="">Choose the course first</option></select></div>
-      <div class="ci-f"><label>Fee plan</label><select name="fee_type" id="la-type"><option value="full">Final fee (one time)</option><option value="installment">Installment</option></select></div>
+      <div class="ci-f"><label>Fee plan</label><select name="fee_type" id="la-type"><option value="full">One-time fee</option><option value="installment">Installment</option></select></div>
       <div class="ci-f"><label>Fee for this student (₹)</label><input type="number" name="final" id="la-final" min="0" step="0.01"></div>
       <div class="ci-f ci-nofloat" style="grid-column:1/-1"><?= ci_pays_html('epm[]', 'epa[]', [], 'Paying now') ?></div>
       <div class="ci-f" id="la-due-f" hidden><label>Next due date</label><input type="date" name="due"></div>

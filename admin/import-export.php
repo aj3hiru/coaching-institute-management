@@ -182,7 +182,7 @@ $authors = $pdo->query("SELECT id, name FROM authors ORDER BY name")->fetchAll(P
       <div class="ie-conf" id="rv-conf" hidden><h4><span><i class="fas fa-triangle-exclamation"></i> Already on this site</span><span>Set all: <button type="button" data-all="keep_both">Keep both</button> · <button type="button" data-all="replace">Replace</button> · <button type="button" data-all="skip">Skip</button></span></h4><div id="rv-conf-list"></div></div>
       <div class="ie-opts">
         <label id="rv-author-wrap">Give the posts to<select class="form-control" id="rv-author"><option value="0">The original author (matched by name)</option><?php foreach ($authors as $id => $n): ?><option value="<?= (int)$id ?>"><?= htmlspecialchars($n) ?></option><?php endforeach; ?></select><small style="font-weight:400;color:#64748b" id="rv-authors-note"></small></label>
-        <label>Status after import<select class="form-control" id="rv-status"><option value="file">As in the file</option><option value="draft">Drafts (check before publishing)</option><option value="published">Published</option></select></label>
+        <label>Status after import<select class="form-control" id="rv-status"><option value="file">As in the file</option><option value="draft">Drafts</option><option value="published">Published</option></select></label>
       </div>
       <button type="button" class="btn btn-primary" id="ie-start"><i class="fas fa-play"></i> Start import</button>
       <button type="button" class="btn btn-secondary" id="ie-again" hidden><i class="fas fa-rotate-left"></i> Import another file</button>

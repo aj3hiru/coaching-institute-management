@@ -11,7 +11,7 @@ const UM_PERMS = [
     'dashboard_access' => 'Dashboard Access',
     'blogs' => ['create' => 'Create', 'edit_own' => 'Edit Own', 'edit_all' => 'Edit All', 'delete_own' => 'Delete Own', 'delete_all' => 'Delete All', 'publish' => 'Publish', 'unpublish' => 'Unpublish', 'schedule' => 'Schedule', 'feature' => 'Feature', 'manage_categories' => 'Categories', 'manage_tags' => 'Tags', 'manage_comments' => 'Comments', 'view_drafts' => 'View Drafts', 'manage_seo' => 'Manage SEO'],
     'media' => ['upload' => 'Upload', 'delete' => 'Delete', 'manage_all' => 'Manage All'],
-    'push_notifications' => ['send' => 'Send', 'schedule' => 'Schedule', 'manage_templates' => 'Templates', 'advanced' => 'Advanced (keys, import / export)'],
+    'push_notifications' => ['send' => 'Send', 'schedule' => 'Schedule', 'manage_templates' => 'Templates', 'advanced' => 'Advanced'],
     'users' => ['create' => 'Create', 'edit' => 'Edit', 'delete' => 'Delete', 'suspend' => 'Suspend', 'change_roles' => 'Change Roles', 'manage_permissions' => 'Manage Permissions'],
     'authors' => ['create' => 'Create', 'edit' => 'Edit', 'delete' => 'Delete', 'approve' => 'Approve', 'feature' => 'Feature'],
     'analytics' => ['view_basic' => 'Basic Analytics', 'view_advanced' => 'Advanced Analytics'],
@@ -21,7 +21,7 @@ const UM_PERMS = [
     'files' => ['access_file_manager' => 'File Manager'],
     'security' => ['view_logs' => 'View Logs', 'manage_blacklist' => 'Blacklist', 'manage_recaptcha' => 'reCAPTCHA'],
     'institute' => ['add_student' => 'Add student', 'edit_student' => 'Edit student', 'batches' => 'Manage batches', 'courses' => 'Manage courses', 'fees' => 'Manage fee & dues', 'sessions' => 'Manage sessions', 'classes' => 'Manage classes'],
-    'store' => ['products' => 'Courses & notes (add, edit, upload)', 'orders' => 'Orders & sales reports', 'customers' => 'Customers (accounts, give access)', 'settings' => 'Store settings (Razorpay keys)', 'teacher' => 'Teacher (can teach a course, answers doubts)'],
+    'store' => ['products' => 'Courses & notes (add, edit, upload)', 'orders' => 'Orders & sales reports', 'customers' => 'Customers', 'settings' => 'Store settings (Razorpay keys)', 'teacher' => 'Teacher'],
 ];
 const UM_ICONS = ['dashboard_access' => 'fa-tachometer-alt', 'blogs' => 'fa-blog', 'media' => 'fa-photo-video', 'push_notifications' => 'fa-bell', 'users' => 'fa-users', 'authors' => 'fa-feather-alt', 'analytics' => 'fa-chart-bar', 'ads' => 'fa-ad', 'settings' => 'fa-cog', 'pages' => 'fa-file-alt', 'files' => 'fa-folder', 'security' => 'fa-shield-alt'];
 

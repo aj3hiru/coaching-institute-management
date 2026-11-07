@@ -95,7 +95,7 @@ if (($_GET['export'] ?? '') === 'json') {
     exit;
 }
 
-$per = 30;
+$per = in_array((int)($_GET['per'] ?? 0), [10, 20, 50, 100, 1000], true) ? (int)$_GET['per'] : 20; // Show [N] entries
 $cnt = $pdo->prepare("SELECT COUNT(*), COALESCE(SUM(due),0) FROM ($sql) t");
 $cnt->execute($args);
 [$total, $totalDue] = $cnt->fetch(PDO::FETCH_NUM);
@@ -144,7 +144,7 @@ $filtered = $f['q'] !== '' || $f['class'] || $f['course'] || $f['batch'] || $f['
 </form></div></div>
 
 <div class="ci-head ci-head-show"><div class="ci-sub"><?= number_format($total) ?> found<?= $totalDue > 0 ? ' · due ' . ci_money0($totalDue) : '' ?></div></div>
-<div class="ci-card"><div class="ci-card-b ci-p0 ci-table-wrap"><table class="ci-table">
+<div class="ci-card"><div class="ci-card-b ci-p0 ci-table-wrap"><table class="ci-table" data-sheet-total="<?= (int)$total ?>" data-sheet-page="<?= (int)$page ?>" data-sheet-per="<?= $per === 1000 ? 0 : (int)$per ?>">
 <thead><tr><th>Student</th><th>Mobile</th><th>Class</th><th>Courses / batches</th><th>Admission</th><th class="ci-num">Fee due</th><th>Action</th></tr></thead><tbody>
 <?php if (!$students): ?><tr><td colspan="7" class="ci-empty"><?= $filtered ? 'No students match these filters.' : 'No students yet. <a href="/admin/student-edit.php">Add the first student</a>.' ?></td></tr><?php endif; ?>
 <?php $back = $qs(['page' => $page]); foreach ($students as $s): $sid = (int)$s['id']; ?>
@@ -161,9 +161,7 @@ $filtered = $f['q'] !== '' || $f['class'] || $f['course'] || $f['batch'] || $f['
 </div></td></tr>
 <?php endforeach; ?>
 </tbody></table></div>
-<?php if ($pages > 1): ?><div class="ci-pager"><span>Page <?= $page ?> of <?= $pages ?></span><div class="ci-pg">
-<?php for ($i = max(1, $page - 3); $i <= min($pages, $page + 3); $i++): ?><?= $i === $page ? '<span class="on">' . $i . '</span>' : '<a href="?' . $qs(['page' => $i]) . '">' . $i . '</a>' ?><?php endfor; ?>
-</div></div><?php endif; ?>
+<?php /* pages: the sheet footer (admin-table.js) */ ?>
 </div>
 </div>
 <?php require __DIR__ . '/components/ci-modals.php'; ?>

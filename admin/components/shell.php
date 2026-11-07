@@ -83,7 +83,7 @@ function admin_shell_nav(): array
             $link($cp('sessions') || $cp('classes'), 'Sessions & Classes', '/admin/ci-setup.php', 'fa-calendar-alt'),
             $link(true, 'Reports', '/admin/ci-reports.php', 'fa-file-pdf'),
         ] : []],
-        ['label' => 'Online Store', 'items' => (function () use ($cu, $link) {
+        ['label' => 'Online Store', 'items' => (function () use ($cu, $link, $ci) {
             require_once ($_SERVER['DOCUMENT_ROOT'] ?? '') . '/includes/shop.php';
             return [
                 $link(sh_perm($cu, 'products'), 'Online Courses', '/admin/shop-products.php?type=course', 'fa-photo-film'),
@@ -95,7 +95,7 @@ function admin_shell_nav(): array
                 $link(sh_perm($cu, 'customers'), 'Customers', '/admin/shop-customers.php', 'fa-users'),
                 $link(sh_perm($cu, 'products'), 'Reviews', '/admin/shop-reviews.php', 'fa-star'),
                 $link(sh_perm($cu, 'customers'), 'Student Reports', '/admin/shop-reports.php', 'fa-flag'),
-                $link(sh_perm($cu, 'orders'), 'Sales Report', '/admin/ci-reports.php?type=store', 'fa-chart-line'),
+                $link(sh_perm($cu, 'orders') && !$ci, 'Reports', '/admin/ci-reports.php?type=store', 'fa-file-pdf'), // one Reports page (Institute → Reports has Online sales too)
                 $link(sh_perm($cu, 'settings'), 'Homepage', '/admin/home-page.php', 'fa-house'),
                 $link(sh_perm($cu, 'settings'), 'Store Settings', '/admin/shop-settings.php', 'fa-sliders'),
             ];
@@ -215,6 +215,7 @@ function admin_shell_head(): void
     echo '<link rel="stylesheet" href="/assets/css/admin-flat.css?v=' . (@filemtime($root . '/assets/css/admin-flat.css') ?: 1) . '">' . "\n";
     echo '<script src="/assets/js/admin-select.js?v=' . (@filemtime($root . '/assets/js/admin-select.js') ?: 1) . '" defer></script>' . "\n";
     echo '<script src="/assets/js/admin-display.js?v=' . (@filemtime($root . '/assets/js/admin-display.js') ?: 1) . '" defer></script>' . "\n";
+    echo '<script src="/assets/js/admin-table.js?v=' . (@filemtime($root . '/assets/js/admin-table.js') ?: 1) . '" defer></script>' . "\n";
     echo '<script src="/assets/js/admin-date.js?v=' . (@filemtime($root . '/assets/js/admin-date.js') ?: 1) . '" defer></script>' . "\n";
 }
 

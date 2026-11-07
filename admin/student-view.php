@@ -287,7 +287,7 @@ $tel = fn(?string $m) => $m ? '<a href="tel:' . ci_e($m) . '">' . ci_e($m) . '</
               if ($mine) { echo '<optgroup label="Class ' . ci_e($s['class_name']) . ' courses">'; foreach ($mine as $cid => $c) echo $opt($cid, $c); echo '</optgroup><optgroup label="Other courses">'; foreach ($rest as $cid => $c) echo $opt($cid, $c); echo '</optgroup>'; }
               else foreach ($rest as $cid => $c) echo $opt($cid, $c); ?></select></div>
       <div class="ci-f"><label>Batch</label><select name="batch_id" id="ac-batch" data-search><option value="">Choose the course first</option></select></div>
-      <div class="ci-f"><label>Fee plan</label><select name="fee_type" id="ac-type"><option value="full">Final fee (one time)</option><option value="installment">Installment</option></select></div>
+      <div class="ci-f"><label>Fee plan</label><select name="fee_type" id="ac-type"><option value="full">One-time fee</option><option value="installment">Installment</option></select></div>
       <div class="ci-f"><label>Fee for this student (₹)</label><input type="number" name="final" id="ac-final" min="0" step="0.01"></div>
       <?php if (ci_perm($me, 'fees') || ci_perm($me, 'add_student')): ?><div class="ci-f ci-nofloat" style="grid-column:1/-1"><?= ci_pays_html('epm[]', 'epa[]', [], 'Paying now') ?></div><?php endif; ?>
       <div class="ci-f" id="ac-due-f" hidden><label>Next due date</label><input type="date" name="due"></div>

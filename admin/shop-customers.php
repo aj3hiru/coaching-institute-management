@@ -106,7 +106,7 @@ if ($id) {
     <div class="ci-grid2"><div class="ci-f"><label>Name</label><input name="name" required value="<?= ci_e($cu['name']) ?>"></div>
     <div class="ci-f"><label>Mobile</label><input name="mobile" required inputmode="numeric" value="<?= ci_e($cu['mobile']) ?>"></div>
     <div class="ci-f"><label>Email</label><input name="email" type="email" required value="<?= ci_e($cu['email']) ?>"></div>
-    <div class="ci-f"><label>Status</label><select name="status"><option value="active">Active</option><option value="blocked" <?= $cu['status'] === 'blocked' ? 'selected' : '' ?>>Blocked (cannot log in)</option></select></div></div>
+    <div class="ci-f"><label>Status</label><select name="status"><option value="active">Active</option><option value="blocked" <?= $cu['status'] === 'blocked' ? 'selected' : '' ?>>Blocked</option></select></div></div>
     <p class="ci-muted" style="margin:8px 0">Joined <?= date('d M Y', strtotime($cu['created_at'])) ?><?= $cu['last_login'] ? ' · last login ' . date('d M Y, h:i A', strtotime($cu['last_login'])) : ' · never logged in' ?></p>
     <?php if (!empty($cu['sid'])): ?><p style="margin:0 0 10px">Institute student: <a href="/admin/student-view.php?id=<?= (int)$cu['sid'] ?>"><?= ci_e($cu['sname']) ?> (<?= ci_e($cu['reg_no']) ?>)</a></p><?php endif; ?>
     <button class="ci-btn" type="submit">Save</button></form>

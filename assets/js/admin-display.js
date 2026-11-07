@@ -216,27 +216,30 @@
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 })();
-/* Hover labels for icon buttons: a small label in the theme colour just under the mouse (replaces the browser's own tooltip). */
+/* Hover labels for icon buttons: a small dark tooltip centred above the icon (like big admin apps), with a short delay. */
 (function () {
-  var tip = null, cur = null;
-  // only the icon buttons of table Action columns (not the delete bin, not other buttons)
+  var tip = null, cur = null, timer = 0;
   var SEL = 'td:last-child .ci-ico:not([data-i="trash"]):not([data-i="edit"])'; // Action column icons only (not delete / edit — those are clear)
-  function show(el, x, y) {
+  function place() {
+    if (!tip || !cur) return;
+    var r = cur.getBoundingClientRect(), w = tip.offsetWidth, h = tip.offsetHeight, vw = document.documentElement.clientWidth;
+    var left = Math.max(6, Math.min(r.left + r.width / 2 - w / 2, vw - w - 6)), top = r.top - h - 8, below = top < 6;
+    if (below) top = r.bottom + 8;
+    tip.style.left = left + 'px'; tip.style.top = top + 'px';
+    tip.style.setProperty('--ax', (r.left + r.width / 2 - left) + 'px');
+    tip.classList.toggle('below', below);
+  }
+  function show(el) {
     var t = el.getAttribute('data-tip') || el.getAttribute('title') || el.getAttribute('aria-label');
     if (!t) return;
     if (el.hasAttribute('title')) { el.setAttribute('data-tip', el.getAttribute('title')); el.removeAttribute('title'); }
     if (!tip) { tip = document.createElement('div'); tip.className = 'dk-tip'; tip.setAttribute('role', 'tooltip'); document.body.appendChild(tip); }
-    tip.textContent = t; tip.hidden = false; cur = el; move(x, y);
+    cur = el; clearTimeout(timer);
+    timer = setTimeout(function () { if (cur !== el) return; tip.textContent = t; tip.hidden = false; tip.classList.remove('on'); place(); requestAnimationFrame(function () { tip.classList.add('on'); }); }, 250);
   }
-  function move(x, y) {
-    if (!tip || tip.hidden) return;
-    var w = tip.offsetWidth, h = tip.offsetHeight, vw = document.documentElement.clientWidth, vh = window.innerHeight;
-    var left = Math.max(6, Math.min(x - w / 2, vw - w - 6)), top = y + 18;
-    if (top + h > vh - 6) top = y - h - 12;
-    tip.style.left = left + 'px'; tip.style.top = top + 'px';
-  }
-  function hide() { if (tip) tip.hidden = true; cur = null; }
-  document.addEventListener('mouseover', function (e) { var el = e.target.closest && e.target.closest(SEL); if (el && el !== cur) show(el, e.clientX, e.clientY); else if (!el && cur) hide(); }, { passive: true });
-  document.addEventListener('mousemove', function (e) { if (cur) { if (!cur.contains(e.target)) hide(); else move(e.clientX, e.clientY); } }, { passive: true });
+  function hide() { clearTimeout(timer); if (tip) { tip.hidden = true; tip.classList.remove('on'); } cur = null; }
+  document.addEventListener('mouseover', function (e) { var el = e.target.closest && e.target.closest(SEL); if (el && el !== cur) show(el); else if (!el && cur) hide(); }, { passive: true });
+  document.addEventListener('focusin', function (e) { var el = e.target.closest && e.target.closest(SEL); if (el) show(el); });
+  document.addEventListener('focusout', hide);
   ['mousedown', 'scroll', 'keydown'].forEach(function (ev) { document.addEventListener(ev, hide, true); });
 })();

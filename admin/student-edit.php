@@ -224,11 +224,11 @@ $rowHtml = function (array $r, int $idx) use ($L): string {
     }
     $h .= '</select></div>';
     $h .= '<div class="ci-f"><label>Batch</label><select name="e_batch[]" class="ci-batch" data-search data-val="' . (int)($r['batch_id'] ?? 0) . '"><option value="">Choose the course first</option></select></div>';
-    $h .= '<div class="ci-f"><label>Fee plan</label><select name="e_type[]" class="ci-type"><option value="full"' . ($type === 'full' ? ' selected' : '') . '>Final fee (one time)</option><option value="installment"' . ($type === 'installment' ? ' selected' : '') . '>Installment</option></select></div>';
+    $h .= '<div class="ci-f"><label>Fee plan</label><select name="e_type[]" class="ci-type"><option value="full"' . ($type === 'full' ? ' selected' : '') . '>One-time fee</option><option value="installment"' . ($type === 'installment' ? ' selected' : '') . '>Installment</option></select></div>';
     $h .= '<div class="ci-f"><label>Fee for this student (₹)</label><input name="e_final[]" class="ci-final" type="number" min="0" step="0.01" value="' . ci_e($num($r['final'] ?? null)) . '" data-list="' . ci_e($num($r['list'] ?? null)) . '"></div>';
     if ($id) {
         $h .= '<div class="ci-f"><label>Status</label><select name="e_status[]">';
-        foreach (['active' => 'Active', 'completed' => 'Completed', 'left' => 'Left (fee due stays)', 'dropped' => 'Dropped (no fee)'] as $k => $l) $h .= '<option value="' . $k . '"' . (($r['status'] ?? '') === $k ? ' selected' : '') . '>' . $l . '</option>';
+        foreach (['active' => 'Active', 'completed' => 'Completed', 'left' => 'Left', 'dropped' => 'Dropped'] as $k => $l) $h .= '<option value="' . $k . '"' . (($r['status'] ?? '') === $k ? ' selected' : '') . '>' . $l . '</option>';
         $h .= '</select></div>';
     } else {
         $h .= '<input type="hidden" name="e_status[]" value="active">';
