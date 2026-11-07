@@ -97,7 +97,7 @@
 
   // YouTube's own start screen (thumbnail + its red play button) shows through. Plyr's big play button stays on top of it,
   // invisible, only to catch the click — so it looks and feels exactly like YouTube, and the frame is still never touched.
-  var YT_BTN = '<svg viewBox="0 0 68 48" aria-hidden="true"><path fill="#f00" d="M66.52 7.74c-.78-2.93-2.49-5.41-5.42-6.19C55.79.13 34 0 34 0S12.21.13 6.9 1.55C3.97 2.33 2.27 4.81 1.48 7.74.06 13.05 0 24 0 24s.06 10.95 1.48 16.26c.78 2.93 2.49 5.41 5.42 6.19C12.21 47.87 34 48 34 48s21.79-.13 27.1-1.55c2.93-.78 4.64-3.26 5.42-6.19C67.94 34.95 68 24 68 24s-.06-10.95-1.48-16.26z"/><path d="M45 24 27 14v20" fill="#fff"/></svg>';
+  var YT_BTN = '<span class="ytb-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="#fff"/></svg></span>'; // plain play icon (no YouTube logo)
   function dress(box) {
     var big = box.querySelector('.plyr__control--overlaid');
     if (big && !big._yt) { big._yt = true; big.classList.add('ytb'); big.innerHTML = YT_BTN + '<span class="plyr__sr-only">Play</span>'; }
