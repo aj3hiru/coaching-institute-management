@@ -18,27 +18,46 @@
     var f = frame(box), q = box._q || 'auto'; if (!f) return;
     var props = ['width', 'height', 'top', 'left', 'transform', 'transform-origin', 'max-width'];
     if (q === 'auto' || !QMAP[q]) { props.forEach(function (k) { f.style.removeProperty(k); }); return; }
-    var w = QMAP[q][1], h = QMAP[q][2]; // YouTube goes by the frame size in CSS pixels (tested on 1× and 2× screens)
+    // YouTube picks the quality from the frame's width: the frame is laid out as wide as the chosen video (1280 for 720p …).
+    // When it loads a video again (used for stepping down) it also counts a sharp phone screen's extra pixels, so 480p / 360p
+    // are divided by the screen's pixel ratio.
+    var dpr = Math.max(1, window.devicePixelRatio || 1), w = QMAP[q][1], h = QMAP[q][2];
+    if (q === 'medium' || q === 'large') { w = Math.round(w / dpr); h = Math.round(h / dpr); }
     var bw = box.clientWidth || 1, sc = bw / w;
     var set = function (k, v) { f.style.setProperty(k, v, 'important'); };
     set('max-width', 'none'); set('width', w + 'px'); set('height', (2 * h) + 'px'); set('left', '0'); set('top', (-(h * sc) / 2) + 'px');
     set('transform-origin', '0 0'); set('transform', 'scale(' + sc + ')');
   }
-  // after a change: jump to the same second so YouTube loads the new quality now (a few tries — it can be slow to switch down)
+  // After a change. Going UP: a small seek is enough (YouTube fetches the next piece bigger).
+  // Going DOWN: YouTube keeps playing what it already loaded, so the video is loaded again at the same second
+  // (same speed, same play / pause state) — then it starts in the new size's quality.
+  var rank = function (q) { var i = QORDER.indexOf(q); return i === -1 ? 99 : i; };
+  function reloadAt(box) {
+    var p = box._p, e = p.embed, t = e.getCurrentTime(), rate = p.speed, wasPaused = !p.playing;
+    box._reloading = true;
+    e.loadVideoById({ videoId: box.getAttribute('data-yt'), startSeconds: t });
+    var done = function () { box._reloading = false; };
+    p.once('playing', function () { try { if (rate !== 1) p.speed = rate; if (wasPaused) p.pause(); } catch (x) {} setTimeout(done, 300); });
+    setTimeout(done, 8000);
+  }
   function nudge(box, tries) {
     var p = box._p; if (!p || !p.embed || !p.embed.seekTo) return;
-    var e = p.embed, want = box._q, t = e.getCurrentTime ? e.getCurrentTime() : 0;
-    if (t > 0.5) e.seekTo(t + 0.05, true); // a fresh piece of video → YouTube fetches it in the new size's quality
+    var e = p.embed, want = box._q, now = e.getPlaybackQuality ? e.getPlaybackQuality() : '', t = e.getCurrentTime ? e.getCurrentTime() : 0;
+    if (want !== 'auto' && rank(now) < rank(want) && t > 0.5) reloadAt(box);  // too high → load again
+    else if (t > 0.5) e.seekTo(t + 0.05, true);
     clearTimeout(box._nt);
     box._nt = setTimeout(function () {
       paintQ(box);
-      if (want !== 'auto' && box._q === want && e.getPlaybackQuality && e.getPlaybackQuality() !== want && tries > 1 && p.playing) nudge(box, tries - 1);
-    }, 3000);
+      if (want !== 'auto' && box._q === want && e.getPlaybackQuality && e.getPlaybackQuality() !== want && tries > 1) nudge(box, tries - 1);
+    }, 3500);
   }
   function setQ(box, q) { box._q = q; store.set(q); sizeFrame(box); nudge(box, 5); paintQ(box); }
   function levels(box) {
     var e = box._p && box._p.embed, a = e && e.getAvailableQualityLevels ? e.getAvailableQualityLevels() || [] : [];
-    return QORDER.filter(function (k) { return a.indexOf(k) !== -1; });
+    var lv = QORDER.filter(function (k) { return a.indexOf(k) !== -1; });
+    // on sharp screens (most phones) YouTube never goes below 480p, so 360p is not offered there
+    if ((window.devicePixelRatio || 1) >= 1.5 && lv.indexOf('large') !== -1) lv = lv.filter(function (k) { return k !== 'medium'; });
+    return lv;
   }
   function paintQ(box) {
     var b = box.querySelector('.ytq-btn'); if (!b) return;
@@ -68,6 +87,25 @@
     box._p.on('controlshidden', close);
   }
 
+  var YT_BTN = '<svg viewBox="0 0 68 48" aria-hidden="true"><path class="ytb-bg" d="M66.52 7.74c-.78-2.93-2.49-5.41-5.42-6.19C55.79.13 34 0 34 0S12.21.13 6.9 1.55C3.97 2.33 2.27 4.81 1.48 7.74.06 13.05 0 24 0 24s.06 10.95 1.48 16.26c.78 2.93 2.49 5.41 5.42 6.19C12.21 47.87 34 48 34 48s21.79-.13 27.1-1.55c2.93-.78 4.64-3.26 5.42-6.19C67.94 34.95 68 24 68 24s-.06-10.95-1.48-16.26z"/><path d="M45 24 27 14v20" fill="#fff"/></svg>';
+  var ICON_PLAY = '<svg viewBox="0 0 36 36" aria-hidden="true"><path d="M12 26 18.5 22 18.5 14 12 10z M18.5 22 25 18 25 18 18.5 14z" fill="#fff"/></svg>';
+  var ICON_PAUSE = '<svg viewBox="0 0 36 36" aria-hidden="true"><path d="M12 26h4V10h-4zm9-16v16h4V10z" fill="#fff"/></svg>';
+  function dress(box) {
+    var big = box.querySelector('.plyr__control--overlaid');
+    if (big && !big._yt) { big._yt = true; big.innerHTML = YT_BTN + '<span class="plyr__sr-only">Play</span>'; big.classList.add('ytb'); }
+    if (!box.querySelector('.ytb-bezel')) { var bz = document.createElement('div'); bz.className = 'ytb-bezel'; bz.setAttribute('aria-hidden', 'true'); (box.querySelector('.plyr') || box).appendChild(bz); }
+    if (!box.querySelector('.ytb-spin')) { var sp = document.createElement('div'); sp.className = 'ytb-spin'; sp.setAttribute('aria-hidden', 'true'); (box.querySelector('.plyr') || box).appendChild(sp); }
+    menuRoom(box);
+  }
+  // the play / pause "bezel" in the middle, like YouTube: the new state's icon grows and fades out
+  function bezel(box, playing) {
+    var bz = box.querySelector('.ytb-bezel'); if (!bz) return;
+    bz.innerHTML = playing ? ICON_PLAY : ICON_PAUSE;
+    bz.classList.remove('go'); void bz.offsetWidth; bz.classList.add('go');
+  }
+  // menus never taller than the video (phones): they scroll inside
+  function menuRoom(box) { box.style.setProperty('--yt-menu-h', Math.max(96, (box.clientHeight || 200) - 58) + 'px'); }
+
   function make(box, id) {
     var el = document.createElement('div');
     el.className = 'plyr__video-embed';
@@ -91,13 +129,18 @@
       if (p.ended) { p.currentTime = 0; p.play(); } else p.togglePlay();
     });
     if (box._q === undefined) box._q = store.get();
-    p.on('ready', function () { addQ(box); sizeFrame(box); });
+    box.classList.remove('yt-started', 'yt-wait');
+    p.on('ready', function () { addQ(box); dress(box); sizeFrame(box); });
+    // our cover stays until YouTube really plays, so YouTube's own start screen / button never shows through
+    p.on('play', function () { if (!box.classList.contains('yt-started')) box.classList.add('yt-wait'); else if (!box._reloading) bezel(box, true); });
+    p.on('pause', function () { if (box.classList.contains('yt-started') && !box._reloading && !p.ended) bezel(box, false); });
+    p.on('playing', function () { box.classList.remove('yt-wait'); box.classList.add('yt-started'); });
     p.on('playing', function () { if (!box._qSeen) { box._qSeen = true; if (box._q !== 'auto') nudge(box, 5); } paintQ(box); });
     p.on('qualitychange', function () { paintQ(box); });
     p.on('enterfullscreen', function () { setTimeout(function () { sizeFrame(box); }, 60); });
     p.on('exitfullscreen', function () { setTimeout(function () { sizeFrame(box); }, 60); });
-    if (window.ResizeObserver && !box._ro) { box._ro = new ResizeObserver(function () { sizeFrame(box); }); box._ro.observe(box); }
-    p.on('ended', function () { box.classList.add('is-ended'); try { p.stop(); } catch (e) {} box.dispatchEvent(new CustomEvent('yt-ended')); }); // no YouTube end screen
+    if (window.ResizeObserver && !box._ro) { box._ro = new ResizeObserver(function () { sizeFrame(box); menuRoom(box); }); box._ro.observe(box); }
+    p.on('ended', function () { box.classList.add('is-ended'); box.classList.remove('yt-started', 'yt-wait'); try { p.stop(); } catch (e) {} box.dispatchEvent(new CustomEvent('yt-ended')); }); // no YouTube end screen
     p.on('playing', function () { box.classList.remove('is-ended'); });
     return p;
   }

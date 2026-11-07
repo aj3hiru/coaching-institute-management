@@ -31,3 +31,31 @@
 .yt-lock .ytq-menu button.on{font-weight:700;color:var(--sa,#0c6878)}
 .yt-lock .ytq-menu button.on::before{content:"";position:absolute;left:10px;top:50%;width:7px;height:7px;margin-top:-4px;border-radius:50%;background:var(--sa,#0c6878)}
 .yt-lock .ytq-menu small{color:#6b7280;font-weight:400}.yt-lock .ytq-menu sup{font-size:9px;font-weight:800;color:#e11d48}
+
+/* ---- YouTube look: big start button (same shape, size, colours), the play / pause bezel, loading ring ---- */
+.yt-lock .plyr--full-ui.plyr--video .plyr__control--overlaid.ytb{width:68px;height:48px;padding:0;border-radius:0;background:transparent!important;box-shadow:none;opacity:1;transition:opacity .25s cubic-bezier(.4,0,1,1)}
+.yt-lock .plyr__control--overlaid.ytb svg{position:static;width:68px;height:48px;left:0}
+.yt-lock .ytb .ytb-bg{fill:#212121;fill-opacity:.8;transition:fill .1s cubic-bezier(.4,0,1,1),fill-opacity .1s cubic-bezier(.4,0,1,1)}
+.yt-lock .plyr:hover .ytb .ytb-bg,.yt-lock .ytb:focus-visible .ytb-bg{fill:#f00;fill-opacity:1}
+/* YouTube shows the big button only before the video starts (and after it ends) — not on every pause */
+.yt-lock.yt-started .plyr__control--overlaid,.yt-lock.yt-wait .plyr__control--overlaid{opacity:0!important;visibility:hidden;pointer-events:none}
+/* cover until YouTube is really playing, then fade away */
+.yt-lock:not(.yt-started) .plyr__poster{opacity:1!important}
+.yt-lock .plyr__poster{transition:opacity .25s ease}
+.yt-lock .ytb-spin{position:absolute;left:50%;top:50%;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;border:4px solid rgba(255,255,255,.25);border-top-color:#fff;opacity:0;pointer-events:none;z-index:3;transition:opacity .2s}
+.yt-lock.yt-wait .ytb-spin{opacity:1;animation:ytbSpin .9s linear infinite}
+@keyframes ytbSpin{to{transform:rotate(360deg)}}
+.yt-lock .ytb-bezel{position:absolute;left:50%;top:50%;width:52px;height:52px;margin:-26px 0 0 -26px;border-radius:26px;background:rgba(0,0,0,.5);opacity:0;pointer-events:none;z-index:3;display:grid;place-items:center}
+.yt-lock .ytb-bezel svg{width:36px;height:36px}
+.yt-lock .ytb-bezel.go{animation:ytbBezel .5s linear 1 normal forwards}
+@keyframes ytbBezel{0%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(2)}}
+@media (prefers-reduced-motion:reduce){.yt-lock .ytb-bezel.go{animation-duration:.01s}}
+
+/* ---- menus (speed, quality) never taller than the video: they scroll inside on phones ---- */
+.yt-lock .plyr__menu__container > div{max-height:var(--yt-menu-h,420px)!important;overflow-y:auto!important;overscroll-behavior:contain;scrollbar-width:thin}
+.yt-lock .ytq-menu{max-height:var(--yt-menu-h,420px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+@media (max-width:560px){
+  .yt-lock .plyr__menu__container .plyr__control{padding:5px 10px 5px 8px;font-size:13px}
+  .yt-lock .plyr__menu__container [role=menu]{padding:4px}
+  .yt-lock .ytq-menu{min-width:128px;padding:4px}.yt-lock .ytq-menu button{padding:5px 8px 5px 24px;font-size:13px}.yt-lock .ytq-h{padding:4px 8px 6px;margin-bottom:2px}
+}
