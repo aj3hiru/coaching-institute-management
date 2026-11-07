@@ -55,7 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pass = (string)($_POST['pass'] ?? '');
             $made = false;
             if ($pass === '') { $pass = substr(str_replace(['+', '/', '='], '', base64_encode(random_bytes(9))), 0, 8); $made = true; }
-            if (strlen($pass) < 6) throw new RuntimeException('The password must have at least 6 characters.');
+            if (strlen($pass) < 4) throw new RuntimeException('The password must have at least 4 characters.');
             $pdo->prepare("UPDATE sh_users SET pass = ?, reset_hash = NULL WHERE id = ?")->execute([password_hash($pass, PASSWORD_DEFAULT), $id]);
             admin_log('shop_customer', "Set a new password for buyer #$id");
             admin_flash('New password saved' . ($made ? ': ' . $pass . ' — give it to the student now.' : '.'));
@@ -114,7 +114,7 @@ if ($id) {
   </div></div>
   <div class="ci-card"><div class="ci-card-h"><h3>Password</h3></div><div class="ci-card-b">
     <form method="post"><?= csrf_field() ?><input type="hidden" name="action" value="password"><input type="hidden" name="uid" value="<?= $id ?>">
-    <div class="ci-f"><label>New password</label><input name="pass" minlength="6" autocomplete="new-password" placeholder="leave empty to make one"><span class="ci-hint">The student can also reset it by email from the login page.</span></div>
+    <div class="ci-f"><label>New password</label><input name="pass" minlength="4" autocomplete="new-password" placeholder="leave empty to make one"><span class="ci-hint">The student can also reset it by email from the login page.</span></div>
     <button class="ci-btn ci-ghost" type="submit" style="margin-top:8px" onclick="return confirm('Set a new password for this account?')">Set new password</button></form>
   </div></div>
 </div>
@@ -150,7 +150,7 @@ if ($id) {
   <div class="ci-f"><label>Name</label><input name="name" maxlength="150"></div>
   <div class="ci-f"><label>Mobile</label><input name="mobile" inputmode="numeric" maxlength="14"></div>
   <div class="ci-f"><label>Email</label><input name="email" type="email" maxlength="190"><span class="ci-hint">Needed for password reset.</span></div>
-  <div class="ci-f"><label>Password</label><input name="pass" minlength="6" autocomplete="new-password" placeholder="leave empty to make one"></div>
+  <div class="ci-f"><label>Password</label><input name="pass" minlength="4" autocomplete="new-password" placeholder="leave empty to make one"></div>
 </div>
 <div style="margin-top:12px"><button class="ci-btn" type="submit"><i class="fas fa-user-plus"></i> Make account</button></div>
 </form></div></details>

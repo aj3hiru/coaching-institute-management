@@ -18,7 +18,7 @@ require ROOT_PATH . '/components/store-open.php';
 <p class="st-crumb"><a href="/">Home</a> › Store</p>
 <h1><?= sh_e($stTitle) ?></h1>
 <p class="st-lead">Recorded classes and notes from our teachers — buy once, study anytime on your phone or computer.</p>
-<nav class="st-tabs"><a href="/store" class="<?= $t === '' ? 'on' : '' ?>">All</a><a href="/store?t=course" class="<?= $t === 'course' ? 'on' : '' ?>">Video Courses</a><a href="/store?t=notes" class="<?= $t === 'notes' ? 'on' : '' ?>">PDF Notes</a><?php if ($u): ?><a href="/account/">My Library</a><?php endif; ?></nav>
+<nav class="st-tabs"><a href="/store" class="<?= $t === '' ? 'on' : '' ?>">All</a><a href="/store?t=course" class="<?= $t === 'course' ? 'on' : '' ?>">Video Courses</a><a href="/store/notes">PDF Notes</a><?php if ($u): ?><a href="/account/">My Courses</a><?php endif; ?></nav>
 <?php if (!$rows): ?><div class="st-empty">Nothing here yet — new courses and notes are coming soon.</div><?php endif; ?>
 <div class="st-grid">
 <?php foreach ($rows as $p): ?>

@@ -14,7 +14,7 @@
  */
 require_once __DIR__ . '/settings.php';
 
-const SH_SCHEMA = 5;
+const SH_SCHEMA = 6;
 
 function sh_db(): PDO
 {
@@ -80,6 +80,12 @@ function sh_tables(PDO $pdo): void
         rating TINYINT UNSIGNED NOT NULL, body TEXT NULL, status VARCHAR(10) NOT NULL DEFAULT 'published',
         created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME NULL,
         UNIQUE KEY uq_pu (product_id, user_id), KEY idx_p (product_id, status))$t");
+    // v6: "Report us" messages from logged-in students (with an optional image / PDF)
+    $pdo->exec("CREATE TABLE IF NOT EXISTS sh_reports (
+        id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, user_id INT UNSIGNED NOT NULL, name VARCHAR(150) NOT NULL, topic VARCHAR(40) NOT NULL DEFAULT 'other',
+        message TEXT NOT NULL, file VARCHAR(300) NULL, file_name VARCHAR(200) NULL, size INT UNSIGNED NOT NULL DEFAULT 0,
+        status VARCHAR(10) NOT NULL DEFAULT 'new', note VARCHAR(500) NULL, created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+        KEY idx_status (status, id), KEY idx_user (user_id))$t");
     edu_settings_save('shop', ['schema' => SH_SCHEMA]);
 }
 
@@ -185,7 +191,7 @@ function sh_register(PDO $pdo, string $name, string $mobile, string $email, stri
     if (mb_strlen($name) < 2) throw new RuntimeException('Please enter your name.');
     if (!preg_match('/^[6-9]\d{9}$/', $mobile)) throw new RuntimeException('Please enter a valid 10-digit mobile number.');
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) throw new RuntimeException('Please enter a valid email address.');
-    if (strlen($pass) < 6) throw new RuntimeException('The password must have at least 6 characters.');
+    if (strlen($pass) < 4) throw new RuntimeException('The password must have at least 4 characters.');
     $q = $pdo->prepare("SELECT mobile, email FROM sh_users WHERE mobile = ? OR email = ?");
     $q->execute([$mobile, $email]);
     foreach ($q as $r) {
@@ -434,6 +440,16 @@ function sh_icon(string $n): string
         'gauge' => '<path d="M12 14 16 9"/><path d="M3.3 19a10 10 0 1 1 17.4 0"/>',
         'playsolid' => '<path d="M8 5v14l11-7Z" fill="currentColor" stroke="none"/>',
         'back' => '<path d="m15 18-6-6 6-6"/>',
+        'book' => '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5Z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/>',
+        'user' => '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+        'receipt' => '<path d="M5 2h14v20l-3-2-2 2-2-2-2 2-2-2-3 2Z"/><path d="M9 7h6M9 11h6M9 15h4"/>',
+        'flag' => '<path d="M4 22V4"/><path d="M4 4h13l-2 4 2 4H4"/>',
+        'grid' => '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>',
+        'logout' => '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5M21 12H9"/>',
+        'login' => '<path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="m10 17 5-5-5-5M15 12H3"/>',
+        'clip' => '<path d="m21.4 11.1-9.2 9.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/>',
+        'compass' => '<circle cx="12" cy="12" r="10"/><path d="m16.2 7.8-2.1 6.4-6.4 2.1 2.1-6.4Z"/>',
+        'notes' => '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M8 13h8M8 17h5"/>',
         'pen' => '<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
         'menu' => '<path d="M3 6h18M3 12h18M3 18h18"/>',
         'cart' => '<circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6"/>',
@@ -580,4 +596,37 @@ function sh_stars(float $v, string $cls = 'sp-stars'): string
             . '<path fill="url(#sg' . $i . 'x' . $fill . ')" d="m12 2 2.9 6.6 7.1.6-5.4 4.7 1.6 7L12 17.3 5.8 21l1.6-7L2 9.2l7.1-.6Z"/></svg>';
     }
     return $h . '</span>';
+}
+
+/** Most bought published courses / notes (for the "Popular courses" carousel). */
+function sh_popular(PDO $pdo, array $exclude = [], int $limit = 10, string $type = ''): array
+{
+    $ex = $exclude ? ' AND p.id NOT IN (' . implode(',', array_map('intval', $exclude)) . ')' : '';
+    $ty = in_array($type, ['course', 'notes'], true) ? " AND p.type = '$type'" : '';
+    return $pdo->query("SELECT p.*, (SELECT COUNT(*) FROM sh_access a WHERE a.product_id = p.id AND a.revoked = 0) AS buyers,
+        (SELECT COUNT(*) FROM sh_lessons l WHERE l.product_id = p.id) AS lessons, (SELECT COUNT(*) FROM sh_files f WHERE f.product_id = p.id) AS files,
+        (SELECT ROUND(AVG(r.rating),1) FROM sh_reviews r WHERE r.product_id = p.id AND r.status = 'published') AS rating
+        FROM sh_products p WHERE p.status = 'published'$ex$ty ORDER BY buyers DESC, p.sort, p.id DESC LIMIT " . max(1, $limit))->fetchAll(PDO::FETCH_ASSOC);
+}
+
+/** A product card (store grids and carousels). $owned shows "In your library" instead of the price. */
+function sh_card_html(array $p, bool $owned = false): string
+{
+    $meta = $p['type'] === 'notes' ? (int)($p['files'] ?? 0) . ' PDF' . ((int)($p['files'] ?? 0) === 1 ? '' : 's') : (int)($p['lessons'] ?? 0) . ' video' . ((int)($p['lessons'] ?? 0) === 1 ? '' : 's');
+    $rate = !empty($p['rating']) ? '<span class="st-rt">★ ' . number_format((float)$p['rating'], 1) . '</span>' : '';
+    return '<a class="st-card" href="' . sh_e(sh_url($p)) . '">' . sh_thumb_html($p) . '<div class="st-cb"><h3>' . sh_e($p['title']) . '</h3>'
+        . ($p['subtitle'] ? '<p>' . sh_e($p['subtitle']) . '</p>' : '') . '<span class="st-meta">' . $meta . $rate . '</span>'
+        . '<div class="st-price">' . ($owned ? '<span class="st-own">✓ In your library</span>' : sh_price_html($p)) . '</div></div></a>';
+}
+
+/** Account page navigation (My Courses, Profile, Orders, Report us). */
+function sh_account_nav(array $u, string $on): string
+{
+    $i = fn($n) => sh_icon($n);
+    $items = [['', 'My Courses', 'book'], ['profile', 'My Profile', 'user'], ['orders', 'Orders', 'receipt'], ['report', 'Report us', 'flag']];
+    $h = '<nav class="ac-nav" aria-label="My account"><div class="ac-who"><span class="ac-av">' . sh_e(mb_strtoupper(mb_substr($u['name'], 0, 1))) . '</span><div><b>' . sh_e($u['name']) . '</b><small>' . sh_e($u['mobile']) . '</small></div></div>';
+    foreach ($items as [$k, $l, $ic]) $h .= '<a href="/account/' . ($k ? $k : '') . '" class="' . ($on === $k ? 'on' : '') . '">' . $i($ic) . '<span>' . $l . '</span></a>';
+    $h .= '<a href="/store/">' . $i('grid') . '<span>All Courses</span></a>';
+    $h .= '<form method="post" action="/account/logout">' . sh_csrf_field() . '<button type="submit">' . $i('logout') . '<span>Log out</span></button></form></nav>';
+    return $h;
 }

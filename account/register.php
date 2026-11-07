@@ -33,7 +33,7 @@ require ROOT_PATH . '/components/store-open.php';
     <div class="st-f"><label for="rg-n">Full name</label><input id="rg-n" name="name" autocomplete="name" required maxlength="150" value="<?= sh_e($f['name']) ?>" autofocus></div>
     <div class="st-f"><label for="rg-m">Mobile number</label><input id="rg-m" name="mobile" type="tel" inputmode="numeric" autocomplete="tel" required maxlength="14" placeholder="10 digits" value="<?= sh_e($f['mobile']) ?>"></div>
     <div class="st-f"><label for="rg-e">Email</label><input id="rg-e" name="email" type="email" autocomplete="email" required maxlength="190" value="<?= sh_e($f['email']) ?>"><small>Used to reset your password.</small></div>
-    <div class="st-f"><label for="rg-p">Password</label><div class="st-pw"><input id="rg-p" type="password" name="pass" autocomplete="new-password" required minlength="6"><button type="button" aria-label="Show password">Show</button></div><small>At least 6 characters.</small></div>
+    <div class="st-f"><label for="rg-p">Password</label><div class="st-pw"><input id="rg-p" type="password" name="pass" autocomplete="new-password" required minlength="4"><button type="button" aria-label="Show password">Show</button></div><small>At least 4 characters.</small></div>
     <div class="st-f"><label for="rg-p2">Password again</label><input id="rg-p2" type="password" name="pass2" autocomplete="new-password" required></div>
     <button class="st-btn block" type="submit">Create account</button>
   </form>

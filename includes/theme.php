@@ -21,7 +21,7 @@ function edu_theme_defaults(): array
         'h_sticky' => '0', 'h_search' => '1', 'h_voice' => '1', 'h_bell' => '1', 'h_socials' => '1', 'h_dark' => '1',
         'h_topbar' => '0', 'h_topbar_text' => '', 'h_width' => 1200, 'h_search_placeholder' => 'e.g. SSC, UPSC, Railway...',
         'h_login' => '1', 'h_login_text' => 'Log in', 'h_login_url' => '', 'h_sub' => '1', 'h_sub_text' => 'Subscribe', 'h_sub_url' => '',
-        'h_drawer_title' => 'Hello, Reader', 'h_drawer_text' => 'Get the latest job alerts first',
+        'h_drawer_title' => 'Hello, Reader', 'h_drawer_text' => 'Join our courses and grow your future',
         'h_drawer_hello' => '1', 'h_drawer_login' => '1', 'h_drawer_sub' => '1',
         // Menus
         'menu' => [

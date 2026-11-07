@@ -36,7 +36,8 @@
           // Customize → Header → Mobile menu: greeting, Log in and Subscribe can each be hidden
           $__dHello = th_on('h_drawer_hello'); $__dLogin = th_on('h_login') && th_on('h_drawer_login'); $__dSub = $__subOn && th_on('h_drawer_sub');
         ?>
-        <?php if ($__dHello || $__dLogin || $__dSub): ?>
+        <?php $__store = is_file(ROOT_PATH . '/account/login.php'); ?>
+        <?php if ($__dHello || $__dLogin || $__dSub || $__store): ?>
         <div class="mnav-hello">
           <?php if ($__dHello): ?>
           <div class="mnav-hello-row">
@@ -44,7 +45,16 @@
             <div class="mnav-hello-text"><p class="mnav-hello-title"><?= htmlspecialchars((string)th('h_drawer_title')) ?></p><?php if (trim((string)th('h_drawer_text')) !== ''): ?><p class="mnav-hello-sub"><?= htmlspecialchars((string)th('h_drawer_text')) ?></p><?php endif; ?></div>
           </div>
           <?php endif; ?>
-          <?php if ($__dLogin || $__dSub): ?>
+          <?php if ($__store): // online store: course buttons (which set shows is decided in the browser — cached pages stay the same for everyone) ?>
+          <div class="mnav-hello-btns"<?= $__dHello ? '' : ' style="margin-top:0"' ?> data-sh="out">
+            <a href="/store/" class="mnav-btn outline"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m16.2 7.8-2.1 6.4-6.4 2.1 2.1-6.4Z"/></svg> All Courses</a>
+            <a href="/account/login" class="mnav-btn solid" data-sh-keep><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="m10 17 5-5-5-5M15 12H3"/></svg> Log in</a>
+          </div>
+          <div class="mnav-hello-btns"<?= $__dHello ? '' : ' style="margin-top:0"' ?> data-sh="in" hidden>
+            <a href="/account/" class="mnav-btn outline"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5Z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/></svg> My Courses</a>
+            <a href="/account/logout" class="mnav-btn solid"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5M21 12H9"/></svg> Log out</a>
+          </div>
+          <?php elseif ($__dLogin || $__dSub): ?>
           <div class="mnav-hello-btns" style="<?= $__dLogin && $__dSub ? '' : 'grid-template-columns:1fr;' ?><?= $__dHello ? '' : 'margin-top:0' ?>">
             <?php if ($__dLogin): ?><a href="<?= htmlspecialchars($__loginUrl) ?>" class="mnav-btn outline"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="m10 17 5-5-5-5"/><path d="M15 12H3"/></svg> <?= htmlspecialchars((string)th('h_login_text')) ?></a><?php endif; ?>
             <?php if ($__dSub): ?><a <?= $__subAttr ?> class="mnav-btn solid"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.27 21a2 2 0 0 0 3.46 0"/><path d="M3.26 15.33A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.67C19.41 13.96 18 12.5 18 8A6 6 0 0 0 6 8c0 4.5-1.41 5.96-2.74 7.33"/></svg> <?= htmlspecialchars((string)th('h_sub_text')) ?></a><?php endif; ?>
@@ -55,6 +65,14 @@
         <?php endif; ?>
         <nav class="mnav-list" aria-label="Menu">
           <ul>
+            <?php if ($__store): ?>
+            <li data-sh="in" hidden><div class="mnav-row"><a href="/account/profile" class="mnav-link"><svg class="mnav-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg><span>My Profile</span></a></div></li>
+            <li data-sh="in" hidden><div class="mnav-row"><a href="/account/orders" class="mnav-link"><svg class="mnav-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 2h14v20l-3-2-2 2-2-2-2 2-2-2-3 2Z"/><path d="M9 7h6M9 11h6M9 15h4"/></svg><span>Orders</span></a></div></li>
+            <li><div class="mnav-row"><a href="/store/" class="mnav-link"><svg class="mnav-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg><span>All Courses</span></a></div></li>
+            <li><div class="mnav-row"><a href="/store/notes" class="mnav-link"><svg class="mnav-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg><span>PDF Notes</span></a></div></li>
+            <li data-sh="in" hidden><div class="mnav-row"><a href="/account/report" class="mnav-link"><svg class="mnav-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 22V4"/><path d="M4 4h13l-2 4 2 4H4"/></svg><span>Report us</span></a></div></li>
+            <li><div class="mnav-row"><a href="/latest-update" class="mnav-link"><svg class="mnav-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8Z"/></svg><span>Latest Update</span></a></div></li>
+            <?php endif; ?>
             <?php foreach ($__menu as $m): ?>
             <li<?= $__active($m['url']) ? ' class="active"' : '' ?>><div class="mnav-row"><a href="<?= htmlspecialchars($m['url']) ?>" class="mnav-link"<?= $__tgt($m) ?>><svg class="mnav-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><?= $__ico[$m['icon']] ?></svg><span><?= htmlspecialchars($m['label']) ?></span></a><?php if ($m['children']): ?><button type="button" class="mnav-chev" aria-expanded="false" aria-label="Show sub-menu"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><?php else: ?><svg class="mnav-arrow" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg><?php endif; ?></div><?php if ($m['children']): ?><ul class="mnav-sub"><?php foreach ($m['children'] as $c): ?><li<?= $__active((string)$c['url']) ? ' class="active"' : '' ?>><a href="<?= htmlspecialchars((string)$c['url']) ?>"<?= $__tgt($c) ?>><?= htmlspecialchars((string)$c['label']) ?></a></li><?php endforeach; ?></ul><?php endif; ?></li>
             <?php endforeach; ?>

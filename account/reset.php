@@ -14,7 +14,7 @@ $err = '';
 if ($u && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     $p1 = (string)($_POST['pass'] ?? '');
     if (!sh_csrf_ok()) $err = 'This page had expired. Please try again.';
-    elseif (strlen($p1) < 6) $err = 'The password must have at least 6 characters.';
+    elseif (strlen($p1) < 4) $err = 'The password must have at least 4 characters.';
     elseif ($p1 !== (string)($_POST['pass2'] ?? '')) $err = 'The two passwords are not the same.';
     else {
         $pdo->prepare("UPDATE sh_users SET pass = ?, reset_hash = NULL, reset_until = NULL WHERE id = ?")->execute([password_hash($p1, PASSWORD_DEFAULT), $u['id']]);
@@ -32,7 +32,7 @@ require ROOT_PATH . '/components/store-open.php';
   <?php else: ?>
   <?php if ($err): ?><div class="st-msg err"><?= sh_e($err) ?></div><?php endif; ?>
   <form method="post" novalidate><?= sh_csrf_field() ?><input type="hidden" name="t" value="<?= sh_e($tok) ?>">
-    <div class="st-f"><label for="rs-p">New password</label><div class="st-pw"><input id="rs-p" type="password" name="pass" autocomplete="new-password" required minlength="6" autofocus><button type="button" aria-label="Show password">Show</button></div><small>At least 6 characters.</small></div>
+    <div class="st-f"><label for="rs-p">New password</label><div class="st-pw"><input id="rs-p" type="password" name="pass" autocomplete="new-password" required minlength="4" autofocus><button type="button" aria-label="Show password">Show</button></div><small>At least 4 characters.</small></div>
     <div class="st-f"><label for="rs-p2">New password again</label><input id="rs-p2" type="password" name="pass2" autocomplete="new-password" required></div>
     <button class="st-btn block" type="submit">Save password</button>
   </form>

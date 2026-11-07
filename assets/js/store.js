@@ -294,3 +294,21 @@
     });
   });
 })();
+/* carousels ([data-car]): dots follow the scroll, dots jump, mouse drag on desktop */
+(function () {
+  document.querySelectorAll('[data-car]').forEach(function (box) {
+    var t = box.querySelector('.st-car-track'), dots = box.querySelectorAll('.st-car-dots button'), slides = t.children;
+    function cur() { var x = t.scrollLeft, best = 0, d = 1e9; for (var i = 0; i < slides.length; i++) { var dd = Math.abs(slides[i].offsetLeft - t.offsetLeft - x); if (dd < d) { d = dd; best = i; } } if (t.scrollLeft + t.clientWidth >= t.scrollWidth - 4) best = slides.length - 1; return best; }
+    function paint() { var c = cur(); dots.forEach(function (b, i) { b.classList.toggle('is-active', i === c); }); }
+    function fit() { var max = t.scrollWidth - t.clientWidth, w = box.querySelector('.st-car-dots'); if (w) w.hidden = max <= 4; dots.forEach(function (b, i) { b.hidden = i > 0 && i < slides.length - 1 && slides[i].offsetLeft - t.offsetLeft > max + 4; }); paint(); }
+    var raf = 0; t.addEventListener('scroll', function () { cancelAnimationFrame(raf); raf = requestAnimationFrame(paint); }, { passive: true });
+    window.addEventListener('resize', fit); fit();
+    dots.forEach(function (b, i) { b.addEventListener('click', function () { t.scrollTo({ left: slides[i].offsetLeft - t.offsetLeft, behavior: 'smooth' }); }); });
+    var down = false, moved = false, sx = 0, sl = 0;
+    t.addEventListener('mousedown', function (e) { down = true; moved = false; sx = e.pageX; sl = t.scrollLeft; });
+    window.addEventListener('mousemove', function (e) { if (!down) return; var dx = e.pageX - sx; if (Math.abs(dx) > 5) { moved = true; t.classList.add('is-dragging'); t.scrollLeft = sl - dx; } });
+    window.addEventListener('mouseup', function () { if (!down) return; down = false; if (moved) { t.classList.remove('is-dragging'); var c = cur(); t.scrollTo({ left: slides[c].offsetLeft - t.offsetLeft, behavior: 'smooth' }); } });
+    t.addEventListener('click', function (e) { if (moved) { e.preventDefault(); e.stopPropagation(); moved = false; } }, true);
+    t.addEventListener('dragstart', function (e) { e.preventDefault(); });
+  });
+})();

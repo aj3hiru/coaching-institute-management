@@ -151,9 +151,11 @@ if ($__school) {
       </span><?php endif; ?>
       <?php if (th_on('h_search')): ?><a href="/search" role="button" aria-label="Search" class="nb-search-icon" id="searchToggle" aria-expanded="false" aria-controls="eduHSearch"><span class="gp-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></span></a><?php endif; ?>
       <?php if (th_on('h_login')): ?><a class="nb-hr-login" href="<?= htmlspecialchars($__loginUrl) ?>"><?= $__userIco ?><span><?= htmlspecialchars((string)th('h_login_text')) ?></span></a><?php endif; ?>
-      <?php if (th_on('h_login') && is_file(ROOT_PATH . '/account/login.php') && !trim((string)th('h_login_url'))): // a buyer who is logged in sees "My Library" (done in the browser, so cached pages stay the same for everyone) ?>
-      <script>(function(){if(!/(?:^|; )sh_in=1/.test(document.cookie))return;var n='';try{n=decodeURIComponent((document.cookie.match(/(?:^|; )sh_n=([^;]*)/)||[])[1]||'');}catch(e){}
-      function go(){document.querySelectorAll('a[href="/account/login"]').forEach(function(a){a.href='/account/';var s=a.querySelector('span');if(s)s.textContent='My Library';else{for(var i=a.childNodes.length-1;i>=0;i--)if(a.childNodes[i].nodeType===3&&a.childNodes[i].textContent.trim()){a.childNodes[i].textContent=' My Library';break;}}});
+      <?php if (is_file(ROOT_PATH . '/account/login.php')): // a logged-in student sees "My Courses", Log out and their menu (done in the browser, so cached pages stay the same for everyone) ?>
+      <script>(function(){var inn=/(?:^|; )sh_in=1/.test(document.cookie),n='';try{n=decodeURIComponent((document.cookie.match(/(?:^|; )sh_n=([^;]*)/)||[])[1]||'');}catch(e){}
+      function go(){document.querySelectorAll('[data-sh]').forEach(function(e){e.hidden=(e.getAttribute('data-sh')==='in')!==inn;});
+      if(!inn)return;
+      document.querySelectorAll('a[href="/account/login"]:not([data-sh-keep])').forEach(function(a){if(a.closest('[data-sh]'))return;a.href='/account/';var s=a.querySelector('span');if(s)s.textContent='My Courses';else{for(var i=a.childNodes.length-1;i>=0;i--)if(a.childNodes[i].nodeType===3&&a.childNodes[i].textContent.trim()){a.childNodes[i].textContent=' My Courses';break;}}});
       if(n)document.querySelectorAll('.mnav-hello-title').forEach(function(t){t.textContent='Hello, '+n;});}
       if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',go);else go();})();</script>
       <?php endif; ?>
