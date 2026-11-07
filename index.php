@@ -5,7 +5,7 @@
 require_once __DIR__ . '/includes/redirects.php';
 edu_redirect_check();
 $cf = __DIR__ . '/cache/index_home.html'; // index_* so publishing a post / Clear cache refreshes it too
-$__czp = isset($_GET['czp']);
+$__czp = isset($_GET['czp']) || isset($_GET['designs']); // ?designs=1 shows every teacher / topper design (not cached)
 $__cs = @json_decode((string)@file_get_contents(__DIR__ . '/cache/.settings.json'), true) ?: [];
 if (!empty($__cs['off'])) $__czp = true;
 if (!$__czp && file_exists($cf) && time() - filemtime($cf) < min(900, (int)($__cs['home'] ?? 900))) { readfile($cf); exit; }
@@ -61,7 +61,7 @@ $feat = $courses[0] ?? null;
 $seo = [
     'title' => $brand . ' — Coaching for Classes ' . $range . ' | Online Courses & PDF Notes',
     'description' => es('general', 'home_description') !== '' ? es('general', 'home_description') : $brand . ' — expert teachers, recorded video courses and PDF notes for school students. Learn at the institute or online on any phone.',
-    'image' => SEO_DEFAULT_IMAGE, 'type' => 'website', 'robots' => SEO_DEFAULT_ROBOTS,
+    'image' => SEO_DEFAULT_IMAGE, 'type' => 'website', 'robots' => isset($_GET['designs']) ? 'noindex, nofollow' : SEO_DEFAULT_ROBOTS,
 ];
 require_once INCLUDES_PATH . '/seo.php';
 $seo = edu_seo_apply($seo, []);
@@ -190,39 +190,15 @@ $short0 = function (string $n) { $p = preg_split('/\s+/', trim(preg_replace('/\(
   <?php endforeach; ?></ol>
 </div></section>
 
-<?php /* 10. meet our teachers */ ?>
-<?php if ($teachers): ?>
-<section class="hm-sec hm-tch-s"><div class="sp-wrap">
-  <div class="hm-h"><div><h2>Meet our teachers</h2></div></div>
-  <div class="hm-tch" data-hs><div class="hs-track"><?php foreach ($teachers as $t): ?>
-    <div class="hs-s"><div class="hm-pc">
-      <span class="hm-pc-ph"><?php if ($t['photo'] !== ''): ?><img src="<?= sh_e($t['photo']) ?>" alt="<?= sh_e($t['name']) ?>" loading="lazy"><?php else: ?><b><?= sh_e(mb_strtoupper(mb_substr($t['name'], 0, 1))) ?></b><?php endif; ?></span>
-      <b class="hm-pc-n"><?= sh_e($t['name']) ?></b>
-      <?php if ($t['subject'] !== ''): ?><span class="hm-pc-tag"><?= sh_e($t['subject']) ?></span><?php endif; ?>
-      <?php if ($t['qualification'] !== ''): ?><small class="hm-pc-l"><?= $ico('notes') ?> <?= sh_e($t['qualification']) ?></small><?php endif; ?>
-      <?php if ($t['experience'] !== ''): ?><small class="hm-pc-l"><?= $ico('calendar') ?> <?= sh_e($t['experience']) ?></small><?php endif; ?>
-      <?php if ($t['about'] !== ''): ?><p class="hm-pc-a"><?= sh_e($t['about']) ?></p><?php endif; ?>
-    </div></div>
-  <?php endforeach; ?></div>
-    <button type="button" class="hs-prev" aria-label="Previous">‹</button><button type="button" class="hs-next" aria-label="Next">›</button><div class="hs-dots"></div></div>
-</div></section>
-<?php endif; ?>
-
-<?php /* 11. meet our toppers */ ?>
-<?php if ($toppers): ?>
-<section class="hm-sec hm-top-s"><div class="sp-wrap">
-  <div class="hm-h"><div><h2>Meet our toppers</h2></div></div>
-  <div class="hm-top" data-hs data-auto="4500"><div class="hs-track"><?php foreach ($toppers as $t): ?>
-    <div class="hs-s"><div class="hm-pc hm-pc-top">
-      <span class="hm-pc-ph"><?php if ($t['photo']): ?><img src="<?= sh_e(sh_upload_url($t['photo'])) ?>" alt="<?= sh_e($t['name']) ?>" loading="lazy"><?php else: ?><b><?= sh_e(mb_strtoupper(mb_substr($t['name'], 0, 1))) ?></b><?php endif; ?><?php if ($t['year']): ?><em><?= sh_e($t['year']) ?></em><?php endif; ?></span>
-      <b class="hm-pc-n"><?= sh_e($t['name']) ?></b>
-      <?php if ($t['result']): ?><span class="hm-pc-res"><?= sh_e($t['result']) ?></span><?php endif; ?>
-      <?php if ($t['class_name']): ?><small class="hm-pc-l"><?= $ico('layers') ?> <?= sh_e($t['class_name']) ?></small><?php endif; ?>
-    </div></div>
-  <?php endforeach; ?></div>
-    <button type="button" class="hs-prev" aria-label="Previous">‹</button><button type="button" class="hs-next" aria-label="Next">›</button><div class="hs-dots"></div></div>
-</div></section>
-<?php endif; ?>
+<?php /* 10. meet our teachers · 11. meet our toppers (designs: Online Store → Homepage) */
+require_once INCLUDES_PATH . '/home-people.php';
+if (isset($_GET['designs'])):
+    foreach (HM_TEACHER_STYLES as $k => $l) echo '<div class="hm-dsg sp-wrap"><b>Meet our teachers — Design ' . $k . '</b><span>' . hm_e($l) . '</span></div>' . hm_teachers_html($teachers, (string)$k);
+    foreach (HM_TOPPER_STYLES as $k => $l) echo '<div class="hm-dsg sp-wrap"><b>Meet our toppers — Design ' . $k . '</b><span>' . hm_e($l) . '</span></div>' . hm_toppers_html($toppers, (string)$k);
+else:
+    echo hm_teachers_html($teachers, (string)es('home', 'teacher_style', '1'));
+    echo hm_toppers_html($toppers, (string)es('home', 'topper_style', '1'));
+endif; ?>
 
 </main>
 <?php require_once ROOT_PATH . '/components/footer.php'; ?>

@@ -195,3 +195,77 @@
 .hm-tch.hs-one .hs-track,.hm-top.hs-one .hs-track{justify-content:center}
 .hm-why-in{padding-left:30px!important;padding-right:30px!important}
 @media (max-width:900px){.hm-why-in{margin:0 12px;padding-left:16px!important;padding-right:16px!important}}
+
+/* ===== Meet our teachers / toppers — designs (includes/home-people.php) ===== */
+.hm-label{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--sa,#0c6878);margin:0 0 6px}
+.hm-label::before{content:"";width:22px;height:2px;background:currentColor;border-radius:2px}
+.hm-hsub{margin:6px 0 0;color:#6b7280;font-size:15px}
+.hm-ph-none{display:grid;place-items:center;background:linear-gradient(135deg,#e0f2fe,#ede9fe);color:var(--sa,#0c6878);font-weight:900;font-size:40px}
+.hm-dsg{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:34px;padding:10px 14px!important;background:#111827;color:#fff;border-radius:10px;font-size:14px}.hm-dsg span{color:#cbd5e1;font-size:13px}
+.hm-dsg + .hm-sec{padding-top:18px}
+.hm-tch-s .hm-tch .hs-s,.hm-top-s .hm-top .hs-s{flex-basis:calc((100% - 48px) / 4)}
+@media (max-width:1024px){.hm-tch-s .hm-tch .hs-s,.hm-top-s .hm-top .hs-s{flex-basis:calc((100% - 32px) / 3)}}
+@media (max-width:640px){.hm-tch-s .hm-tch .hs-s,.hm-top-s .hm-top .hs-s{flex-basis:calc((100% - 12px) / 1.7)}}
+
+/* Teachers 1 — faculty cards: a big portrait, name, subject pill, details */
+.tA-card{height:100%;display:flex;flex-direction:column;background:#fff;border:1px solid #e8eaee;border-radius:18px;overflow:hidden;box-shadow:0 1px 3px rgba(16,24,40,.06);transition:transform .25s,box-shadow .25s}
+.tA-card:hover{transform:translateY(-4px);box-shadow:0 22px 44px rgba(15,23,42,.12)}
+.tA-phw{display:block;aspect-ratio:4/4.3;background:linear-gradient(160deg,#eef6ff,#f5f0ff);overflow:hidden}
+.tA-ph{width:100%;height:100%;object-fit:cover;object-position:top;display:block;transition:transform .5s}.tA-card:hover .tA-ph{transform:scale(1.04)}
+.tA-b{padding:16px 16px 18px;display:flex;flex-direction:column;gap:8px}
+.tA-b > b{font-size:17px;color:#0f172a;letter-spacing:-.01em}
+.tA-sub{align-self:flex-start;font-size:12px;font-weight:700;color:#0f766e;background:#ccfbf1;padding:4px 10px;border-radius:999px}
+.tA-b ul{list-style:none;margin:4px 0 0;padding:10px 0 0;border-top:1px dashed #e5e7eb;display:flex;flex-direction:column;gap:6px}
+.tA-b li{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:#475569;line-height:1.4}.tA-b li svg{width:15px;height:15px;flex:0 0 auto;color:#94a3b8;margin-top:1px}
+
+/* Teachers 2 — photo overlay: name on a dark fade, details rise on hover (always shown on phones) */
+.tB-card{position:relative;height:100%;min-height:340px;border-radius:18px;overflow:hidden;background:#0f172a;isolation:isolate}
+.tB-ph{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top;transition:transform .6s}.tB-card:hover .tB-ph{transform:scale(1.06)}
+.tB-card::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(15,23,42,0) 35%,rgba(15,23,42,.92) 100%);z-index:1}
+.tB-in{position:absolute;left:0;right:0;bottom:0;z-index:2;padding:16px;color:#fff;display:flex;flex-direction:column;gap:4px}
+.tB-in > b{font-size:18px}.tB-in > span{font-size:12.5px;font-weight:700;color:#fde68a}
+.tB-more{display:grid;grid-template-rows:0fr;transition:grid-template-rows .3s ease,opacity .3s;opacity:0}
+.tB-more > *{overflow:hidden}.tB-card:hover .tB-more{grid-template-rows:1fr;opacity:1}
+.tB-more small{display:flex;gap:6px;align-items:center;font-size:12.5px;color:#e2e8f0;margin-top:4px}.tB-more svg{width:14px;height:14px;color:#94a3b8}
+@media (hover:none),(max-width:640px){.tB-more{grid-template-rows:1fr;opacity:1}}
+
+/* Teachers 3 — profile rows: round photo, details, years badge */
+.tC .hm-tch .hs-s{flex-basis:calc((100% - 16px) / 2)}
+@media (max-width:760px){.tC .hm-tch .hs-s{flex-basis:88%}}
+.tC-card{height:100%;box-sizing:border-box;display:flex;gap:16px;align-items:center;padding:18px;background:#fff;border:1px solid #e8eaee;border-radius:16px;box-shadow:0 1px 3px rgba(16,24,40,.06)}
+.tC-ring{flex:0 0 auto;width:96px;height:96px;border-radius:50%;padding:3px;background:conic-gradient(var(--sa,#0c6878),#7c3aed,#f59e0b,var(--sa,#0c6878))}
+.tC-ph{width:100%;height:100%;border-radius:50%;object-fit:cover;object-position:top;display:block;border:3px solid #fff;box-sizing:border-box}
+.tC-b{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}.tC-b > b{font-size:17px;color:#0f172a}
+.tC-sub{font-size:13px;font-weight:700;color:var(--sa,#0c6878)}.tC-b small{color:#64748b;font-size:12.5px}.tC-b p{margin:4px 0 0;color:#475569;font-size:13px;line-height:1.45}
+.tC-exp{flex:0 0 auto;text-align:center;padding:10px 12px;border-radius:12px;background:#f8fafc;border:1px solid #eef2f7}.tC-exp b{display:block;font-size:24px;color:#0f172a;line-height:1}.tC-exp small{font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.06em}
+@media (max-width:420px){.tC-card{flex-wrap:wrap}.tC-exp{display:none}}
+
+/* Toppers 1 — score cards: ring photo, big score */
+.pA-card{height:100%;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px;padding:22px 14px 18px;background:#fff;border:1px solid #e8eaee;border-radius:18px;position:relative;overflow:hidden}
+.pA-card::before{content:"";position:absolute;left:0;right:0;top:0;height:72px;background:linear-gradient(135deg,#ecfeff,#f5f3ff)}
+.pA-ring{position:relative;width:104px;height:104px;border-radius:50%;padding:4px;background:conic-gradient(#f59e0b,#f43f5e,#8b5cf6,#0ea5e9,#f59e0b);margin-bottom:8px}
+.pA-ph{width:100%;height:100%;border-radius:50%;object-fit:cover;object-position:top;display:block;border:4px solid #fff;box-sizing:border-box}
+.pA-sc{font-size:28px;font-weight:900;letter-spacing:-.02em;background:linear-gradient(90deg,#0f766e,#7c3aed);-webkit-background-clip:text;background-clip:text;color:transparent;line-height:1.1}
+.pA-n{font-size:15.5px;color:#0f172a}.pA-r{color:#475569;font-size:12.5px;min-height:1em}.pA-y{margin-top:6px;font-size:11.5px;font-weight:700;color:#64748b;background:#f1f5f9;padding:3px 10px;border-radius:999px}
+
+/* Toppers 2 — hall of fame posters */
+.pB-card{height:100%;display:flex;flex-direction:column;background:#fff;border-radius:18px;overflow:hidden;border:1px solid #f1e3b8;box-shadow:0 10px 26px rgba(146,64,14,.08)}
+.pB-phw{position:relative;display:block;aspect-ratio:3/3.4;background:#fef3c7;overflow:hidden}
+.pB-ph{width:100%;height:100%;object-fit:cover;object-position:top;display:block}
+.pB-badge{position:absolute;top:10px;left:10px;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:#f59e0b;color:#fff;box-shadow:0 4px 10px rgba(0,0,0,.2)}.pB-badge svg{width:18px;height:18px}
+.pB-phw em{position:absolute;top:12px;right:12px;font-style:normal;font-size:11.5px;font-weight:800;color:#78350f;background:#fde68a;padding:3px 9px;border-radius:999px}
+.pB-rib{display:flex;align-items:baseline;gap:8px;justify-content:center;flex-wrap:wrap;padding:10px 12px;background:linear-gradient(90deg,#b45309,#f59e0b);color:#fff;text-align:center}
+.pB-rib b{font-size:22px;font-weight:900}.pB-rib span{font-size:12.5px;font-weight:600;opacity:.95}
+.pB-b{padding:12px 12px 14px;text-align:center}.pB-b b{display:block;font-size:15.5px;color:#0f172a}.pB-b small{color:#78716c;font-size:12.5px}
+
+/* Toppers 3 — moving strip (two rows, opposite ways; pauses on hover) */
+.pC-wall{display:flex;flex-direction:column;gap:12px;overflow:hidden;padding:4px 0 8px;-webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)}
+.pC-row{overflow:hidden}.pC-move{display:flex;gap:12px;width:max-content;animation:pcL 40s linear infinite}
+.pC-row.r .pC-move{animation-name:pcR}.pC-wall:hover .pC-move{animation-play-state:paused}
+@keyframes pcL{from{transform:translateX(0)}to{transform:translateX(-33.333%)}}@keyframes pcR{from{transform:translateX(-33.333%)}to{transform:translateX(0)}}
+.pC-chip{display:flex;align-items:center;gap:10px;padding:8px 14px 8px 8px;background:#fff;border:1px solid #e8eaee;border-radius:999px;box-shadow:0 2px 6px rgba(16,24,40,.05);white-space:nowrap}
+.pC-ph{width:46px;height:46px;border-radius:50%;object-fit:cover;object-position:top;display:block;flex:0 0 auto}
+.pC-chip b{display:block;font-size:14px;color:#0f172a}.pC-chip small{color:#64748b;font-size:12px}
+.pC-sc{margin-left:6px;font-weight:900;font-size:15px;color:#15803d;background:#f0fdf4;padding:4px 10px;border-radius:999px}.pC-txt{font-size:12px;font-weight:700}
+@media (prefers-reduced-motion:reduce){.pC-move{animation:none}.pC-row{overflow-x:auto}}
+[data-theme="dark"] .tA-card,[data-theme="dark"] .tC-card,[data-theme="dark"] .pA-card,[data-theme="dark"] .pB-card,[data-theme="dark"] .pC-chip{background:#151b23;border-color:#263040}

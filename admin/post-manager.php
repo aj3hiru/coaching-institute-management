@@ -581,6 +581,8 @@ $seo_robots = 'noindex, nofollow, noarchive, nosnippet';
 /* --- two independent scroll areas (content | sidebar) on desktop --- */
 @media (min-width:1024px){
   html.pm2-split,html.pm2-split body{overflow:hidden !important}
+  /* the page itself never scrolls here (the two columns do), so the header stays in place — sticky would add the admin bar's 32px twice and cover the top of the editor */
+  html.pm2-split .top-nav{position:relative !important;top:0 !important}
   /* the page itself doesn't scroll here, so the admin sidebar must not be sticky (with overflow:hidden its sticky offset
      was added below the admin bar again → a 36px gap above the logo) */
   html.pm2-split .admin-container>.sidebar,html.pm2-split body:has(#wpadminbar) .admin-container>.sidebar{position:relative;top:0 !important}
