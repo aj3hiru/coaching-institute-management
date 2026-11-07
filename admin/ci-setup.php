@@ -69,6 +69,11 @@ $sessions = $pdo->query("SELECT s.*, (SELECT COUNT(*) FROM ci_batches b WHERE b.
 $classes = $pdo->query("SELECT c.*, (SELECT COUNT(*) FROM ci_students s WHERE s.class_id = c.id) AS students FROM ci_classes c ORDER BY c.sort, c.name")->fetchAll(PDO::FETCH_ASSOC);
 $es = $tab === 'sessions' && $edit ? (array_values(array_filter($sessions, fn($s) => (int)$s['id'] === $edit))[0] ?? null) : null;
 $ec = $tab === 'classes' && $edit ? (array_values(array_filter($classes, fn($s) => (int)$s['id'] === $edit))[0] ?? null) : null;
+$sf = fn(array $x): string => ci_e(json_encode(['id' => (int)$x['id'], 'name' => $x['name'], 'start_date' => (string)$x['start_date'], 'end_date' => (string)$x['end_date'], 'is_current' => (int)$x['is_current']], JSON_UNESCAPED_UNICODE));
+$cf = fn(array $x): string => ci_e(json_encode(['id' => (int)$x['id'], 'name' => $x['name'], 'sort' => (int)$x['sort']], JSON_UNESCAPED_UNICODE));
+$addBtn = $tab === 'sessions'
+    ? '<button type="button" class="ci-btn" data-mopen="#smForm" data-mtitle="Add a session" data-fill=\'{"id":0,"is_current":' . ($sessions ? 0 : 1) . '}\'><i class="fas fa-plus"></i> Add Session</button>'
+    : '<button type="button" class="ci-btn" data-mopen="#kmForm" data-mtitle="Add a class" data-fill=\'{"id":0,"sort":' . (count($classes) + 1) . '}\'><i class="fas fa-plus"></i> Add Class</button>';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -78,7 +83,7 @@ $ec = $tab === 'classes' && $edit ? (array_values(array_filter($classes, fn($s) 
 <?php admin_shell_head(); ci_head(); ci_report_assets(); ?>
 </head>
 <body>
-<?php admin_shell_open('Sessions &amp; Classes', 'Academic sessions and the class list used in the student form'); ?>
+<?php admin_shell_open('Sessions &amp; Classes', 'Academic sessions and the class list used in the student form', $addBtn); ?>
 <div class="ci">
 <?= admin_flash() ?>
 <div class="ci-tabs"><a href="/admin/ci-setup.php" class="<?= $tab === 'sessions' ? 'on' : '' ?>">Academic Sessions</a><a href="?tab=classes" class="<?= $tab === 'classes' ? 'on' : '' ?>">Classes</a></div>
@@ -106,22 +111,25 @@ if ($tab === 'sessions' && $ps && !$ps['is_current'] && $me['role'] === 'admin')
 </div></div>
 <?php endif; ?>
 <?php if ($tab === 'sessions'): ?>
-<div class="ci-card"><div class="ci-card-h"><h3><?= $es ? 'Edit session' : 'Add a session' ?></h3><?php if ($es): ?><a href="/admin/ci-setup.php">Cancel</a><?php endif; ?></div><div class="ci-card-b">
-<form method="post" class="ci-inline-form"><?= csrf_field() ?><input type="hidden" name="action" value="session_save"><input type="hidden" name="id" value="<?= (int)($es['id'] ?? 0) ?>">
-  <div class="ci-f"><label>Session name <span class="ci-req">*</span></label><input name="name" required maxlength="40" placeholder="2026-27" value="<?= ci_e($es['name'] ?? '') ?>"></div>
+<div class="ci-modal" id="smForm" data-mform<?= $es ? ' data-open-now' : '' ?> hidden><div class="ci-modal-box" role="dialog" aria-modal="true" aria-labelledby="smFormH">
+<div class="ci-card-h"><h3 id="smFormH" data-mtitle-target><?= $es ? 'Edit session' : 'Add a session' ?></h3><button type="button" class="ci-x" data-close aria-label="Close"><i class="fas fa-times"></i></button></div><div class="ci-card-b">
+<form method="post"><?= csrf_field() ?><input type="hidden" name="action" value="session_save"><input type="hidden" name="id" value="<?= (int)($es['id'] ?? 0) ?>">
+  <div class="ci-grid2 ci-mgrid">
+  <div class="ci-f" style="grid-column:1/-1"><label>Session name <span class="ci-req">*</span></label><input name="name" required maxlength="40" placeholder="2026-27" value="<?= ci_e($es['name'] ?? '') ?>"></div>
   <div class="ci-f"><label>Starts</label><input type="date" name="start_date" value="<?= ci_e($es['start_date'] ?? '') ?>"></div>
   <div class="ci-f"><label>Ends</label><input type="date" name="end_date" value="<?= ci_e($es['end_date'] ?? '') ?>"></div>
-  <div class="ci-f"><label style="display:flex;gap:6px;align-items:center;height:38px"><input type="checkbox" name="is_current" value="1" style="width:auto;height:auto" <?= !empty($es['is_current']) || !$sessions ? 'checked' : '' ?>> Current session</label></div>
-  <div class="ci-f"><button class="ci-btn" type="submit"><i class="fas fa-check"></i> <?= $es ? 'Save' : 'Add session' ?></button></div>
-</form></div></div>
+  <div class="ci-f" style="grid-column:1/-1"><label style="display:flex;gap:8px;align-items:center;font-weight:500"><input type="checkbox" name="is_current" value="1" style="width:auto;height:auto" <?= !empty($es['is_current']) || !$sessions ? 'checked' : '' ?>> This is the current session</label></div>
+  </div>
+  <div class="ci-mfoot"><button type="button" class="ci-btn ci-ghost" data-close>Cancel</button><button class="ci-btn" type="submit"><i class="fas fa-check"></i> Save session</button></div>
+</form></div></div></div>
 <div class="ci-card"><div class="ci-card-b ci-p0 ci-table-wrap"><table class="ci-table">
-<thead><tr><th>Session</th><th>Dates</th><th class="ci-num">Batches</th><th class="ci-num">Students</th><th>Status</th><th></th></tr></thead><tbody>
+<thead><tr><th>Session</th><th>Dates</th><th class="ci-num">Batches</th><th class="ci-num">Students</th><th>Status</th><th>Action</th></tr></thead><tbody>
 <?php if (!$sessions): ?><tr><td colspan="6" class="ci-empty">No sessions yet.</td></tr><?php endif; ?>
 <?php foreach ($sessions as $s): ?>
 <tr><td><b><?= ci_e($s['name']) ?></b></td><td class="ci-muted"><?= ci_date($s['start_date']) ?> – <?= ci_date($s['end_date']) ?></td>
 <td class="ci-num"><?= (int)$s['batches'] ?></td><td class="ci-num"><?= (int)$s['students'] ?></td>
 <td><?= $s['is_current'] ? '<span class="ci-badge ci-b-green">Current</span>' : '' ?></td>
-<td><div class="ci-icos"><?= ci_ico('edit', '?edit=' . (int)$s['id'], 'Edit session') ?>
+<td><div class="ci-icos"><?= ci_ico('edit', null, 'Edit session', 'button', ' data-mopen="#smForm" data-mtitle="Edit session" data-fill="' . $sf($s) . '"') ?>
 <?php if (!$s['is_current']): ?><?= ci_post_ico('flag', 'Make this the current session', ['action' => 'session_current', 'id' => $s['id']]) ?><?php endif; ?>
 <?php if (!$s['is_current'] && $me['role'] === 'admin'): ?><?= ci_ico('trash', '?purge=' . (int)$s['id'], 'Delete session') ?><?php endif; ?>
 </div></td></tr>
@@ -129,18 +137,21 @@ if ($tab === 'sessions' && $ps && !$ps['is_current'] && $me['role'] === 'admin')
 </tbody></table></div></div>
 
 <?php else: ?>
-<div class="ci-card"><div class="ci-card-h"><h3><?= $ec ? 'Edit class' : 'Add a class' ?></h3><?php if ($ec): ?><a href="?tab=classes">Cancel</a><?php endif; ?></div><div class="ci-card-b">
-<form method="post" class="ci-inline-form"><?= csrf_field() ?><input type="hidden" name="action" value="class_save"><input type="hidden" name="id" value="<?= (int)($ec['id'] ?? 0) ?>">
+<div class="ci-modal" id="kmForm" data-mform<?= $ec ? ' data-open-now' : '' ?> hidden><div class="ci-modal-box" role="dialog" aria-modal="true" aria-labelledby="kmFormH">
+<div class="ci-card-h"><h3 id="kmFormH" data-mtitle-target><?= $ec ? 'Edit class' : 'Add a class' ?></h3><button type="button" class="ci-x" data-close aria-label="Close"><i class="fas fa-times"></i></button></div><div class="ci-card-b">
+<form method="post"><?= csrf_field() ?><input type="hidden" name="action" value="class_save"><input type="hidden" name="id" value="<?= (int)($ec['id'] ?? 0) ?>">
+  <div class="ci-grid2 ci-mgrid">
   <div class="ci-f"><label>Class name <span class="ci-req">*</span></label><input name="name" required maxlength="100" placeholder="e.g. 10th, B.Sc, SSC" value="<?= ci_e($ec['name'] ?? '') ?>"></div>
   <div class="ci-f"><label>Order in the list</label><input type="number" name="sort" value="<?= (int)($ec['sort'] ?? (count($classes) + 1)) ?>"></div>
-  <div class="ci-f"><button class="ci-btn" type="submit"><i class="fas fa-check"></i> <?= $ec ? 'Save' : 'Add class' ?></button></div>
-</form></div></div>
+  </div>
+  <div class="ci-mfoot"><button type="button" class="ci-btn ci-ghost" data-close>Cancel</button><button class="ci-btn" type="submit"><i class="fas fa-check"></i> Save class</button></div>
+</form></div></div></div>
 <div class="ci-card"><div class="ci-card-b ci-p0 ci-table-wrap"><table class="ci-table">
 <thead><tr><th>#</th><th>Class</th><th class="ci-num">Students</th><th>Action</th></tr></thead><tbody>
 <?php if (!$classes): ?><tr><td colspan="4" class="ci-empty">No classes yet.</td></tr><?php endif; ?>
 <?php foreach ($classes as $c): ?>
 <tr><td class="ci-muted"><?= (int)$c['sort'] ?></td><td><b><?= ci_e($c['name']) ?></b></td><td class="ci-num"><?= (int)$c['students'] ?></td>
-<td><div class="ci-icos"><?= ci_ico('edit', '?tab=classes&edit=' . (int)$c['id'], 'Edit class') ?><?= ci_ico('pdf', null, 'Class report (PDF)', 'button', ' data-report="class" data-id="' . (int)$c['id'] . '"') ?>
+<td><div class="ci-icos"><?= ci_ico('edit', null, 'Edit class', 'button', ' data-mopen="#kmForm" data-mtitle="Edit class" data-fill="' . $cf($c) . '"') ?><?= ci_ico('pdf', null, 'Class report (PDF)', 'button', ' data-report="class" data-id="' . (int)$c['id'] . '"') ?>
 <?php if (!$c['students']): ?><?= ci_post_ico('trash', 'Delete class', ['action' => 'class_delete', 'id' => $c['id']], 'Delete class ' . $c['name'] . '?') ?><?php endif; ?>
 </div></td></tr>
 <?php endforeach; ?>

@@ -216,6 +216,7 @@ function admin_shell_head(): void
     echo '<script src="/assets/js/admin-select.js?v=' . (@filemtime($root . '/assets/js/admin-select.js') ?: 1) . '" defer></script>' . "\n";
     echo '<script src="/assets/js/admin-display.js?v=' . (@filemtime($root . '/assets/js/admin-display.js') ?: 1) . '" defer></script>' . "\n";
     echo '<script src="/assets/js/admin-table.js?v=' . (@filemtime($root . '/assets/js/admin-table.js') ?: 1) . '" defer></script>' . "\n";
+    echo '<script src="/assets/js/admin-modal.js?v=' . (@filemtime($root . '/assets/js/admin-modal.js') ?: 1) . '" defer></script>' . "\n";
     echo '<script src="/assets/js/admin-date.js?v=' . (@filemtime($root . '/assets/js/admin-date.js') ?: 1) . '" defer></script>' . "\n";
 }
 

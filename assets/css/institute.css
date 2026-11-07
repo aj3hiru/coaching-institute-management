@@ -309,3 +309,25 @@ details.ci-more>summary::-webkit-details-marker{display:none}
 .ci-sheet-pg span.on{background:var(--primary,#4a3369);border-color:var(--primary,#4a3369);color:#fff!important;cursor:default}
 .ci-sheet-pg span.dis{color:#9ca3af!important;cursor:not-allowed}.ci-sheet-pg span.gap{border:0;min-width:16px;padding:0;cursor:default}
 @media (max-width:700px){.ci-card.ci-sheet{padding:12px}.ci-card.ci-sheet > .ci-card-h{margin:-12px -12px 12px;padding:12px}.ci-sheet-foot{flex-direction:column;align-items:flex-start}.ci-sheet .ci-table th,.ci-sheet .ci-table td{padding:0 10px}}
+
+/* ---- popup forms (admin-modal.js) ---- */
+.ci-modal[data-mform]{align-items:flex-start;padding:48px 16px}
+.ci-modal .ci-modal-box{border-radius:10px;overflow:hidden;box-shadow:0 24px 60px rgba(15,23,42,.25);animation:ciMIn .16s ease}
+@keyframes ciMIn{from{opacity:0;transform:translateY(8px)}}
+.ci-modal .ci-modal-box > .ci-card-h{padding:14px 18px;border-bottom:1px solid #eef0f3}
+.ci-modal .ci-modal-box > .ci-card-h h3{font-size:16.5px}
+.ci-modal .ci-modal-box > .ci-card-b{padding:18px}
+.ci-mgrid{gap:14px 14px!important}
+.ci-mfoot{display:flex;justify-content:flex-end;gap:8px;margin:18px -18px -18px;padding:12px 18px;border-top:1px solid #eef0f3;background:#fafbfc}
+.ci-choice{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.ci-choice-b{display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:18px;border:1.5px solid #e5e7eb;background:#fff;border-radius:10px;cursor:pointer;text-align:left;font:inherit;color:#111827!important;text-decoration:none!important;transition:border-color .15s,box-shadow .15s,transform .15s}
+.ci-choice-b:hover{border-color:var(--primary,#4a3369);box-shadow:0 10px 24px rgba(74,51,105,.12);transform:translateY(-1px)}
+.ci-choice-i{width:42px;height:42px;border-radius:10px;display:grid;place-items:center;background:#f3effa;color:var(--primary,#4a3369);font-size:18px;margin-bottom:4px}
+.ci-choice-b b{font-size:15.5px}.ci-choice-b small{color:#6b7280;font-size:13px;line-height:1.45}
+.ci-pick-box{max-width:960px}
+.ci-pick-f{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:10px;margin-bottom:12px}
+.ci-pick-list{max-height:min(56vh,520px);overflow:auto;border:1px solid #eef0f3;border-radius:8px}
+.ci-pick-list .ci-table th{position:sticky;top:0;z-index:1;background:#f8f9fa;text-transform:none;letter-spacing:0;font-size:13px;color:#111827}
+.ci-pick-list .ci-table td{padding:9px 12px}
+.ci-pick-msg{padding:18px;margin:0;text-align:center}
+@media (max-width:760px){.ci-choice{grid-template-columns:1fr}.ci-pick-f{grid-template-columns:1fr 1fr}.ci-pick-q{grid-column:1/-1}.ci-modal[data-mform]{padding:16px 10px}}

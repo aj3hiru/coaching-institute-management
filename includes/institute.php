@@ -645,7 +645,7 @@ function ci_session_purge(PDO $pdo, int $sid): array
 /** Batch finished: the batch and its students' active courses in it become "completed" (dues stay as they are). */
 function ci_complete_batch(PDO $pdo, int $bid): int
 {
-    $pdo->prepare("UPDATE ci_batches SET status = 'completed', end_date = COALESCE(end_date, CURDATE()) WHERE id = ?")->execute([$bid]);
+    $pdo->prepare("UPDATE ci_batches SET status = 'completed', end_date = CURDATE() WHERE id = ?")->execute([$bid]); // ends today
     $st = $pdo->prepare("UPDATE ci_enrollments SET status = 'completed', ended_on = CURDATE() WHERE batch_id = ? AND status = 'active'");
     $st->execute([$bid]);
     return $st->rowCount();

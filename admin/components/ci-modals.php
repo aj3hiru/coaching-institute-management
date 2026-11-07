@@ -126,6 +126,7 @@ $__canAdd = ci_perm($me, 'edit_student') || ci_perm($me, 'add_student');
         document.getElementById('ci-la-h').textContent = 'Add ' + d.student.name + ' to a course / batch';
         document.getElementById('ci-la-who').textContent = d.student.reg + (d.student.class ? ' · Class ' + d.student.class + ' — its courses come first' : '');
         courses(d.student.class_id, d.student.class); type.value = 'full'; fin.value = ''; batch.innerHTML = '<option value="">Choose the course first</option>'; onePay(af, ''); show();
+        if (b.dataset.addcCourse) { course.value = b.dataset.addcCourse; course.dispatchEvent(new Event('change', { bubbles: true })); if (b.dataset.addcBatch) { batch.value = b.dataset.addcBatch; batch.dispatchEvent(new Event('change', { bubbles: true })); } }
         openM(la);
       }).catch(function (err) { ciToast('Could not open: ' + err.message, false); });
     });
