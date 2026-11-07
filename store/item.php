@@ -149,11 +149,8 @@ $tabs = array_filter(['about' => $desc !== '' ? 'About' : '', 'content' => $isCo
       <?php if ($myInc): ?><ul class="sp-own-inc"><?php foreach ($myInc as $v): ?><li><?= $ico('check') ?> <?= sh_e($v) ?></li><?php endforeach; ?></ul><?php endif; ?>
       <div class="sp-inc-g">
         <?php if ($isCourse): ?><div><?= $ico('video') ?><b><?= $nLessons ?> recorded video<?= $nLessons === 1 ? '' : 's' ?></b><span><?= $total ? sh_dur_text($total) . ' of classes' : 'Watch any time' ?></span></div><?php endif; ?>
-        <?php if ($files): ?><div><?= $ico('file') ?><b><?= count($files) ?> PDF note<?= count($files) === 1 ? '' : 's' ?></b><span>Read on screen, with your own watermark</span></div><?php endif; ?>
+        <?php if ($files): ?><div><?= $ico('file') ?><b><?= count($files) ?> PDF note<?= count($files) === 1 ? '' : 's' ?></b><span>Read on your phone or computer</span></div><?php endif; ?>
         <div><?= $ico($vd ? 'calendar' : 'infinity') ?><b><?= $validity ?></b><span><?= $vd ? 'From the day you buy' : 'Study for as long as you like' ?></span></div>
-        <div><?= $ico('device') ?><b>Any device</b><span>Phone, tablet or computer — no app needed</span></div>
-        <?php if ($isCourse): ?><div><?= $ico('gauge') ?><b>Speed &amp; quality</b><span>0.5x to 2x, and lower quality for slow internet</span></div>
-        <div><?= $ico('check') ?><b>Track progress</b><span>Mark lessons done and continue where you stopped</span></div><?php endif; ?>
       </div>
     </section>
 

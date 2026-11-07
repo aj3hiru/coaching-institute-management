@@ -83,7 +83,7 @@ function sh_demo_add(PDO $pdo, int $byUser = 0): string
 
     // 3. Paid notes pack, 4. free notes pack
     $n1 = $prod(['type' => 'notes', 'title' => 'Class 10 Maths Formula Notes (Demo)', 'subtitle' => 'Every chapter\'s formulas on 3 pages — perfect for last-minute revision',
-        'desc' => "A demo PDF notes pack. Buyers read it on the screen (phone or computer) with their own watermark.", 'price' => 49, 'mrp' => 99, 'days' => 0, 'sort' => 3, 'thumb' => 'demo-thumb-formulas.jpg']);
+        'desc' => "A demo PDF notes pack. Read it on your phone, tablet or computer.", 'price' => 49, 'mrp' => 99, 'days' => 0, 'sort' => 3, 'thumb' => 'demo-thumb-formulas.jpg']);
     $pdf($n1, 'Class 10 Maths — Important Formulas', 'demo-class10-maths-formulas.pdf', 3, 0, 1);
     $n2 = $prod(['type' => 'notes', 'title' => 'Science MCQ Practice Set (Free Demo)', 'subtitle' => '10 important questions with answers',
         'desc' => "A free demo notes pack — anyone with an account can open it.", 'price' => 0, 'mrp' => null, 'days' => 0, 'sort' => 4, 'thumb' => 'demo-thumb-mcq.jpg']);

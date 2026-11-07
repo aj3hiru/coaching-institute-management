@@ -98,6 +98,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $P) {
             ->execute([$pidI, $sec, $unit ?: null, $no, mb_substr($title, 0, 200), $kind, $url ?: null, $dur, $free, $about, $vvi, $quiz, $doubts, $sort]);
         $newId = (int)$pdo->lastInsertId();
     }
+    foreach ((array)($_POST['note_title'] ?? []) as $fid => $nt) { // rename the notes PDFs
+        $nt = trim((string)$nt); if ($nt === '') continue;
+        $pdo->prepare("UPDATE sh_files SET title = ? WHERE id = ? AND lesson_id = ?")->execute([mb_substr($nt, 0, 200), (int)$fid, $newId]);
+    }
     // notes PDFs of this lecture that the admin chose to remove
     foreach ((array)($_POST['rm_note'] ?? []) as $fid) {
         $f = $pdo->prepare("SELECT file FROM sh_files WHERE id = ? AND lesson_id = ?"); $f->execute([(int)$fid, $newId]);
@@ -123,7 +127,10 @@ $quiz = $L ? sh_quiz($L) : ['items' => [], 'links' => []];
 $notesF = $L ? $pdo->query("SELECT id, title, pages, size FROM sh_files WHERE lesson_id = " . (int)$L['id'] . " ORDER BY sort, id")->fetchAll(PDO::FETCH_ASSOC) : [];
 $isLink = $L ? (!$L['video_file'] && $L['video_url']) : false;
 $kind = $L['kind'] ?? 'video';
-$prefix = $P ? trim(($P['class_id'] && isset($classes[$P['class_id']]) ? $classes[$P['class_id']] . ' ' : '') . preg_replace('/\s*[—–-]\s*(Complete|Full)?\s*Course.*$/i', '', preg_replace('/\s*\(Demo\)\s*/', '', $P['title']))) : '';
+$clsName = $P && $P['class_id'] && isset($classes[$P['class_id']]) ? (string)$classes[$P['class_id']] : '';
+if (preg_match('/^(\d{1,2})(st|nd|rd|th)$/i', $clsName, $cm)) $clsName = 'Class ' . $cm[1]; // "10th" → "Class 10"
+$cTitle = $P ? trim(preg_replace('/\s*[—–-]?\s*(Complete|Full)?\s*Course\b.*$/i', '', preg_replace('/\s*\(Demo\)\s*/', '', $P['title']))) : '';
+$prefix = trim(($clsName !== '' && stripos($cTitle, $clsName) === false ? $clsName . ' ' : '') . $cTitle);
 $vv = $L ? sh_variants($L) : [];
 ?>
 <!DOCTYPE html>
@@ -150,6 +157,12 @@ $vv = $L ? sh_variants($L) : [];
 .slc-bar{height:6px;background:#e5e7eb;margin-top:8px;display:none}.slc-bar i{display:block;height:100%;width:0;background:var(--ci-acc,#4a3369);transition:width .2s}
 .slc-actions{position:sticky;bottom:0;background:#fff;border-top:1px solid #e5e7eb;padding:12px 0;display:flex;gap:10px;flex-wrap:wrap;align-items:center;z-index:5}
 .slc-note{display:flex;gap:8px;align-items:center;font-size:13.5px;padding:6px 0}
+.slc-plus{margin-left:6px;border:1px solid var(--ci-acc,#4a3369);background:#fff;color:var(--ci-acc,#4a3369);font:700 11.5px inherit;font-family:inherit;padding:2px 8px;cursor:pointer}.slc-plus:hover{background:var(--ci-acc,#4a3369);color:#fff}
+.slc-notes{display:flex;flex-direction:column;gap:8px}
+.slc-nrow{display:grid;grid-template-columns:42px 1fr auto auto;gap:10px;align-items:center;border:1px solid #e5e7eb;background:#fafafa;padding:8px 10px}
+.slc-nrow input[type=text],.slc-nrow input:not([type]){box-sizing:border-box;width:100%;min-height:36px;padding:7px 10px;border:1px solid #d1d5db;font:inherit;font-size:14px;background:#fff}
+.slc-nico{display:grid;place-items:center;height:32px;background:#fee2e2;color:#b91c1c;font-weight:800;font-size:11px}.slc-nrow small{color:#6b7280;font-size:12px;white-space:nowrap}.slc-nrm{display:flex;gap:5px;align-items:center;font-size:12.5px;color:#b91c1c;margin:0}
+@media (max-width:700px){.slc-nrow{grid-template-columns:42px 1fr}.slc-nrow small,.slc-nrm{grid-column:2}}
 @media (max-width:700px){.slc-opts{grid-template-columns:1fr}}
 </style>
 </head>
@@ -171,12 +184,12 @@ $vv = $L ? sh_variants($L) : [];
   <div class="ci-grid3">
     <div class="ci-f" style="grid-column:1/-1"><label>Course</label><select id="slcCourse" <?= $L ? 'disabled' : '' ?> data-search><option value="">— Choose a course —</option><?php foreach ($courses as $c): ?><option value="<?= (int)$c['id'] ?>" <?= (int)($P['id'] ?? 0) === (int)$c['id'] ? 'selected' : '' ?>><?= ci_e($c['title'] . ($c['status'] !== 'published' ? ' (' . $c['status'] . ')' : '')) ?></option><?php endforeach; ?></select><span class="ci-hint">Online courses are made in <a href="/admin/shop-products.php?type=course">Online Courses</a>.</span></div>
     <?php if ($P): ?>
-    <div class="ci-f"><label>Chapter</label><select name="section_id" id="slcSec"><?php foreach ($secs as $k => $t): ?><option value="<?= $k ?>" <?= $selSec === (int)$k ? 'selected' : '' ?> data-next="<?= $nextNo[(int)$k] ?? 1 ?>"><?= ci_e($t) ?></option><?php endforeach; ?><option value="-1" data-next="1" <?= !$secs ? 'selected' : '' ?>>+ New chapter…</option></select>
+    <div class="ci-f"><label>Chapter <button type="button" class="slc-plus" data-newfor="slcSec">+ New</button></label><select name="section_id" id="slcSec"><?php foreach ($secs as $k => $t): ?><option value="<?= $k ?>" <?= $selSec === (int)$k ? 'selected' : '' ?> data-next="<?= $nextNo[(int)$k] ?? 1 ?>"><?= ci_e($t) ?></option><?php endforeach; ?><option value="-1" data-next="1" <?= !$secs ? 'selected' : '' ?>>+ New chapter…</option></select>
       <div class="slc-new" id="slcSecNew" hidden><input name="new_chapter" maxlength="200" placeholder="New chapter name, e.g. Real Numbers"></div></div>
-    <div class="ci-f"><label>Unit <span class="ci-muted" style="font-weight:400">(optional)</span></label><select name="unit_id" id="slcUnit"><option value="0" data-sec="*">— No unit —</option><?php foreach ($units as $un): ?><option value="<?= (int)$un['id'] ?>" data-sec="<?= (int)$un['section_id'] ?>" <?= $selUnit === (int)$un['id'] ? 'selected' : '' ?>><?= ci_e($un['title']) ?></option><?php endforeach; ?><option value="-1" data-sec="*">+ New unit…</option></select>
+    <div class="ci-f"><label>Unit <span class="ci-muted" style="font-weight:400">(optional)</span> <button type="button" class="slc-plus" data-newfor="slcUnit">+ New</button></label><select name="unit_id" id="slcUnit"><option value="0" data-sec="*">— No unit —</option><?php foreach ($units as $un): ?><option value="<?= (int)$un['id'] ?>" data-sec="<?= (int)$un['section_id'] ?>" <?= $selUnit === (int)$un['id'] ? 'selected' : '' ?>><?= ci_e($un['title']) ?></option><?php endforeach; ?><option value="-1" data-sec="*">+ New unit…</option></select>
       <div class="slc-new" id="slcUnitNew" hidden><input name="new_unit" maxlength="200" placeholder="New unit name, e.g. Euclid's Lemma"></div></div>
     <div class="ci-f"><label>Lecture number</label><input name="lecture_no" id="slcNo" type="number" min="1" value="<?= (int)($L['lecture_no'] ?? ($nextNo[$selSec] ?? 1)) ?>"><span class="ci-hint">Next number of the chapter.</span></div>
-    <div class="ci-f" style="grid-column:1/-1"><label>Lecture name</label><input name="title" id="slcTitle" required maxlength="200" value="<?= ci_e($L['title'] ?? '') ?>" data-prefix="<?= ci_e($prefix) ?>" data-auto="<?= $L ? '0' : '1' ?>"><span class="ci-hint">Made for you from the class, course, chapter, unit and lecture number — you can change it.</span></div>
+    <div class="ci-f" style="grid-column:1/-1"><label>Lecture name</label><input name="title" id="slcTitle" required maxlength="200" value="<?= ci_e($L['title'] ?? '') ?>" data-prefix="<?= ci_e($prefix) ?>" data-auto="<?= $L ? '0' : '1' ?>"><span class="ci-hint">Made for you: class + course – chapter – lecture number – unit. You can change it.</span></div>
     <?php endif; ?>
   </div>
 </div></div></div>
@@ -197,14 +210,17 @@ $vv = $L ? sh_variants($L) : [];
 
 <div class="ci-card slc-pdf"><div class="ci-card-b slc-step"><span class="slc-n">3</span><div>
   <label style="font-weight:700;display:block;margin-bottom:8px">Lecture PDF</label>
-  <input type="file" id="slcPdf" accept="application/pdf,.pdf"><p class="slc-sub" style="margin-top:6px"><?= !empty($L['pdf_file']) ? 'A PDF is uploaded (' . (int)$L['pdf_pages'] . ' pages). Choose a file only to replace it.' : 'Students read it on the screen with their own watermark.' ?></p>
+  <input type="file" id="slcPdf" accept="application/pdf,.pdf"><p class="slc-sub" style="margin-top:6px"><?= !empty($L['pdf_file']) ? 'A PDF is uploaded (' . (int)$L['pdf_pages'] . ' pages). Choose a file only to replace it.' : 'Students read it on their phone or computer.' ?></p>
 </div></div></div>
 
 <div class="ci-card"><div class="ci-card-b slc-step"><span class="slc-n">4</span><div>
-  <label style="font-weight:700;display:block;margin-bottom:4px">Notes of this lecture <span class="ci-muted" style="font-weight:400">(PDF, optional)</span></label>
-  <p class="slc-sub">Shown in the <b>PDF Notes</b> tab under the video.</p>
-  <?php foreach ($notesF as $nf): ?><label class="slc-note"><input type="checkbox" name="rm_note[]" value="<?= (int)$nf['id'] ?>"> Remove <b><?= ci_e($nf['title']) ?></b> <span class="ci-muted">(<?= (int)$nf['pages'] ?> pages)</span></label><?php endforeach; ?>
-  <input type="file" id="slcNotes" accept="application/pdf,.pdf" multiple>
+  <label style="font-weight:700;display:block;margin-bottom:4px">Notes of this lecture <span class="ci-muted" style="font-weight:400">(PDF, optional — add as many as you like)</span></label>
+  <p class="slc-sub">Shown in the <b>PDF Notes</b> tab under the video. Give each one a clear name, e.g. "Class notes", "Formula sheet", "Practice questions".</p>
+  <div class="slc-notes" id="slcNoteList">
+    <?php foreach ($notesF as $nf): ?><div class="slc-nrow"><span class="slc-nico">PDF</span><input name="note_title[<?= (int)$nf['id'] ?>]" maxlength="200" value="<?= ci_e($nf['title']) ?>" aria-label="Notes name"><small><?= (int)$nf['pages'] ?> pages · uploaded</small><label class="slc-nrm"><input type="checkbox" name="rm_note[]" value="<?= (int)$nf['id'] ?>"> Remove</label></div><?php endforeach; ?>
+  </div>
+  <input type="file" id="slcNotes" accept="application/pdf,.pdf" multiple hidden>
+  <button type="button" class="ci-btn ci-ghost ci-sm" id="slcNotesAdd" style="margin-top:8px"><i class="fas fa-plus"></i> Add notes PDF</button>
 </div></div></div>
 
 <div class="ci-card"><div class="ci-card-b slc-step"><span class="slc-n">5</span><div>
@@ -232,7 +248,7 @@ $vv = $L ? sh_variants($L) : [];
 <div class="ci-card"><div class="ci-card-b slc-step"><span class="slc-n">7</span><div>
   <label style="display:flex;gap:8px;align-items:center;font-weight:600;margin:0 0 8px"><input type="checkbox" name="doubts_on" value="1" <?= ($L['doubts_on'] ?? 1) ? 'checked' : '' ?>> Students can ask doubts &amp; problems on this lecture <span class="ci-muted" style="font-weight:400">(the teacher answers in Store → Doubts)</span></label>
   <label style="display:flex;gap:8px;align-items:center;font-weight:600;margin:0 0 8px"><input type="checkbox" name="free" value="1" <?= !empty($L['free']) ? 'checked' : '' ?>> Free preview — anyone can open this lecture</label>
-  <div class="ci-f"><label>About this lecture <span class="ci-muted" style="font-weight:400">(optional)</span></label><textarea name="notes" rows="2" maxlength="5000"><?= ci_e($L['notes'] ?? '') ?></textarea></div>
+  <input type="hidden" name="notes" value="<?= ci_e($L['notes'] ?? '') ?>">
 </div></div></div>
 
 <div class="slc-actions"><button class="ci-btn" type="submit"><i class="fas fa-check"></i> Save lecture</button><button class="ci-btn ci-ghost" type="submit" data-next><i class="fas fa-forward"></i> Save &amp; add next lecture</button><span class="ci-muted" id="slcMsg"></span></div>

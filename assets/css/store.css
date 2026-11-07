@@ -537,3 +537,15 @@ a.st-li:hover{background:#f7fbfc}a.st-li:hover svg{color:var(--sa)}
 @media (max-width:600px){.lt-opts{grid-template-columns:1fr}.lt-pane{padding:12px}.lt-strip button{padding:12px 13px;font-size:13.5px}}
 [data-theme="dark"] .lt,[data-theme="dark"] .lt-note-h,[data-theme="dark"] .lt-link,[data-theme="dark"] .lt-q,[data-theme="dark"] .lt-d,[data-theme="dark"] .sp-own-inc{background:#151b23;border-color:#263040}
 [data-theme="dark"] .lt-strip{background:#111827;border-color:#263040}[data-theme="dark"] .lt-strip button.on{background:#151b23}[data-theme="dark"] .lt-q > b,[data-theme="dark"] .lt-note-h b,[data-theme="dark"] .lt-link b{color:#e5e7eb}
+
+/* phones / tablets: the account links live in the navigation menu, so no strip on top of the account pages */
+@media (max-width:900px){.ac-nav{display:none!important}}
+.ac-pw1{max-width:360px}
+
+/* profile photo */
+.ac-photo{display:flex;gap:16px;align-items:center;padding-bottom:16px;margin-bottom:6px;border-bottom:1px solid #f1f2f4}
+.ac-photo-i{width:76px;height:76px;flex:0 0 auto;border-radius:50%;overflow:hidden;display:grid;place-items:center;background:#e5e7eb;color:#4b5563;font-size:30px;font-weight:800}
+.ac-photo-i img{width:100%;height:100%;object-fit:cover;display:block}
+.ac-photo b{display:block;font-size:15px}.ac-photo small{display:block;color:#6b7280;font-size:13px;margin:2px 0 8px}
+.ac-photo-b{display:flex;gap:14px;align-items:center;flex-wrap:wrap}.ac-photo-b .ac-btn{cursor:pointer;margin:0}.ac-photo-rm{display:flex;gap:6px;align-items:center;font-size:13px;color:#b91c1c;margin:0}
+.ac-form textarea{width:100%;box-sizing:border-box;border:1px solid #cfd4dc;padding:10px 12px;font:inherit;font-size:15px;resize:vertical}

@@ -24,9 +24,9 @@
   function unitName() { return unit.value === '-1' ? unitNew.querySelector('input').value.trim() : (+unit.value ? opt(unit).textContent.trim() : ''); }
   function autoName() {
     if (title.dataset.auto !== '1') return;
-    var parts = [title.dataset.prefix, chapterName()].filter(Boolean);
+    var parts = [title.dataset.prefix, chapterName(), 'Lecture ' + (no.value || 1)].filter(Boolean);
     var u = unitName(); if (u) parts.push(u);
-    title.value = parts.join(' – ') + ' – Lecture ' + (no.value || 1);
+    title.value = parts.join(' – ');
   }
   function onSec() {
     secNew.hidden = sec.value !== '-1';
@@ -36,7 +36,11 @@
     onUnit();
   }
   function onUnit() { unitNew.hidden = unit.value !== '-1'; autoName(); }
-  sec.addEventListener('change', onSec); unit.addEventListener('change', onUnit); no.addEventListener('input', autoName);
+  sec.addEventListener('change', onSec); unit.addEventListener('change', onUnit);
+  f.querySelectorAll('[data-newfor]').forEach(function (b) { b.addEventListener('click', function () {
+    var sel = document.getElementById(b.getAttribute('data-newfor')); sel.value = '-1'; sel.dispatchEvent(new Event('change', { bubbles: true }));
+    var box = sel === sec ? secNew : unitNew; box.hidden = false; box.querySelector('input').focus();
+  }); }); no.addEventListener('input', autoName);
   secNew.querySelector('input').addEventListener('input', autoName); unitNew.querySelector('input').addEventListener('input', autoName);
   title.addEventListener('input', function () { title.dataset.auto = '0'; });
   onSec(); if (!title.value) { title.dataset.auto = '1'; autoName(); }
@@ -72,6 +76,23 @@
       box.appendChild(row); row.querySelector('input:not([type=radio]), textarea').focus();
     }
     if (rm) { var r = rm.closest('.slc-row'), b = r.parentNode; if (b.children.length > 1) r.remove(); else r.querySelectorAll('input:not([type=radio]), textarea').forEach(function (x) { x.value = ''; }); }
+  });
+
+  // --- notes PDFs: pick one or many, each with its own name ----------------
+  var notesPick = $('#slcNotes'), notesList = $('#slcNoteList'), newNotes = [];
+  $('#slcNotesAdd').addEventListener('click', function () { notesPick.click(); });
+  notesPick.addEventListener('change', function () {
+    [].forEach.call(notesPick.files, function (file) {
+      if (!/\.pdf$/i.test(file.name)) { msg.textContent = file.name + ' is not a PDF.'; return; }
+      var row = document.createElement('div'); row.className = 'slc-nrow';
+      row.innerHTML = '<span class="slc-nico">PDF</span><input maxlength="200" aria-label="Notes name"><small>' + (file.size / 1048576).toFixed(1) + ' MB · new</small><button type="button" class="slc-nrm" style="border:0;background:none;cursor:pointer">Remove</button>';
+      row.querySelector('input').value = file.name.replace(/\.pdf$/i, '').replace(/[_-]+/g, ' ');
+      var nin = row.querySelector('input'); nin.addEventListener('focus', function once() { nin.removeEventListener('focus', once); setTimeout(function () { nin.select(); }, 0); });
+      var item = { f: file, row: row }; newNotes.push(item);
+      row.querySelector('button').addEventListener('click', function () { newNotes.splice(newNotes.indexOf(item), 1); row.remove(); });
+      notesList.appendChild(row);
+    });
+    notesPick.value = '';
   });
 
   // --- save, then upload ---------------------------------------------------
@@ -111,11 +132,11 @@
     if (sec.value === '-1' && !secNew.querySelector('input').value.trim()) { e.preventDefault(); secNew.querySelector('input').focus(); msg.textContent = 'Write the new chapter name.'; return; }
     if (unit.value === '-1' && !unitNew.querySelector('input').value.trim()) { e.preventDefault(); unitNew.querySelector('input').focus(); msg.textContent = 'Write the new unit name.'; return; }
     var jobs = [];
-    var vf = $('#slcFile'), pf = $('#slcPdf'), nf = $('#slcNotes');
+    var vf = $('#slcFile'), pf = $('#slcPdf');
     if (!pdfKind && !link && vf && vf.files[0]) jobs.push({ f: vf.files[0], kind: 'v', label: 'video', main: true });
     if (!pdfKind && !link) $$('.slcQ').forEach(function (q) { if (q.files[0]) jobs.push({ f: q.files[0], kind: 'v', quality: q.getAttribute('data-q'), label: q.getAttribute('data-q') + 'p' }); });
     if (pdfKind && pf && pf.files[0]) jobs.push({ f: pf.files[0], kind: 'lp', label: 'lecture PDF' });
-    if (nf) [].forEach.call(nf.files, function (x) { jobs.push({ f: x, kind: 'ln', label: x.name, title: x.name.replace(/\.pdf$/i, '') }); });
+    newNotes.forEach(function (n) { jobs.push({ f: n.f, kind: 'ln', label: n.f.name, title: n.row.querySelector('input').value.trim() || n.f.name.replace(/\.pdf$/i, '') }); });
     var bad = jobs.filter(function (j) { return j.kind !== 'v' && !/\.pdf$/i.test(j.f.name); });
     if (bad.length) { e.preventDefault(); msg.textContent = bad[0].f.name + ' is not a PDF.'; return; }
     if (!jobs.length) return; // nothing to upload: a normal save

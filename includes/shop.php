@@ -14,7 +14,7 @@
  */
 require_once __DIR__ . '/settings.php';
 
-const SH_SCHEMA = 7;
+const SH_SCHEMA = 8;
 
 function sh_db(): PDO
 {
@@ -108,6 +108,10 @@ function sh_tables(PDO $pdo): void
         id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, lesson_id INT UNSIGNED NOT NULL, product_id INT UNSIGNED NOT NULL, user_id INT UNSIGNED NOT NULL,
         question TEXT NOT NULL, answer TEXT NULL, answered_by INT UNSIGNED NULL, status VARCHAR(10) NOT NULL DEFAULT 'open',
         created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP, answered_at DATETIME NULL, KEY idx_l (lesson_id, status), KEY idx_p (product_id, status))$t");
+    // v8: the student's own profile (address, pin code, photo)
+    $add('sh_users', 'address', 'VARCHAR(300) NULL');
+    $add('sh_users', 'pincode', 'VARCHAR(10) NULL');
+    $add('sh_users', 'avatar', 'VARCHAR(150) NULL');
     edu_settings_save('shop', ['schema' => SH_SCHEMA]);
 }
 
@@ -178,18 +182,48 @@ function sh_user(): ?array
 }
 
 /** A small cookie (no secrets) so cached pages can show "My Library" instead of "Log in" in this browser. */
-function sh_mark_cookie(?string $first): void
+function sh_mark_cookie(?string $first, string $avatar = ''): void
 {
     $o = ['path' => '/', 'samesite' => 'Lax', 'secure' => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off', 'httponly' => false];
-    if ($first === null) { foreach (['sh_in', 'sh_n'] as $c) setcookie($c, '', ['expires' => time() - 3600] + $o); return; }
+    if ($first === null) { foreach (['sh_in', 'sh_n', 'sh_av'] as $c) setcookie($c, '', ['expires' => time() - 3600] + $o); return; }
     setcookie('sh_in', '1', ['expires' => time() + 30 * 86400] + $o);
     setcookie('sh_n', rawurlencode(mb_substr($first, 0, 30)), ['expires' => time() + 30 * 86400] + $o);
+    setcookie('sh_av', $avatar, ['expires' => $avatar !== '' ? time() + 30 * 86400 : time() - 3600] + $o); // the photo in the student bar
+}
+/** Public URL of a student's photo ('' = none). */
+function sh_avatar_url(array $u): string
+{
+    $a = (string)($u['avatar'] ?? '');
+    return $a !== '' && preg_match('/^[a-z0-9-]+\.(jpg|png|webp)$/', $a) ? '/uploads/avatars/' . $a : '';
+}
+/** Saves an uploaded photo as a 320×320 JPG (centre crop). Returns [file name, error]. */
+function sh_avatar_save(array $file, int $uid): array
+{
+    if (($file['error'] ?? 4) !== UPLOAD_ERR_OK) return ['', 'The photo could not be uploaded. Please try again.'];
+    if ($file['size'] > 5 * 1024 * 1024) return ['', 'Please choose a photo smaller than 5 MB.'];
+    $info = @getimagesize($file['tmp_name']);
+    $read = [IMAGETYPE_JPEG => 'imagecreatefromjpeg', IMAGETYPE_PNG => 'imagecreatefrompng', IMAGETYPE_WEBP => 'imagecreatefromwebp'][$info[2] ?? 0] ?? '';
+    if (!$info || !$read) return ['', 'The photo must be a JPG, PNG or WebP image.'];
+    $dir = rtrim((string)$_SERVER['DOCUMENT_ROOT'], '/') . '/uploads/avatars';
+    if (!is_dir($dir)) @mkdir($dir, 0755, true);
+    if (!function_exists($read) || !function_exists('imagejpeg')) { // no image library: keep the checked original (max 5 MB)
+        $name = 'u' . $uid . '-' . bin2hex(random_bytes(5)) . '.' . [IMAGETYPE_JPEG => 'jpg', IMAGETYPE_PNG => 'png', IMAGETYPE_WEBP => 'webp'][$info[2]];
+        return @move_uploaded_file($file['tmp_name'], "$dir/$name") ? [$name, ''] : ['', 'The photo could not be saved.'];
+    }
+    $src = @$read($file['tmp_name']); if (!$src) return ['', 'This photo could not be read.'];
+    $w = imagesx($src); $h = imagesy($src); $side = min($w, $h);
+    $dst = imagecreatetruecolor(320, 320); imagefill($dst, 0, 0, imagecolorallocate($dst, 255, 255, 255));
+    imagecopyresampled($dst, $src, 0, 0, (int)(($w - $side) / 2), (int)(($h - $side) / 2), 320, 320, $side, $side);
+    $name = 'u' . $uid . '-' . bin2hex(random_bytes(5)) . '.jpg';
+    $ok = imagejpeg($dst, "$dir/$name", 86);
+    imagedestroy($src); imagedestroy($dst);
+    return $ok ? [$name, ''] : ['', 'The photo could not be saved.'];
 }
 function sh_login_user(array $u): void
 {
     session_regenerate_id(true);
     $_SESSION['sh_uid'] = (int)$u['id'];
-    sh_mark_cookie(explode(' ', trim((string)$u['name']))[0]);
+    sh_mark_cookie(explode(' ', trim((string)$u['name']))[0], sh_avatar_url($u));
     sh_db()->prepare("UPDATE sh_users SET last_login = NOW() WHERE id = ?")->execute([$u['id']]);
 }
 
@@ -650,7 +684,7 @@ function sh_account_nav(array $u, string $on): string
     $items = [['', 'My Courses', 'book'], ['profile', 'My Profile', 'user'], ['orders', 'Orders', 'receipt'], ['report', 'Report us', 'flag']];
     $h = '<nav class="ac-nav" aria-label="My account"><div class="ac-who"><span class="ac-av">' . sh_e(mb_strtoupper(mb_substr($u['name'], 0, 1))) . '</span><div><b>' . sh_e($u['name']) . '</b><small>' . sh_e($u['mobile']) . '</small></div></div>';
     foreach ($items as [$k, $l, $ic]) $h .= '<a href="/account/' . ($k ? $k : '') . '" class="' . ($on === $k ? 'on' : '') . '">' . $i($ic) . '<span>' . $l . '</span></a>';
-    $h .= '<a href="/store/">' . $i('grid') . '<span>All Courses</span></a>';
+    $h .= '<a href="/store/?t=course">' . $i('grid') . '<span>All Courses</span></a><a href="/store/notes">' . $i('notes') . '<span>PDF Notes</span></a>';
     $h .= '<form method="post" action="/account/logout">' . sh_csrf_field() . '<button type="submit">' . $i('logout') . '<span>Log out</span></button></form></nav>';
     return $h;
 }

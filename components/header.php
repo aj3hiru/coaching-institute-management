@@ -152,11 +152,40 @@ if ($__school) {
       <?php if (th_on('h_search')): ?><a href="/search" role="button" aria-label="Search" class="nb-search-icon" id="searchToggle" aria-expanded="false" aria-controls="eduHSearch"><span class="gp-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></span></a><?php endif; ?>
       <?php if (th_on('h_login')): ?><a class="nb-hr-login" href="<?= htmlspecialchars($__loginUrl) ?>"><?= $__userIco ?><span><?= htmlspecialchars((string)th('h_login_text')) ?></span></a><?php endif; ?>
       <?php if (is_file(ROOT_PATH . '/account/login.php')): // a logged-in student sees "My Courses", Log out and their menu (done in the browser, so cached pages stay the same for everyone) ?>
+      <style>#shBar{display:none}@media (min-width:768px){html.has-shb #shBar{display:block;position:fixed;top:0;left:0;right:0;height:40px;z-index:99990;background:#1f2937;color:#e5e7eb;font:500 13.5px/1 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+      html.has-shb body{margin-top:40px!important}html.has-shb{--wpab-top:40px}html.has-shb .nb-header.is-sticky,html.has-shb #site-navigation:not(.nb-not-sticky):not(.nb-h-racing),html.has-shb .nb-h-racing.is-sticky{top:40px!important}
+      #shBar .shb-in{max-width:1400px;height:40px;margin:0 auto;padding:0 16px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+      #shBar .shb-l{display:flex;height:100%;overflow-x:auto;scrollbar-width:none}#shBar .shb-l::-webkit-scrollbar{display:none}
+      #shBar a{color:#e5e7eb!important;text-decoration:none!important}#shBar svg{width:16px;height:16px;flex:0 0 auto}
+      #shBar .shb-l a{display:flex;align-items:center;gap:7px;padding:0 12px;height:100%;white-space:nowrap;opacity:.88}#shBar .shb-l a:hover,#shBar .shb-l a.on{opacity:1;background:rgba(255,255,255,.1)}#shBar .shb-l a.on{box-shadow:inset 0 -2px 0 #fbbf24}
+      #shBar .shb-me{position:relative;height:100%}#shBar .shb-btn{height:100%;display:flex;align-items:center;gap:8px;padding:0 10px;border:0;background:none;color:#fff;font:inherit;cursor:pointer}#shBar .shb-btn:hover,#shBar .shb-btn[aria-expanded=true]{background:rgba(255,255,255,.1)}
+      #shBar .shb-av{width:26px;height:26px;border-radius:50%;overflow:hidden;display:grid;place-items:center;background:#e5e7eb;color:#374151;font-weight:800;font-size:12px}#shBar .shb-av img{width:100%;height:100%;object-fit:cover;display:block}#shBar .shb-av.big{width:38px;height:38px;font-size:15px}
+      #shBar .shb-n{max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+      #shBar .shb-menu{position:absolute;right:0;top:40px;width:230px;background:#fff;border:1px solid #e5e7eb;border-top:2px solid #fbbf24;box-shadow:0 12px 30px rgba(15,23,42,.18);padding:4px 0}
+      #shBar .shb-h{display:flex;gap:10px;align-items:center;padding:10px 14px 12px;border-bottom:1px solid #f1f2f4;margin-bottom:4px}#shBar .shb-h b{display:block;color:#111827;font-size:14px}#shBar .shb-h small{color:#6b7280;font-size:12px}
+      #shBar .shb-menu a{display:flex;align-items:center;gap:10px;padding:9px 14px;color:#374151!important;font-size:13.5px}#shBar .shb-menu a:hover{background:#f6f7f8}#shBar .shb-menu svg{color:#9ca3af}#shBar .shb-menu a.shb-out{border-top:1px solid #f1f2f4;margin-top:4px;color:#b91c1c!important}#shBar .shb-menu a.shb-out svg{color:#b91c1c}}</style>
       <script>(function(){var inn=/(?:^|; )sh_in=1/.test(document.cookie),n='';try{n=decodeURIComponent((document.cookie.match(/(?:^|; )sh_n=([^;]*)/)||[])[1]||'');}catch(e){}
       function go(){document.querySelectorAll('[data-sh]').forEach(function(e){e.hidden=(e.getAttribute('data-sh')==='in')!==inn;});
       if(!inn)return;
       document.querySelectorAll('a[href="/account/login"]:not([data-sh-keep])').forEach(function(a){if(a.closest('[data-sh]'))return;a.href='/account/';var s=a.querySelector('span');if(s)s.textContent='My Courses';else{for(var i=a.childNodes.length-1;i>=0;i--)if(a.childNodes[i].nodeType===3&&a.childNodes[i].textContent.trim()){a.childNodes[i].textContent=' My Courses';break;}}});
-      if(n)document.querySelectorAll('.mnav-hello-title').forEach(function(t){t.textContent='Hello, '+n;});}
+      if(n)document.querySelectorAll('.mnav-hello-title').forEach(function(t){t.textContent='Hello, '+n;});
+      bar();}
+      function bar(){ // tablet / computer: the student's own bar at the very top (not for staff, who have the admin bar)
+      if(document.getElementById('shBar')||document.getElementById('wpadminbar'))return;
+      var av='';try{av=decodeURIComponent((document.cookie.match(/(?:^|; )sh_av=([^;]*)/)||[])[1]||'');}catch(e){}
+      if(!/^\/uploads\/avatars\/[a-z0-9-]+\.(jpg|png|webp)$/.test(av))av='';
+      var e=function(t){return String(t).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});};
+      var I={book:'<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/><path d="M4 19.5V21h16"/>',grid:'<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>',notes:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/>',rec:'<path d="M4 2v20l3-2 3 2 3-2 3 2 3-2 1 1V2l-1 1-3-2-3 2-3-2-3 2-3-2z"/><path d="M8 8h8M8 12h8M8 16h5"/>',flag:'<path d="M4 22V4a1 1 0 0 1 1-1h13l-2 5 2 5H5"/>',user:'<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',lock:'<rect x="4" y="11" width="16" height="10" rx="1"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',out:'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>',down:'<path d="m6 9 6 6 6-6"/>'};
+      var g=function(k){return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+I[k]+'</svg>';};
+      var here=location.pathname,L=[['/account/','My Courses','book'],['/store/?t=course','All Courses','grid'],['/store/notes','PDF Notes','notes'],['/account/orders','Orders','rec'],['/account/report','Report us','flag']];
+      var links=L.map(function(l){var on=here===l[0].split('?')[0]||(l[0]==='/store/?t=course'&&here==='/store/');return '<a href="'+l[0]+'"'+(on?' class="on" aria-current="page"':'')+'>'+g(l[2])+'<span>'+l[1]+'</span></a>';}).join('');
+      var pic=av?'<img src="'+e(av)+'" alt="">':e((n||'S').charAt(0).toUpperCase());
+      var b=document.createElement('div');b.id='shBar';b.setAttribute('role','navigation');b.setAttribute('aria-label','My account');
+      b.innerHTML='<div class="shb-in"><nav class="shb-l">'+links+'</nav><div class="shb-me"><button type="button" class="shb-btn" aria-expanded="false" aria-haspopup="true"><span class="shb-av">'+pic+'</span><span class="shb-n">'+e(n||'My account')+'</span>'+g('down')+'</button>'
+      +'<div class="shb-menu" hidden><div class="shb-h"><span class="shb-av big">'+pic+'</span><div><b>'+e(n||'Student')+'</b><small>Student account</small></div></div><a href="/account/profile">'+g('user')+'Edit profile</a><a href="/account/profile#password">'+g('lock')+'Change password</a><a href="/account/logout" class="shb-out">'+g('out')+'Log out</a></div></div></div>';
+      document.body.insertBefore(b,document.body.firstChild);document.documentElement.classList.add('has-shb');
+      var btn=b.querySelector('.shb-btn'),m=b.querySelector('.shb-menu'),set=function(o){m.hidden=!o;btn.setAttribute('aria-expanded',o?'true':'false');};
+      btn.addEventListener('click',function(ev){ev.stopPropagation();set(m.hidden);});document.addEventListener('click',function(ev){if(!b.contains(ev.target))set(false);});document.addEventListener('keydown',function(ev){if(ev.key==='Escape')set(false);});}
       if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',go);else go();})();</script>
       <?php endif; ?>
       <?php if (th_on('h_login') && $__subOn): ?><span class="nb-hr-div" aria-hidden="true"></span><?php endif; ?>

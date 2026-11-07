@@ -45,7 +45,7 @@ $prev = $idx !== false && $idx > 0 ? $openList[$idx - 1] : null;
 $next = $idx !== false && $idx < count($openList) - 1 ? $openList[$idx + 1] : null;
 $lockedLeft = count($all) - count($openList) + count(array_filter($files, fn($f) => !$can($f)));
 
-$wm = $u ? ($u['mobile'] . ' · ' . $u['email']) : '';
+$wm = ''; // no watermark on videos or PDFs
 $stTitle = ($item['title'] ?? $p['title']) . ' — ' . $p['title'];
 require ROOT_PATH . '/components/store-open.php';
 $ico = fn($n) => sh_icon($n);
@@ -64,7 +64,7 @@ $ico = fn($n) => sh_icon($n);
   <?php if ($lesson): ?>
     <?php $isPdfL = ($lesson['kind'] ?? 'video') === 'pdf'; $directUrl = !$lesson['video_file'] && $lesson['video_url'] && sh_is_direct_video((string)$lesson['video_url']); ?>
     <?php if ($isPdfL): ?>
-    <div class="st-pdfv lp-pdfl" id="stPdf" data-src="<?= $lesson['pdf_file'] ? sh_e(sh_media_link('p', (int)$lesson['id'], $uid)) : '' ?>" data-wm="<?= sh_e($wm) ?>" oncontextmenu="return false"><?= $lesson['pdf_file'] ? '' : '<div class="st-empty">The PDF of this lecture is being uploaded.</div>' ?></div>
+    <div class="st-pdfv lp-pdfl" id="stPdf" data-src="<?= $lesson['pdf_file'] ? sh_e(sh_media_link('p', (int)$lesson['id'], $uid)) : '' ?>" oncontextmenu="return false"><?= $lesson['pdf_file'] ? '' : '<div class="st-empty">The PDF of this lecture is being uploaded.</div>' ?></div>
     <span class="lp-sub" id="stPdfInfo" hidden></span>
     <?php else: ?>
     <div class="st-player" id="stPlayer" oncontextmenu="return false">
@@ -77,7 +77,6 @@ $ico = fn($n) => sh_icon($n);
         <div class="st-gear"><button type="button" class="st-gear-b" aria-label="Settings: speed and quality" aria-haspopup="true" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68 1.65 1.65 0 0 0 10 3.17V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg><span class="st-gear-l" id="stGearL">1x</span></button>
           <div class="st-menu" hidden><div class="st-menu-h">Speed</div><div class="st-menu-r" data-speed><?php foreach (['0.5', '0.75', '1', '1.25', '1.5', '1.75', '2'] as $sp): ?><button type="button" data-v="<?= $sp ?>"<?= $sp === '1' ? ' class="on"' : '' ?>><?= $sp === '1' ? 'Normal' : $sp . 'x' ?></button><?php endforeach; ?></div>
           <div class="st-menu-h">Quality</div><div class="st-menu-r" data-quality><button type="button" data-v="auto" class="on">Auto</button><?php foreach ($srcs as $sx): ?><button type="button" data-v="<?= sh_e($sx['q']) ?>"><?= sh_e($sx['label']) ?></button><?php endforeach; ?></div></div></div>
-        <?php if ($wm): ?><span class="st-wm" id="stWm"><?= sh_e($wm) ?></span><?php endif; ?>
       <?php elseif ($lesson['video_url']): ?>
         <iframe src="<?= sh_e(sh_embed_url((string)$lesson['video_url'])) ?>" title="<?= sh_e($lesson['title']) ?>" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
       <?php else: ?><div class="lp-novid">The video for this lesson is being uploaded.</div><?php endif; ?>
@@ -97,7 +96,6 @@ $ico = fn($n) => sh_icon($n);
     $lVvi = sh_vvi($lesson); $lQuiz = sh_quiz($lesson);
     $canAsk = ($owner || $staff) && !empty($lesson['doubts_on']);
     $tabs = array_filter([
-        'about' => trim((string)$lesson['notes']) !== '' ? ['About', 'book'] : null,
         'notes' => $lNotes ? ['PDF Notes', 'notes'] : null,
         'vvi' => ($lVvi['qa'] || $lVvi['links']) ? ['VVI Questions', 'flag'] : null,
         'quiz' => ($lQuiz['items'] || $lQuiz['links']) ? ['Quiz', 'check'] : null,
@@ -115,7 +113,7 @@ $ico = fn($n) => sh_icon($n);
       <?php $first = true; foreach ($tabs as $k => $_): ?><div class="lt-pane" data-pane="<?= $k ?>"<?= $first ? '' : ' hidden' ?>>
         <?php if ($k === 'about'): ?><div class="lt-about"><?= nl2br(sh_e($lesson['notes'])) ?></div>
         <?php elseif ($k === 'notes'): ?>
-          <?php foreach ($lNotes as $nf): ?><div class="lt-note"><button type="button" class="lt-note-h" data-pdf="<?= sh_e(sh_media_link('f', (int)$nf['id'], $uid)) ?>" data-wm="<?= sh_e($wm) ?>"><span class="lt-link-i"><?= $ico('notes') ?></span><span><b><?= sh_e($nf['title']) ?></b><small><?= $nf['pages'] ? (int)$nf['pages'] . ' pages · ' : '' ?>tap to read</small></span><span class="lt-link-go">Read ›</span></button><div class="st-pdfv lt-pdf" hidden></div></div><?php endforeach; ?>
+          <?php foreach ($lNotes as $nf): ?><div class="lt-note"><button type="button" class="lt-note-h" data-pdf="<?= sh_e(sh_media_link('f', (int)$nf['id'], $uid)) ?>"><span class="lt-link-i"><?= $ico('notes') ?></span><span><b><?= sh_e($nf['title']) ?></b><small><?= $nf['pages'] ? (int)$nf['pages'] . ' pages · ' : '' ?>tap to read</small></span><span class="lt-link-go">Read ›</span></button><div class="st-pdfv lt-pdf" hidden></div></div><?php endforeach; ?>
         <?php elseif ($k === 'vvi'): ?>
           <?php if ($lVvi['qa']): ?><div class="sp-faq lt-faq"><?php foreach ($lVvi['qa'] as $n => [$qq, $aa]): ?><details><summary><span class="lt-qn">Q<?= $n + 1 ?>.</span> <?= sh_e($qq) ?></summary><div class="sp-faq-b"><p><?= $aa !== '' ? nl2br(sh_e($aa)) : '<em>Answer will be added soon.</em>' ?></p></div></details><?php endforeach; ?></div><?php endif; ?>
           <?php if ($lVvi['links']): ?><div class="lt-links"><?= $linkBox($lVvi['links'], 'vvi') ?></div><?php endif; ?>
@@ -139,7 +137,7 @@ $ico = fn($n) => sh_icon($n);
     <?php endif; ?>
   <?php else: ?>
     <div class="lp-head"><div><span class="lp-ch">PDF notes</span><h1><?= sh_e($file['title']) ?></h1><span class="lp-sub" id="stPdfInfo">Loading…</span></div></div>
-    <div class="st-pdfv" id="stPdf" data-src="<?= sh_e(sh_media_link('f', (int)$file['id'], $uid)) ?>" data-wm="<?= sh_e($wm) ?>" oncontextmenu="return false"></div>
+    <div class="st-pdfv" id="stPdf" data-src="<?= sh_e(sh_media_link('f', (int)$file['id'], $uid)) ?>" oncontextmenu="return false"></div>
   <?php endif; ?>
   </div>
 

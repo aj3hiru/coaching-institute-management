@@ -1,10 +1,11 @@
 <?php
-// Orders: the student's purchases (paid and recent unpaid attempts).
+// Orders: the student's paid purchases only (failed / unfinished payments never show). An order is a fixed record:
+// giving or removing course access changes My Courses, not this list.
 require_once dirname(__DIR__) . '/includes/config.php';
 require_once INCLUDES_PATH . '/shop.php';
 $pdo = sh_db();
 $u = sh_need_login();
-$q = $pdo->prepare("SELECT o.*, p.slug, p.type FROM sh_orders o LEFT JOIN sh_products p ON p.id = o.product_id WHERE o.user_id = ? AND (o.status = 'paid' OR o.created_at > DATE_SUB(NOW(), INTERVAL 30 DAY)) ORDER BY o.id DESC LIMIT 200");
+$q = $pdo->prepare("SELECT o.*, p.slug, p.type FROM sh_orders o LEFT JOIN sh_products p ON p.id = o.product_id WHERE o.user_id = ? AND o.status = 'paid' ORDER BY o.paid_at DESC, o.id DESC LIMIT 200");
 $q->execute([$u['id']]);
 $orders = $q->fetchAll(PDO::FETCH_ASSOC);
 $stTitle = 'Orders';
@@ -24,7 +25,7 @@ $ico = fn($n) => sh_icon($n);
         <div class="ac-ord-i"><?= $ico($o['type'] === 'notes' ? 'notes' : 'video') ?></div>
         <div class="ac-ord-t"><b><?= sh_e($o['title']) ?></b><small><?= sh_e($o['order_no'] ?: 'Order #' . $o['id']) ?> · <?= date('d M Y, h:i A', strtotime($o['paid_at'] ?: $o['created_at'])) ?><?= $o['rzp_payment'] && !str_starts_with((string)$o['rzp_payment'], 'pay_DEMO') ? ' · ' . sh_e($o['rzp_payment']) : '' ?></small></div>
         <div class="ac-ord-r"><b><?= sh_money($o['amount']) ?></b><span class="st-badge <?= sh_e($st) ?>"><?= $st === 'paid' ? 'Paid' : ($st === 'failed' ? 'Failed' : 'Not paid') ?></span></div>
-        <?php if ($st === 'paid' && $o['slug']): ?><a class="ac-ord-go" href="/store/learn?s=<?= rawurlencode($o['slug']) ?>">Open ›</a><?php elseif ($o['slug']): ?><a class="ac-ord-go" href="/store/item?s=<?= rawurlencode($o['slug']) ?>">Try again ›</a><?php endif; ?>
+        <?php if ($o['slug']): ?><a class="ac-ord-go" href="/store/item?s=<?= rawurlencode($o['slug']) ?>">View ›</a><?php endif; ?>
       </div>
     <?php endforeach; ?>
     </div>

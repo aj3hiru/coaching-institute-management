@@ -1,4 +1,4 @@
-/* Online store: Buy (Razorpay Checkout), lesson "Mark as done", moving watermark on videos, PDF reader (pdf.js),
+/* Online store: Buy (Razorpay Checkout), lesson "Mark as done", PDF reader (pdf.js),
    show/hide password. */
 (function () {
   'use strict';
@@ -68,21 +68,7 @@
   var vid = document.querySelector('.st-player video');
   if (vid && doneBtn) vid.addEventListener('ended', function () { if (doneBtn.getAttribute('data-done') !== '1') doneBtn.click(); }); // a finished video counts as done
 
-  // ---- moving watermark (buyer's mobile + email) ----
-  var wm = document.getElementById('stWm'), pl = document.getElementById('stPlayer');
-  if (wm && pl && vid) {
-    var move = function () { var room = Math.max(4, 92 - wm.offsetWidth * 100 / Math.max(1, pl.offsetWidth)); wm.style.left = (3 + Math.random() * room) + '%'; wm.style.top = (6 + Math.random() * 80) + '%'; };
-    move(); setInterval(move, 9000);
-    // full screen of the video alone would hide the watermark: use full screen of the player box instead
-    vid.addEventListener('dblclick', function (e) { e.preventDefault(); });
-    var fs = function () {
-      var f = document.fullscreenElement || document.webkitFullscreenElement;
-      if (f === vid && pl.requestFullscreen) { (document.exitFullscreen || document.webkitExitFullscreen).call(document).then(function () { pl.requestFullscreen().catch(function () {}); }).catch(function () {}); }
-    };
-    document.addEventListener('fullscreenchange', fs);
-  }
-
-  // ---- PDF reader (pages drawn on the screen with the buyer's watermark); window.stPdf(box, src, wm, info) for more ----
+  // ---- PDF reader (pages drawn on the screen); window.stPdf(box, src, wm, info) for more (wm is not used: no watermark) ----
   function loadPdfJs() {
     if (window.pdfjsLib) return Promise.resolve();
     if (!loadPdfJs.p) loadPdfJs.p = new Promise(function (ok, bad) { var s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js'; s.onload = ok; s.onerror = function () { loadPdfJs.p = null; bad(); }; document.head.appendChild(s); });
@@ -93,6 +79,7 @@
     var start = function () {
       if (!window.pdfjsLib) { if (++tries < 100) setTimeout(start, 150); else if (info) info.textContent = 'The reader could not load. Check your internet.'; return; }
       window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      wmText = ''; // no watermark
       window.pdfjsLib.getDocument({ url: src }).promise.then(function (doc) {
         if (info) { info.textContent = doc.numPages + ' page' + (doc.numPages === 1 ? '' : 's'); info.hidden = false; }
         var draw = function (c) {
