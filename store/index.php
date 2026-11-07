@@ -24,7 +24,7 @@ if ($cat) {
 }
 $cats = sh_categories($pdo);
 // old addresses (/store/?c=…, /store/?t=course) move to the clean ones
-if ($cat) sh_redirect_clean(sh_cat_url($cat['slug']) . ($t !== '' ? '?t=' . $t : ''));
+if ($cat) { if (sh_rw_live()) sh_redirect_clean(sh_cat_url($cat['slug']) . ($t !== '' ? '?t=' . $t : '')); }
 elseif ($t === 'course') sh_redirect_clean('/courses/');
 elseif ($t === 'notes') sh_redirect_clean('/notes/');
 if ($cat === null && ($cs ?? '') === '' && str_starts_with((string)($_SERVER['REQUEST_URI'] ?? ''), '/category')) { http_response_code(410); exit; }

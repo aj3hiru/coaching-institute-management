@@ -154,7 +154,20 @@ function sh_learn_url(string $slug, string $q = '', bool $preview = false): stri
     $q = trim($q . ($preview ? ($q !== '' ? '&' : '') . 'preview=1' : ''), '&');
     return '/learn/' . rawurlencode($slug) . ($q !== '' ? '?' . $q : '');
 }
-function sh_cat_url(string $slug): string { return '/category/' . rawurlencode($slug); }
+/** Are the .htaccess rewrite rules for the clean addresses live? (Set the first time a clean address arrives by rewrite,
+    not through the 404 fallback.) Until then category links use /store/?c=… because the old /category rule answers 410. */
+function sh_rw_live(): bool
+{
+    static $ok = null;
+    if ($ok !== null) return $ok;
+    $ok = (string)es('shop', 'rw_ok', '') === '1';
+    if (!$ok && !defined('SH_VIA_404') && preg_match('#^/(courses|notes|learn|free-courses|category)/#', (string)($_SERVER['REQUEST_URI'] ?? ''))) {
+        edu_settings_save('shop', ['rw_ok' => '1']); $ok = true;
+        foreach (glob(ROOT_PATH . '/cache/*.html') ?: [] as $f) @unlink($f); // cached pages pick up the new category links
+    }
+    return $ok;
+}
+function sh_cat_url(string $slug): string { return sh_rw_live() ? '/category/' . rawurlencode($slug) : '/store/?c=' . rawurlencode($slug); }
 function sh_free_url(array $f): string { return '/free-courses/' . (int)$f['id'] . (($s = sh_slug((string)($f['title'] ?? ''))) !== '' ? '-' . $s : ''); }
 /** An old /store/… address was opened: send the visitor (and search engines) to the clean one. */
 function sh_redirect_clean(string $to): void
