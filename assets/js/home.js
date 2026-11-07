@@ -59,22 +59,37 @@
   }
   [].forEach.call(document.querySelectorAll('[data-hs]'), slider);
 
-  // ---- Our Courses: View more (8 at a time, two per slide column) ----
+  // ---- Our Courses: pages of 2 rows (cards fill each row left to right), and View more (8 at a time) ----
   var more = document.getElementById('hmMore'), track = document.getElementById('hmCourses');
+  var csBox = track && track.closest('[data-hs]');
+  function perPage() { var c = parseInt(getComputedStyle(csBox).getPropertyValue('--hc-cols'), 10) || 4; return c * 2; }
+  function repage(newFrom) {
+    if (!track) return;
+    var cards = [].slice.call(track.querySelectorAll('.hc')), per = perPage(), firstNew = null;
+    track.innerHTML = '';
+    for (var i = 0; i < cards.length; i += per) {
+      var pg = document.createElement('div'); pg.className = 'hs-s hm-pg';
+      cards.slice(i, i + per).forEach(function (c, k) { pg.appendChild(c); if (newFrom != null && i + k === newFrom) { firstNew = pg; } });
+      track.appendChild(pg);
+    }
+    track._per = per;
+    if (csBox && csBox._hsBuild) csBox._hsBuild();
+    return firstNew;
+  }
+  if (track) {
+    repage();
+    var rp = 0; window.addEventListener('resize', function () { clearTimeout(rp); rp = setTimeout(function () { if (perPage() !== track._per) { var at = Math.round(track.scrollLeft / Math.max(1, track.clientWidth)) * (track._per || 8); var pg = repage(at); if (pg) track.scrollLeft = pg.offsetLeft - track.offsetLeft; } }, 200); });
+  }
   if (more && track) more.addEventListener('click', function () {
     var o = +more.getAttribute('data-o') || 0, label = more.innerHTML;
     more.disabled = true; more.textContent = 'Loading…';
     fetch('/store/more?o=' + o + '&n=8').then(function (r) { return r.json(); }).then(function (d) {
       var tmp = document.createElement('div'); tmp.innerHTML = d.html || '';
-      var cards = [].slice.call(tmp.children), first = null;
-      for (var i = 0; i < cards.length; i += 2) {
-        var col = document.createElement('div'); col.className = 'hs-s hm-col hm-new';
-        col.appendChild(cards[i]); if (cards[i + 1]) col.appendChild(cards[i + 1]);
-        track.appendChild(col); if (!first) first = col;
-      }
+      var had = track.querySelectorAll('.hc').length, last = track.lastElementChild;
+      [].slice.call(tmp.children).forEach(function (c) { c.classList.add('hm-new'); last.appendChild(c); });
       more.setAttribute('data-o', o + (d.count || 0));
-      var box = track.closest('[data-hs]'); if (box && box._hsBuild) box._hsBuild();
-      if (first) track.scrollTo({ left: first.offsetLeft - track.offsetLeft, behavior: reduce ? 'auto' : 'smooth' });
+      var pg = repage(had);
+      if (pg) track.scrollTo({ left: pg.offsetLeft - track.offsetLeft, behavior: reduce ? 'auto' : 'smooth' });
       if (!d.more) { more.remove(); var all = document.getElementById('hmAll'); if (all) all.hidden = false; }
       else { more.disabled = false; more.innerHTML = label; }
     }).catch(function () { more.disabled = false; more.innerHTML = label; });

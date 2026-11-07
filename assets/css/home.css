@@ -30,7 +30,7 @@
 .hm-hs{background:#0f172a}
 .hm-hs .hs-track{gap:0;padding:0}
 .hm-slide{flex-basis:100%}
-.hm-slide a,.hm-slide picture{display:block}
+.hm-slide > a,.hm-slide picture{display:block}
 .hm-slide img{display:block;width:100%;aspect-ratio:16/6;object-fit:cover;background:#1f2937}
 .hm-hs .hs-prev{left:14px}.hm-hs .hs-next{right:14px}.hm-hs .hs-prev,.hm-hs .hs-next{top:calc(50% - 20px);background:rgba(255,255,255,.9)}
 .hm-hs .hs-dots{position:absolute;left:0;right:0;bottom:12px;margin:0}.hm-hs .hs-dots button{background:rgba(255,255,255,.55)}.hm-hs .hs-dots button.on{background:#fff}
@@ -45,7 +45,7 @@
 .hm-def-c{display:block;background:#fff;color:#111827!important;text-decoration:none!important;box-shadow:0 30px 60px rgba(0,0,0,.35);transform:rotate(1.5deg)}
 .hm-def-c > span{display:block;padding:12px 14px}.hm-def-c b{display:block;font-size:15px;line-height:1.35}.hm-def-c small{display:flex;gap:6px;align-items:baseline;margin-top:6px}
 .hm-def-c small s{color:#9ca3af;font-size:12.5px}.hm-def-c .off{color:#15803d;font-weight:700;font-size:12.5px}
-@media (max-width:860px){.hm-def{grid-template-columns:1fr;padding-top:28px;padding-bottom:40px}.hm-def h1{font-size:32px}.hm-def p{font-size:15.5px}.hm-def-c{display:none}}
+@media (max-width:860px){.hm-def{grid-template-columns:1fr;padding-top:28px;padding-bottom:40px}.hm-def h1{font-size:32px}.hm-def p{font-size:15.5px}.hm-slide .hm-def-c{display:none}}
 
 /* ---- small course card (hc) ---- */
 .hc{display:flex;flex-direction:column;height:100%;background:#fff;border:1px solid #e5e7eb;color:#111827!important;text-decoration:none!important;transition:box-shadow .2s,transform .2s,border-color .2s;overflow:hidden}
@@ -60,12 +60,12 @@
 .hc-p{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px;margin-top:auto;padding-top:4px}.hc-p b{font-size:17px}.hc-p s{color:#9ca3af;font-size:13px}.hc-p .off{color:#15803d;font-weight:700;font-size:12.5px}
 .hc-go{display:block;margin-top:8px;padding:8px 0 0;border-top:1px solid #f1f2f4;color:var(--sa,#0c6878);font-weight:700;font-size:13.5px}
 
-/* ---- 2. our courses: columns of 2 cards (2 rows) ---- */
-.hm-col{display:flex;flex-direction:column;gap:16px;flex-basis:calc((100% - 48px) / 4)}
-.hm-col .hc{flex:1}
+/* ---- 2. our courses: pages of 2 rows, filled left to right (4 a row on computers, 3 on tablets, 2 on phones = 2 × 2) ---- */
+.hm-cs{--hc-cols:4}
+.hm-pg{flex-basis:100%;display:grid;grid-template-columns:repeat(var(--hc-cols),minmax(0,1fr));grid-auto-rows:1fr;gap:16px;align-content:start}
 .hm-new{animation:hmIn .4s ease}@keyframes hmIn{from{opacity:0;transform:translateY(8px)}}
-@media (max-width:1024px){.hm-col{flex-basis:calc((100% - 32px) / 3)}}
-@media (max-width:760px){.hm-col{flex-basis:calc((100% - 12px) / 2);gap:12px}.hc-t{font-size:13.5px}.hc-b{padding:8px 9px 10px}.hc-p b{font-size:15px}.hc-p .off{display:none}.hc-go{font-size:12.5px}.hc-m{font-size:11.5px}}
+@media (max-width:1024px){.hm-cs{--hc-cols:3}}
+@media (max-width:760px){.hm-cs{--hc-cols:2}.hm-pg{gap:12px}.hc-t{font-size:13.5px}.hc-b{padding:8px 9px 10px}.hc-p b{font-size:15px}.hc-p .off{display:none}.hc-go{font-size:12.5px}.hc-m{font-size:11.5px}}
 
 /* ---- 3. categories ---- */
 .hm-cats{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
@@ -150,3 +150,4 @@
 .hc-img em{left:auto;right:8px}
 .hm-cat small.soon{color:#b45309}
 @media (max-width:760px){.hc-img .st-ph{font-size:12.5px;padding:8px}.hm-imp-g > div:last-child:nth-child(odd){grid-column:1/-1}}
+@media (max-width:560px){.hm-cta .hm-btn{flex:1 1 100%}}

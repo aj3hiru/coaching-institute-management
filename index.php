@@ -105,7 +105,7 @@ $short0 = function (string $n) { $p = preg_split('/\s+/', trim(preg_replace('/\(
   <div class="hm-h"><div><span class="hm-k">Courses</span><h2>Our Courses</h2></div><a href="/store/?t=course">View all ›</a></div>
   <?php if (!$courses): ?><div class="st-empty">New courses are coming soon.</div><?php else: ?>
   <div class="hm-cs" data-hs>
-    <div class="hs-track" id="hmCourses"><?php foreach (array_chunk($courses, 2) as $pair): ?><div class="hs-s hm-col"><?php foreach ($pair as $p) echo sh_mini_card($p, $catName($p)); ?></div><?php endforeach; ?></div>
+    <div class="hs-track" id="hmCourses"><div class="hs-s hm-pg"><?php foreach ($courses as $p) echo sh_mini_card($p, $catName($p)); ?></div></div>
     <button type="button" class="hs-prev" aria-label="Previous">‹</button><button type="button" class="hs-next" aria-label="Next">›</button><div class="hs-dots"></div>
   </div>
   <div class="hm-more"><?php if ($moreCourses): ?><button type="button" class="hm-btn ghost" id="hmMore" data-o="8"><?= $ico('grid') ?> View more courses</button><?php endif; ?><a class="hm-btn ghost<?= $moreCourses ? '' : ' show' ?>" id="hmAll" href="/store/?t=course"<?= $moreCourses ? ' hidden' : '' ?>>See all courses ›</a></div>
