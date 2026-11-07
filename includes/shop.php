@@ -434,6 +434,7 @@ function sh_icon(string $n): string
         'gauge' => '<path d="M12 14 16 9"/><path d="M3.3 19a10 10 0 1 1 17.4 0"/>',
         'playsolid' => '<path d="M8 5v14l11-7Z" fill="currentColor" stroke="none"/>',
         'back' => '<path d="m15 18-6-6 6-6"/>',
+        'pen' => '<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
         'menu' => '<path d="M3 6h18M3 12h18M3 18h18"/>',
         'cart' => '<circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6"/>',
     ];

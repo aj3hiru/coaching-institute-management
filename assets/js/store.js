@@ -261,3 +261,20 @@
   var w = document.querySelector('[data-write]');
   if (w) w.addEventListener('click', function (e) { e.preventDefault(); go('reviews'); var f = document.getElementById('spRvForm'); if (f) setTimeout(function () { f.classList.add('flash'); var r = f.querySelector('input[type=radio]'); if (r) r.focus(); }, 500); });
 })();
+/* reviews slider: dots follow the scroll, dots jump, mouse drag on desktop (touch scrolls natively) */
+(function () {
+  var box = document.querySelector('.sp-rvs'); if (!box) return;
+  var t = box.querySelector('.sp-rvs-track'), dots = box.querySelectorAll('.sp-rvs-dots button'), slides = t.children;
+  function cur() { var x = t.scrollLeft, best = 0, d = 1e9; for (var i = 0; i < slides.length; i++) { var dd = Math.abs(slides[i].offsetLeft - t.offsetLeft - x); if (dd < d) { d = dd; best = i; } } if (t.scrollLeft + t.clientWidth >= t.scrollWidth - 4) best = slides.length - 1; return best; }
+  function paint() { var c = cur(); dots.forEach(function (b, i) { b.classList.toggle('is-active', i === c); }); }
+  // hide dots that can never be reached alone (when the last cards all fit on screen)
+  function fit() { var max = t.scrollWidth - t.clientWidth; dots.forEach(function (b, i) { b.hidden = i > 0 && i < slides.length - 1 && slides[i].offsetLeft - t.offsetLeft > max + 4; }); var box2 = box.querySelector('.sp-rvs-dots'); if (box2) box2.hidden = max <= 4; paint(); }
+  var raf = 0; t.addEventListener('scroll', function () { cancelAnimationFrame(raf); raf = requestAnimationFrame(paint); }, { passive: true });
+  window.addEventListener('resize', fit); fit();
+  dots.forEach(function (b, i) { b.addEventListener('click', function () { t.scrollTo({ left: slides[i].offsetLeft - t.offsetLeft, behavior: 'smooth' }); }); });
+  var down = false, moved = false, sx = 0, sl = 0;
+  t.addEventListener('mousedown', function (e) { down = true; moved = false; sx = e.pageX; sl = t.scrollLeft; });
+  window.addEventListener('mousemove', function (e) { if (!down) return; var dx = e.pageX - sx; if (Math.abs(dx) > 5) { moved = true; t.classList.add('is-dragging'); t.scrollLeft = sl - dx; } });
+  window.addEventListener('mouseup', function () { if (!down) return; down = false; if (moved) { t.classList.remove('is-dragging'); var c = cur(); t.scrollTo({ left: slides[c].offsetLeft - t.offsetLeft, behavior: 'smooth' }); } });
+  t.addEventListener('dragstart', function (e) { e.preventDefault(); });
+})();

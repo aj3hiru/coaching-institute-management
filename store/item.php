@@ -95,8 +95,7 @@ $tabs = array_filter(['about' => $desc !== '' ? 'About' : '', 'content' => $isCo
     <?php if ($flash): ?><div class="st-msg <?= $flash[0] === 'ok' ? 'ok' : 'err' ?>" style="margin-top:20px"><?= sh_e($flash[1]) ?></div><?php endif; ?>
     <?php if ($desc !== ''): ?>
     <section class="sp-sec" id="about"><h2>About this <?= $isCourse ? 'course' : 'notes pack' ?></h2>
-      <div class="sp-desc" id="spDesc"><?= nl2br(sh_e($desc)) ?></div>
-      <button type="button" class="sp-link" data-more="spDesc" hidden>Show more</button>
+      <div class="sp-desc"><?= nl2br(sh_e($desc)) ?></div>
     </section>
     <?php endif; ?>
 
@@ -166,19 +165,24 @@ $tabs = array_filter(['about' => $desc !== '' ? 'About' : '', 'content' => $isCo
           <?php if ($mine): ?><button class="sp-link" type="submit" name="a" value="delete" formnovalidate onclick="return confirm('Remove your review?')">Remove</button><?php endif; ?></div>
         <?php if ($mine && $mine['status'] !== 'published'): ?><p class="sp-note" style="text-align:left">Your review is hidden by the institute.</p><?php endif; ?>
       </form>
-      <?php elseif ($u): ?><p class="sp-rv-note"><?= $ico('lock') ?> Only students who have this <?= $isCourse ? 'course' : 'notes pack' ?> can write a review.</p>
-      <?php else: ?><p class="sp-rv-note"><?= $ico('lock') ?> Students who have this <?= $isCourse ? 'course' : 'notes pack' ?> can <a href="/account/login?next=<?= rawurlencode(sh_url($p) . '#reviews') ?>">log in</a> to write a review.</p><?php endif; ?>
+      <?php elseif ($u): ?><p class="sp-rv-note"><span class="sp-pen"><?= $ico('pen') ?></span><span>Reviews are written by <b>enrolled students</b>. Join this <?= $isCourse ? 'course' : 'notes pack' ?> to share your experience.</span></p>
+      <?php else: ?><p class="sp-rv-note"><span class="sp-pen"><?= $ico('pen') ?></span><span>Enrolled in this <?= $isCourse ? 'course' : 'notes pack' ?>? <a href="/account/login?next=<?= rawurlencode(sh_url($p) . '#reviews') ?>">Log in</a> to write your review.</span></p><?php endif; ?>
 
       <?php if (!$reviews): ?><div class="sp-empty">No reviews yet<?= $canReview && !$mine ? ' — be the first to rate it.' : '.' ?></div><?php endif; ?>
-      <div class="sp-rv-list" id="spRvList">
-      <?php foreach ($reviews as $i => $r): $nm = $short($r['name']) ?: 'Student'; ?>
-        <article class="sp-rv<?= $i >= 6 ? ' is-more' : '' ?>"><span class="sp-av"><?= sh_e(mb_strtoupper(mb_substr($nm, 0, 1))) ?></span>
-          <div><div class="sp-rv-h"><b><?= sh_e($nm) ?></b><?= sh_stars((float)$r['rating'], 'sp-stars sm') ?><small><?= date('d M Y', strtotime($r['updated_at'] ?: $r['created_at'])) ?></small></div>
-            <span class="sp-ver"><?= $ico('check') ?> Enrolled student</span>
-            <?php if ($r['body']): ?><p><?= nl2br(sh_e($r['body'])) ?></p><?php endif; ?></div></article>
-      <?php endforeach; ?>
+      <?php if ($reviews): ?>
+      <div class="sp-rvs">
+        <div class="sp-rvs-track" tabindex="0" aria-label="Student reviews — swipe for more">
+        <?php foreach ($reviews as $i => $r): $nm = $short($r['name']) ?: 'Student'; ?>
+          <article class="sp-rvc">
+            <div class="sp-rvc-top"><?= sh_stars((float)$r['rating'], 'sp-stars sm') ?><small><?= date('d M Y', strtotime($r['updated_at'] ?: $r['created_at'])) ?></small></div>
+            <p class="sp-rvc-q"><?= $r['body'] ? nl2br(sh_e($r['body'])) : '<span class="sp-rvc-only">Rated ' . (int)$r['rating'] . ' out of 5</span>' ?></p>
+            <div class="sp-rvc-who"><span class="sp-av sp-av<?= $i % 3 ?>"><?= sh_e(mb_strtoupper(mb_substr($nm, 0, 1))) ?></span><b><?= sh_e($nm) ?></b></div>
+          </article>
+        <?php endforeach; ?>
+        </div>
+        <?php if (count($reviews) > 1): ?><div class="sp-rvs-dots"><?php foreach ($reviews as $i => $_): ?><button type="button" aria-label="Review <?= $i + 1 ?>"<?= $i === 0 ? ' class="is-active"' : '' ?>></button><?php endforeach; ?></div><?php endif; ?>
       </div>
-      <?php if (count($reviews) > 6): ?><button type="button" class="sp-btn sp-ghost" data-allrv style="max-width:260px">Show all <?= count($reviews) ?> reviews</button><?php endif; ?>
+      <?php endif; ?>
     </section>
 
     <section class="sp-sec" id="faq"><h2>Frequently asked questions</h2>
