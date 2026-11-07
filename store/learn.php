@@ -54,7 +54,7 @@ $ico = fn($n) => sh_icon($n);
   <a class="lp-back" href="<?= sh_e(sh_url($p) . ($staff ? '&preview=1' : '')) ?>" aria-label="Course page"><?= $ico('back') ?></a>
   <div class="lp-tt"><b><?= sh_e($p['title']) ?></b><?php if ($isCourse && $all): ?><span><?= $owner ? $nDone . ' of ' . count($all) . ' done' : ($staff ? 'Staff preview' : 'Free preview') ?></span><?php endif; ?></div>
   <?php if ($isCourse && $all && $owner): ?><div class="lp-ring" style="--p:<?= $pct ?>" title="<?= $pct ?>% done"><span><?= $pct ?>%</span></div><?php endif; ?>
-  <?php if ($u): ?><a class="lp-lib" href="/account/">My Library</a><?php endif; ?>
+  <?php if ($u): ?><a class="lp-lib" href="/account/">My Courses</a><?php endif; ?>
 </div></div>
 <?php if (isset($_GET['new'])): ?><div class="lp-wrap"><div class="st-msg ok">Payment successful — <b><?= sh_e($p['title']) ?></b> is now in your library. Happy learning!</div></div><?php endif; ?>
 <?php if ($staff && !$owner): ?><div class="lp-wrap"><div class="st-msg info">Staff preview — every video and PDF is open for you. <a href="<?= sh_e(sh_url($p)) ?>">See it as a student</a></div></div><?php endif; ?>
@@ -63,9 +63,10 @@ $ico = fn($n) => sh_icon($n);
   <div class="lp-main">
   <?php if ($lesson): ?>
     <?php $isPdfL = ($lesson['kind'] ?? 'video') === 'pdf'; $directUrl = !$lesson['video_file'] && $lesson['video_url'] && sh_is_direct_video((string)$lesson['video_url']); ?>
-    <?php if ($isPdfL): ?>
-    <div class="st-pdfv lp-pdfl" id="stPdf" data-src="<?= $lesson['pdf_file'] ? sh_e(sh_media_link('p', (int)$lesson['id'], $uid)) : '' ?>" oncontextmenu="return false"><?= $lesson['pdf_file'] ? '' : '<div class="st-empty">The PDF of this lecture is being uploaded.</div>' ?></div>
-    <span class="lp-sub" id="stPdfInfo" hidden></span>
+    <?php if ($isPdfL): $pdfUrl = $lesson['pdf_file'] ? sh_media_link('p', (int)$lesson['id'], $uid) : ''; ?>
+    <?php if ($pdfUrl): ?><div class="lp-pdfbar"><span><?= $ico('file') ?> <b>PDF lecture</b><span class="lp-sub" id="stPdfInfo" hidden></span></span><span class="lp-pdfbar-b"><a class="lp-pdfbtn ghost" href="<?= sh_e($pdfUrl) ?>" target="_blank" rel="noopener"><?= $ico('eye') ?> Open full screen</a><a class="lp-pdfbtn" href="<?= sh_e($pdfUrl) ?>&amp;dl=1" download><?= $ico('download') ?> Download PDF</a></span></div><?php endif; ?>
+    <div class="st-pdfv lp-pdfl" id="stPdf" data-src="<?= sh_e($pdfUrl) ?>"><?= $lesson['pdf_file'] ? '' : '<div class="st-empty">The PDF of this lecture is being uploaded.</div>' ?></div>
+    <?php if (!$pdfUrl): ?><span class="lp-sub" id="stPdfInfo" hidden></span><?php endif; ?>
     <?php else: ?>
     <div class="st-player" id="stPlayer" oncontextmenu="return false">
       <?php if ($lesson['video_file'] || $directUrl): ?>
@@ -113,7 +114,7 @@ $ico = fn($n) => sh_icon($n);
       <?php $first = true; foreach ($tabs as $k => $_): ?><div class="lt-pane" data-pane="<?= $k ?>"<?= $first ? '' : ' hidden' ?>>
         <?php if ($k === 'about'): ?><div class="lt-about"><?= nl2br(sh_e($lesson['notes'])) ?></div>
         <?php elseif ($k === 'notes'): ?>
-          <?php foreach ($lNotes as $nf): ?><div class="lt-note"><button type="button" class="lt-note-h" data-pdf="<?= sh_e(sh_media_link('f', (int)$nf['id'], $uid)) ?>"><span class="lt-link-i"><?= $ico('notes') ?></span><span><b><?= sh_e($nf['title']) ?></b><small><?= $nf['pages'] ? (int)$nf['pages'] . ' pages · ' : '' ?>tap to read</small></span><span class="lt-link-go">Read ›</span></button><div class="st-pdfv lt-pdf" hidden></div></div><?php endforeach; ?>
+          <?php foreach ($lNotes as $nf): $nUrl = sh_media_link('f', (int)$nf['id'], $uid); ?><div class="lt-note"><div class="lt-note-r"><button type="button" class="lt-note-h" data-pdf="<?= sh_e($nUrl) ?>"><span class="lt-link-i"><?= $ico('notes') ?></span><span><b><?= sh_e($nf['title']) ?></b><small><?= $nf['pages'] ? (int)$nf['pages'] . ' pages · ' : '' ?>PDF</small></span><span class="lt-link-go">View ›</span></button><a class="lt-dl" href="<?= sh_e($nUrl) ?>&amp;dl=1" download title="Download <?= sh_e($nf['title']) ?>"><?= $ico('download') ?><span>Download</span></a></div><div class="st-pdfv lt-pdf" hidden></div></div><?php endforeach; ?>
         <?php elseif ($k === 'vvi'): ?>
           <?php if ($lVvi['qa']): ?><div class="sp-faq lt-faq"><?php foreach ($lVvi['qa'] as $n => [$qq, $aa]): ?><details><summary><span class="lt-qn">Q<?= $n + 1 ?>.</span> <?= sh_e($qq) ?></summary><div class="sp-faq-b"><p><?= $aa !== '' ? nl2br(sh_e($aa)) : '<em>Answer will be added soon.</em>' ?></p></div></details><?php endforeach; ?></div><?php endif; ?>
           <?php if ($lVvi['links']): ?><div class="lt-links"><?= $linkBox($lVvi['links'], 'vvi') ?></div><?php endif; ?>
@@ -136,8 +137,10 @@ $ico = fn($n) => sh_icon($n);
     </div>
     <?php endif; ?>
   <?php else: ?>
-    <div class="lp-head"><div><span class="lp-ch">PDF notes</span><h1><?= sh_e($file['title']) ?></h1><span class="lp-sub" id="stPdfInfo">Loading…</span></div></div>
-    <div class="st-pdfv" id="stPdf" data-src="<?= sh_e(sh_media_link('f', (int)$file['id'], $uid)) ?>" oncontextmenu="return false"></div>
+    <?php $fUrl = sh_media_link('f', (int)$file['id'], $uid); ?>
+    <div class="lp-head"><div><span class="lp-ch">PDF notes</span><h1><?= sh_e($file['title']) ?></h1><span class="lp-sub" id="stPdfInfo">Loading…</span></div>
+      <div class="lp-pdfbar-b"><a class="lp-pdfbtn ghost" href="<?= sh_e($fUrl) ?>" target="_blank" rel="noopener"><?= $ico('eye') ?> Open full screen</a><a class="lp-pdfbtn" href="<?= sh_e($fUrl) ?>&amp;dl=1" download><?= $ico('download') ?> Download PDF</a></div></div>
+    <div class="st-pdfv" id="stPdf" data-src="<?= sh_e($fUrl) ?>"></div>
   <?php endif; ?>
   </div>
 

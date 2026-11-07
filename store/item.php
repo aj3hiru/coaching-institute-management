@@ -93,7 +93,7 @@ $tabs = array_filter(['about' => $desc !== '' ? 'About' : '', 'content' => $isCo
         <?php if ($preview): ?><a class="sp-btn sp-ghost" href="<?= sh_e($preview) ?>">Try free preview</a><?php endif; ?>
         <?php if (!$u): ?><p class="sp-note">You will log in or create a free account first.</p><?php endif; ?>
       <?php endif; ?>
-      <p class="sp-secure"><?= $ico('shield') ?> Secure payment by Razorpay — UPI, cards, net banking</p>
+      <p class="sp-secure"><?= $ico('shield') ?> <?= sh_pay_demo() ? 'Demo payment — UPI, cards, net banking (no real money)' : 'Secure payment by Razorpay — UPI, cards, net banking' ?></p>
     </div>
   </aside>
 

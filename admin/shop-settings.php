@@ -19,6 +19,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header('Location: /admin/shop-settings.php#demo');
         exit;
     }
+    if ($a === 'demo_pay_clear') { // remove the practice orders made in demo payment mode (and the access they gave)
+        $ids = $pdo->query("SELECT id FROM sh_orders WHERE rzp_order LIKE 'demo\\_%'")->fetchAll(PDO::FETCH_COLUMN);
+        if ($ids) { $in = implode(',', array_map('intval', $ids)); $pdo->exec("DELETE FROM sh_access WHERE source = 'purchase' AND order_id IN ($in)"); $pdo->exec("DELETE FROM sh_orders WHERE id IN ($in)"); }
+        admin_log('shop_settings', 'Removed ' . count($ids) . ' demo payment orders');
+        admin_flash(count($ids) . ' demo payment order' . (count($ids) === 1 ? '' : 's') . ' removed (and the access they gave).');
+        header('Location: /admin/shop-settings.php#paymode'); exit;
+    }
     if ($a === 'test') {
         $k = sh_rzp_keys();
         if ($k['id'] === '' || $k['secret'] === '') admin_flash('Save the Key Id and Key Secret first.', 'error');
@@ -33,7 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $id = trim((string)($_POST['rzp_key_id'] ?? ''));
         if ($id !== '' && !preg_match('/^rzp_(test|live)_[A-Za-z0-9]{8,40}$/', $id)) { admin_flash('The Key Id looks wrong — it starts with rzp_test_ or rzp_live_.', 'error'); header('Location: /admin/shop-settings.php'); exit; }
-        $save = ['enabled' => !empty($_POST['enabled']) ? '1' : '0', 'rzp_key_id' => $id, 'max_video_mb' => (string)max(50, min(20480, (int)($_POST['max_video_mb'] ?? 4096)))];
+        $save = ['enabled' => !empty($_POST['enabled']) ? '1' : '0', 'pay_demo' => ($_POST['pay_mode'] ?? '') === 'demo' ? '1' : '0', 'rzp_key_id' => $id, 'max_video_mb' => (string)max(50, min(20480, (int)($_POST['max_video_mb'] ?? 4096)))];
         foreach (['rzp_key_secret', 'rzp_webhook_secret'] as $f) { $v = trim((string)($_POST[$f] ?? '')); if ($v !== '') $save[$f] = $v; if (!empty($_POST['clear_' . $f])) $save[$f] = ''; } // empty = keep the saved one
         edu_settings_save('shop', $save);
         admin_log('shop_settings', 'Updated online store settings');
@@ -66,6 +73,13 @@ $mask = fn($s) => $s === '' ? '' : str_repeat('•', 8) . substr($s, -4);
   <p class="ci-muted" style="margin:6px 0 0">Closing it hides the store pages; buyers' access is kept for when it opens again. Add "/store" to your site menu in Customize → Menus.</p>
 </div></div>
 
+<?php $nDemoPay = (int)$pdo->query("SELECT COUNT(*) FROM sh_orders WHERE rzp_order LIKE 'demo\\_%'")->fetchColumn(); ?>
+<div class="ci-card" id="paymode"><div class="ci-card-h"><h3>Payment mode</h3><?= sh_pay_demo() ? '<span class="ci-badge ci-b-amber">Demo — no real money</span>' : '' ?></div><div class="ci-card-b">
+  <label style="display:flex;gap:10px;align-items:flex-start;margin-bottom:10px"><input type="radio" name="pay_mode" value="demo" <?= sh_pay_demo() ? 'checked' : '' ?> style="margin-top:3px"><span><b>Demo payment</b> — for showing the store before launch. Buyers see a practice payment window marked "DEMO"; pressing Pay gives the course at once. No Razorpay keys needed and no money moves.</span></label>
+  <label style="display:flex;gap:10px;align-items:flex-start"><input type="radio" name="pay_mode" value="razorpay" <?= sh_pay_demo() ? '' : 'checked' ?> style="margin-top:3px"><span><b>Razorpay</b> — the real checkout. With <b>rzp_test_</b> keys it is Razorpay's own test mode (test cards / UPI, no real money); with <b>rzp_live_</b> keys it takes real payments.</span></label>
+  <?php if ($nDemoPay): ?><p class="ci-muted" style="margin:12px 0 0"><?= $nDemoPay ?> demo payment order<?= $nDemoPay === 1 ? '' : 's' ?> so far (marked "demo" in Orders). Remove them before launch with the button below.</p><?php endif; ?>
+</div></div>
+
 <div class="ci-card"><div class="ci-card-h"><h3>Razorpay</h3><?= sh_rzp_ready() ? (str_starts_with($k['id'], 'rzp_test_') ? '<span class="ci-badge ci-b-amber">Test mode</span>' : '<span class="ci-badge ci-b-green">Live</span>') : '<span class="ci-badge ci-b-red">Not set up</span>' ?></div><div class="ci-card-b">
   <p class="ci-muted" style="margin:0 0 12px">Razorpay Dashboard → Account &amp; Settings → API Keys. Use <b>Test</b> keys first (no real money), then the <b>Live</b> keys after your account is activated.</p>
   <div class="ci-grid3">
@@ -85,6 +99,7 @@ $mask = fn($s) => $s === '' ? '' : str_repeat('•', 8) . substr($s, -4);
 <button class="ci-btn" type="submit"><i class="fas fa-check"></i> Save settings</button>
 </form>
 <form method="post" style="margin-top:10px"><?= csrf_field() ?><input type="hidden" name="action" value="test"><button class="ci-btn ci-ghost" type="submit"><i class="fas fa-plug"></i> Test Razorpay connection</button></form>
+<?php if ($nDemoPay): ?><form method="post" style="margin-top:12px" onsubmit="return confirm('Remove all <?= $nDemoPay ?> demo payment orders and the course access they gave? Real orders are not touched.')"><?= csrf_field() ?><input type="hidden" name="action" value="demo_pay_clear"><button class="ci-btn ci-ghost" type="submit"><i class="fas fa-broom"></i> Remove demo payment orders (<?= $nDemoPay ?>)</button></form><?php endif; ?>
 <?php require_once INCLUDES_PATH . '/shop-demo.php'; $demo = sh_demo_info(); ?>
 <div class="ci-card" id="demo" style="margin-top:16px"><div class="ci-card-h"><h3>Demo data</h3><?= $demo['products'] ? '<span class="ci-badge ci-b-amber">Demo is on</span>' : '' ?></div><div class="ci-card-b">
   <?php if ($demo['products']): ?>

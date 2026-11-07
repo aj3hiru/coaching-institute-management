@@ -30,6 +30,7 @@
         if (d.login) { location.href = '/account/login?next=' + encodeURIComponent(location.pathname + location.search); return; }
         if (d.error) { busy(false); say(d.error); return; }
         if (d.owned || d.free) { location.href = d.go; return; }
+        if (d.demo) { demoCheckout(d, tok); return; }
         return loadScript('https://checkout.razorpay.com/v1/checkout.js').then(function () {
           var b = window.ST_BUYER || {}, paid = false;
           var rz = new window.Razorpay({
@@ -48,6 +49,37 @@
           rz.open();
         });
       }).catch(function (e) { busy(false); say(e && e.message ? e.message : 'Could not start the payment. Please try again.'); });
+    });
+  }
+
+  // ---- Demo checkout (Store Settings → Payment mode → Demo): a practice payment window, no real money ----
+  function demoCheckout(d, tok) {
+    var rs = '₹' + (d.amount / 100).toLocaleString('en-IN', { maximumFractionDigits: 2 }), b = window.ST_BUYER || {};
+    var w = document.createElement('div'); w.className = 'dpay'; w.setAttribute('role', 'dialog'); w.setAttribute('aria-modal', 'true'); w.setAttribute('aria-label', 'Demo payment');
+    var e = function (t) { return String(t || '').replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+    w.innerHTML = '<div class="dpay-box"><div class="dpay-top"><div><small>' + e(window.ST_SITE || document.title) + '</small><b>' + e(d.title) + '</b></div><button type="button" class="dpay-x" aria-label="Close">×</button></div>'
+      + '<div class="dpay-demo">DEMO PAYMENT · test mode — no real money is taken</div>'
+      + '<div class="dpay-amt"><span>Amount to pay</span><b>' + rs + '</b></div>'
+      + (b.contact || b.email ? '<div class="dpay-who">' + e(b.name) + ' · ' + e(b.contact || b.email) + '</div>' : '')
+      + '<div class="dpay-ways">' + [['upi', 'UPI', 'Google Pay, PhonePe, Paytm'], ['card', 'Card', 'Debit / credit card'], ['netbanking', 'Net banking', 'All Indian banks'], ['wallet', 'Wallet', 'Paytm, Mobikwik']].map(function (x, i) {
+        return '<label class="dpay-way"><input type="radio" name="dpw" value="' + x[0] + '"' + (i ? '' : ' checked') + '><span><b>' + x[1] + '</b><small>' + x[2] + '</small></span></label>'; }).join('') + '</div>'
+      + '<button type="button" class="dpay-pay">Pay ' + rs + '</button><button type="button" class="dpay-fail">Show a failed payment</button><p class="dpay-m" role="status"></p></div>';
+    document.body.appendChild(w); document.documentElement.style.overflow = 'hidden';
+    var m = w.querySelector('.dpay-m'), pay = w.querySelector('.dpay-pay'), done = false;
+    var close = function () { w.remove(); document.documentElement.style.overflow = ''; busy(false); };
+    w.querySelector('.dpay-x').addEventListener('click', function () { if (done) return; close(); post('/store/checkout', { a: 'cancel', order: d.order, why: 'Closed demo checkout', _t: tok }); });
+    pay.addEventListener('click', function () {
+      done = true; pay.disabled = true; pay.innerHTML = '<span class="dpay-spin"></span> Processing…'; m.textContent = '';
+      setTimeout(function () {
+        post('/store/checkout', { a: 'demo_pay', order: d.order, via: (w.querySelector('input[name=dpw]:checked') || {}).value || 'upi', _t: tok }).then(function (v) {
+          if (!v.ok) { done = false; pay.disabled = false; pay.textContent = 'Pay ' + rs; m.textContent = v.error || 'Something went wrong.'; return; }
+          w.querySelector('.dpay-box').innerHTML = '<div class="dpay-ok"><span class="dpay-tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 10 17 19 7"/></svg></span><b>Payment successful</b><small>' + rs + ' · demo payment</small><p>Opening your course…</p></div>';
+          setTimeout(function () { location.href = v.go; }, 1300);
+        }).catch(function () { done = false; pay.disabled = false; pay.textContent = 'Pay ' + rs; m.textContent = 'Network problem. Please try again.'; });
+      }, 900);
+    });
+    w.querySelector('.dpay-fail').addEventListener('click', function () {
+      post('/store/checkout', { a: 'demo_fail', order: d.order, _t: tok }).then(function () { close(); say('The payment failed (demo). You can try again.'); });
     });
   }
 
@@ -319,7 +351,7 @@
   // notes: read inside the tab
   lt.querySelectorAll('.lt-note-h').forEach(function (h) {
     h.addEventListener('click', function () {
-      var box = h.nextElementSibling, open = box.hidden; box.hidden = !open; h.classList.toggle('open', open);
+      var box = h.closest('.lt-note').querySelector('.lt-pdf'), open = box.hidden; box.hidden = !open; h.classList.toggle('open', open);
       if (open && !box.dataset.done) { box.dataset.done = '1'; window.stPdf(box, h.getAttribute('data-pdf'), h.getAttribute('data-wm'), null); }
     });
   });

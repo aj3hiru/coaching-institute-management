@@ -23,6 +23,10 @@ try {
         }
         $pdo->prepare("INSERT INTO sh_orders (user_id, product_id, title, amount) VALUES (?, ?, ?, ?)")->execute([$u['id'], $p['id'], $p['title'], $p['price']]);
         $oid = (int)$pdo->lastInsertId();
+        if (sh_pay_demo()) { // demo mode: our own practice checkout, no money moves
+            $pdo->prepare("UPDATE sh_orders SET rzp_order = ?, method = 'demo' WHERE id = ?")->execute(['demo_' . $oid . '_' . bin2hex(random_bytes(4)), $oid]);
+            $out(['ok' => true, 'demo' => true, 'order' => $oid, 'amount' => (int)round((float)$p['price'] * 100), 'title' => $p['title'], 'go' => $go]);
+        }
         try {
             $rzp = sh_rzp_order((float)$p['price'], 'DKO-' . $oid, ['order' => (string)$oid, 'product' => (string)$p['id'], 'buyer' => (string)$u['id']]);
         } catch (RuntimeException $e) {
@@ -48,6 +52,21 @@ try {
             $out(['error' => 'The payment could not be confirmed. If money was taken, contact us with payment id ' . $rzpPay . '.'], 400);
         }
         if (!sh_order_paid($pdo, $oid, $rzpPay)) $out(['error' => 'Payment received, but access could not be given right now. Please contact us with payment id ' . $rzpPay . '.'], 500);
+        $out(['ok' => true, 'go' => '/store/learn?s=' . rawurlencode($o['slug']) . '&new=1']);
+    }
+    if ($a === 'demo_pay' || $a === 'demo_fail') { // only while demo mode is on, only for this buyer's own demo order
+        if (!sh_pay_demo()) $out(['error' => 'Demo payments are switched off.'], 403);
+        $oid = (int)($_POST['order'] ?? 0);
+        $q = $pdo->prepare("SELECT o.*, p.slug FROM sh_orders o JOIN sh_products p ON p.id = o.product_id WHERE o.id = ? AND o.user_id = ? AND o.status = 'created' AND o.rzp_order LIKE 'demo\\_%'");
+        $q->execute([$oid, $u['id']]);
+        $o = $q->fetch(PDO::FETCH_ASSOC);
+        if (!$o) $out(['error' => 'This demo order was not found. Please try again.'], 404);
+        if ($a === 'demo_fail') {
+            $pdo->prepare("UPDATE sh_orders SET status = 'failed', error = 'Demo: payment failed (test)' WHERE id = ?")->execute([$oid]);
+            $out(['ok' => true]);
+        }
+        $m = preg_replace('/[^a-z]/', '', (string)($_POST['via'] ?? 'upi')) ?: 'upi';
+        if (!sh_order_paid($pdo, $oid, 'demo_pay_' . bin2hex(random_bytes(6)), 'demo · ' . $m)) $out(['error' => 'Could not finish the demo payment.'], 500);
         $out(['ok' => true, 'go' => '/store/learn?s=' . rawurlencode($o['slug']) . '&new=1']);
     }
     if ($a === 'cancel') { // the buyer closed the payment window

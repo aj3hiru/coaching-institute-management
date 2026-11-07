@@ -421,6 +421,8 @@ function sh_rzp_keys(): array
     return ['id' => trim((string)es('shop', 'rzp_key_id', '')), 'secret' => trim((string)es('shop', 'rzp_key_secret', '')), 'hook' => trim((string)es('shop', 'rzp_webhook_secret', ''))];
 }
 function sh_rzp_ready(): bool { $k = sh_rzp_keys(); return $k['id'] !== '' && $k['secret'] !== ''; }
+/** Demo payment mode (for showing the store before launch): a clearly marked practice checkout, no real money, no Razorpay. */
+function sh_pay_demo(): bool { return (string)es('shop', 'pay_demo', '0') === '1'; }
 
 /** Creates a Razorpay order. Returns its id or throws. Amount in rupees. */
 function sh_rzp_order(float $amount, string $receipt, array $notes = []): string
@@ -492,6 +494,7 @@ function sh_icon(string $n): string
         'infinity' => '<path d="M18.2 8.2a5 5 0 1 1 0 7.6L12 12 5.8 8.2a5 5 0 1 0 0 7.6L12 12"/>',
         'device' => '<rect x="5" y="2" width="14" height="20"/><path d="M11 18h2"/>',
         'shield' => '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/>',
+        'download' => '<path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/>',
         'eye' => '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',
         'layers' => '<path d="m12 2 10 5-10 5L2 7Z"/><path d="m2 17 10 5 10-5M2 12l10 5 10-5"/>',
         'calendar' => '<rect x="3" y="4" width="18" height="18"/><path d="M16 2v4M8 2v4M3 10h18"/>',
