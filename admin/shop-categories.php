@@ -1,6 +1,6 @@
 <?php
 // Online Store → Categories: groups for courses and notes (made from the classes at first). Each has a name, an icon
-// (PNG / JPG / WebP / SVG), a description and its own SEO title + description for its page (/store/?c=slug).
+// (PNG / JPG / WebP / SVG), a description and its own SEO title + description for its page (/category/slug).
 require_once __DIR__ . '/components/guard.php';
 require_once INCLUDES_PATH . '/institute.php';
 require_once INCLUDES_PATH . '/shop.php';
@@ -61,7 +61,7 @@ $open = $edit || isset($_GET['new']);
   <div class="ci-f"><label>Icon <span class="ci-muted" style="font-weight:400">(PNG with a clear background works best)</span></label>
     <div style="display:flex;gap:10px;align-items:center"><span class="scg-ico" id="scgPrev"><?php if (!empty($c['icon'])): ?><img src="<?= ci_e(sh_upload_url($c['icon'])) ?>" alt=""><?php else: ?><b><?= ci_e(mb_substr($c['name'] ?? '?', 0, 1)) ?></b><?php endif; ?></span><input type="file" name="icon" id="scgIcon" accept="image/png,image/jpeg,image/webp,image/svg+xml,.svg"></div>
     <?php if (!empty($c['icon'])): ?><label style="font-weight:400;margin-top:6px;display:flex;gap:6px;align-items:center"><input type="checkbox" name="icon_rm" value="1"> Remove icon</label><?php endif; ?></div>
-  <div class="ci-f"><label>Link (slug)</label><input name="slug" id="scgSlug" maxlength="140" placeholder="made from the name" value="<?= ci_e($c['slug'] ?? '') ?>"><span class="ci-hint">Page: /store/?c=<span id="scgSlugV"><?= ci_e($c['slug'] ?? '') ?></span></span></div>
+  <div class="ci-f"><label>Link (slug)</label><input name="slug" id="scgSlug" maxlength="140" placeholder="made from the name" value="<?= ci_e($c['slug'] ?? '') ?>"><span class="ci-hint">Page: /category/<span id="scgSlugV"><?= ci_e($c['slug'] ?? '') ?></span></span></div>
   <div class="ci-f"><label>Show</label><select name="status"><option value="active">Show on the site</option><option value="hidden" <?= ($c['status'] ?? '') === 'hidden' ? 'selected' : '' ?>>Hidden</option></select></div>
   <div class="ci-f" style="grid-column:1/-1"><label>About this category <span class="ci-muted" style="font-weight:400">(optional — shown on its page)</span></label><textarea name="description" rows="3" maxlength="5000"><?= ci_e($c['description'] ?? '') ?></textarea></div>
 </div>
@@ -70,7 +70,7 @@ $open = $edit || isset($_GET['new']);
     <div class="ci-f" style="grid-column:span 3"><label>SEO title <span class="ci-muted" style="font-weight:400" id="scgTc"></span></label><input name="seo_title" id="scgT" maxlength="200" placeholder="e.g. Class 10 Online Courses & Notes | <?= ci_e(edu_site_name()) ?>" value="<?= ci_e($c['seo_title'] ?? '') ?>"></div>
     <div class="ci-f" style="grid-column:span 3"><label>SEO description <span class="ci-muted" style="font-weight:400" id="scgDc"></span></label><textarea name="seo_desc" id="scgD" rows="2" maxlength="320" placeholder="One or two lines about the courses in this category."><?= ci_e($c['seo_desc'] ?? '') ?></textarea></div>
   </div>
-  <div class="scg-prev"><b id="scgPT"></b><small><?= ci_e(preg_replace('#^https?://#', '', rtrim(SITE_URL, '/'))) ?>/store/?c=<span id="scgPS"></span></small><p id="scgPD"></p></div>
+  <div class="scg-prev"><b id="scgPT"></b><small><?= ci_e(preg_replace('#^https?://#', '', rtrim(SITE_URL, '/'))) ?>/category/<span id="scgPS"></span></small><p id="scgPD"></p></div>
 </div>
 <div style="margin-top:14px"><button class="ci-btn" type="submit"><i class="fas fa-check"></i> Save category</button></div>
 </form></div></div>
@@ -88,10 +88,10 @@ document.getElementById('scgIcon').addEventListener('change',function(){var f=th
 <?php if (!$cats): ?><tr><td colspan="6" class="ci-empty">No categories yet.</td></tr><?php endif; ?>
 <?php foreach ($cats as $c): ?>
 <tr><td><span class="scg-ico"><?php if ($c['icon']): ?><img src="<?= ci_e(sh_upload_url($c['icon'])) ?>" alt=""><?php else: ?><b><?= ci_e(mb_substr($c['name'], 0, 1)) ?></b><?php endif; ?></span></td>
-<td><b><?= ci_e($c['name']) ?></b><small class="ci-muted" style="display:block">/store/?c=<?= ci_e($c['slug']) ?><?= $c['seo_title'] ? ' · SEO set' : '' ?></small></td>
+<td><b><?= ci_e($c['name']) ?></b><small class="ci-muted" style="display:block">/category/<?= ci_e($c['slug']) ?><?= $c['seo_title'] ? ' · SEO set' : '' ?></small></td>
 <td><?= (int)$c['items'] ?></td><td><?= (int)$c['sort'] ?></td>
 <td><?= $c['status'] === 'active' ? '<span class="ci-badge ci-b-green">Shown</span>' : '<span class="ci-badge ci-b-grey">Hidden</span>' ?></td>
-<td><div class="ci-icos"><?= ci_ico('eye', '/store/?c=' . rawurlencode($c['slug']), 'View', 'link', ' target="_blank"') ?><?= ci_ico('edit', '/admin/shop-categories.php?edit=' . (int)$c['id'], 'Edit') ?><?= ci_post_ico('trash', 'Delete', ['action' => 'delete', 'id' => $c['id']], 'Delete this category? Its courses stay, without a category.') ?></div></td></tr>
+<td><div class="ci-icos"><?= ci_ico('eye', sh_cat_url($c['slug']), 'View', 'link', ' target="_blank"') ?><?= ci_ico('edit', '/admin/shop-categories.php?edit=' . (int)$c['id'], 'Edit') ?><?= ci_post_ico('trash', 'Delete', ['action' => 'delete', 'id' => $c['id']], 'Delete this category? Its courses stay, without a category.') ?></div></td></tr>
 <?php endforeach; ?>
 </tbody></table></div></div>
 </div>

@@ -23,7 +23,7 @@ $ico = fn($n) => sh_icon($n);
 $card = function (array $p) use ($ico) {
     $pct = (int)$p['lessons'] ? (int)round((int)$p['done'] * 100 / (int)$p['lessons']) : 0;
     $isC = $p['type'] === 'course';
-    return '<a class="ac-cc" href="/store/learn?s=' . rawurlencode($p['slug']) . '">' . sh_thumb_html($p)
+    return '<a class="ac-cc" href="' . sh_e(sh_learn_url($p['slug'])) . '">' . sh_thumb_html($p)
         . '<div class="ac-cc-b"><h3>' . sh_e($p['title']) . '</h3>'
         . ($isC && (int)$p['lessons'] ? '<div class="ac-pg"><i style="width:' . $pct . '%"></i></div><span class="ac-pt">' . $pct . '% complete · ' . (int)$p['done'] . '/' . (int)$p['lessons'] . ' videos</span>' : '<span class="ac-pt">' . (int)$p['files'] . ' PDF' . ((int)$p['files'] === 1 ? '' : 's') . '</span>')
         . '<span class="ac-exp">' . $ico($p['expires_at'] ? 'calendar' : 'infinity') . ($p['expires_at'] ? 'Access till ' . date('d M Y', strtotime($p['expires_at'])) : 'Lifetime access') . '</span>'

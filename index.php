@@ -25,9 +25,9 @@ $cats = sh_categories($pdo);
 $catName = fn(array $p) => $cats[(int)($p['category_id'] ?? 0)]['name'] ?? '';
 $slides = $pdo->query("SELECT * FROM hm_slides WHERE active = 1 ORDER BY sort, id")->fetchAll(PDO::FETCH_ASSOC);
 if (!$slides) $slides = [ // until the admin adds slides (Online Store → Homepage): ready-made picture banners
-    ['image' => 'assets/img/home/default-board.jpg', 'mobile_image' => 'assets/img/home/default-board-m.jpg', 'link' => '/store/?t=course', 'title' => 'New batches — admissions open', 'new_tab' => 0],
-    ['image' => 'assets/img/home/default-free.jpg', 'mobile_image' => 'assets/img/home/default-free-m.jpg', 'link' => '/store/free', 'title' => 'Free courses for every student', 'new_tab' => 0],
-    ['image' => 'assets/img/home/default-notes.jpg', 'mobile_image' => 'assets/img/home/default-notes-m.jpg', 'link' => '/store/notes', 'title' => 'Notes and study materials', 'new_tab' => 0]];
+    ['image' => 'assets/img/home/default-board.jpg', 'mobile_image' => 'assets/img/home/default-board-m.jpg', 'link' => '/courses/', 'title' => 'New batches — admissions open', 'new_tab' => 0],
+    ['image' => 'assets/img/home/default-free.jpg', 'mobile_image' => 'assets/img/home/default-free-m.jpg', 'link' => '/free-courses/', 'title' => 'Free courses for every student', 'new_tab' => 0],
+    ['image' => 'assets/img/home/default-notes.jpg', 'mobile_image' => 'assets/img/home/default-notes-m.jpg', 'link' => '/notes/', 'title' => 'Notes and study materials', 'new_tab' => 0]];
 $courses = sh_latest($pdo, 'course', 9);            // 8 shown, the 9th tells if "View more" has anything
 $moreCourses = count($courses) > 8; $courses = array_slice($courses, 0, 8);
 $up = $pdo->query("SELECT p.*, (SELECT COUNT(*) FROM sh_lessons l WHERE l.product_id = p.id) AS lessons, (SELECT COUNT(*) FROM sh_files f WHERE f.product_id = p.id) AS files
@@ -98,21 +98,21 @@ $short0 = function (string $n) { $p = preg_split('/\s+/', trim(preg_replace('/\(
 
 <?php /* 2. our courses: newest first, 2 rows (2 × 2 on phones), slider + View more */ ?>
 <section class="hm-sec" id="courses"><div class="sp-wrap">
-  <div class="hm-h"><div><span class="hm-k">Courses</span><h2>Our Courses</h2></div><a href="/store/?t=course">View all ›</a></div>
+  <div class="hm-h"><div><span class="hm-k">Courses</span><h2>Our Courses</h2></div><a href="/courses/">View all ›</a></div>
   <?php if (!$courses): ?><div class="st-empty">New courses are coming soon.</div><?php else: ?>
   <div class="hm-cs" data-hs>
     <div class="hs-track" id="hmCourses"><div class="hs-s hm-pg"><?php foreach ($courses as $p) echo sh_mini_card($p, $catName($p)); ?></div></div>
     <button type="button" class="hs-prev" aria-label="Previous">‹</button><button type="button" class="hs-next" aria-label="Next">›</button><div class="hs-dots"></div>
   </div>
-  <div class="hm-more"><?php if ($moreCourses): ?><button type="button" class="hm-btn ghost" id="hmMore" data-o="8"><?= $ico('grid') ?> View more courses</button><?php endif; ?><a class="hm-btn ghost<?= $moreCourses ? '' : ' show' ?>" id="hmAll" href="/store/?t=course"<?= $moreCourses ? ' hidden' : '' ?>>See all courses ›</a></div>
+  <div class="hm-more"><?php if ($moreCourses): ?><button type="button" class="hm-btn ghost" id="hmMore" data-o="8"><?= $ico('grid') ?> View more courses</button><?php endif; ?><a class="hm-btn ghost<?= $moreCourses ? '' : ' show' ?>" id="hmAll" href="/courses/"<?= $moreCourses ? ' hidden' : '' ?>>See all courses ›</a></div>
   <?php endif; ?>
 </div></section>
 
 <?php /* 3. categories */ ?>
 <?php if ($cats): ?>
 <section class="hm-sec hm-cats-s"><div class="sp-wrap">
-  <div class="hm-h"><div><span class="hm-k">Categories</span><h2>Choose your category</h2></div><a href="/store/">All ›</a></div>
-  <div class="hm-cats"><?php foreach ($cats as $c): ?><a class="hm-cat" href="/store/?c=<?= rawurlencode($c['slug']) ?>"><span class="hm-cat-i"><?php if ($c['icon']): ?><img src="<?= sh_e(sh_upload_url($c['icon'])) ?>" alt="" loading="lazy" width="44" height="44"><?php else: ?><b><?= sh_e(mb_strtoupper(mb_substr(preg_replace('/^Class\s+/i', '', $c['name']), 0, 2))) ?></b><?php endif; ?></span><span class="hm-cat-n"><?= sh_e($c['name']) ?></span><?= (int)$c['items'] ? '<small>' . (int)$c['items'] . ' course' . ((int)$c['items'] === 1 ? '' : 's') . '</small>' : '<small class="soon">Coming soon</small>' ?></a><?php endforeach; ?></div>
+  <div class="hm-h"><div><span class="hm-k">Categories</span><h2>Choose your category</h2></div><a href="/courses/">All ›</a></div>
+  <div class="hm-cats"><?php foreach ($cats as $c): ?><a class="hm-cat" href="<?= sh_e(sh_cat_url($c['slug'])) ?>"><span class="hm-cat-i"><?php if ($c['icon']): ?><img src="<?= sh_e(sh_upload_url($c['icon'])) ?>" alt="" loading="lazy" width="44" height="44"><?php else: ?><b><?= sh_e(mb_strtoupper(mb_substr(preg_replace('/^Class\s+/i', '', $c['name']), 0, 2))) ?></b><?php endif; ?></span><span class="hm-cat-n"><?= sh_e($c['name']) ?></span><?= (int)$c['items'] ? '<small>' . (int)$c['items'] . ' course' . ((int)$c['items'] === 1 ? '' : 's') . '</small>' : '<small class="soon">Coming soon</small>' ?></a><?php endforeach; ?></div>
 </div></section>
 <?php endif; ?>
 
@@ -140,10 +140,10 @@ $short0 = function (string $n) { $p = preg_split('/\s+/', trim(preg_replace('/\(
 <?php /* 5. study materials (PDF notes) */ ?>
 <?php if ($notes): ?>
 <section class="hm-sec"><div class="sp-wrap">
-  <div class="hm-h"><div><span class="hm-k">Study Materials</span><h2>Notes &amp; study materials</h2></div><a href="/store/notes">Explore ›</a></div>
+  <div class="hm-h"><div><span class="hm-k">Study Materials</span><h2>Notes &amp; study materials</h2></div><a href="/notes/">Explore ›</a></div>
   <div class="hm-ns" data-hs><div class="hs-track"><?php foreach ($notes as $p): ?><div class="hs-s"><?= sh_mini_card($p, $catName($p)) ?></div><?php endforeach; ?></div>
     <button type="button" class="hs-prev" aria-label="Previous">‹</button><button type="button" class="hs-next" aria-label="Next">›</button><div class="hs-dots"></div></div>
-  <div class="hm-more"><a class="hm-btn ghost" href="/store/notes"><?= $ico('notes') ?> Explore study materials</a></div>
+  <div class="hm-more"><a class="hm-btn ghost" href="/notes/"><?= $ico('notes') ?> Explore study materials</a></div>
 </div></section>
 <?php endif; ?>
 
@@ -162,9 +162,9 @@ $short0 = function (string $n) { $p = preg_split('/\s+/', trim(preg_replace('/\(
 <?php /* 7. free courses — YouTube playlists */ ?>
 <?php if ($free): ?>
 <section class="hm-sec"><div class="sp-wrap">
-  <div class="hm-h"><div><span class="hm-k">Free Courses</span><h2>Start learning for free</h2></div><a href="/store/free">All free courses ›</a></div>
+  <div class="hm-h"><div><span class="hm-k">Free Courses</span><h2>Start learning for free</h2></div><a href="/free-courses/">All free courses ›</a></div>
   <div class="hm-fs" data-hs><div class="hs-track"><?php foreach ($free as $f): ?>
-    <div class="hs-s"><a class="hm-fc" href="/store/free?id=<?= (int)$f['id'] ?>"><span class="hm-fc-i"><img src="<?= sh_e($f['thumb'] ?: '') ?>" alt="" loading="lazy" onerror="this.remove()"><span class="hm-fc-pl"><?= $ico('playsolid') ?></span><?php if ($f['videos']): ?><em><?= (int)$f['videos'] >= 100 ? '100+' : (int)$f['videos'] ?> videos</em><?php endif; ?></span>
+    <div class="hs-s"><a class="hm-fc" href="<?= sh_e(sh_free_url($f)) ?>"><span class="hm-fc-i"><img src="<?= sh_e($f['thumb'] ?: '') ?>" alt="" loading="lazy" onerror="this.remove()"><span class="hm-fc-pl"><?= $ico('playsolid') ?></span><?php if ($f['videos']): ?><em><?= (int)$f['videos'] >= 100 ? '100+' : (int)$f['videos'] ?> videos</em><?php endif; ?></span>
       <span class="hm-fc-b"><small>FREE<?= $f['category_id'] && isset($cats[(int)$f['category_id']]) ? ' · ' . sh_e($cats[(int)$f['category_id']]['name']) : '' ?></small><b><?= sh_e($f['title']) ?></b></span></a></div>
   <?php endforeach; ?></div>
     <button type="button" class="hs-prev" aria-label="Previous">‹</button><button type="button" class="hs-next" aria-label="Next">›</button><div class="hs-dots"></div></div>

@@ -12,6 +12,19 @@ $run = function (string $t, array $get = []) {
   $_SERVER['SCRIPT_FILENAME'] = __DIR__ . '/' . $t; // as on the live server (pages read it, e.g. the Ad Inserter page type)
   chdir(dirname(__DIR__ . '/' . $t)); require __DIR__ . '/' . $t;
 };
+// clean store addresses: parameters are given straight to the page (no local redirect), the address stays clean as on live
+$runq = function (string $t, array $get) { $_GET = $get + $_GET; $_SERVER['SCRIPT_FILENAME'] = __DIR__ . '/' . $t; chdir(dirname(__DIR__ . '/' . $t)); require __DIR__ . '/' . $t; };
+$store = [
+  '#^/courses/?$#' => fn($m) => $runq('store/index.php', ['t' => 'course']),
+  '#^/courses/([a-zA-Z0-9-]+)/?$#' => fn($m) => $runq('store/item.php', ['s' => $m[1]]),
+  '#^/notes/?$#' => fn($m) => $runq('store/notes.php', []),
+  '#^/notes/([a-zA-Z0-9-]+)/?$#' => fn($m) => $runq('store/item.php', ['s' => $m[1]]),
+  '#^/category/([a-zA-Z0-9-]+)/?$#' => fn($m) => $runq('store/index.php', ['c' => $m[1]]),
+  '#^/learn/([a-zA-Z0-9-]+)/?$#' => fn($m) => $runq('store/learn.php', ['s' => $m[1]]),
+  '#^/free-courses/?$#' => fn($m) => $runq('store/free.php', []),
+  '#^/free-courses/([0-9]+)(?:-[a-zA-Z0-9-]*)?/?$#' => fn($m) => $runq('store/free.php', ['id' => $m[1]]),
+];
+foreach ($store as $re => $fn) if (preg_match($re, $uri, $m)) { $fn($m); return true; }
 $static = 'about-us|contact-us|terms-of-service|cookie-policy|privacy-policy|disclaimer|affiliate-disclaimer|editorial-policy|commercial-policy';
 $routes = [
   "#^/($static)/?$#i" => fn($m) => $run("pages/{$m[1]}.php"),

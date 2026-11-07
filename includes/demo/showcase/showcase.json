@@ -1384,13 +1384,13 @@
   {
    "image": "slide-free.jpg",
    "mobile": "slide-free-m.jpg",
-   "link": "/store/free",
+   "link": "/free-courses/",
    "title": "Free courses for Class 5 to 12"
   },
   {
    "image": "slide-notes.jpg",
    "mobile": "slide-notes-m.jpg",
-   "link": "/store/notes",
+   "link": "/notes/",
    "title": "Notes, formula cards & worksheets"
   }
  ],

@@ -146,7 +146,24 @@ function sh_tables(PDO $pdo): void
 function sh_e($v): string { return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
 function sh_money($n): string { $n = (float)$n; return '₹' . number_format($n, fmod($n, 1) ? 2 : 0); }
 function sh_on(): bool { return es('shop', 'enabled', '1') === '1'; }
-function sh_url(array $p): string { return '/store/item?s=' . rawurlencode($p['slug']); }
+/* Clean web addresses: /courses/slug, /notes/slug, /learn/slug, /category/slug, /free-courses/ID-name (old /store/… links redirect). */
+function sh_url(array $p): string { return (($p['type'] ?? 'course') === 'notes' ? '/notes/' : '/courses/') . rawurlencode($p['slug']); }
+/** The study page of a course / notes pack: sh_learn_url('slug', 'l=5', true) → /learn/slug?l=5&preview=1 */
+function sh_learn_url(string $slug, string $q = '', bool $preview = false): string
+{
+    $q = trim($q . ($preview ? ($q !== '' ? '&' : '') . 'preview=1' : ''), '&');
+    return '/learn/' . rawurlencode($slug) . ($q !== '' ? '?' . $q : '');
+}
+function sh_cat_url(string $slug): string { return '/category/' . rawurlencode($slug); }
+function sh_free_url(array $f): string { return '/free-courses/' . (int)$f['id'] . (($s = sh_slug((string)($f['title'] ?? ''))) !== '' ? '-' . $s : ''); }
+/** An old /store/… address was opened: send the visitor (and search engines) to the clean one. */
+function sh_redirect_clean(string $to): void
+{
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'GET') return;
+    $uri = (string)($_SERVER['REQUEST_URI'] ?? '');
+    if (!preg_match('#^/store/#', $uri)) return;
+    header('Location: ' . $to, true, 301); exit;
+}
 function sh_type_label(string $t): string { return $t === 'notes' ? 'PDF Notes' : 'Video Course'; }
 
 /** Where videos and PDFs are kept — outside the public folder, so nobody can open them by address. */
@@ -721,7 +738,7 @@ function sh_account_nav(array $u, string $on): string
     $items = [['', 'My Courses', 'book'], ['profile', 'My Profile', 'user'], ['orders', 'Orders', 'receipt'], ['report', 'Report us', 'flag']];
     $h = '<nav class="ac-nav" aria-label="My account"><div class="ac-who"><span class="ac-av">' . sh_e(mb_strtoupper(mb_substr($u['name'], 0, 1))) . '</span><div><b>' . sh_e($u['name']) . '</b><small>' . sh_e($u['mobile']) . '</small></div></div>';
     foreach ($items as [$k, $l, $ic]) $h .= '<a href="/account/' . ($k ? $k : '') . '" class="' . ($on === $k ? 'on' : '') . '">' . $i($ic) . '<span>' . $l . '</span></a>';
-    $h .= '<a href="/store/?t=course">' . $i('grid') . '<span>All Courses</span></a><a href="/store/notes">' . $i('notes') . '<span>PDF Notes</span></a>';
+    $h .= '<a href="/courses/">' . $i('grid') . '<span>All Courses</span></a><a href="/notes/">' . $i('notes') . '<span>PDF Notes</span></a>';
     $h .= '<form method="post" action="/account/logout">' . sh_csrf_field() . '<button type="submit">' . $i('logout') . '<span>Log out</span></button></form></nav>';
     return $h;
 }

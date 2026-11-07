@@ -15,7 +15,7 @@ try {
     if ($a === 'create') {
         $p = sh_product($pdo, (int)($_POST['p'] ?? 0));
         if (!$p || !sh_on()) $out(['error' => 'This item is not available.'], 404);
-        $go = '/store/learn?s=' . rawurlencode($p['slug']);
+        $go = sh_learn_url($p['slug']);
         if (sh_has_access($pdo, (int)$u['id'], (int)$p['id'])) $out(['ok' => true, 'owned' => true, 'go' => $go]);
         if ((float)$p['price'] <= 0) { // free item: straight to the library
             sh_grant($pdo, (int)$u['id'], (int)$p['id'], 'free');
@@ -52,7 +52,7 @@ try {
             $out(['error' => 'The payment could not be confirmed. If money was taken, contact us with payment id ' . $rzpPay . '.'], 400);
         }
         if (!sh_order_paid($pdo, $oid, $rzpPay)) $out(['error' => 'Payment received, but access could not be given right now. Please contact us with payment id ' . $rzpPay . '.'], 500);
-        $out(['ok' => true, 'go' => '/store/learn?s=' . rawurlencode($o['slug']) . '&new=1']);
+        $out(['ok' => true, 'go' => sh_learn_url($o['slug'], 'new=1')]);
     }
     if ($a === 'demo_pay' || $a === 'demo_fail') { // only while demo mode is on, only for this buyer's own demo order
         if (!sh_pay_demo()) $out(['error' => 'Demo payments are switched off.'], 403);
@@ -67,7 +67,7 @@ try {
         }
         $m = preg_replace('/[^a-z]/', '', (string)($_POST['via'] ?? 'upi')) ?: 'upi';
         if (!sh_order_paid($pdo, $oid, 'demo_pay_' . bin2hex(random_bytes(6)), 'demo · ' . $m)) $out(['error' => 'Could not finish the demo payment.'], 500);
-        $out(['ok' => true, 'go' => '/store/learn?s=' . rawurlencode($o['slug']) . '&new=1']);
+        $out(['ok' => true, 'go' => sh_learn_url($o['slug'], 'new=1')]);
     }
     if ($a === 'cancel') { // the buyer closed the payment window
         $pdo->prepare("UPDATE sh_orders SET error = ? WHERE id = ? AND user_id = ? AND status = 'created'")->execute([mb_substr((string)($_POST['why'] ?? 'Closed by buyer'), 0, 300), (int)($_POST['order'] ?? 0), $u['id']]);

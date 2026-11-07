@@ -59,7 +59,7 @@ $courses = $pdo->query("SELECT p.id, p.title FROM sh_products p WHERE p.type = '
 <?php if (!$rows): ?><tr><td colspan="5" class="ci-empty">No doubts here.</td></tr><?php endif; ?>
 <?php foreach ($rows as $r): ?>
 <tr><td><b><?= ci_e($r['name']) ?></b><small class="ci-muted" style="display:block"><?= ci_e($r['mobile']) ?></small></td>
-<td><div class="sd-ctx"><?= ci_e($r['course']) ?> › <?= ci_e($r['chapter'] ?? '') ?> › <a href="/store/learn?s=<?= rawurlencode($r['slug']) ?>&l=<?= (int)$r['lesson_id'] ?>&preview=1" target="_blank"><?= ci_e($r['lecture']) ?></a></div>
+<td><div class="sd-ctx"><?= ci_e($r['course']) ?> › <?= ci_e($r['chapter'] ?? '') ?> › <a href="<?= ci_e(sh_learn_url($r['slug'], 'l=' . (int)$r['lesson_id'], true)) ?>" target="_blank"><?= ci_e($r['lecture']) ?></a></div>
   <div class="sd-q"><?= ci_e($r['question']) ?></div>
   <?php if ($r['answer']): ?><div class="sd-a"><b>Answer</b><p><?= nl2br(ci_e($r['answer'])) ?></p></div>
   <details class="sd-edit"><summary>Edit answer</summary>  <form method="post" class="sd-ans"><?= csrf_field() ?><input type="hidden" name="action" value="answer"><input type="hidden" name="id" value="<?= (int)$r['id'] ?>"><textarea name="answer" maxlength="5000" placeholder="Write the answer — the student sees it under the lecture"><?= ci_e($r['answer'] ?? '') ?></textarea><div><button class="ci-btn ci-sm" type="submit">Update answer</button></div></form></details>

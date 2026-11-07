@@ -1,6 +1,6 @@
 <?php
 // PDF Notes store — its own section for notes (like the notes shops of big coaching brands): hero, search, free / paid
-// filter, notes cards with pages and a free preview link.  /store/notes  (?q=…&f=free|paid)
+// filter, notes cards with pages and a free preview link.  /notes/  (?q=…&f=free|paid)  — old /store/notes redirects
 require_once dirname(__DIR__) . '/includes/config.php';
 require_once INCLUDES_PATH . '/shop.php';
 $pdo = sh_db();
@@ -24,9 +24,10 @@ if ($u) { $q = $pdo->prepare("SELECT product_id FROM sh_access WHERE user_id = ?
 $stTitle = 'PDF Notes';
 $stDesc = 'Handwritten-style and typed PDF notes, formula sheets and practice sets from ' . edu_site_name() . ' — read on any phone or computer.';
 $stIndex = true;
+sh_redirect_clean('/notes/' . (($qs = http_build_query(array_intersect_key($_GET, array_flip(['q', 'f'])))) !== '' ? '?' . $qs : ''));
 require ROOT_PATH . '/components/store-open.php';
 $ico = fn($n) => sh_icon($n);
-$link = fn(array $x) => '/store/notes?' . http_build_query(array_filter(['q' => $qq, 'f' => $fl] + $x, fn($v) => $v !== '' && $v !== null));
+$link = fn(array $x) => '/notes/?' . http_build_query(array_filter(['q' => $qq, 'f' => $fl] + $x, fn($v) => $v !== '' && $v !== null));
 ?>
 <section class="nt-hero"><div class="sp-wrap">
   <nav class="sp-crumb"><a href="/store/">Store</a><span>›</span><span>PDF Notes</span></nav>
@@ -34,7 +35,7 @@ $link = fn(array $x) => '/store/notes?' . http_build_query(array_filter(['q' => 
     <div><span class="sp-kind"><?= $ico('notes') ?> PDF Notes</span>
       <h1>Notes that make revision easy</h1>
       <p class="sp-sub">Chapter-wise notes, formula sheets and practice sets by our teachers. Read them on your phone, tablet or computer — any time.</p>
-      <form class="nt-search" method="get" action="/store/notes" role="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <form class="nt-search" method="get" action="/notes/" role="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
         <input name="q" value="<?= sh_e($qq) ?>" placeholder="Search notes — e.g. Maths formulas, Physics" aria-label="Search notes"><?php if ($fl): ?><input type="hidden" name="f" value="<?= sh_e($fl) ?>"><?php endif; ?><button type="submit">Search</button></form>
     </div>
     <div class="nt-stats"><div><b><?= (int)$tot['n'] ?></b><span>Notes packs</span></div><div><b><?= (int)$tot['free'] ?></b><span>Free to read</span></div><div><b><?= $ico('device') ?></b><span>Any device</span></div></div>
@@ -45,7 +46,7 @@ $link = fn(array $x) => '/store/notes?' . http_build_query(array_filter(['q' => 
     <div class="nt-chips"><a href="<?= sh_e($link(['f' => ''])) ?>" class="<?= $fl === '' ? 'on' : '' ?>">All notes</a><a href="<?= sh_e($link(['f' => 'free'])) ?>" class="<?= $fl === 'free' ? 'on' : '' ?>">Free</a><a href="<?= sh_e($link(['f' => 'paid'])) ?>" class="<?= $fl === 'paid' ? 'on' : '' ?>">Premium</a></div>
     <span class="nt-count"><?= count($rows) ?> notes<?= $qq !== '' ? ' for "' . sh_e($qq) . '"' : '' ?></span>
   </div>
-  <?php if (!$rows): ?><div class="ac-empty"><span class="ac-empty-i"><?= $ico('notes') ?></span><b><?= $qq !== '' ? 'No notes found' : 'New notes are coming soon' ?></b><p><?= $qq !== '' ? 'Try another word, or see all notes.' : 'Our teachers are preparing notes — check back soon.' ?></p><?php if ($qq !== '' || $fl): ?><a class="ac-btn" href="/store/notes">See all notes</a><?php endif; ?></div><?php endif; ?>
+  <?php if (!$rows): ?><div class="ac-empty"><span class="ac-empty-i"><?= $ico('notes') ?></span><b><?= $qq !== '' ? 'No notes found' : 'New notes are coming soon' ?></b><p><?= $qq !== '' ? 'Try another word, or see all notes.' : 'Our teachers are preparing notes — check back soon.' ?></p><?php if ($qq !== '' || $fl): ?><a class="ac-btn" href="/notes/">See all notes</a><?php endif; ?></div><?php endif; ?>
   <div class="nt-grid">
   <?php foreach ($rows as $p): $own = isset($owned[$p['id']]); $off = $p['mrp'] !== null && (float)$p['mrp'] > (float)$p['price'] ? (int)round(100 - (float)$p['price'] * 100 / (float)$p['mrp']) : 0; ?>
     <article class="nt-card">
@@ -57,8 +58,8 @@ $link = fn(array $x) => '/store/notes?' . http_build_query(array_filter(['q' => 
         <div class="nt-meta"><span><?= $ico('file') ?> <?= (int)$p['files'] ?> PDF<?= (int)$p['files'] === 1 ? '' : 's' ?></span><?php if ((int)$p['pages']): ?><span><?= (int)$p['pages'] ?> pages</span><?php endif; ?><?php if ($p['rating']): ?><span class="nt-rt">★ <?= number_format((float)$p['rating'], 1) ?></span><?php endif; ?></div>
         <div class="nt-foot">
           <div class="nt-price"><?= $own ? '<span class="st-own">✓ In your library</span>' : ((float)$p['price'] > 0 ? '<b>' . sh_money($p['price']) . '</b>' . ($off ? '<s>' . sh_money($p['mrp']) . '</s>' : '') : '<b class="g">Free</b>') ?></div>
-          <?php if ($own): ?><a class="nt-btn" href="/store/learn?s=<?= rawurlencode($p['slug']) ?>">Read</a>
-          <?php elseif ($p['free_file']): ?><a class="nt-btn ghost" href="/store/learn?s=<?= rawurlencode($p['slug']) ?>&f=<?= (int)$p['free_file'] ?>">Free preview</a>
+          <?php if ($own): ?><a class="nt-btn" href="<?= sh_e(sh_learn_url($p['slug'])) ?>">Read</a>
+          <?php elseif ($p['free_file']): ?><a class="nt-btn ghost" href="<?= sh_e(sh_learn_url($p['slug'], 'f=' . (int)$p['free_file'])) ?>">Free preview</a>
           <?php else: ?><a class="nt-btn" href="<?= sh_e(sh_url($p)) ?>"><?= (float)$p['price'] > 0 ? 'Get notes' : 'Read free' ?></a><?php endif; ?>
         </div>
       </div>

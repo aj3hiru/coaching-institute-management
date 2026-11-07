@@ -94,7 +94,7 @@ $catSel = function (int $cur) use ($cats) { $h = '<select name="category_id"><op
       <div class="ci-f"><label>Image <span class="ci-muted" style="font-weight:400">(1600 × 500 px)</span></label><input type="file" name="image" accept="image/png,image/jpeg,image/webp" <?= $eS ? '' : 'required' ?>><?php if ($eS): ?><span class="ci-hint">Leave empty to keep the current image.</span><?php endif; ?></div>
       <div class="ci-f"><label>Phone image <span class="ci-muted" style="font-weight:400">(optional, 800 × 400 px)</span></label><input type="file" name="mobile_image" accept="image/png,image/jpeg,image/webp"><?php if (!empty($eS['mobile_image'])): ?><label style="font-weight:400;display:flex;gap:6px;margin-top:4px"><input type="checkbox" name="mobile_rm" value="1"> Remove phone image</label><?php endif; ?></div>
       <div class="ci-f"><label>Order</label><input type="number" name="sort" value="<?= (int)($eS['sort'] ?? count($slides) + 1) ?>"></div>
-      <div class="ci-f" style="grid-column:span 2"><label>Link when clicked <span class="ci-muted" style="font-weight:400">(optional)</span></label><input name="link" maxlength="500" placeholder="e.g. /store/item?s=class-10-maths or https://…" value="<?= ci_e($eS['link'] ?? '') ?>"></div>
+      <div class="ci-f" style="grid-column:span 2"><label>Link when clicked <span class="ci-muted" style="font-weight:400">(optional)</span></label><input name="link" maxlength="500" placeholder="e.g. /courses/class-10-maths or https://…" value="<?= ci_e($eS['link'] ?? '') ?>"></div>
       <div class="ci-f"><label>Text for Google / screen readers</label><input name="title" maxlength="200" placeholder="e.g. Class 10 new batch" value="<?= ci_e($eS['title'] ?? '') ?>"></div>
     </div>
     <div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap;margin-top:8px">
@@ -121,7 +121,7 @@ $catSel = function (int $cur) use ($cats) { $h = '<select name="category_id"><op
   <?php if (!$free): ?><p class="ci-muted" style="margin:0">No free courses yet.</p><?php endif; ?>
   <?php foreach ($free as $f): ?>
     <div class="hp-fr"><img src="<?= ci_e($f['thumb'] ?: '') ?>" alt="" onerror="this.style.visibility='hidden'">
-      <div><small><?= ci_e($f['channel'] ?: 'YouTube') ?><?= $f['videos'] ? ' · ' . ((int)$f['videos'] >= 100 ? '100+' : (int)$f['videos']) . ' videos' : '' ?> · <a href="<?= ci_e($f['url']) ?>" target="_blank" rel="noopener">open on YouTube</a> · <a href="/store/free?id=<?= (int)$f['id'] ?>" target="_blank">view on site</a></small>
+      <div><small><?= ci_e($f['channel'] ?: 'YouTube') ?><?= $f['videos'] ? ' · ' . ((int)$f['videos'] >= 100 ? '100+' : (int)$f['videos']) . ' videos' : '' ?> · <a href="<?= ci_e($f['url']) ?>" target="_blank" rel="noopener">open on YouTube</a> · <a href="<?= ci_e(sh_free_url($f)) ?>" target="_blank">view on site</a></small>
         <form method="post" class="hp-fe"><?= csrf_field() ?><input type="hidden" name="action" value="free_save"><input type="hidden" name="id" value="<?= (int)$f['id'] ?>">
           <div class="ci-f"><label>Title</label><input name="title" maxlength="250" value="<?= ci_e($f['title']) ?>"></div>
           <div class="ci-f"><label>Category</label><?= $catSel((int)$f['category_id']) ?></div>

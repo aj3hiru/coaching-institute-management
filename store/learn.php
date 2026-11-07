@@ -1,6 +1,6 @@
 <?php
 // Course player: watch a lesson / read a PDF of a course or notes pack the student owns (free previews for everyone).
-//   /store/learn?s=slug (&l=lessonId | &f=fileId) (&preview=1 = staff preview)
+//   /learn/slug (?l=lessonId | ?f=fileId) (&preview=1 = staff preview)   (old: /store/learn?s=slug …)
 // Paid lessons are only shown to owners: anyone else is sent to the course page (or to log in), and the media links
 // themselves are checked again in /store/media.
 require_once dirname(__DIR__) . '/includes/config.php';
@@ -9,6 +9,7 @@ $pdo = sh_db();
 $staff = sh_preview(); // staff see everything only with ?preview=1 — otherwise the same locks as students
 $p = sh_on() || $staff ? sh_product($pdo, (string)($_GET['s'] ?? ''), !$staff) : null;
 if (!$p) { http_response_code(404); require ROOT_PATH . '/templates/page_not_found.php'; exit; }
+sh_redirect_clean(sh_learn_url($p['slug'], http_build_query(array_intersect_key($_GET, array_flip(['l', 'f', 'new']))), isset($_GET['preview']))); // old /store/learn?s=…
 $u = sh_user();
 $uid = $u ? (int)$u['id'] : 0;
 $owner = sh_has_access($pdo, $uid, (int)$p['id']);
@@ -36,7 +37,7 @@ $done = [];
 if ($uid) { $q = $pdo->prepare("SELECT lesson_id FROM sh_progress WHERE user_id = ? AND done = 1"); $q->execute([$uid]); $done = array_flip($q->fetchAll(PDO::FETCH_COLUMN)); }
 $nDone = count(array_filter($all, fn($l) => isset($done[$l['id']])));
 $pct = $all ? (int)round($nDone * 100 / count($all)) : 0;
-$base = '/store/learn?s=' . rawurlencode($p['slug']) . ($staff ? '&preview=1' : '');
+$lu = fn(string $q = '') => sh_learn_url($p['slug'], $q, $staff);
 $can = fn($x) => $own || !empty($x['free']);
 // previous / next among what this visitor may open
 $openList = array_values(array_filter($all, $can));
@@ -88,8 +89,8 @@ $ico = fn($n) => sh_icon($n);
         <span class="lp-sub"><?= $lesson['duration'] ? sh_e($lesson['duration']) . ' · ' : '' ?><?= $lesson['free'] && !$owner ? 'Free preview' : 'Lesson ' . (array_search((int)$lesson['id'], array_map(fn($l) => (int)$l['id'], $all), true) + 1) . ' of ' . count($all) ?></span></div>
       <div class="lp-acts">
         <?php if ($owner): ?><button type="button" class="lp-btn ghost<?= isset($done[$lesson['id']]) ? ' is-done' : '' ?>" id="stDone" data-l="<?= (int)$lesson['id'] ?>" data-done="<?= isset($done[$lesson['id']]) ? 1 : 0 ?>" data-t="<?= sh_e(sh_csrf()) ?>"><?= $ico('check') ?> <span><?= isset($done[$lesson['id']]) ? 'Completed' : 'Mark as done' ?></span></button><?php endif; ?>
-        <?php if ($prev): ?><a class="lp-btn ghost" href="<?= sh_e($base . '&l=' . (int)$prev['id']) ?>">‹ Previous</a><?php endif; ?>
-        <?php if ($next): ?><a class="lp-btn" href="<?= sh_e($base . '&l=' . (int)$next['id']) ?>">Next lesson ›</a><?php elseif (!$own && $lockedLeft): ?><a class="lp-btn" href="<?= sh_e(sh_url($p)) ?>#buy">Unlock all lessons</a><?php endif; ?>
+        <?php if ($prev): ?><a class="lp-btn ghost" href="<?= sh_e($lu('l=' . (int)$prev['id'])) ?>">‹ Previous</a><?php endif; ?>
+        <?php if ($next): ?><a class="lp-btn" href="<?= sh_e($lu('l=' . (int)$next['id'])) ?>">Next lesson ›</a><?php elseif (!$own && $lockedLeft): ?><a class="lp-btn" href="<?= sh_e(sh_url($p)) ?>#buy">Unlock all lessons</a><?php endif; ?>
       </div>
     </div>
     <?php
@@ -157,7 +158,7 @@ $ico = fn($n) => sh_icon($n);
         <summary><span class="sp-chev" aria-hidden="true"></span><b><?= sh_e($s['title'] !== '' ? $s['title'] : 'Lessons') ?></b><small><?= $owner ? $sDone . '/' . count($s['lessons']) : count($s['lessons']) ?></small></summary>
         <?php foreach ($s['lessons'] as $l): $ok = $can($l); $on = $lesson && (int)$lesson['id'] === (int)$l['id']; $isDone = isset($done[$l['id']]);
           $cls = 'lp-li' . ($on ? ' on' : '') . ($isDone ? ' done' : '') . ($ok ? '' : ' locked'); ?>
-          <a class="<?= $cls ?>" href="<?= sh_e($ok ? $base . '&l=' . (int)$l['id'] : sh_url($p) . '#buy') ?>"<?= $ok ? '' : ' title="Buy the course to open this lesson"' ?>>
+          <a class="<?= $cls ?>" href="<?= sh_e($ok ? $lu('l=' . (int)$l['id']) : sh_url($p) . '#buy') ?>"<?= $ok ? '' : ' title="Buy the course to open this lesson"' ?>>
             <span class="lp-st"><?= $ico(!$ok ? 'lock' : ($isDone ? 'check' : (($l['kind'] ?? 'video') === 'pdf' ? 'file' : ($on ? 'playsolid' : 'play')))) ?></span>
             <span class="lp-lt"><?= sh_e($l['title']) ?><small><?= $l['duration'] ? sh_e($l['duration']) : '' ?><?= $l['free'] && !$owner ? ($l['duration'] ? ' · ' : '') . '<em>Free</em>' : '' ?></small></span></a>
         <?php endforeach; ?>
@@ -167,7 +168,7 @@ $ico = fn($n) => sh_icon($n);
       <details class="lp-sec"<?= $file || !$cur ? ' open' : '' ?>>
         <summary><span class="sp-chev" aria-hidden="true"></span><b><?= $isCourse ? 'PDF notes' : 'Files' ?></b><small><?= count($files) ?></small></summary>
         <?php foreach ($files as $f): $ok = $can($f); $on = $file && (int)$file['id'] === (int)$f['id']; ?>
-          <a class="lp-li<?= $on ? ' on' : '' ?><?= $ok ? '' : ' locked' ?>" href="<?= sh_e($ok ? $base . '&f=' . (int)$f['id'] : sh_url($p) . '#buy') ?>">
+          <a class="lp-li<?= $on ? ' on' : '' ?><?= $ok ? '' : ' locked' ?>" href="<?= sh_e($ok ? $lu('f=' . (int)$f['id']) : sh_url($p) . '#buy') ?>">
             <span class="lp-st"><?= $ico($ok ? 'file' : 'lock') ?></span><span class="lp-lt"><?= sh_e($f['title']) ?><small><?= $f['pages'] ? (int)$f['pages'] . ' pages' : 'PDF' ?><?= $f['free'] && !$owner ? ' · <em>Free</em>' : '' ?></small></span></a>
         <?php endforeach; ?>
       </details>

@@ -1,5 +1,5 @@
 <?php
-// Buyer login with mobile number or email + password.  /account/login?next=/store/item?s=…
+// Buyer login with mobile number or email + password.  /account/login?next=/courses/…
 require_once dirname(__DIR__) . '/includes/config.php';
 require_once INCLUDES_PATH . '/shop.php';
 $pdo = sh_db();

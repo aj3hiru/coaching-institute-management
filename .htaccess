@@ -30,13 +30,22 @@ RewriteRule \.(bak|old|orig|save|swp|sql|gz|tgz|tar|zip|rar|7z|log|ini|env|sh|ya
 # ============================================================
 # DEAD ROUTES — 410 Gone
 # ============================================================
-RewriteRule ^category(/.*)?$ - [G,L]
 
 # ============================================================
 # WWW → NON-WWW REDIRECT
 # ============================================================
 RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
 RewriteRule ^ https://%1%{REQUEST_URI} [L,R=301]
+# Online store — clean addresses (old /store/item?s=… and /store/learn?s=… redirect in PHP)
+RewriteRule ^courses/?$ store/index.php?t=course [L,QSA]
+RewriteRule ^courses/([a-zA-Z0-9-]+)/?$ store/item.php?s=$1 [L,QSA]
+RewriteRule ^notes/?$ store/notes.php [L,QSA]
+RewriteRule ^notes/([a-zA-Z0-9-]+)/?$ store/item.php?s=$1 [L,QSA]
+RewriteRule ^category/([a-zA-Z0-9-]+)/?$ store/index.php?c=$1 [L,QSA]
+RewriteRule ^learn/([a-zA-Z0-9-]+)/?$ store/learn.php?s=$1 [L,QSA]
+RewriteRule ^free-courses/?$ store/free.php [L,QSA]
+RewriteRule ^free-courses/([0-9]+)(-[a-zA-Z0-9-]*)?/?$ store/free.php?id=$1 [L,QSA]
+RewriteRule ^category(/.*)?$ - [G,L]
 
 # ============================================================
 # PHP CONFIGURATION

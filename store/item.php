@@ -1,13 +1,17 @@
 <?php
 // One course or notes pack — landing page: hero (with rating), section strip (About · Content · Included · Reviews),
 // buy card, chapter accordion, what's included, student reviews (only students who have it can write one), FAQ.
-//   /store/item?s=slug   (&preview=1 = staff preview, also for drafts)
+//   /courses/slug · /notes/slug   (?preview=1 = staff preview, also for drafts) — old /store/item?s=slug redirects
 require_once dirname(__DIR__) . '/includes/config.php';
 require_once INCLUDES_PATH . '/shop.php';
 $pdo = sh_db();
 $pv = sh_preview();
 $p = sh_on() || $pv ? sh_product($pdo, (string)($_GET['s'] ?? ''), !$pv) : null;
 if (!$p) { http_response_code(404); require ROOT_PATH . '/templates/page_not_found.php'; exit; }
+$want = sh_url($p) . (isset($_GET['preview']) ? '?preview=1' : '');
+sh_redirect_clean($want); // old /store/item?s=…
+$path = strtok((string)($_SERVER['REQUEST_URI'] ?? ''), '?');
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET' && $path !== sh_url($p) && preg_match('#^/(courses|notes)/#', (string)$path)) { header('Location: ' . $want, true, 301); exit; } // a notes pack opened under /courses/ (or the other way)
 $pid = (int)$p['id'];
 $u = sh_user();
 $own = $u && sh_has_access($pdo, (int)$u['id'], $pid);
@@ -20,7 +24,7 @@ $nSecs = count(array_filter($cur, fn($s) => $s['title'] !== ''));
 $total = array_sum(array_map(fn($l) => sh_dur_sec($l['duration']), $all));
 $freeL = array_values(array_filter($all, fn($l) => $l['free']));
 $freeF = array_values(array_filter($files, fn($f) => $f['free']));
-$learn = '/store/learn?s=' . rawurlencode($p['slug']) . ($pv ? '&preview=1' : '');
+$lu = fn(string $q = '') => sh_learn_url($p['slug'], $q, $pv); // study page links
 $buyers = (int)$pdo->query("SELECT COUNT(*) FROM sh_access WHERE product_id = $pid AND revoked = 0")->fetchColumn();
 $updated = $p['updated_at'] ?: $p['created_at'];
 $priceTxt = (float)$p['price'] > 0 ? sh_money($p['price']) : 'Free';
@@ -28,7 +32,7 @@ $off = $p['mrp'] !== null && (float)$p['mrp'] > (float)$p['price'] ? (int)round(
 $vd = (int)$p['validity_days'];
 $validity = $vd ? ($vd % 365 === 0 ? ($vd / 365) . ' year' . ($vd / 365 > 1 ? 's' : '') : $vd . ' days') . ' access' : 'Lifetime access';
 $desc = trim((string)$p['description']);
-$preview = $freeL ? $learn . '&l=' . (int)$freeL[0]['id'] : ($freeF ? $learn . '&f=' . (int)$freeF[0]['id'] : '');
+$preview = $freeL ? $lu('l=' . (int)$freeL[0]['id']) : ($freeF ? $lu('f=' . (int)$freeF[0]['id']) : '');
 // reviews
 $rt = sh_rating($pdo, $pid);
 $rq = $pdo->prepare("SELECT r.*, u.name FROM sh_reviews r JOIN sh_users u ON u.id = r.user_id WHERE r.product_id = ? AND r.status = 'published' ORDER BY (r.body IS NOT NULL) DESC, r.created_at DESC LIMIT 200");
@@ -54,7 +58,7 @@ $tabs = array_filter(['about' => $desc !== '' ? 'About' : '', 'content' => $isCo
 ?>
 <?php if ($pv): ?><div class="sp-pv"><?= $ico('eye') ?> Staff preview — every video and PDF is open for you<?= $p['status'] !== 'published' ? ' · this item is <b>' . sh_e($p['status']) . '</b>, students cannot see it' : '' ?>. <a href="<?= sh_e(sh_url($p)) ?>">See it as a student</a></div><?php endif; ?>
 <section class="sp-hero"><div class="sp-wrap"><div class="sp-hero-in">
-  <nav class="sp-crumb"><a href="/store/">Store</a><span>›</span><a href="/store/?t=<?= sh_e($p['type']) ?>"><?= $isCourse ? 'Video Courses' : 'PDF Notes' ?></a></nav>
+  <nav class="sp-crumb"><a href="/">Home</a><span>›</span><a href="<?= $isCourse ? '/courses/' : '/notes/' ?>"><?= $isCourse ? 'Courses' : 'PDF Notes' ?></a><?php if (!empty($className)): ?><span>›</span><a href="<?= sh_e(sh_cat_url((string)$pdo->query("SELECT slug FROM sh_categories WHERE id = " . (int)$p['category_id'])->fetchColumn())) ?>"><?= sh_e($className) ?></a><?php endif; ?></nav>
   <span class="sp-kind"><?= $ico($isCourse ? 'video' : 'file') ?> <?= $isCourse ? 'Video course' : 'PDF notes' ?><?= $className !== '' ? ' · ' . sh_e($className) : '' ?></span>
   <h1><?= sh_e($p['title']) ?></h1>
   <?php if ($p['subtitle']): ?><p class="sp-sub"><?= sh_e($p['subtitle']) ?></p><?php endif; ?>
@@ -82,7 +86,7 @@ $tabs = array_filter(['about' => $desc !== '' ? 'About' : '', 'content' => $isCo
     <div class="sp-cb">
       <?php if ($own): ?>
         <div class="sp-owned"><?= $ico('check') ?> You have this <?= $isCourse ? 'course' : 'notes pack' ?></div>
-        <a class="sp-btn" href="<?= sh_e($learn) ?>"><?= $isCourse ? 'Continue learning' : 'Open notes' ?></a>
+        <a class="sp-btn" href="<?= sh_e($lu()) ?>"><?= $isCourse ? 'Continue learning' : 'Open notes' ?></a>
         <?php if (!$mine): ?><a class="sp-btn sp-ghost" href="#reviews" data-write>Rate this <?= $isCourse ? 'course' : 'pack' ?></a><?php endif; ?>
       <?php else: ?>
         <div class="sp-price"><b><?= $priceTxt ?></b><?php if ($off): ?><s><?= sh_money($p['mrp']) ?></s><span class="sp-off"><?= $off ?>% off</span><?php endif; ?></div>
@@ -122,8 +126,8 @@ $tabs = array_filter(['about' => $desc !== '' ? 'About' : '', 'content' => $isCo
           <?php $lastUnit = null; foreach ($s['lessons'] as $l): $open = $own || $l['free'] || $pv; ?>
             <?php if (($l['unit_title'] ?? '') !== '' && $l['unit_title'] !== $lastUnit): $lastUnit = $l['unit_title']; ?><li class="sp-unit"><?= sh_e($l['unit_title']) ?></li><?php endif; ?>
             <li class="<?= $open ? 'is-open' : 'is-locked' ?>"><span class="sp-li-i"><?= $ico(!$open ? 'lock' : (($l['kind'] ?? 'video') === 'pdf' ? 'file' : 'playsolid')) ?></span>
-              <?php if ($open): ?><a href="<?= sh_e($learn . '&l=' . (int)$l['id']) ?>"><?= sh_e($l['title']) ?></a><?php else: ?><span class="sp-li-t"><?= sh_e($l['title']) ?></span><?php endif; ?>
-              <?php if ($l['free'] && !$own): ?><a class="sp-prev" href="<?= sh_e($learn . '&l=' . (int)$l['id']) ?>">Preview</a><?php endif; ?>
+              <?php if ($open): ?><a href="<?= sh_e($lu('l=' . (int)$l['id'])) ?>"><?= sh_e($l['title']) ?></a><?php else: ?><span class="sp-li-t"><?= sh_e($l['title']) ?></span><?php endif; ?>
+              <?php if ($l['free'] && !$own): ?><a class="sp-prev" href="<?= sh_e($lu('l=' . (int)$l['id'])) ?>">Preview</a><?php endif; ?>
               <em><?= sh_e($l['duration'] ?: '') ?></em></li>
           <?php endforeach; ?>
           </ul></div>
@@ -136,8 +140,8 @@ $tabs = array_filter(['about' => $desc !== '' ? 'About' : '', 'content' => $isCo
           <div class="sp-ch-b"><ul>
           <?php foreach ($files as $f): $open = $own || $f['free'] || $pv; ?>
             <li class="<?= $open ? 'is-open' : 'is-locked' ?>"><span class="sp-li-i"><?= $ico($open ? 'file' : 'lock') ?></span>
-              <?php if ($open): ?><a href="<?= sh_e($learn . '&f=' . (int)$f['id']) ?>"><?= sh_e($f['title']) ?></a><?php else: ?><span class="sp-li-t"><?= sh_e($f['title']) ?></span><?php endif; ?>
-              <?php if ($f['free'] && !$own): ?><a class="sp-prev" href="<?= sh_e($learn . '&f=' . (int)$f['id']) ?>">Preview</a><?php endif; ?>
+              <?php if ($open): ?><a href="<?= sh_e($lu('f=' . (int)$f['id'])) ?>"><?= sh_e($f['title']) ?></a><?php else: ?><span class="sp-li-t"><?= sh_e($f['title']) ?></span><?php endif; ?>
+              <?php if ($f['free'] && !$own): ?><a class="sp-prev" href="<?= sh_e($lu('f=' . (int)$f['id'])) ?>">Preview</a><?php endif; ?>
               <em><?= $f['pages'] ? (int)$f['pages'] . ' pages' : '' ?></em></li>
           <?php endforeach; ?>
           </ul></div>
@@ -208,6 +212,6 @@ $tabs = array_filter(['about' => $desc !== '' ? 'About' : '', 'content' => $isCo
 </div>
 
 <div class="st-mbar"><div class="sp-price"><?= $own ? '<span class="sp-owned">' . $ico('check') . ' In your library</span>' : '<b>' . $priceTxt . '</b>' . ($off ? '<s>' . sh_money($p['mrp']) . '</s>' : '') ?></div>
-  <?php if ($own): ?><a class="sp-btn" href="<?= sh_e($learn) ?>"><?= $isCourse ? 'Continue' : 'Open notes' ?></a><?php else: ?><button type="button" class="sp-btn" onclick="var b=document.querySelector('.sp-card [data-buy], .sp-card a.sp-btn');b.scrollIntoView({block:'center'});b.click();"><?= (float)$p['price'] > 0 ? 'Buy now' : 'Enrol free' ?></button><?php endif; ?></div>
+  <?php if ($own): ?><a class="sp-btn" href="<?= sh_e($lu()) ?>"><?= $isCourse ? 'Continue' : 'Open notes' ?></a><?php else: ?><button type="button" class="sp-btn" onclick="var b=document.querySelector('.sp-card [data-buy], .sp-card a.sp-btn');b.scrollIntoView({block:'center'});b.click();"><?= (float)$p['price'] > 0 ? 'Buy now' : 'Enrol free' ?></button><?php endif; ?></div>
 <?php if ($u && !$own): ?><script>window.ST_BUYER = <?= json_encode(['name' => $u['name'], 'email' => $u['email'], 'contact' => $u['mobile']], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) ?>; window.ST_SITE = <?= json_encode(edu_site_name(), JSON_HEX_TAG) ?>;</script><?php endif; ?>
 <?php require ROOT_PATH . '/components/store-close.php'; ?>

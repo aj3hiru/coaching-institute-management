@@ -25,7 +25,7 @@ $ico = fn($n) => sh_icon($n);
         <div class="ac-ord-i"><?= $ico($o['type'] === 'notes' ? 'notes' : 'video') ?></div>
         <div class="ac-ord-t"><b><?= sh_e($o['title']) ?></b><small><?= sh_e($o['order_no'] ?: 'Order #' . $o['id']) ?> · <?= date('d M Y, h:i A', strtotime($o['paid_at'] ?: $o['created_at'])) ?><?= $o['rzp_payment'] && !str_starts_with((string)$o['rzp_payment'], 'pay_DEMO') ? ' · ' . sh_e($o['rzp_payment']) : '' ?></small></div>
         <div class="ac-ord-r"><b><?= sh_money($o['amount']) ?></b><span class="st-badge <?= sh_e($st) ?>"><?= $st === 'paid' ? 'Paid' : ($st === 'failed' ? 'Failed' : 'Not paid') ?></span></div>
-        <?php if ($o['slug']): ?><a class="ac-ord-go" href="/store/item?s=<?= rawurlencode($o['slug']) ?>">View ›</a><?php endif; ?>
+        <?php if ($o['slug']): ?><a class="ac-ord-go" href="<?= sh_e(sh_url($o)) ?>">View ›</a><?php endif; ?>
       </div>
     <?php endforeach; ?>
     </div>

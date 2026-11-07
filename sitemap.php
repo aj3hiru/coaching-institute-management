@@ -87,6 +87,10 @@ echo '<?xml version="1.0" encoding="UTF-8"?>';
     </url>
     
     
+  <!-- Online courses, notes, categories, free courses -->
+<?php require_once INCLUDES_PATH . '/sitemaps.php'; if (function_exists('edu_sm_store_last') && edu_sm_store_last($pdo)): foreach (edu_sm_store_rows($pdo, $base_url) as [$u, $m]): ?>
+    <url><loc><?= htmlspecialchars($u) ?></loc><lastmod><?= $m ? gmdate('c', strtotime($m)) : $global_last_mod ?></lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
+<?php endforeach; endif; ?>
   <!-- Categories & State Jobs-->
     <url>
         <loc><?= htmlspecialchars($base_url) ?>/categories</loc>
