@@ -31,10 +31,10 @@
 .hm-hs .hs-track{gap:0;padding:0}
 .hm-slide{flex-basis:100%}
 .hm-slide > a,.hm-slide picture{display:block}
-.hm-slide img{display:block;width:100%;aspect-ratio:16/6;object-fit:cover;background:#1f2937}
+.hm-slide img{display:block;width:100%;aspect-ratio:16/5;object-fit:cover;background:#1f2937}
 .hm-hs .hs-prev{left:14px}.hm-hs .hs-next{right:14px}.hm-hs .hs-prev,.hm-hs .hs-next{top:calc(50% - 20px);background:rgba(255,255,255,.9)}
 .hm-hs .hs-dots{position:absolute;left:0;right:0;bottom:12px;margin:0}.hm-hs .hs-dots button{background:rgba(255,255,255,.55)}.hm-hs .hs-dots button.on{background:#fff}
-@media (max-width:700px){.hm-slide picture:has(source) img{aspect-ratio:4/3}.hm-slide picture:not(:has(source)) img{aspect-ratio:16/8}}
+@media (max-width:700px){.hm-slide img{aspect-ratio:2/1}} /* lower than 16:9 everywhere: computers 16:5, phones 2:1 */
 /* ready-made banner until the admin adds slides */
 .hm-slide-def{background:radial-gradient(1200px 500px at 85% 10%,rgba(124,58,237,.45),transparent 60%),linear-gradient(135deg,#0b1f3a,#1e1b4b);color:#fff}
 .hm-def{display:grid;grid-template-columns:1.2fr .8fr;gap:34px;align-items:center;padding-top:46px;padding-bottom:54px}
