@@ -174,9 +174,10 @@ $tabs = array_filter(['about' => $desc !== '' ? 'About' : '', 'content' => $isCo
         <div class="sp-rvs-track" tabindex="0" aria-label="Student reviews — swipe for more">
         <?php foreach ($reviews as $i => $r): $nm = $short($r['name']) ?: 'Student'; ?>
           <article class="sp-rvc">
-            <div class="sp-rvc-top"><?= sh_stars((float)$r['rating'], 'sp-stars sm') ?><small><?= date('d M Y', strtotime($r['updated_at'] ?: $r['created_at'])) ?></small></div>
+            <div class="sp-rvc-who"><span class="sp-av sp-av<?= $i % 3 ?>"><?= sh_e(mb_strtoupper(mb_substr($nm, 0, 1))) ?></span>
+              <div class="sp-rvc-nm"><b><?= sh_e($nm) ?></b><?= sh_stars((float)$r['rating'], 'sp-stars sm') ?></div>
+              <small><?= date('d M Y', strtotime($r['updated_at'] ?: $r['created_at'])) ?></small></div>
             <p class="sp-rvc-q"><?= $r['body'] ? nl2br(sh_e($r['body'])) : '<span class="sp-rvc-only">Rated ' . (int)$r['rating'] . ' out of 5</span>' ?></p>
-            <div class="sp-rvc-who"><span class="sp-av sp-av<?= $i % 3 ?>"><?= sh_e(mb_strtoupper(mb_substr($nm, 0, 1))) ?></span><b><?= sh_e($nm) ?></b></div>
           </article>
         <?php endforeach; ?>
         </div>
