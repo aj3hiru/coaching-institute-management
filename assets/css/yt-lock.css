@@ -54,3 +54,6 @@
   .yt-lock .plyr__menu__container [role=menu]{padding:4px}
   .yt-lock .ytq-menu{min-width:128px;padding:4px}.yt-lock .ytq-menu button{padding:5px 8px 5px 24px;font-size:13px}.yt-lock .ytq-h{padding:4px 8px 6px;margin-bottom:2px}
 }
+
+/* no play / pause of ours in the middle at all (the bar has them); before play the whole picture starts the video */
+.yt-lock .plyr__control--overlaid.ytb .ytb-ic{display:none!important}
