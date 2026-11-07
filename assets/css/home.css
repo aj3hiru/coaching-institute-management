@@ -398,3 +398,11 @@
 .hm-pro:hover .hm-pro-a{transform:translateX(3px)}
 /* buttons with the splash effect: no border */
 .hm-splash{border:0!important}
+
+/* ===== homepage: every box / card gets 5px corners (pictures inside follow the corner) ===== */
+.hc,.hm-cat,.hm-btc,.hm-post,.hm-fc,.hm-why-in,.hm-why-g li,.hm-imp-g > div,.tC-card,.hm-pc,.st-empty{border-radius:5px!important;overflow:hidden}
+.hm-btc-i,.hm-post-i,.hm-fc-i,.hc-img{overflow:hidden}
+.hm-cat-i,.hm-why-i,.hm-imp-i{border-radius:5px!important}
+.hm-btn:not(.hm-pro){border-radius:5px}
+.hm-btc-tags span,.hc-top .hc-up{border-radius:3px}
+@media (max-width:900px){.hm-why-in{border-radius:5px!important}}
