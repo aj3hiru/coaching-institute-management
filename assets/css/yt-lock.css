@@ -38,8 +38,9 @@
 .yt-lock .yt-lock-ph{display:none}
 .yt-lock .plyr__poster{display:block!important;opacity:1!important;transition:none!important;background-size:cover;z-index:1}
 .yt-lock.yt-started .plyr__poster{opacity:0!important;visibility:hidden}
-.yt-lock .plyr--full-ui.plyr--video .plyr__control--overlaid.ytb{width:68px;height:48px;padding:0;border-radius:0;background:transparent!important;box-shadow:none!important;opacity:1!important;transition:none!important;transform:translate(-50%,-50%)!important}
-.yt-lock .plyr__control--overlaid.ytb svg{position:static;left:0;width:68px;height:48px;display:block}
+/* before play: only the picture — no logo / button drawn; the whole picture is the (invisible) play button */
+.yt-lock .plyr--full-ui.plyr--video .plyr__control--overlaid.ytb{left:0;top:0;width:100%;height:100%;padding:0;border-radius:0;background:transparent!important;box-shadow:none!important;opacity:1!important;transition:none!important;transform:none!important;cursor:pointer}
+.yt-lock .plyr__control--overlaid.ytb svg{display:none!important}
 .yt-lock .plyr__control--overlaid.ytb:hover,.yt-lock .plyr__control--overlaid.ytb:focus{background:transparent!important}
 .yt-lock.yt-started .plyr__control--overlaid,.yt-lock.yt-go .plyr__control--overlaid{display:none!important}
 /* ---- menus (speed, quality) never taller than the video: they scroll inside on phones ---- */
