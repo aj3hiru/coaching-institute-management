@@ -1,7 +1,9 @@
 <?php
 // 404 page. Also the fallback router for the clean store addresses (/courses/…, /notes/…, /learn/…, /free-courses/…,
 // /category/…): until LiteSpeed reloads the .htaccess rewrite rules, those addresses arrive here (ErrorDocument 404).
-if (!defined('EDU_NF_ROUTED') && basename((string)($_SERVER['SCRIPT_FILENAME'] ?? '')) === 'page_not_found.php') {
+// (Reached as the ErrorDocument, or included by page.php / any page that did not find its item. EDU_NF_ROUTED stops
+// a second pass when the store page itself then reports "not found".)
+if (!defined('EDU_NF_ROUTED')) {
     define('EDU_NF_ROUTED', 1);
     $__u = (string)($_SERVER['REQUEST_URI'] ?? '');
     $__path = (string)parse_url($__u, PHP_URL_PATH);
@@ -22,6 +24,7 @@ if (!defined('EDU_NF_ROUTED') && basename((string)($_SERVER['SCRIPT_FILENAME'] ?
         $_SERVER['QUERY_STRING'] = http_build_query($_GET);
         define('SH_VIA_404', 1);
         http_response_code(200);
+        while (ob_get_level() > 0) @ob_end_clean(); // drop anything the first script buffered
         $__abs = dirname(__DIR__) . '/' . $__file;
         $_SERVER['SCRIPT_FILENAME'] = $__abs;
         chdir(dirname($__abs));
