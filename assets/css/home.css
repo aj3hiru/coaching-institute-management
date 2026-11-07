@@ -295,3 +295,18 @@
 .hm-pc-marks{font-size:13.5px;color:#374151}.hm-pc-marks b{color:#15803d;font-size:15px}
 .hm-pc-cls{font-size:12.5px;color:#6b7280}
 @media (max-width:560px){.p4 .hm-pc-ph{width:100px}}
+
+/* Meet our teachers — 3 a row on computers, 2 on tablets, 1 (+ a peek) on phones; experience as a pill under the text */
+.tC .hm-tch .hs-s{flex-basis:calc((100% - 32px) / 3)!important}
+@media (max-width:1024px){.tC .hm-tch .hs-s{flex-basis:calc((100% - 16px) / 2)!important}}
+@media (max-width:640px){.tC .hm-tch .hs-s{flex-basis:86%!important}}
+.tC-card{gap:14px!important;padding:16px!important;align-items:flex-start!important}
+.tC-ring{width:112px!important;height:150px!important;flex:0 0 auto}
+.tC-b{gap:4px}.tC-b > b{font-size:16.5px;line-height:1.25}
+.tC-sub{font-size:12.5px}.tC-b small{font-size:12.5px;line-height:1.4}
+.tC-b p{margin:2px 0 0;font-size:13px;line-height:1.5;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.tC-exp{display:inline-flex!important;align-items:center;gap:5px;align-self:flex-start;margin-top:8px;padding:4px 10px!important;border:1px solid #e5e7eb;border-radius:5px;background:#f8fafc;color:#475569;font-size:12px;text-align:left}
+.tC-exp svg{width:13px;height:13px;color:#94a3b8}.tC-exp b{display:inline!important;font-size:12.5px!important;color:#0f172a}
+@media (max-width:420px){.tC-ring{width:100px!important;height:134px!important}}
+@media (max-width:420px){.tC-exp{display:inline-flex!important}}
+.tC-exp{white-space:nowrap}

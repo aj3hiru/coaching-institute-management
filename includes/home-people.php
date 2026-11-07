@@ -45,8 +45,8 @@ function hm_teachers_html(array $t, string $style): string
             $yrs = preg_match('/(\d+)\s*\+?\s*(years?|yrs?)/i', $x['experience'], $m) ? $m[1] : '';
             $s .= '<div class="hs-s"><div class="tC-card"><span class="tC-ring">' . hm_photo($x['photo'], $x['name'], 'tC-ph') . '</span>'
                 . '<div class="tC-b"><b>' . hm_e($x['name']) . '</b>' . ($x['subject'] !== '' ? '<span class="tC-sub">' . hm_e($x['subject']) . '</span>' : '')
-                . ($x['qualification'] !== '' ? '<small>' . hm_e($x['qualification']) . '</small>' : '') . ($x['about'] !== '' ? '<p>' . hm_e($x['about']) . '</p>' : '') . '</div>'
-                . ($yrs !== '' ? '<div class="tC-exp"><b>' . hm_e($yrs) . '+</b><small>years</small></div>' : '') . '</div></div>';
+                . ($x['qualification'] !== '' ? '<small>' . hm_e($x['qualification']) . '</small>' : '') . ($x['about'] !== '' ? '<p>' . hm_e($x['about']) . '</p>' : '')
+                . ($yrs !== '' ? '<span class="tC-exp">' . hm_ico('calendar') . '<b>' . hm_e($yrs) . '+</b> years experience</span>' : ($x['experience'] !== '' ? '<span class="tC-exp">' . hm_ico('calendar') . hm_e($x['experience']) . '</span>' : '')) . '</div></div></div>';
         }
         return '<section class="hm-sec hm-tch-s tC"><div class="sp-wrap">' . hm_head('Meet our teachers', 'Our faculty') . hm_slider('hm-tch', $s) . '</div></section>';
     }
