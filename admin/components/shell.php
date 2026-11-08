@@ -82,9 +82,9 @@ function admin_shell_nav(): array
             $link($cp('batches'), 'Batches', '/admin/ci-batches.php', 'fa-layer-group'),
             $link($cp('courses'), 'Courses', '/admin/ci-courses.php', 'fa-book-open'),
             $link($cp('fees'), 'Fees', '/admin/ci-fees.php', 'fa-indian-rupee-sign'),
-            $link($cp('fees'), 'Dues', '/admin/ci-fees.php?tab=dues', 'fa-hourglass-half'),
-            $link($cp('sessions'), 'Sessions', '/admin/ci-setup.php', 'fa-calendar-alt'),
-            $link($cp('classes'), 'Classes', '/admin/ci-setup.php?tab=classes', 'fa-chalkboard'),
+            $link($cp('fees'), 'Dues', '/admin/ci-dues.php', 'fa-hourglass-half'),
+            $link($cp('sessions'), 'Sessions', '/admin/ci-sessions.php', 'fa-calendar-alt'),
+            $link($cp('classes'), 'Classes', '/admin/ci-classes.php', 'fa-chalkboard'),
             $link(true, 'Reports', '/admin/ci-reports.php', 'fa-file-pdf'),
         ] : []],
         ['label' => 'Online Store', 'items' => (function () use ($cu, $link, $ci) {
@@ -200,8 +200,6 @@ function admin_shell_is_active(string $href): bool
     $view = $_GET['view'] ?? '';
     if ($path === '/admin/seo.php') return ($want['view'] ?? '') === ($view === 'dashboard' ? '' : $view);
     foreach ($want as $k => $v) if ((string)($_GET[$k] ?? '') !== (string)$v) return false;
-    // Fees / Dues and Sessions / Classes are tabs of one page: the plain link is the first tab only
-    if (in_array($path, ['/admin/ci-fees.php', '/admin/ci-setup.php'], true) && !isset($want['tab']) && in_array((string)($_GET['tab'] ?? ''), ['dues', 'classes'], true)) return false;
     return true;
 }
 

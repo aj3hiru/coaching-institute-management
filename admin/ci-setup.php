@@ -1,10 +1,15 @@
 <?php
-// Sessions & Classes — academic sessions (e.g. 2026-27, one is "current") and the list of classes used in the student form.
+// Sessions (/admin/ci-sessions.php): academic sessions (e.g. 2026-27, one is "current").
+// Classes (/admin/ci-classes.php): the list of classes used in the student form.
+// Two separate pages that load this file; the old /admin/ci-setup.php address moves to the right one.
 require_once __DIR__ . '/components/guard.php';
 require_once INCLUDES_PATH . '/institute.php';
 $me = ci_page_start($pdo, ["sessions", "classes"]);
-$tab = ($_GET['tab'] ?? '') === 'classes' ? 'classes' : 'sessions';
-if (!ci_perm($me, $tab)) $tab = $tab === 'classes' ? 'sessions' : 'classes'; // only the part the user may manage
+$ciPage = fn(string $t) => $t === 'classes' ? '/admin/ci-classes.php' : '/admin/ci-sessions.php';
+if (!defined('CI_SETUP_PAGE') && $_SERVER['REQUEST_METHOD'] !== 'POST') { $qs = $_GET; unset($qs['tab']); header('Location: ' . $ciPage(($_GET['tab'] ?? '') === 'classes' ? 'classes' : 'sessions') . ($qs ? '?' . http_build_query($qs) : ''), true, 301); exit; }
+$tab = defined('CI_SETUP_PAGE') ? CI_SETUP_PAGE : (($_GET['tab'] ?? '') === 'classes' ? 'classes' : 'sessions');
+if (!ci_perm($me, $tab)) { header('Location: ' . $ciPage($tab === 'classes' ? 'sessions' : 'classes')); exit; } // only the part the user may manage
+$self = $ciPage($tab);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_check();
@@ -36,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $ses = $q->fetch(PDO::FETCH_ASSOC);
             if (!$ses) throw new RuntimeException('Session not found.');
             if ((int)$ses['is_current']) throw new RuntimeException('This is the current session. Make another session current first.');
-            if (trim((string)($_POST['confirm_name'] ?? '')) !== $ses['name']) { admin_flash('Type the session name exactly (' . $ses['name'] . ') to delete it.', 'error'); header('Location: /admin/ci-setup.php?purge=' . $id); exit; }
+            if (trim((string)($_POST['confirm_name'] ?? '')) !== $ses['name']) { admin_flash('Type the session name exactly (' . $ses['name'] . ') to delete it.', 'error'); header('Location: /admin/ci-sessions.php?purge=' . $id); exit; }
             $done = ci_session_purge($pdo, $id);
             admin_log('ci_session_delete', "Deleted session {$ses['name']}: " . count($done['batches']) . ' batches, ' . count($done['courses']) . ' courses, ' . count($done['students']) . ' students, ' . count($done['enrollments']) . ' course entries, ' . $done['payments'] . ' payments (' . ci_money($done['paid']) . ')');
             admin_flash('Session ' . $ses['name'] . ' deleted with ' . count($done['batches']) . ' batches, ' . count($done['courses']) . ' courses and ' . count($done['students']) . ' students.');
@@ -58,7 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } catch (RuntimeException $e) {
         admin_flash($e->getMessage(), 'error');
     }
-    header('Location: /admin/ci-setup.php' . ($a !== '' && str_starts_with($a, 'class') ? '?tab=classes' : ''));
+    header('Location: ' . $ciPage($a !== '' && str_starts_with($a, 'class') ? 'classes' : 'sessions'));
     exit;
 }
 
@@ -79,20 +84,19 @@ $addBtn = $tab === 'sessions'
 <html lang="en">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="robots" content="noindex, nofollow">
-<title>Sessions &amp; Classes - <?= ci_e(edu_site_name()) ?></title>
+<title><?= $tab === 'classes' ? 'Classes' : 'Sessions' ?> - <?= ci_e(edu_site_name()) ?></title>
 <?php admin_shell_head(); ci_head(); ci_report_assets(); ?>
 </head>
 <body>
-<?php admin_shell_open('Sessions &amp; Classes', 'Academic sessions and the class list used in the student form', $addBtn); ?>
+<?php admin_shell_open($tab === 'classes' ? 'Classes' : 'Sessions', $tab === 'classes' ? 'The class list used in the student form' : 'Academic sessions — one of them is the current session', $addBtn); ?>
 <div class="ci">
 <?= admin_flash() ?>
-<div class="ci-tabs"><a href="/admin/ci-setup.php" class="<?= $tab === 'sessions' ? 'on' : '' ?>">Academic Sessions</a><a href="?tab=classes" class="<?= $tab === 'classes' ? 'on' : '' ?>">Classes</a></div>
 
 <?php $purge = (int)($_GET['purge'] ?? 0); $ps = $purge ? (array_values(array_filter($sessions, fn($x) => (int)$x['id'] === $purge))[0] ?? null) : null;
 if ($tab === 'sessions' && $ps && !$ps['is_current'] && $me['role'] === 'admin'):
     $plan = ci_session_plan($pdo, $purge);
     $names = fn(string $t, string $col, array $ids, int $max = 40) => $ids ? $pdo->query("SELECT $col FROM $t WHERE id IN (" . implode(',', array_slice($ids, 0, $max)) . ") ORDER BY $col")->fetchAll(PDO::FETCH_COLUMN) : []; ?>
-<div class="ci-card ci-danger-card"><div class="ci-card-h"><h3>Delete session <?= ci_e($ps['name']) ?>?</h3><a href="/admin/ci-setup.php">Cancel</a></div><div class="ci-card-b">
+<div class="ci-card ci-danger-card"><div class="ci-card-h"><h3>Delete session <?= ci_e($ps['name']) ?>?</h3><a href="/admin/ci-sessions.php">Cancel</a></div><div class="ci-card-b">
   <p style="margin:0 0 12px">This deletes the session and <b>everything that belongs only to it</b>. It cannot be undone.</p>
   <div class="ci-stats" style="margin-bottom:12px">
     <div class="ci-stat"><i class="fas fa-layer-group ci-i-red"></i><div><b><?= count($plan['batches']) ?></b><small>batches</small></div></div>

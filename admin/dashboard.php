@@ -54,14 +54,14 @@ $empty = !$stats['active'] && !$stats['courses'] && !$stats['batches'];
 <body>
 <?php admin_shell_open('Dashboard', date('l, F j, Y'), '<div class="ci-top-actions">'
     . (ci_perm($me, 'add_student') ? '<a class="ci-btn" href="/admin/student-edit.php"><i class="fas fa-user-plus"></i> Add Student</a>' : '')
-    . (ci_perm($me, 'fees') ? '<a class="ci-btn ci-ghost" href="/admin/ci-fees.php?tab=dues"><i class="fas fa-indian-rupee-sign"></i> Collect Fee</a>' : '')
+    . (ci_perm($me, 'fees') ? '<a class="ci-btn ci-ghost" href="/admin/ci-dues.php"><i class="fas fa-indian-rupee-sign"></i> Collect Fee</a>' : '')
     . (ci_perm($me, 'batches') ? '<a class="ci-btn ci-ghost" href="/admin/ci-batches.php?new=1"><i class="fas fa-layer-group"></i> New Batch</a>' : '') . '</div>'); ?>
 <div class="ci">
 <?= admin_flash() ?>
 
 <?php if ($empty): ?>
 <div class="ci-card"><div class="ci-card-b"><b>Getting started</b><ol style="margin:8px 0 0 18px;padding:0;line-height:1.9">
-  <li>Check the academic session and class list in <a href="/admin/ci-setup.php">Sessions &amp; Classes</a>.</li>
+  <li>Check the academic session and class list in <a href="/admin/ci-sessions.php">Sessions</a> and <a href="/admin/ci-classes.php">Classes</a>.</li>
   <li>Add your <a href="/admin/ci-courses.php?new=1">courses</a> with their fee.</li>
   <li>Create <a href="/admin/ci-batches.php?new=1">batches</a> (timing, teacher, seats).</li>
   <li><a href="/admin/student-edit.php">Add students</a> and take the fee — a receipt is made for every payment.</li>
@@ -74,8 +74,8 @@ $empty = !$stats['active'] && !$stats['courses'] && !$stats['batches'];
   <a class="ci-stat" href="/admin/ci-batches.php"><i class="fas fa-layer-group ci-i-cyan"></i><div><b><?= number_format($stats['batches']) ?></b><small>Active batches · <?= $stats['courses'] ?> courses</small></div></a>
   <a class="ci-stat" href="/admin/ci-fees.php?from=<?= $today ?>&amp;to=<?= $today ?>"><i class="fas fa-indian-rupee-sign ci-i-green"></i><div><b><?= ci_money0($stats['today']) ?></b><small>Fee received today</small></div></a>
   <a class="ci-stat" href="/admin/ci-fees.php"><i class="fas fa-wallet ci-i-green"></i><div><b><?= ci_money0($stats['month']) ?></b><small>Fee this month</small></div></a>
-  <a class="ci-stat" href="/admin/ci-fees.php?tab=dues"><i class="fas fa-hourglass-half ci-i-red"></i><div><b><?= ci_money0($stats['due']) ?></b><small>Total due</small></div></a>
-  <a class="ci-stat" href="/admin/ci-fees.php?tab=dues&amp;late=1"><i class="fas fa-calendar-xmark ci-i-amber"></i><div><b><?= number_format($stats['late']) ?></b><small>Due date passed</small></div></a>
+  <a class="ci-stat" href="/admin/ci-dues.php"><i class="fas fa-hourglass-half ci-i-red"></i><div><b><?= ci_money0($stats['due']) ?></b><small>Total due</small></div></a>
+  <a class="ci-stat" href="/admin/ci-dues.php?late=1"><i class="fas fa-calendar-xmark ci-i-amber"></i><div><b><?= number_format($stats['late']) ?></b><small>Due date passed</small></div></a>
 </div>
 
 <div class="ci-grid2">
@@ -87,7 +87,7 @@ $empty = !$stats['active'] && !$stats['courses'] && !$stats['batches'];
     <?php if (!$recentPays): ?><li class="ci-muted">No payments yet.</li><?php endif; ?>
     <?php foreach ($recentPays as $p): ?><li><div class="ci-person"><div><a href="/admin/student-view.php?id=<?= (int)$p['student_id'] ?>"><?= ci_e($p['name']) ?></a><small><?= ci_date($p['paid_on']) ?> · <?= ci_e(ci_pay_mode($p)) ?><?= $p['username'] ? ' · by ' . ci_e($p['username']) : '' ?></small></div></div><span class="r ci-amt-row"><b><?= ci_money0($p['amount']) ?></b><a class="ci-ico" href="/admin/ci-receipt.php?id=<?= (int)$p['id'] ?>" target="_blank" aria-label="Print receipt" style="width:28px;height:28px"><?= ci_svg('print') ?></a></span></li><?php endforeach; ?>
   </ul></div></div>
-  <div class="ci-card"><div class="ci-card-h"><h3>Fee to collect</h3><a href="/admin/ci-fees.php?tab=dues">All dues</a></div><div class="ci-card-b ci-p0"><ul class="ci-list">
+  <div class="ci-card"><div class="ci-card-h"><h3>Fee to collect</h3><a href="/admin/ci-dues.php">All dues</a></div><div class="ci-card-b ci-p0"><ul class="ci-list">
     <?php if (!$upcoming): ?><li class="ci-muted">No dues. Everyone has paid.</li><?php endif; ?>
     <?php foreach ($upcoming as $u): $late = $u['due_date'] && $u['due_date'] < $today; ?><li><div class="ci-person"><div><a href="/admin/student-view.php?id=<?= (int)$u['sid'] ?>#pay"><?= ci_e($u['name']) ?></a><small><?= ci_e($u['course_name']) ?> · <a href="tel:<?= ci_e($u['mobile']) ?>"><?= ci_e($u['mobile']) ?></a></small></div></div><span class="r"><b style="color:#b91c1c"><?= ci_money0($u['due']) ?></b><br><?= $u['due_date'] ? ($late ? '<span class="ci-badge ci-b-amber">' . ci_date($u['due_date']) . '</span>' : '<small class="ci-muted">' . ci_date($u['due_date']) . '</small>') : '' ?></span></li><?php endforeach; ?>
   </ul></div></div>

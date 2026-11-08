@@ -1,11 +1,14 @@
 <?php
-// Fees & Dues — Payments: every fee received (dates, method, course, batch), with totals and export.
-//              Dues: who still has to pay, per course/batch, with the next due date (late ones marked).
+// Fees (/admin/ci-fees.php): every fee received (dates, method, course, batch), with totals and export.
+// Dues (/admin/ci-dues.php, which loads this file): who still has to pay, per course/batch, with the next due date (late ones marked).
+// Two separate pages; the old /admin/ci-fees.php?tab=dues address moves to the Dues page.
 require_once __DIR__ . '/components/guard.php';
 require_once INCLUDES_PATH . '/institute.php';
 $me = ci_page_start($pdo, ["fees"]);
 $L = ci_lists($pdo);
-$tab = ($_GET['tab'] ?? '') === 'dues' ? 'dues' : 'payments';
+if (!defined('CI_DUES_PAGE') && ($_GET['tab'] ?? '') === 'dues') { $qs = $_GET; unset($qs['tab']); header('Location: /admin/ci-dues.php' . ($qs ? '?' . http_build_query($qs) : ''), true, 301); exit; }
+$tab = defined('CI_DUES_PAGE') ? 'dues' : 'payments';
+$self = $tab === 'dues' ? '/admin/ci-dues.php' : '/admin/ci-fees.php';
 $q = trim((string)($_GET['q'] ?? ''));
 $fCourse = (int)($_GET['course'] ?? 0);
 $fBatch = (int)($_GET['batch'] ?? 0);
@@ -72,18 +75,16 @@ $qs = function (array $over = []) {
 <html lang="en">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="robots" content="noindex, nofollow">
-<title>Fees &amp; Dues - <?= ci_e(edu_site_name()) ?></title>
+<title><?= $tab === 'dues' ? 'Dues' : 'Fees' ?> - <?= ci_e(edu_site_name()) ?></title>
 <?php admin_shell_head(); ci_head(); ?>
 </head>
 <body>
-<?php admin_shell_open('Fees &amp; Dues', 'Fee received and fee still to come'); ?>
+<?php admin_shell_open($tab === 'dues' ? 'Dues' : 'Fees', $tab === 'dues' ? 'Fee still to come — who has to pay and by when' : 'Every fee received'); ?>
 <div class="ci">
 <?= admin_flash() ?>
 <?php if ((int)($_GET['paid'] ?? 0)): ?><div class="ci-alert ci-alert-ok"><i class="fas fa-receipt"></i> <a href="/admin/ci-receipt.php?id=<?= (int)$_GET['paid'] ?>" target="_blank"><b>Print receipt</b></a></div><?php endif; ?>
-<div class="ci-tabs"><a href="/admin/ci-fees.php" class="<?= $tab === 'payments' ? 'on' : '' ?>">Fee Payments</a><a href="?tab=dues" class="<?= $tab === 'dues' ? 'on' : '' ?>">Dues</a></div>
 
 <div class="ci-card"><div class="ci-card-b"><form method="get" class="ci-filters">
-  <?php if ($tab === 'dues'): ?><input type="hidden" name="tab" value="dues"><?php endif; ?>
   <div class="ci-f"><label>Search</label><input name="q" value="<?= ci_e($q) ?>" placeholder="Name, mobile, reg. no.<?= $tab === 'payments' ? ', receipt' : '' ?>"></div>
   <?php if ($tab === 'payments'): ?>
   <div class="ci-f"><label>From</label><input type="date" name="from" value="<?= ci_e($from) ?>"></div>
