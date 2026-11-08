@@ -190,8 +190,8 @@ $ico = fn($n) => sh_icon($n);
       </div>
     </div>
     <script>(function () { var l = document.getElementById('lpList'), c = l && l.querySelector('.lp-li.on'); if (c) l.scrollTop = c.offsetTop - l.offsetTop - 60; })();</script>
+    <?php if (!empty($moreHtml) && trim($moreHtml) !== ''): ?><section class="lp-more" aria-label="About this lesson"><?= $moreHtml ?></section><?php endif; // right under the lesson list ?>
   </aside>
-  <?php if (!empty($moreHtml) && trim($moreHtml) !== ''): ?><section class="lp-more" aria-label="About this lesson"><?= $moreHtml ?></section><?php endif; ?>
 </div>
 <?php if ($file || ($lesson && ($lesson['kind'] ?? '') === 'pdf')): ?><script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script><?php endif; ?>
 <?php require ROOT_PATH . '/components/store-close.php'; ?>

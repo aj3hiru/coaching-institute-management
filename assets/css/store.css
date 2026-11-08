@@ -639,9 +639,25 @@ a.st-li:hover{background:#f7fbfc}a.st-li:hover svg{color:var(--sa)}
 [data-theme="dark"] .lp-fr .lp-li{color:#e5e7eb!important}[data-theme="dark"] .lp-fr .lp-li:hover{background:#1f2937}[data-theme="dark"] .lp-ch-h{background:#111827}
 
 /* lesson page order: player + title | lesson list, then the PDF notes / VVI / quiz / doubts below both (phones: player, list, then these) */
-.lp-grid{grid-template-areas:"main side" "more more"}
-.lp-grid > .lp-main{grid-area:main}.lp-grid > .lp-side{grid-area:side}.lp-grid > .lp-more{grid-area:more;min-width:0}
-.lp-more .lt{margin-top:0}
-@media (max-width:1000px){.lp-grid{grid-template-areas:"main" "side" "more"}}
+.lp-more{min-width:0}.lp-more .lt{margin-top:0}
 .lp-grid > .lp-side{position:static}          /* not sticky: the notes / quiz section comes right below it */
 @media (min-width:1001px){.lp-list.lp-fr{max-height:540px}} /* about as tall as the video + title */
+
+/* notes / VVI / quiz / doubts in the narrow right column (under the lesson list) */
+.lp-side .lt{border-radius:5px}
+.lp-side .lt-strip{overflow-x:auto;scrollbar-width:none;flex-wrap:nowrap}.lp-side .lt-strip::-webkit-scrollbar{display:none}
+.lp-side .lt-strip button{white-space:nowrap;flex:0 0 auto}
+@media (min-width:1001px){.lp-side .lt-pane{max-height:520px;overflow-y:auto;overscroll-behavior:contain}}
+/* narrow right column: the PDF note row is title + View on one line, Download as a small icon button */
+.lp-side .lt-note-h{padding:10px 12px;gap:10px;border-radius:5px}
+.lp-side .lt-note-h b{font-size:13.5px;line-height:1.35}
+.lp-side .lt-dl{padding:0 11px;border-radius:5px}.lp-side .lt-dl span{display:none}
+.lp-side .lt-link{padding:10px 12px;gap:10px;border-radius:5px}
+.lp-side .lt-strip button{padding-left:12px;padding-right:12px;font-size:13.5px}
+@media (max-width:1000px){.lp-side .lt-dl span{display:inline}.lp-side .lt-dl{padding:0 14px}}
+/* narrow right column: all tabs visible as a 2 × 2 grid (no hidden "Quiz" / "Doubts") */
+@media (min-width:1001px){
+  .lp-side .lt-strip{display:grid!important;grid-template-columns:1fr 1fr;gap:4px;padding:6px;overflow:visible}
+  .lp-side .lt-strip button{justify-content:center;padding:8px 6px;border-radius:4px;font-size:13px;margin:0;border-bottom:0!important}
+  .lp-side .lt-strip button.on{background:#eef7f8;color:var(--sa,#0c6878)}
+}
