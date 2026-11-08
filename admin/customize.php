@@ -368,17 +368,9 @@ body{margin:0;overflow:hidden}
     </div>
   </aside>
   <main class="cz-preview">
-    <div class="cz-preview-bar">
-      <span>Preview</span>
-      <button type="button" data-path="/"><i class="fas fa-house"></i> Homepage</button>
-      <button type="button" data-path="<?= htmlspecialchars($latestUrl) ?>"><i class="fas fa-file-lines"></i> Latest post</button>
-      <button type="button" data-path="/categories"><i class="fas fa-folder"></i> Categories</button>
-      <button type="button" id="cz-reload" title="Reload preview"><i class="fas fa-rotate-right"></i></button>
-      <span class="cz-refreshing" id="cz-refreshing" hidden>Updating preview…</span>
-      <a href="/" target="_blank" rel="noopener">Open site <i class="fas fa-arrow-up-right-from-square"></i></a>
-    </div>
     <div class="cz-frame-wrap cz-dev-d" id="cz-wrap">
       <div class="cz-loading" id="cz-loading"><span class="cz-spinner"></span> Loading preview…</div>
+      <span class="cz-refreshing" id="cz-refreshing" hidden><span class="cz-spinner"></span></span>
       <iframe title="Site preview" id="cz-frame" class="is-active" src="/?czp=1"></iframe>
     </div>
   </main>
@@ -1643,8 +1635,22 @@ function showPanel(p, keep) {
 }
 function goTo(path) { if (path === framePath) return; framePath = path; reloadFrame(); }
 $('cz-back').onclick = showHome;
-document.querySelectorAll('.cz-preview-bar [data-path]').forEach(b => b.onclick = () => { framePath = ''; goTo(b.dataset.path); });
-$('cz-reload').onclick = reloadFrame;
+// Like WordPress: links clicked inside the preview open in the preview (with the unsaved changes); outside links do nothing
+function czFrameLinks() {
+  try {
+    const f = $('cz-frame'), d = f.contentDocument, loc = f.contentWindow.location;
+    if (loc.origin === location.origin) { const u = new URL(loc.href); u.searchParams.delete('czp'); u.searchParams.delete('t'); framePath = u.pathname + (u.search || ''); }
+    d.addEventListener('click', e => {
+      const a = e.target.closest && e.target.closest('a[href]'); if (!a || e.defaultPrevented) return;
+      const href = a.getAttribute('href') || ''; if (href.startsWith('#') || href.startsWith('javascript:')) return;
+      e.preventDefault();
+      let u; try { u = new URL(a.href, loc.href); } catch (er) { return; }
+      if (u.origin !== location.origin || /^\/admin(\/|-login)/.test(u.pathname)) return; // the preview stays on the site
+      u.searchParams.delete('czp'); u.searchParams.delete('t'); framePath = ''; goTo(u.pathname + u.search);
+    }, true);
+  } catch (e) {}
+}
+$('cz-frame').addEventListener('load', czFrameLinks);
 $('cz-publish').onclick = () => {
   $('cz-publish').disabled = true; $('cz-publish').textContent = 'Publishing…';
   post('publish').then(r => { if (r.ok) { dirty = false; $('cz-status').textContent = 'All changes published'; $('cz-publish').textContent = 'Published'; } else { $('cz-publish').disabled = false; $('cz-publish').textContent = 'Publish'; alert('Could not publish. Please try again.'); } });
