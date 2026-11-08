@@ -117,6 +117,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 
+if (isset($_GET['addpl'])) { header('Location: /admin/shop-playlist.php'); exit; }
 $edit = (int)($_GET['edit'] ?? 0);
 $ep0 = $edit ? sh_product($pdo, $edit, false) : null;
 $fType = $ep0 ? $ep0['type'] : (($_GET['type'] ?? '') === 'notes' ? 'notes' : 'course'); // two sections: Online Courses and PDF Notes
@@ -274,38 +275,18 @@ $badge = fn($s) => '<span class="ci-badge ' . ['published' => 'ci-b-green', 'dra
 <?php endforeach; ?>
 </tbody></table></div></div>
 <?php if ($isC): $pls = $pdo->query("SELECT * FROM hm_free ORDER BY sort, id DESC")->fetchAll(PDO::FETCH_ASSOC); $plCats = sh_categories($pdo, true); ?>
-<div class="ci-card" id="playlists"><div class="ci-card-h"><h3><i class="fab fa-youtube" style="color:#dc2626"></i> YouTube playlist courses (free) <span class="ci-muted" style="font-weight:400;font-size:13px">· <?= count($pls) ?> — shown on <a href="/free-courses/" target="_blank">Free Courses</a></span></h3><button type="button" class="ci-btn ci-sm" data-mopen="#plForm" data-mtitle="Add a playlist course" data-fill='{"id":0,"active":1}'><i class="fas fa-plus"></i> Add Playlist</button></div>
+<div class="ci-card" id="playlists"><div class="ci-card-h"><h3><i class="fab fa-youtube" style="color:#dc2626"></i> YouTube playlist courses (free) <span class="ci-muted" style="font-weight:400;font-size:13px">· <?= count($pls) ?> — shown on <a href="/free-courses/" target="_blank">Free Courses</a></span></h3><a class="ci-btn ci-sm" href="/admin/shop-playlist.php"><i class="fas fa-plus"></i> Add Playlist</a></div>
 <div class="ci-card-b ci-p0 ci-table-wrap"><table class="ci-table"><thead><tr><th>Playlist course</th><th>Teacher</th><th>Category</th><th class="ci-num">Videos</th><th>Order</th><th>Status</th><th>Action</th></tr></thead><tbody>
 <?php if (!$pls): ?><tr><td colspan="7" class="ci-empty">No playlist course yet. Press <b>Add Playlist</b> and paste a YouTube playlist link.</td></tr><?php endif; ?>
 <?php foreach ($pls as $f): $fthumb = !empty($f['thumb_custom']) ? sh_upload_url($f['thumb_custom']) : (string)$f['thumb']; ?>
-<tr><td><div style="display:flex;gap:10px;align-items:center"><?= $fthumb !== '' ? '<img class="shp-th" src="' . ci_e($fthumb) . '" alt="" loading="lazy">' : '<span class="shp-thp">YOUTUBE</span>' ?><div><b><?= ci_e($f['title']) ?></b> <span class="shp-ytb"><i class="fab fa-youtube"></i> Playlist</span><small class="ci-muted" style="display:block"><?= ci_e($f['channel'] ?: 'YouTube') ?></small></div></div></td>
+<tr><td><div style="display:flex;gap:10px;align-items:center"><?= $fthumb !== '' ? '<img class="shp-th" src="' . ci_e($fthumb) . '" alt="" loading="lazy">' : '<span class="shp-thp">YOUTUBE</span>' ?><div><a href="/admin/shop-playlist.php?id=<?= (int)$f['id'] ?>" style="font-weight:700;color:inherit;text-decoration:none"><?= ci_e($f['title']) ?></a> <span class="shp-ytb"><i class="fab fa-youtube"></i> Playlist</span><small class="ci-muted" style="display:block"><?= ci_e($f['channel'] ?: 'YouTube') ?></small></div></div></td>
 <td><?= $f['teacher_id'] ? ci_e($teachers[(int)$f['teacher_id']] ?? '—') : '<span class="ci-muted">—</span>' ?></td>
 <td><?= $f['category_id'] && isset($plCats[(int)$f['category_id']]) ? ci_e($plCats[(int)$f['category_id']]['name']) : '<span class="ci-muted">—</span>' ?></td>
 <td class="ci-num"><?= $f['videos'] ? ((int)$f['videos'] >= 100 ? '100+' : (int)$f['videos']) : '—' ?></td><td><?= (int)$f['sort'] ?></td>
 <td><?= $f['active'] ? '<span class="ci-badge ci-b-green">Shown</span>' : '<span class="ci-badge ci-b-grey">Hidden</span>' ?></td>
-<td><div class="ci-icos"><?= ci_ico('edit', null, 'Edit', 'button', ' data-mopen="#plForm" data-mtitle="Edit playlist course" data-fill="' . ci_e(json_encode(['id' => (int)$f['id'], 'title' => $f['title'], 'category_id' => (int)$f['category_id'], 'teacher_id' => (int)$f['teacher_id'], 'sort' => (int)$f['sort'], 'active' => (int)$f['active'], 'url' => $f['url']], JSON_UNESCAPED_UNICODE)) . '"') ?><?= ci_ico('eye', sh_free_url($f), 'View on site', 'link', ' target="_blank"') ?><?= ci_post_ico('refresh', 'Fetch again from YouTube', ['action' => 'pl_refresh', 'id' => $f['id']]) ?><?= ci_post_ico('trash', 'Delete', ['action' => 'pl_delete', 'id' => $f['id']], 'Remove this playlist course?') ?></div></td></tr>
+<td><div class="ci-icos"><?= ci_ico('edit', '/admin/shop-playlist.php?id=' . (int)$f['id'], 'Edit') ?><?= ci_ico('eye', sh_free_url($f), 'View on site', 'link', ' target="_blank"') ?><?= ci_post_ico('refresh', 'Fetch again from YouTube', ['action' => 'pl_refresh', 'id' => $f['id']]) ?><?= ci_post_ico('trash', 'Delete', ['action' => 'pl_delete', 'id' => $f['id']], 'Remove this playlist course?') ?></div></td></tr>
 <?php endforeach; ?>
 </tbody></table></div></div>
-<div class="ci-modal" id="plForm" data-mform<?= isset($_GET['addpl']) ? ' data-open-now' : '' ?> hidden><div class="ci-modal-box ci-modal-wide" role="dialog" aria-modal="true" aria-labelledby="plH">
-<div class="ci-card-h"><h3 id="plH" data-mtitle-target>Add a playlist course</h3><button type="button" class="ci-x" data-close aria-label="Close"><i class="fas fa-times"></i></button></div><div class="ci-card-b">
-<form method="post"><?= csrf_field() ?><input type="hidden" name="action" value="pl_add"><input type="hidden" name="id" value="0">
-<div class="ci-grid2 ci-mgrid">
-  <div class="ci-f pl-new" style="grid-column:1/-1"><label>YouTube playlist link <span class="ci-req">*</span></label><input name="url" required maxlength="500" placeholder="https://www.youtube.com/playlist?list=…"><span class="ci-hint">Title, picture and number of videos come from YouTube. The playlist must be Public or Unlisted. Students watch it free on the site.</span></div>
-  <div class="ci-f" style="grid-column:1/-1"><label>Title <span class="ci-muted" style="font-weight:400">(empty = YouTube's title)</span></label><input name="title" maxlength="250"></div>
-  <div class="ci-f"><label>Category</label><select name="category_id"><option value="0">— No category —</option><?php foreach ($plCats as $k => $c): ?><option value="<?= (int)$k ?>"><?= ci_e($c['name']) ?></option><?php endforeach; ?></select></div>
-  <div class="ci-f"><label>Teacher</label><select name="teacher_id"><option value="0">— No teacher —</option><?php foreach ($teachers as $k => $l): ?><option value="<?= (int)$k ?>"><?= ci_e($l) ?></option><?php endforeach; ?></select></div>
-  <div class="ci-f"><label>Order</label><input name="sort" type="number" value="0"></div>
-  <label hidden class="ci-f pl-old" style="display:flex;flex-direction:row;gap:8px;align-items:center;font-weight:600"><input type="checkbox" name="active" value="1"> Show on the site</label>
-</div>
-<div class="ci-mfoot"><button type="button" class="ci-btn ci-ghost" data-close>Cancel</button><button class="ci-btn" type="submit"><i class="fas fa-check"></i> Save</button></div>
-</form></div></div></div>
-<script>
-document.addEventListener('click', function (e) { // one form for Add (needs the link) and Edit (link stays, Show box)
-  var b = e.target.closest('[data-mopen="#plForm"]'); if (!b) return;
-  setTimeout(function () { var f = document.querySelector('#plForm form'), edit = +f.id.value > 0;
-    f.action.value = edit ? 'pl_save' : 'pl_add'; f.querySelector('.pl-new').hidden = edit; f.url.required = !edit; f.querySelector('.pl-old').hidden = !edit; }, 0);
-});
-</script>
 <?php endif; ?>
 <?php endif; ?>
 </div>
