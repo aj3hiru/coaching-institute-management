@@ -68,6 +68,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($id) { $vals[] = $id; $pdo->prepare("UPDATE sh_products SET type=?, title=?, slug=?, subtitle=?, description=?, thumb=?, price=?, mrp=?, validity_days=?, status=?, sort=?, category_id=?, starts_at=?, teacher_id=?, faq=?, includes=?, updated_at=NOW() WHERE id=?")->execute($vals); }
             else { $pdo->prepare("INSERT INTO sh_products (type, title, slug, subtitle, description, thumb, price, mrp, validity_days, status, sort, category_id, starts_at, teacher_id, faq, includes) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")->execute($vals); $id = (int)$pdo->lastInsertId(); }
             admin_log('shop_product', "Saved store product #$id $title");
+            if ($type === 'course') { // batch end date
+                $ends = preg_match('/^\d{4}-\d{2}-\d{2}$/', (string)($_POST['ends_at'] ?? '')) ? (string)$_POST['ends_at'] : null;
+                $pdo->prepare("UPDATE sh_products SET ends_at = ? WHERE id = ?")->execute([$ends, $id]);
+            }
             if ($type === 'course') { // intro video (any link; YouTube shows its picture)
                 $intro = trim((string)($_POST['intro_url'] ?? ''));
                 if ($intro !== '' && !preg_match('#^https?://\S+$#i', $intro)) $intro = 'https://' . ltrim($intro, '/');
@@ -124,12 +128,27 @@ $fType = $ep0 ? $ep0['type'] : (($_GET['type'] ?? '') === 'notes' ? 'notes' : 'c
 $isC = $fType === 'course';
 $classesL = ci_lists($pdo)['classes'];
 $teachers = sh_teachers($pdo);
-$fStatus = in_array($_GET['status'] ?? '', ['draft', 'published', 'hidden'], true) ? $_GET['status'] : '';
-$w = []; if ($fType) $w[] = "p.type = " . $pdo->quote($fType); if ($fStatus) $w[] = "p.status = " . $pdo->quote($fStatus);
-$rows = $pdo->query("SELECT p.*, (SELECT COUNT(*) FROM sh_lessons l WHERE l.product_id = p.id) AS lessons, (SELECT COUNT(*) FROM sh_files f WHERE f.product_id = p.id) AS files,
-    (SELECT COUNT(*) FROM sh_access a WHERE a.product_id = p.id AND a.revoked = 0) AS buyers, (SELECT COALESCE(SUM(o.amount),0) FROM sh_orders o WHERE o.product_id = p.id AND o.status = 'paid') AS sales,
+$F = ['q' => trim((string)($_GET['q'] ?? '')), 'status' => (string)($_GET['status'] ?? ''), 'cat' => (int)($_GET['cat'] ?? 0), 'teacher' => (int)($_GET['teacher'] ?? 0),
+    'price' => (string)($_GET['price'] ?? ''), 'batch' => (string)($_GET['batch'] ?? ''), 'content' => (string)($_GET['content'] ?? ''), 'access' => (string)($_GET['access'] ?? ''),
+    'sales' => (string)($_GET['sales'] ?? ''), 'sort' => (string)($_GET['sort'] ?? '')];
+$fStatus = in_array($F['status'], ['draft', 'published', 'hidden'], true) ? $F['status'] : '';
+$w = ["p.type = " . $pdo->quote($fType)]; $hv = [];
+if ($fStatus) $w[] = "p.status = " . $pdo->quote($fStatus);
+if ($F['q'] !== '') $w[] = "(p.title LIKE " . $pdo->quote('%' . $F['q'] . '%') . " OR p.subtitle LIKE " . $pdo->quote('%' . $F['q'] . '%') . " OR p.slug LIKE " . $pdo->quote('%' . $F['q'] . '%') . ")";
+if ($F['cat'] === -1) $w[] = "p.category_id IS NULL"; elseif ($F['cat'] > 0) $w[] = "p.category_id = " . $F['cat'];
+if ($F['teacher'] === -1) $w[] = "p.teacher_id IS NULL"; elseif ($F['teacher'] > 0) $w[] = "p.teacher_id = " . $F['teacher'];
+$w[] = ['free' => 'p.price <= 0', 'paid' => 'p.price > 0', 'offer' => 'p.price > 0 AND p.mrp > p.price'][$F['price']] ?? '1';
+if ($isC) $w[] = ['upcoming' => 'p.starts_at >= CURDATE()', 'running' => '(p.starts_at IS NULL OR p.starts_at < CURDATE()) AND (p.ends_at IS NULL OR p.ends_at >= CURDATE())', 'completed' => 'p.ends_at < CURDATE()', 'nodate' => 'p.starts_at IS NULL AND p.ends_at IS NULL'][$F['batch']] ?? '1';
+$w[] = ['lifetime' => 'p.validity_days = 0', 'limited' => 'p.validity_days > 0'][$F['access']] ?? '1';
+$hv = array_filter([($isC ? ['playlist' => 'ytl > 0', 'noplaylist' => 'ytl = 0 AND lessons > 0', 'empty' => 'lessons = 0', 'pdfs' => 'files > 0'] : ['has' => 'files > 0', 'empty' => 'files = 0'])[$F['content']] ?? '',
+    ['buyers' => 'buyers > 0', 'nobuyers' => 'buyers = 0', 'sales' => 'sales > 0'][$F['sales']] ?? '']);
+$order = ['new' => 'id DESC', 'old' => 'id ASC', 'az' => 'title', 'za' => 'title DESC', 'buyers' => 'buyers DESC, id DESC', 'sales' => 'sales DESC, id DESC', 'plow' => 'price, id DESC', 'phigh' => 'price DESC, id DESC', 'start' => 'starts_at IS NULL, starts_at, id DESC'][$F['sort']] ?? 'sort, id DESC';
+$fOn = count(array_filter($F, fn($v, $k) => $k !== 'sort' && $v !== '' && $v !== 0, ARRAY_FILTER_USE_BOTH));
+$rows = $pdo->query("SELECT * FROM (SELECT p.*, (SELECT COUNT(*) FROM sh_lessons l WHERE l.product_id = p.id) AS lessons, (SELECT COUNT(*) FROM sh_files f WHERE f.product_id = p.id) AS files,
+    (SELECT COUNT(*) FROM sh_access a WHERE a.product_id = p.id AND a.revoked = 0 AND a.source <> 'block') AS buyers, (SELECT COALESCE(SUM(o.amount),0) FROM sh_orders o WHERE o.product_id = p.id AND o.status = 'paid') AS sales,
     ((SELECT COUNT(*) FROM sh_sections s WHERE s.product_id = p.id AND s.yt_list IS NOT NULL) + (p.yt_list IS NOT NULL)) AS ytl
-    FROM sh_products p" . ($w ? ' WHERE ' . implode(' AND ', $w) : '') . " ORDER BY p.sort, p.id DESC")->fetchAll(PDO::FETCH_ASSOC);
+    FROM sh_products p WHERE " . implode(' AND ', $w) . ") x" . ($hv ? ' WHERE ' . implode(' AND ', $hv) : '') . " ORDER BY $order")->fetchAll(PDO::FETCH_ASSOC);
+$fTotal = (int)$pdo->query("SELECT COUNT(*) FROM sh_products WHERE type = " . $pdo->quote($fType))->fetchColumn();
 $ep = $ep0;
 $epFaq = $ep ? sh_json_list($ep['faq']) : []; $epInc = $ep ? sh_json_list($ep['includes']) : [];
 $epLect = $ep ? (int)$pdo->query("SELECT COUNT(*) FROM sh_lessons WHERE product_id = " . (int)$ep['id'])->fetchColumn() : 0;
@@ -150,6 +169,9 @@ $badge = fn($s) => '<span class="ci-badge ' . ['published' => 'ci-b-green', 'dra
 .shp-yt-on{border-color:#fca5a5;box-shadow:0 0 0 3px #fee2e2}
 .shp-ylinked{font-size:13px;margin:0 0 8px;padding:7px 10px;background:#f0fdf4;border:1px solid #bbf7d0}.shp-ylinked i{color:#15803d}
 .shp-lect-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:26px 0 12px;padding-top:18px;border-top:2px solid #e5e7eb}.shp-lect-h h2{margin:0;font-size:19px}
+.shp-filt{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px 12px;align-items:end}.shp-filt .ci-f{min-width:0;margin:0}.shp-filt .shp-fq{grid-column:span 2}.shp-filt select,.shp-filt input{width:100%}
+@media (max-width:600px){.shp-filt{grid-template-columns:1fr 1fr}.shp-filt .shp-fq,.shp-filt .shp-fbtn{grid-column:1/-1}}
+.shp-fcount{margin:0 0 10px;font-size:13.5px;color:#6b7280}
 .shp-ytb{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;color:#b91c1c;background:#fef2f2;border:1px solid #fecaca;padding:1px 6px;vertical-align:middle}
 .shp-yrow{display:flex;gap:8px}.shp-yrow input{flex:1}
 .shp-ypv{margin-top:10px;border:1px solid #e5e7eb;background:#fafafa}
@@ -218,7 +240,8 @@ $badge = fn($s) => '<span class="ci-badge ' . ['published' => 'ci-b-green', 'dra
       <?php if (!$teachers): ?><small class="ci-muted">Give a user the Teacher permission: Users → Advance Access → Online Store.</small><?php endif; ?>
     </div></div><?php endif; ?>
     <div class="meta-panel"><div class="meta-panel-header"><span><?= $isC ? 'Batch &amp; access' : 'Access' ?></span></div><div class="meta-panel-body">
-      <?php if ($isC): ?><div><label>Batch starts on</label><input type="date" name="starts_at" value="<?= ci_e($ep['starts_at'] ?? '') ?>"><small class="ci-muted">A future date shows it as an Upcoming batch.</small></div><?php endif; ?>
+      <?php if ($isC): ?><div><label>Batch starts on</label><input type="date" name="starts_at" value="<?= ci_e($ep['starts_at'] ?? '') ?>"><small class="ci-muted">A future date shows it as an Upcoming batch.</small></div>
+      <div><label>Batch ends on</label><input type="date" name="ends_at" value="<?= ci_e($ep['ends_at'] ?? '') ?>"><small class="ci-muted">After this date the batch counts as Completed.</small></div><?php endif; ?>
       <div><label>Access for</label><select name="validity_days"><?php $vd = (int)($ep['validity_days'] ?? 0); $opts = [0 => 'Lifetime', 30 => '1 month', 90 => '3 months', 180 => '6 months', 365 => '1 year', 730 => '2 years']; if (!isset($opts[$vd])) $opts[$vd] = $vd . ' days'; foreach ($opts as $k => $l): ?><option value="<?= $k ?>" <?= $vd === $k ? 'selected' : '' ?>><?= $l ?></option><?php endforeach; ?></select></div>
     </div></div>
   </div>
@@ -258,10 +281,27 @@ $badge = fn($s) => '<span class="ci-badge ' . ['published' => 'ci-b-green', 'dra
 <?php endif; ?>
 
 <?php if (!$open): ?>
-<form class="ci-filters" method="get"><input type="hidden" name="type" value="<?= $fType ?>"><div class="ci-f"><label>Status</label><select name="status" onchange="this.form.submit()"><option value="">All</option><?php foreach (['published' => 'Published', 'draft' => 'Draft', 'hidden' => 'Hidden'] as $k => $l): ?><option value="<?= $k ?>" <?= $fStatus === $k ? 'selected' : '' ?>><?= $l ?></option><?php endforeach; ?></select></div></form>
+<?php $fo = function (string $k, array $opts) use ($F) { $h = ''; foreach ($opts as $v => $l) $h .= '<option value="' . ci_e($v) . '"' . ((string)$F[$k] === (string)$v ? ' selected' : '') . '>' . ci_e($l) . '</option>'; return $h; };
+$catsF = ['0' => 'All categories', '-1' => 'No category']; foreach (sh_categories($pdo, true) as $k => $c) $catsF[(string)$k] = $c['name'];
+$tchF = ['0' => 'All teachers', '-1' => 'No teacher']; foreach ($teachers as $k => $l) $tchF[(string)$k] = $l; ?>
+<form class="ci-filters shp-filt" method="get"><input type="hidden" name="type" value="<?= $fType ?>">
+  <div class="ci-f shp-fq"><label>Search</label><input type="search" name="q" value="<?= ci_e($F['q']) ?>" placeholder="<?= $isC ? 'Course name…' : 'Notes name…' ?>"></div>
+  <div class="ci-f"><label>Category</label><select name="cat" data-search><?= $fo('cat', $catsF) ?></select></div>
+  <?php if ($isC): ?><div class="ci-f"><label>Teacher</label><select name="teacher"><?= $fo('teacher', $tchF) ?></select></div><?php endif; ?>
+  <div class="ci-f"><label>Price</label><select name="price"><?= $fo('price', ['' => 'Free & paid', 'free' => 'Free', 'paid' => 'Paid', 'offer' => 'Paid with discount']) ?></select></div>
+  <?php if ($isC): ?><div class="ci-f"><label>Batch</label><select name="batch"><?= $fo('batch', ['' => 'All batches', 'upcoming' => 'Upcoming', 'running' => 'Running', 'completed' => 'Completed', 'nodate' => 'No batch date']) ?></select></div><?php endif; ?>
+  <div class="ci-f"><label>Status</label><select name="status"><?= $fo('status', ['' => 'All', 'published' => 'Published', 'draft' => 'Draft', 'hidden' => 'Hidden']) ?></select></div>
+  <div class="ci-f"><label>Content</label><select name="content"><?= $fo('content', $isC ? ['' => 'Any', 'playlist' => 'YouTube playlist linked', 'noplaylist' => 'Lectures, no playlist', 'pdfs' => 'Has course PDFs', 'empty' => 'No lectures yet'] : ['' => 'Any', 'has' => 'Has PDFs', 'empty' => 'No PDFs yet']) ?></select></div>
+  <div class="ci-f"><label>Access</label><select name="access"><?= $fo('access', ['' => 'Any', 'lifetime' => 'Lifetime', 'limited' => 'Limited days']) ?></select></div>
+  <div class="ci-f"><label>Buyers</label><select name="sales"><?= $fo('sales', ['' => 'Any', 'buyers' => 'Has students', 'nobuyers' => 'No students yet', 'sales' => 'Has paid sales']) ?></select></div>
+  <div class="ci-f"><label>Sort by</label><select name="sort"><?= $fo('sort', ['' => 'Own order', 'new' => 'Newest first', 'old' => 'Oldest first', 'az' => 'Name A–Z', 'za' => 'Name Z–A', 'buyers' => 'Most students', 'sales' => 'Most sales', 'plow' => 'Price: low to high', 'phigh' => 'Price: high to low'] + ($isC ? ['start' => 'Batch start date'] : [])) ?></select></div>
+  <div class="ci-f shp-fbtn"><label>&nbsp;</label><div style="display:flex;gap:8px"><button class="ci-btn" type="submit"><i class="fas fa-filter"></i> Filter</button><?php if ($fOn || $F['sort'] !== ''): ?><a class="ci-btn ci-ghost" href="?type=<?= $fType ?>">Clear</a><?php endif; ?></div></div>
+</form>
+<p class="shp-fcount"><?= $fOn ? '<b>' . count($rows) . '</b> of ' . $fTotal . ($isC ? ' courses' : ' notes packs') . ' match the filters' : '<b>' . $fTotal . '</b> ' . ($isC ? 'courses' : 'notes packs') ?></p>
+<script>document.querySelectorAll('.shp-filt select').forEach(function (s) { s.addEventListener('change', function () { s.form.submit(); }); });</script>
 <div class="ci-card"><div class="ci-card-b ci-p0 ci-table-wrap"><table class="ci-table">
 <thead><tr><th><?= $isC ? 'Course' : 'Notes' ?></th><th><?= $isC ? 'Teacher' : 'Category' ?></th><th>Inside</th><th class="ci-num">Price</th><th>Access</th><th class="ci-num">Buyers</th><th class="ci-num">Sales</th><th>Status</th><th>Action</th></tr></thead><tbody>
-<?php if (!$rows): ?><tr><td colspan="9" class="ci-empty">No products yet. Add your first course or notes.</td></tr><?php endif; ?>
+<?php if (!$rows): ?><tr><td colspan="9" class="ci-empty"><?= $fOn ? 'Nothing matches these filters. <a href="?type=' . $fType . '">Clear filters</a>' : 'No products yet. Add your first course or notes.' ?></td></tr><?php endif; ?>
 <?php foreach ($rows as $p): ?>
 <tr><td><div style="display:flex;gap:10px;align-items:center"><?= $p['thumb'] ? '<img class="shp-th" src="' . ci_e($p['thumb']) . '" alt="">' : '<span class="shp-thp">' . ($p['type'] === 'notes' ? 'PDF' : 'VIDEO') . '</span>' ?><div><b><?= ci_e($p['title']) ?></b><?= (int)$p['ytl'] ? ' <span class="shp-ytb" title="Its lectures follow a YouTube playlist"><i class="fab fa-youtube"></i> Playlist</span>' : '' ?><?= $p['subtitle'] ? '<small class="ci-muted" style="display:block">' . ci_e(mb_strimwidth($p['subtitle'], 0, 70, '…')) . '</small>' : '' ?></div></div></td>
 <td><?= $p['type'] === 'notes' ? ci_e(sh_category_name($pdo, (int)$p['category_id']) ?: '—') : '' ?><?= $p['type'] === 'course' ? ($p['teacher_id'] ? '' : '<span class="ci-muted">—</span>') : '' ?><?= $p['type'] === 'course' && $p['teacher_id'] ? ci_e($teachers[(int)$p['teacher_id']] ?? '—') : '' ?></td>
@@ -273,7 +313,11 @@ $badge = fn($s) => '<span class="ci-badge ' . ['published' => 'ci-b-green', 'dra
 <?php if (!(int)$p['buyers']): ?><?= ci_post_ico('trash', 'Delete', ['action' => 'delete', 'id' => $p['id']], 'Delete ' . $p['title'] . ' with all its videos and PDFs?') ?><?php endif; ?></div></td></tr>
 <?php endforeach; ?>
 </tbody></table></div></div>
-<?php if ($isC): $pls = $pdo->query("SELECT * FROM hm_free ORDER BY sort, id DESC")->fetchAll(PDO::FETCH_ASSOC); $plCats = sh_categories($pdo, true); ?>
+<?php $plHide = in_array($F['price'], ['paid', 'offer'], true) || $F['batch'] !== '' || $F['content'] !== '' || $F['access'] !== '' || $F['sales'] !== '' || in_array($fStatus, ['draft', 'hidden'], true);
+if ($isC && !$plHide):
+    $pw = []; if ($F['q'] !== '') $pw[] = "title LIKE " . $pdo->quote('%' . $F['q'] . '%'); if ($F['cat'] === -1) $pw[] = 'category_id IS NULL'; elseif ($F['cat'] > 0) $pw[] = 'category_id = ' . $F['cat'];
+    if ($F['teacher'] === -1) $pw[] = 'teacher_id IS NULL'; elseif ($F['teacher'] > 0) $pw[] = 'teacher_id = ' . $F['teacher'];
+    $pls = $pdo->query("SELECT * FROM hm_free" . ($pw ? ' WHERE ' . implode(' AND ', $pw) : '') . " ORDER BY sort, id DESC")->fetchAll(PDO::FETCH_ASSOC); $plCats = sh_categories($pdo, true); ?>
 <div class="ci-card" id="playlists"><div class="ci-card-h"><h3><i class="fab fa-youtube" style="color:#dc2626"></i> YouTube playlist courses (free) <span class="ci-muted" style="font-weight:400;font-size:13px">· <?= count($pls) ?> — shown on <a href="/free-courses/" target="_blank">Free Courses</a></span></h3><a class="ci-btn ci-sm" href="/admin/shop-playlist.php"><i class="fas fa-plus"></i> Add Playlist</a></div>
 <div class="ci-card-b ci-p0 ci-table-wrap"><table class="ci-table"><thead><tr><th>Playlist course</th><th>Teacher</th><th>Category</th><th class="ci-num">Videos</th><th>Order</th><th>Status</th><th>Action</th></tr></thead><tbody>
 <?php if (!$pls): ?><tr><td colspan="7" class="ci-empty">No playlist course yet. Press <b>Add Playlist</b> and paste a YouTube playlist link.</td></tr><?php endif; ?>

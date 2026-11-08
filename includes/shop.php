@@ -14,7 +14,7 @@
  */
 require_once __DIR__ . '/settings.php';
 
-const SH_SCHEMA = 16;
+const SH_SCHEMA = 17;
 
 function sh_db(): PDO
 {
@@ -151,6 +151,8 @@ function sh_tables(PDO $pdo): void
     $add('hm_slides', 'show_t', 'TINYINT(1) NOT NULL DEFAULT 1');
     $add('hm_slides', 'show_d', 'TINYINT(1) NOT NULL DEFAULT 1');
     $add('hm_free', 'thumb_custom', 'VARCHAR(255) NULL');
+    // v17: a batch can have an end date (Online Courses filter: upcoming / running / completed)
+    $add('sh_products', 'ends_at', 'DATE NULL');
     // v16: a course has an intro video and ONE YouTube playlist of its own (Lectures page): its videos are the lectures,
     //      new ones come in by themselves (into yt_section, or without a chapter); yt_skip = videos removed by the admin
     $add('sh_products', 'intro_url', 'VARCHAR(500) NULL');
