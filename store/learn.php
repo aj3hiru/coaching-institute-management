@@ -112,6 +112,7 @@ $ico = fn($n) => sh_icon($n);
         return $h;
     };
     ?>
+    <?php ob_start(); // PDF notes / VVI / quiz / doubts are printed below the lesson list (see .lp-more) ?>
     <?php if ($tabs): ?>
     <div class="lt" id="lt">
       <div class="lt-strip" role="tablist"><?php $first = true; foreach ($tabs as $k => [$lab, $ic]): ?><button type="button" role="tab" data-lt="<?= $k ?>" aria-selected="<?= $first ? 'true' : 'false' ?>" class="<?= $first ? 'on' : '' ?>"><?= $ico($ic) ?> <?= $lab ?><?php if ($k === 'notes'): ?><em><?= count($lNotes) ?></em><?php elseif ($k === 'vvi' && $lVvi['qa']): ?><em><?= count($lVvi['qa']) ?></em><?php elseif ($k === 'quiz' && $lQuiz['items']): ?><em><?= count($lQuiz['items']) ?></em><?php endif; ?></button><?php $first = false; endforeach; ?></div>
@@ -140,6 +141,7 @@ $ico = fn($n) => sh_icon($n);
       </div><?php $first = false; endforeach; ?>
     </div>
     <?php endif; ?>
+    <?php $moreHtml = ob_get_clean(); ?>
   <?php else: ?>
     <?php $fUrl = sh_media_link('f', (int)$file['id'], $uid); ?>
     <div class="lp-head"><div><span class="lp-ch">PDF notes</span><h1><?= sh_e($file['title']) ?></h1><span class="lp-sub" id="stPdfInfo">Loading…</span></div>
@@ -189,6 +191,7 @@ $ico = fn($n) => sh_icon($n);
     </div>
     <script>(function () { var l = document.getElementById('lpList'), c = l && l.querySelector('.lp-li.on'); if (c) l.scrollTop = c.offsetTop - l.offsetTop - 60; })();</script>
   </aside>
+  <?php if (!empty($moreHtml) && trim($moreHtml) !== ''): ?><section class="lp-more" aria-label="About this lesson"><?= $moreHtml ?></section><?php endif; ?>
 </div>
 <?php if ($file || ($lesson && ($lesson['kind'] ?? '') === 'pdf')): ?><script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script><?php endif; ?>
 <?php require ROOT_PATH . '/components/store-close.php'; ?>

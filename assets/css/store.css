@@ -637,3 +637,11 @@ a.st-li:hover{background:#f7fbfc}a.st-li:hover svg{color:var(--sa)}
 @media (max-width:1000px){.lp-grid{grid-template-columns:1fr}.lp-list.lp-fr{max-height:460px}}
 @media (max-width:420px){.lp-fr .lp-li{grid-template-columns:18px 92px minmax(0,1fr);gap:8px}.lp-th{width:92px}}
 [data-theme="dark"] .lp-fr .lp-li{color:#e5e7eb!important}[data-theme="dark"] .lp-fr .lp-li:hover{background:#1f2937}[data-theme="dark"] .lp-ch-h{background:#111827}
+
+/* lesson page order: player + title | lesson list, then the PDF notes / VVI / quiz / doubts below both (phones: player, list, then these) */
+.lp-grid{grid-template-areas:"main side" "more more"}
+.lp-grid > .lp-main{grid-area:main}.lp-grid > .lp-side{grid-area:side}.lp-grid > .lp-more{grid-area:more;min-width:0}
+.lp-more .lt{margin-top:0}
+@media (max-width:1000px){.lp-grid{grid-template-areas:"main" "side" "more"}}
+.lp-grid > .lp-side{position:static}          /* not sticky: the notes / quiz section comes right below it */
+@media (min-width:1001px){.lp-list.lp-fr{max-height:540px}} /* about as tall as the video + title */
