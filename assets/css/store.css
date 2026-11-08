@@ -661,3 +661,14 @@ a.st-li:hover{background:#f7fbfc}a.st-li:hover svg{color:var(--sa)}
   .lp-side .lt-strip button{justify-content:center;padding:8px 6px;border-radius:4px;font-size:13px;margin:0;border-bottom:0!important}
   .lp-side .lt-strip button.on{background:#eef7f8;color:var(--sa,#0c6878)}
 }
+/* the right column never gets wider than the screen (the tab strip used to stretch it on phones) */
+.lp-grid > .lp-main,.lp-grid > .lp-side,.lp-side > *,.lp-more,.lp-more .lt,.lp-more .lt-pane{min-width:0;max-width:100%}
+.lp-more .lt{overflow:hidden}
+/* phones: the tabs are a swipe slider (the next tab peeks in) */
+@media (max-width:1000px){
+  .lp-side .lt-strip{display:flex!important;overflow-x:auto!important;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;gap:2px;padding-right:24px;
+    -webkit-mask-image:linear-gradient(90deg,#000 85%,transparent);mask-image:linear-gradient(90deg,#000 85%,transparent)}
+  .lp-side .lt-strip button{scroll-snap-align:start}
+  .lp-side .lt-note-r{flex-wrap:nowrap}.lp-side .lt-note-h{min-width:0}
+  .lp-side .lt-dl span{display:none}.lp-side .lt-dl{padding:0 12px}
+}
