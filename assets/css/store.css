@@ -750,3 +750,39 @@ a.st-li:hover{background:#f7fbfc}a.st-li:hover svg{color:var(--sa)}
 .sp-lessons{margin-top:14px;max-height:640px}
 .lp-unit-h{margin:6px 6px 2px 38px;font-size:11.5px;font-weight:700;color:#94a3b8;letter-spacing:.02em}
 @media (max-width:760px){.sp-lessons{max-height:520px}}
+
+/* ===== listing pages: All Courses · Upcoming Courses · PDF Notes · All Categories (store/list.php) ===== */
+.ls{padding-bottom:30px}
+.ls-hd{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;flex-wrap:wrap;margin:6px 0 16px}
+.ls-hd h1{margin:0 0 4px;font-size:30px;line-height:1.2}.ls-hd h1 span{color:#6b7280;font-weight:600;font-size:.7em}
+.ls-hd p{margin:0;color:#6b7280;font-size:15px}
+.ls-search{display:flex;align-items:center;gap:8px;min-width:300px;max-width:420px;flex:1 1 300px;height:44px;padding:0 4px 0 12px;border:1px solid #d1d5db;border-radius:6px;background:#fff}
+.ls-search:focus-within{border-color:var(--sa,#0c6878);box-shadow:0 0 0 3px rgba(12,104,120,.12)}
+.ls-search svg{width:17px;height:17px;color:#9ca3af;flex:0 0 auto}
+.ls-search input{flex:1;min-width:0;border:0!important;outline:0;background:transparent;font:inherit;font-size:14.5px;height:100%;padding:0!important;box-shadow:none!important}
+.ls-search button{height:36px;padding:0 16px;border:0;border-radius:5px;background:var(--sa,#0c6878);color:#fff;font:inherit;font-weight:700;font-size:14px;cursor:pointer}
+.ls-tabs{display:flex;gap:4px;border-bottom:1px solid #e5e7eb;margin-bottom:16px;overflow-x:auto;scrollbar-width:none}.ls-tabs::-webkit-scrollbar{display:none}
+.ls-tabs a{display:inline-flex;align-items:center;gap:7px;padding:11px 14px;font-weight:600;font-size:14.5px;color:#4b5563!important;text-decoration:none!important;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.ls-tabs a svg{width:16px;height:16px}.ls-tabs a:hover{color:#111827!important}
+.ls-tabs a.on{color:var(--sa,#0c6878)!important;border-bottom-color:var(--sa,#0c6878)}
+.ls-filters{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+.ls-chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;flex:1 1 auto;min-width:0;padding-bottom:2px}.ls-chips::-webkit-scrollbar{display:none}
+.ls-chips a{flex:0 0 auto;padding:7px 13px;border:1px solid #e5e7eb;border-radius:999px;background:#fff;color:#374151!important;font-size:13.5px;font-weight:600;text-decoration:none!important;white-space:nowrap}
+.ls-chips a:hover{border-color:#cbd5e1}.ls-chips a.on{background:var(--sa,#0c6878);border-color:var(--sa,#0c6878);color:#fff!important}
+.ls-seg{display:inline-flex;border:1px solid #e5e7eb;border-radius:6px;overflow:hidden;flex:0 0 auto}
+.ls-seg a{padding:7px 14px;font-size:13.5px;font-weight:600;color:#4b5563!important;text-decoration:none!important;background:#fff}
+.ls-seg a + a{border-left:1px solid #e5e7eb}.ls-seg a.on{background:#eef7f8;color:var(--sa,#0c6878)!important}
+.ls-count{margin:4px 0 14px;color:#6b7280;font-size:13.5px}
+.ls-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+.ls-grid .hc{display:flex!important}
+.ls-cats{grid-template-columns:repeat(auto-fill,minmax(170px,1fr))}
+.ls-pg{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;margin:26px 0 6px}
+.ls-pg a,.ls-pg span{min-width:40px;height:40px;padding:0 12px;display:inline-flex;align-items:center;justify-content:center;border:1px solid #e5e7eb;border-radius:6px;background:#fff;color:#374151!important;font-weight:600;font-size:14px;text-decoration:none!important;box-sizing:border-box}
+.ls-pg a:hover{border-color:var(--sa,#0c6878);color:var(--sa,#0c6878)!important}
+.ls-pg span.on{background:var(--sa,#0c6878);border-color:var(--sa,#0c6878);color:#fff!important}
+.ls-pg span.off{color:#c0c4cc!important;background:#fafafa}.ls-pg span.gap{border:0;background:none;min-width:20px;padding:0}
+@media (max-width:1024px){.ls-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:760px){.ls-hd h1{font-size:24px}.ls-search{min-width:0;max-width:none}.ls-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .ls-cats{grid-template-columns:repeat(3,minmax(0,1fr))}.ls-filters{flex-direction:column;align-items:stretch}.ls-seg{align-self:flex-start}.ls-pg a,.ls-pg span{min-width:36px;height:36px;padding:0 10px}}
+@media (max-width:420px){.ls-cats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+[data-theme="dark"] .ls-search,[data-theme="dark"] .ls-chips a,[data-theme="dark"] .ls-seg a,[data-theme="dark"] .ls-pg a,[data-theme="dark"] .ls-pg span{background:#151b23;border-color:#263040;color:#e5e7eb!important}
