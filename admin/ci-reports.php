@@ -37,7 +37,7 @@ $pre = ['type' => in_array((string)($_GET['type'] ?? ''), $types, true) ? (strin
 <title>Reports - <?= ci_e(edu_site_name()) ?></title>
 <?php admin_shell_head(); ci_head(); ci_report_assets(); ?>
 <style>
-.rp-pick{display:grid;grid-template-columns:220px 1fr;gap:16px;align-items:start}
+.rp-pick{display:grid;grid-template-columns:250px 1fr;gap:16px;align-items:start}
 @media (max-width:820px){.rp-pick{grid-template-columns:1fr}}
 .rp-types{display:flex;flex-direction:column;border:1px solid var(--ci-b)}
 .rp-types button{display:flex;align-items:center;gap:10px;padding:11px 14px;border:0;border-bottom:1px solid var(--ci-b);background:#fff;text-align:left;font:600 13.5px inherit;font-family:inherit;color:#374151;cursor:pointer}
@@ -45,15 +45,13 @@ $pre = ['type' => in_array((string)($_GET['type'] ?? ''), $types, true) ? (strin
 .rp-types button.on{background:var(--ci-acc);color:#fff}
 .rp-types button:not(.on):hover{background:#faf8fd;color:var(--ci-acc)}
 .rp-pane[hidden]{display:none}
-/* the two boxes, each with its name on the border */
-.rp-group{position:relative;border:2px solid var(--rg,#4a3369);padding:26px 16px 16px;margin:22px 0 18px;background:#fff}
-.rp-group > .rp-glabel{position:absolute;top:-13px;left:14px;display:inline-flex;align-items:center;gap:7px;padding:3px 12px;background:var(--rg,#4a3369);color:#fff;font-size:12.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;line-height:1.4}
+/* the report lists in two boxes, each with its name on the border; the filters stay on the right, outside the boxes */
+.rp-side{display:flex;flex-direction:column;gap:24px;padding-top:12px}
+.rp-group{position:relative;border:2px solid var(--rg,#4a3369);padding:20px 10px 10px;background:#fff}
+.rp-group > .rp-glabel{position:absolute;top:-13px;left:10px;display:inline-flex;align-items:center;gap:7px;padding:3px 12px;background:var(--rg,#4a3369);color:#fff;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;line-height:1.4}
 .rp-group.rp-online{--rg:#0c6878}
 .rp-group .rp-types button.on{background:var(--rg,#4a3369)}
 .rp-group .rp-types button:not(.on):hover{color:var(--rg,#4a3369)}
-.rp-hint{margin:0;padding:22px;border:1px dashed #d1d5db;color:#6b7280;text-align:center}
-.rp-group.on .rp-hint{display:none}
-.rp-group:not(.on) .rp-go{display:none}
 .rp-two{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:12px}
 @media (max-width:700px){.rp-two{grid-template-columns:1fr}}
 .rp-go{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
@@ -92,15 +90,16 @@ $pre = ['type' => in_array((string)($_GET['type'] ?? ''), $types, true) ? (strin
 <body>
 <?php admin_shell_open('Reports', 'See any report here and download it as a PDF'); ?>
 <div class="ci">
+<div class="ci-card"><div class="ci-card-b"><div class="rp-pick">
+  <div class="rp-side">
 <?php foreach ($GROUPS as $gk => [$glabel, $gitems]): $gi = array_intersect_key($gitems, array_flip($types)); if (!$gi) continue; ?>
-<div class="rp-group rp-<?= $gk ?><?= isset($gi[$pre['type']]) ? ' on' : '' ?>" data-group="<?= $gk ?>"><span class="rp-glabel"><i class="fas <?= $gk === 'online' ? 'fa-globe' : 'fa-school' ?>"></i> <?= $glabel ?></span>
-<div class="rp-pick">
-  <div class="rp-types" role="tablist">
-    <?php foreach ($gi as $k => [$ic, $l]): ?><button type="button" data-type="<?= $k ?>" class="<?= $pre['type'] === $k ? 'on' : '' ?>"><i class="fas <?= $ic ?>"></i> <?= $l ?></button><?php endforeach; ?>
+    <div class="rp-group rp-<?= $gk ?>" data-group="<?= $gk ?>"><span class="rp-glabel"><i class="fas <?= $gk === 'online' ? 'fa-globe' : 'fa-school' ?>"></i> <?= $glabel ?></span>
+      <div class="rp-types" role="tablist"><?php foreach ($gi as $k => [$ic, $l]): ?><button type="button" data-type="<?= $k ?>" class="<?= $pre['type'] === $k ? 'on' : '' ?>"><i class="fas <?= $ic ?>"></i> <?= $l ?></button><?php endforeach; ?></div>
+    </div>
+<?php endforeach; ?>
   </div>
-  <div>
-    <p class="rp-hint">Choose <?= $gk === 'online' ? 'an online' : 'an institute' ?> report on the left.</p>
-<?php if ($gk === 'institute'): ?>
+  <div class="rp-main">
+
     <?php if ($canFees): ?><form class="rp-pane ci-filters" data-pane="fees" onsubmit="return false" hidden>
       <div class="ci-f"><label>Period</label><select name="period"><?php foreach (['today' => 'Today', 'yesterday' => 'Yesterday', 'week' => 'This week', 'month' => 'This month', 'lastmonth' => 'Last month', 'year' => 'This year', 'custom' => 'Choose dates'] as $k => $l): ?><option value="<?= $k ?>"><?= $l ?></option><?php endforeach; ?></select></div>
       <div class="ci-f rp-custom" hidden><label>From</label><input type="date" name="from" value="<?= date('Y-m-01') ?>" max="<?= date('Y-m-d') ?>"></div>
@@ -124,7 +123,6 @@ $pre = ['type' => in_array((string)($_GET['type'] ?? ''), $types, true) ? (strin
     <div class="rp-pane rp-two" data-pane="batch" hidden><div class="ci-f"><label>Batch (active or completed)</label><select data-id><option value="all">All batches</option><?php foreach ($batches as $b): ?><option value="<?= (int)$b['id'] ?>" <?= $pre['type'] === 'batch' && $pre['id'] === (int)$b['id'] ? 'selected' : '' ?>><?= ci_e($b['name'] . ' · ' . $b['course_name'] . ($b['session_name'] ? ' (' . $b['session_name'] . ')' : '') . $tag($b['status'])) ?></option><?php endforeach; ?></select></div><div class="ci-f rp-all-st" hidden><label>Status</label><select data-st><option value="all">All</option><option value="active">Active</option><option value="completed">Completed</option><option value="inactive">Inactive</option></select></div></div>
     <div class="rp-pane" data-pane="class" hidden><div class="ci-f"><label>Class</label><select data-id><option value="all">All classes</option><?php foreach ($L['classes'] as $id => $n): ?><option value="<?= $id ?>" <?= $pre['type'] === 'class' && $pre['id'] === $id ? 'selected' : '' ?>><?= ci_e($n) ?></option><?php endforeach; ?></select></div></div>
     <?php endif; ?>
-<?php else: ?>
     <?php if ($storeOK): ?><form class="rp-pane ci-filters" data-pane="store" data-generic onsubmit="return false" hidden>
       <div class="ci-f"><label>Period</label><select name="period"><?php foreach (['today' => 'Today', 'yesterday' => 'Yesterday', 'week' => 'This week', 'month' => 'This month', 'lastmonth' => 'Last month', 'year' => 'This year', 'all' => 'All time', 'custom' => 'Choose dates'] as $k => $l): ?><option value="<?= $k ?>" <?= $k === 'month' ? 'selected' : '' ?>><?= $l ?></option><?php endforeach; ?></select></div>
       <div class="ci-f rp-custom2" hidden><label>From</label><input type="date" name="from" value="<?= date('Y-m-01') ?>" max="<?= date('Y-m-d') ?>"></div>
@@ -148,23 +146,20 @@ $pre = ['type' => in_array((string)($_GET['type'] ?? ''), $types, true) ? (strin
       <div class="ci-f"><label>Category</label><select name="category"><option value="0">All categories</option><?php foreach ($storeCats as $k => $l): ?><option value="<?= (int)$k ?>"><?= ci_e($l) ?></option><?php endforeach; ?></select></div>
       <div class="ci-f"><label>Sold in</label><select name="period"><?= $periodOpts('all') ?></select></div><?= $dates ?>
     </form><?php endif; ?>
-<?php endif; ?>
     <div class="rp-go"><button type="button" class="ci-btn rp-view"><i class="fas fa-eye"></i> View report</button><button type="button" class="ci-btn ci-ghost rp-pdf"><i class="fas fa-file-pdf"></i> Download PDF</button><span class="ci-muted rp-msg" style="align-self:center"></span></div>
   </div>
-</div></div>
-<?php endforeach; ?>
+</div></div></div>
 <div class="rp-out" id="rpOut"></div>
 </div>
 <?php admin_shell_close(); ?>
 <script>
 (function () {
   var type = <?= json_encode($pre['type']) ?>, last = null, lastKey = '';
-  var out = document.getElementById('rpOut'), msg = { set textContent(v) { var m = document.querySelector('.rp-group.on .rp-msg'); if (m) m.textContent = v; } };
+  var out = document.getElementById('rpOut'), msg = { set textContent(v) { var m = document.querySelector('.rp-msg'); if (m) m.textContent = v; } };
   function show(t) {
     type = t;
     document.querySelectorAll('.rp-types button').forEach(function (b) { b.classList.toggle('on', b.dataset.type === t); });
     document.querySelectorAll('.rp-pane').forEach(function (p) { p.hidden = p.dataset.pane !== t; });
-    document.querySelectorAll('.rp-group').forEach(function (g) { g.classList.toggle('on', !!g.querySelector('.rp-types button[data-type="' + t + '"]')); });
     out.innerHTML = ''; last = null;
   }
   document.querySelectorAll('.rp-types button').forEach(function (b) { b.addEventListener('click', function () { show(b.dataset.type); }); });
@@ -217,7 +212,7 @@ $pre = ['type' => in_array((string)($_GET['type'] ?? ''), $types, true) ? (strin
   document.addEventListener('change', function (e) { if (e.target.closest('.rp-pane')) { last = null; syncAll(); } });
   syncAll();
   show(type);
-  if (<?= $pre['id'] ? 'true' : 'false' ?>) document.addEventListener('DOMContentLoaded', function () { var v = document.querySelector('.rp-group.on .rp-view'); if (v) v.click(); }); // the report scripts load deferred
+  if (<?= $pre['id'] ? 'true' : 'false' ?>) document.addEventListener('DOMContentLoaded', function () { var v = document.querySelector('.rp-view'); if (v) v.click(); }); // the report scripts load deferred
 })();
 </script>
 </body>
