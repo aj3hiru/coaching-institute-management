@@ -116,8 +116,10 @@ $general = array_intersect_key(edu_settings('general'), array_flip($identityKeys
 $general['logo_w'] = edu_logo_size()[0]; // until saved once: the size the logo has today
 $backup = edu_settings('theme_backup');
 $hc = sh_home_cfg();
-$homeState = ['sections' => array_map(fn($id) => ['id' => $id, 'on' => $hc['on'][$id] ? 1 : 0, 'title' => $hc['titles'][$id]], $hc['order']),
-    'why' => array_map(fn($w) => ['t' => (string)$w['t']], $hc['why']), 'impact' => $hc['impact'], 'why_text' => $hc['why_text'],
+require_once INCLUDES_PATH . '/institute.php'; $hbrand = ci_institute()['brand']['title'] ?? '' ?: edu_site_name();
+$homeState = ['sections' => array_map(fn($id) => ['id' => $id, 'on' => $hc['on'][$id] ? 1 : 0, 'title' => $id === 'why' && $hc['titles'][$id] === '' ? 'Why choose ' . $hbrand : $hc['titles'][$id]], $hc['order']), // the why heading is a real text, not built in
+    'why' => array_map(fn($w) => ['t' => (string)$w['t'], 'i' => (string)($w['i'] ?? '')], $hc['why']), 'impact' => array_map(fn($it) => $it + ['i' => ''], $hc['impact']), 'why_text' => $hc['why_text'],
+    'cats_vis' => (object)$hc['cats_vis'], 'cats_cols_d' => $hc['cats_cols_d'], 'cats_cols_m' => $hc['cats_cols_m'],
     'courses_filter' => $hc['courses_filter'], 'batches_filter' => $hc['batches_filter'], 'notes_sort' => $hc['notes_sort'],
     'cats_d' => $hc['cats_d'], 'cats_m' => $hc['cats_m'], 'posts_count' => $hc['posts_count']];
 $latest = $pdo->query("SELECT id, slug FROM posts WHERE status = 'published' ORDER BY date DESC LIMIT 1")->fetch(PDO::FETCH_ASSOC);
@@ -141,6 +143,48 @@ body{margin:0;overflow:hidden}
 .cz-media-box{border:1px dashed #c3c4c7;border-radius:6px;min-height:70px;display:flex;align-items:center;justify-content:center;background:#f6f7f7;overflow:hidden;margin-bottom:6px;color:#8c8f94;font-size:12px}
 .cz-media-box img{max-width:100%;max-height:110px;display:block}
 .cz-codearea{font:12px/1.5 ui-monospace,Menlo,monospace;min-height:220px}
+/* device switches, icon picker, compact slide rows, tables (Homepage panel) */
+.hm-dev{display:inline-flex;gap:4px}
+.hm-dev-o{position:relative;display:inline-flex;align-items:center;gap:3px;height:26px;padding:0 5px;border:1px solid #dcdcde;border-radius:4px;background:#fff;color:#a7aaad;cursor:pointer}
+.hm-dev-o svg{width:14px;height:14px}.hm-dev-o input{margin:0;width:13px;height:13px}
+.hm-dev-o.on{color:#1d2327;border-color:#c3c4c7}.hm-dev-o.on svg{color:var(--cz-accent,#2271b1)}
+.hm-sl{display:grid;grid-template-columns:96px minmax(0,1fr);gap:10px;padding:8px;border:1px solid #dcdcde;border-radius:4px;background:#fff}
+.hm-sl.is-off{opacity:.6}
+.hm-sl-img{position:relative;align-self:start;border-radius:3px;overflow:hidden;background:#f0f0f1}.hm-sl-img img{display:block;width:100%;aspect-ratio:16/9;object-fit:cover}
+.hm-sl-acts{display:flex;flex-wrap:wrap;gap:2px;margin-top:4px}.hm-sl-acts .hm-ic{width:22px;height:22px;font-size:10.5px}
+.hm-sl-img{overflow:visible}.hm-sl-img img{border-radius:3px}
+.hm-sl-b{display:flex;flex-direction:column;gap:7px;min-width:0}
+.hm-sl-b .hm-link{height:30px}
+.hm-sl-o{display:flex;gap:12px;font-size:12.5px}
+.hm-sl-dev{display:flex;align-items:center;gap:8px}.hm-sl-dev > span{font-size:11px;font-weight:600;color:#646970;text-transform:uppercase;letter-spacing:.04em}
+.hm-ctab{border:1px solid #dcdcde;border-radius:4px;background:#fff;overflow:hidden}
+.hm-ctab-h,.hm-ctab-r{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 8px}
+.hm-ctab-h{background:#f6f7f7;font-size:11px;font-weight:600;color:#646970;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid #dcdcde}
+.hm-ctab-dh{display:inline-flex;gap:4px}.hm-ctab-dh svg{width:14px;height:14px;margin:0 9px 0 6px;color:#646970}
+.hm-ctab-r + .hm-ctab-r{border-top:1px solid #f0f0f1}.hm-ctab-r.is-off .hm-ctab-n{color:#a7aaad;text-decoration:line-through}
+.hm-ctab-n{font-size:13px;font-weight:500;color:#1d2327;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hm-per{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.hm-per label{display:flex;align-items:center;gap:6px;padding:6px 8px;border:1px solid #dcdcde;border-radius:4px;background:#fff;font-size:12.5px;color:#50575e}
+.hm-per svg{width:16px;height:16px;color:var(--cz-accent,#2271b1);flex:0 0 auto}.hm-per span{flex:1}
+.hm-per input{width:48px!important;height:28px!important;min-height:0!important;padding:0 6px!important;text-align:center}
+.hm-rows{border:1px solid #dcdcde;border-radius:6px;background:#fff;overflow:visible}
+.hm-rows-h{padding:6px 8px;background:#f6f7f7;border-bottom:1px solid #dcdcde;border-radius:6px 6px 0 0;font-size:10.5px;font-weight:600;color:#646970;text-transform:uppercase;letter-spacing:.05em}
+.hm-rowc{padding:6px 8px;align-items:center}.hm-rowc + .hm-rowc{border-top:1px solid #f0f0f1}
+.hm-imp-c{display:grid;grid-template-columns:36px minmax(0,1fr) 64px 28px;gap:6px}
+.hm-why-c{display:grid;grid-template-columns:36px minmax(0,1fr) 56px 28px;gap:6px}
+.hm-rowc input[type=text]{width:100%;min-width:0;height:32px!important;min-height:0!important;padding:0 8px!important;border:1px solid #e0e0e0!important;border-radius:4px!important;background:#fff;font-size:13px;box-sizing:border-box}
+.hm-rowc input[type=text]:focus{border-color:var(--cz-accent,#2271b1)!important;box-shadow:none!important}
+.hm-rowo{display:inline-flex;gap:0}.hm-rowo .hm-ic,.hm-rowa .hm-ic{width:26px;height:26px}
+.hm-icw{position:relative}
+.hm-icb{width:34px;height:32px;display:grid;place-items:center;border:1px solid #dcdcde;border-radius:4px;background:#f6f7f7;color:#1d2327;cursor:pointer;padding:0}
+.hm-icb:hover{border-color:var(--cz-accent,#2271b1)}.hm-icb svg{width:17px;height:17px}.hm-icb-auto{font-size:9.5px;font-weight:700;color:#8c8f94;text-transform:uppercase}
+.hm-icp{position:absolute;left:0;top:36px;z-index:50;width:250px;padding:10px;background:#fff;border:1px solid #c3c4c7;border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,.15)}
+.hm-icp-h{font-size:10.5px;font-weight:700;color:#646970;text-transform:uppercase;letter-spacing:.05em;margin:0 0 6px}
+.hm-icp-g{display:grid;grid-template-columns:repeat(8,1fr);gap:3px;margin-bottom:10px}
+.hm-icp-o{aspect-ratio:1;display:grid;place-items:center;border:1px solid transparent;border-radius:4px;background:#f6f7f7;cursor:pointer;padding:0;color:#1d2327}
+.hm-icp-o:hover{border-color:var(--cz-accent,#2271b1)}.hm-icp-o.on{background:var(--cz-accent,#2271b1);color:#fff}.hm-icp-o svg{width:15px;height:15px}
+.hm-icp textarea{width:100%;box-sizing:border-box;font:11px/1.4 ui-monospace,Menlo,monospace}
+.hm-icp-f{display:flex;justify-content:space-between;align-items:center;margin-top:8px}.hm-icp-auto{border:0;background:none;color:#b32d2e;font-size:12px;cursor:pointer;padding:0}
 /* Homepage panel — WordPress-like: plain rows, ghost icons, one screen per section */
 .hm-lead{margin:0 0 10px;font-size:12.5px;color:#646970}.hm-lead i{font-size:11px;color:#8c8f94}
 .hm-list{list-style:none;margin:0 -14px;padding:0;border-top:1px solid #dcdcde}
@@ -244,6 +288,7 @@ const CSRF = <?= json_encode(csrf_token()) ?>;
 const DEFAULTS = <?= json_encode(edu_theme_defaults(), JSON_UNESCAPED_UNICODE) ?>;
 const state = { theme: <?= json_encode($theme, JSON_UNESCAPED_UNICODE) ?>, general: <?= json_encode($general, JSON_UNESCAPED_UNICODE) ?>, home: <?= json_encode($homeState, JSON_UNESCAPED_UNICODE) ?> };
 const HOME_SECTIONS = <?= json_encode(SH_HOME_SECTIONS, JSON_UNESCAPED_UNICODE) ?>;
+const PICK_ICONS = <?= json_encode(array_combine(SH_PICK_ICONS, array_map('sh_icon', SH_PICK_ICONS)), JSON_UNESCAPED_SLASHES) ?>;
 const HOME_BRAND = <?php require_once INCLUDES_PATH . '/institute.php'; $hb = ci_institute()['brand']['title'] ?? ''; echo json_encode($hb !== '' ? $hb : edu_site_name(), JSON_UNESCAPED_UNICODE); ?>; // same name as the homepage heading
 const START_PANEL = <?= json_encode((string)($_GET['panel'] ?? '')) ?>;
 const HAS_BACKUP = <?= !empty($backup['theme']) ? 'true' : 'false' ?>;
@@ -943,7 +988,7 @@ const HM_AUTO = {
   posts: ['Your newest published blog posts.', '/admin/post-manager.php?view=all', 'Manage posts'],
   teachers: ['Users with the Teacher permission and “Show on the homepage” in their teacher profile.', '/admin/user-manager.php', 'Manage teachers'],
 };
-const hmName = x => x.title || (x.id === 'why' ? 'Why choose ' + HOME_BRAND : HOME_SECTIONS[x.id]);
+const hmName = x => x.id === 'why' ? 'Why choose us' : (x.title || HOME_SECTIONS[x.id]); // the "Why choose" section keeps its name; its heading is an ordinary text
 function hmLoad(then) { fetch('/admin/home-page.php?json=1', { credentials: 'same-origin' }).then(r => r.json()).then(d => { HMDB = d; if (then) then(); }).catch(() => { HMDB = { slides: [], free: [], toppers: [], cats: [] }; if (then) then(); }); }
 // save to the database; quiet = keep the panel as it is (e.g. while typing a link), only refresh the preview
 function hmSend(fields, opt = {}) {
@@ -1011,11 +1056,8 @@ function renderHomepage(wrap) {
     const g = hmGroup('Which courses'); g.appendChild(opt('', x.id + '_filter', [['all', 'All latest'], ['launched', 'Launched'], ['upcoming', 'Upcoming']]));
     g.appendChild(html('<p class="hm-desc">Launched = already started (or no start date). Upcoming = batch starts today or later, soonest first.</p>')); wrap.appendChild(g);
   }
-  if (x.id === 'categories') {
-    const g = hmGroup('How many to show', 'The rest open when the visitor clicks <b>All</b>. 0 = show all.');
-    g.appendChild(cRange('On computers', () => +H.cats_d || 0, v => H.cats_d = v, 0, 40));
-    g.appendChild(cRange('On phones', () => +H.cats_m || 0, v => H.cats_m = v, 0, 40)); wrap.appendChild(g);
-  }
+  if (x.id === 'categories') hmCategories(wrap, H);
+  if (x.id === 'teachers') hmTeachers(wrap);
   if (x.id === 'notes') { const g = hmGroup('Which PDF notes first'); g.appendChild(opt('', 'notes_sort', [['latest', 'Latest'], ['popular', 'Most popular']])); g.appendChild(html('<p class="hm-desc">Most popular = most students have it.</p>')); wrap.appendChild(g); }
   if (x.id === 'posts') { const g = hmGroup('Posts'); g.appendChild(cRange('How many latest posts', () => +H.posts_count || 10, v => H.posts_count = v, 1, 20)); wrap.appendChild(g); }
   if (x.id === 'slider') hmSlides(wrap);
@@ -1026,42 +1068,119 @@ function renderHomepage(wrap) {
   if (HM_AUTO[x.id]) { const [t, u, l] = HM_AUTO[x.id]; wrap.appendChild(html('<p class="hm-desc hm-src">' + esc(t) + ' <a href="' + u + '" target="_blank">' + esc(l) + ' <i class="fas fa-arrow-up-right-from-square"></i></a></p>')); }
 }
 
-/* ---- Top slider: one card per picture, the link right under it ---- */
+/* ---- shared bits: device switches (phone / tablet / computer) and the icon picker ---- */
+const DEV_SVG = {
+  m: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg>',
+  t: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M11 18h2"/></svg>',
+  d: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="20" height="13" rx="2"/><path d="M8 21h8M12 16v5"/></svg>'
+};
+const DEV_NAME = { m: 'Phone', t: 'Tablet', d: 'Desktop' };
+// flags = "111" (phone, tablet, computer); onChange gets the new flags
+function hmDev(flags, onChange) {
+  const w = html('<div class="hm-dev" role="group" aria-label="Show on"></div>');
+  ['m', 't', 'd'].forEach((k, i) => {
+    const on = (flags || '111')[i] !== '0';
+    const l = html('<label class="hm-dev-o' + (on ? ' on' : '') + '" title="Show on ' + DEV_NAME[k] + '">' + DEV_SVG[k] + '<input type="checkbox"' + (on ? ' checked' : '') + ' aria-label="' + DEV_NAME[k] + '"></label>');
+    l.querySelector('input').onchange = e => { const f = (flags || '111').split(''); f[i] = e.target.checked ? '1' : '0'; flags = f.join(''); l.classList.toggle('on', e.target.checked); onChange(flags); };
+    w.appendChild(l);
+  });
+  return w;
+}
+// icon picker: the site's icons, or paste an SVG; '' = automatic
+function hmIconBtn(get, set) {
+  const b = html('<button type="button" class="hm-icb" title="Choose icon"></button>');
+  const paint = () => { const v = get() || ''; b.innerHTML = v === '' ? '<span class="hm-icb-auto">Auto</span>' : (v.startsWith('<') ? v : (PICK_ICONS[v] || '')); b.classList.toggle('is-auto', v === ''); };
+  paint();
+  b.onclick = e => {
+    e.stopPropagation();
+    document.querySelectorAll('.hm-icp').forEach(x => x.remove());
+    const p = html('<div class="hm-icp"><div class="hm-icp-h">Choose an icon</div><div class="hm-icp-g"></div><div class="hm-icp-h">Or paste your own SVG</div><textarea rows="3" placeholder="&lt;svg viewBox=&quot;0 0 24 24&quot;&gt;…&lt;/svg&gt;"></textarea><div class="hm-icp-f"><button type="button" class="hm-icp-auto">Automatic</button><button type="button" class="cz-btn-primary hm-icp-ok">Use SVG</button></div></div>');
+    const g = p.querySelector('.hm-icp-g');
+    Object.entries(PICK_ICONS).forEach(([k, svg]) => { const o = html('<button type="button" class="hm-icp-o' + (get() === k ? ' on' : '') + '" title="' + esc(k) + '">' + svg + '</button>'); o.onclick = () => { set(k); touch(); paint(); p.remove(); }; g.appendChild(o); });
+    const ta = p.querySelector('textarea'); if ((get() || '').startsWith('<')) ta.value = get();
+    p.querySelector('.hm-icp-ok').onclick = () => { const v = ta.value.trim(); if (!/^<svg[\s>]/i.test(v)) { alert('Paste an SVG that starts with <svg'); return; } set(v); touch(); paint(); p.remove(); };
+    p.querySelector('.hm-icp-auto').onclick = () => { set(''); touch(); paint(); p.remove(); };
+    p.onclick = ev => ev.stopPropagation();
+    b.parentNode.appendChild(p);
+    setTimeout(() => document.addEventListener('click', function off() { p.remove(); document.removeEventListener('click', off); }), 0);
+  };
+  return b;
+}
+
+/* ---- Top slider: one compact row per slide — picture | link · show / new tab · phone / tablet / desktop ---- */
 function hmSlides(wrap) {
   const g = hmGroup('Slides'); wrap.appendChild(g);
   if (!HMDB) { g.appendChild(hintEl('Loading…')); return; }
   g.appendChild(hmInstant('Slides save as soon as you change them.'));
   const rows = HMDB.slides;
   if (!rows.length) g.appendChild(html('<p class="hm-desc">No slides yet — the homepage shows ready-made picture banners until you add one.</p>'));
-  const order = d => { const ids = rows.map(r => r.id), k = ids.indexOf(d.id), t = k + d.dir; if (t < 0 || t >= ids.length) return; [ids[k], ids[t]] = [ids[t], ids[k]]; hmSend({ action: 'slide_order', ids: ids.join(',') }); };
+  const order = (id, dir) => { const ids = rows.map(r => r.id), k = ids.indexOf(id), t = k + dir; if (t < 0 || t >= ids.length) return; [ids[k], ids[t]] = [ids[t], ids[k]]; hmSend({ action: 'slide_order', ids: ids.join(',') }); };
+  const save = r => hmSend({ ...slideFields(r), show_m: +r.show_m ? 1 : 0, show_t: +r.show_t ? 1 : 0, show_d: +r.show_d ? 1 : 0 }, { quiet: true });
   rows.forEach((r, k) => {
-    const c = html('<div class="hm-slide' + (+r.active ? '' : ' is-off') + '"><div class="hm-slide-img"><img alt=""><span class="hm-slide-n">' + (k + 1) + '</span><div class="hm-slide-ov"></div></div><div class="hm-slide-b"></div></div>');
+    ['show_m', 'show_t', 'show_d'].forEach(c => { if (r[c] === undefined || r[c] === null) r[c] = 1; });
+    const c = html('<div class="hm-sl' + (+r.active ? '' : ' is-off') + '"><div class="hm-sl-img"><img alt=""><span class="hm-slide-n">' + (k + 1) + '</span><div class="hm-sl-acts"></div></div><div class="hm-sl-b"></div></div>');
     c.querySelector('img').src = r.image_url;
-    const ov = c.querySelector('.hm-slide-ov');
-    const rep = html('<button type="button" class="hm-pill"><i class="fas fa-image"></i> Replace</button>');
-    rep.onclick = () => EduMedia.pick(it => hmSend({ ...slideFields(r), image_path: it.path }));
-    ov.append(rep, hmGhost('fa-arrow-up', 'Move up', () => order({ id: r.id, dir: -1 }), k === 0 ? 'is-dis' : ''), hmGhost('fa-arrow-down', 'Move down', () => order({ id: r.id, dir: 1 }), k === rows.length - 1 ? 'is-dis' : ''),
+    const acts = c.querySelector('.hm-sl-acts');
+    acts.append(hmGhost('fa-image', 'Replace picture', () => EduMedia.pick(it => hmSend({ ...slideFields(r), image_path: it.path }))),
+      hmGhost('fa-arrow-up', 'Move up', () => order(r.id, -1), k === 0 ? 'is-dis' : ''), hmGhost('fa-arrow-down', 'Move down', () => order(r.id, 1), k === rows.length - 1 ? 'is-dis' : ''),
       hmGhost('fa-trash-can', 'Delete slide', () => { if (confirm('Delete this slide?')) hmSend({ action: 'slide_delete', id: r.id }); }, 'danger'));
-    const b = c.querySelector('.hm-slide-b');
-    const lk = html('<label class="hm-link"><i class="fas fa-link"></i><input type="text" placeholder="Link when clicked, e.g. /courses/class-10-maths"></label>');
+    const b = c.querySelector('.hm-sl-b');
+    const lk = html('<label class="hm-link"><i class="fas fa-link"></i><input type="text" placeholder="Link when clicked"></label>');
     const li = lk.querySelector('input'); li.value = r.link || '';
-    li.oninput = () => { r.link = li.value; clearTimeout(hmLinkT[r.id]); hmLinkT[r.id] = setTimeout(() => hmSend(slideFields(r), { quiet: true }), 800); };
-    b.appendChild(lk);
-    const opts = html('<div class="hm-slide-o"></div>');
-    const chk = (label, key) => { const l = html('<label class="hm-chk"><input type="checkbox"' + (+r[key] ? ' checked' : '') + '> ' + label + '</label>'); l.querySelector('input').onchange = e => { r[key] = e.target.checked ? 1 : 0; hmSend(slideFields(r), { quiet: true }); c.classList.toggle('is-off', !+r.active); }; return l; };
-    opts.append(chk('Show', 'active'), chk('New tab', 'new_tab'));
-    const ph = html('<span class="hm-phone"><i class="fas fa-mobile-screen-button"></i> <button type="button" class="hm-a"></button></span>');
-    const pb = ph.querySelector('button'); pb.textContent = r.mobile_image ? 'Phone picture ✓' : 'Add phone picture';
-    pb.onclick = () => EduMedia.pick(it => hmSend({ ...slideFields(r), mobile_path: it.path }));
-    if (r.mobile_image) ph.appendChild(hmGhost('fa-xmark', 'Remove the phone picture', () => hmSend({ ...slideFields(r), mobile_rm: 1 })));
-    opts.appendChild(ph);
-    b.appendChild(opts);
+    li.oninput = () => { r.link = li.value; clearTimeout(hmLinkT[r.id]); hmLinkT[r.id] = setTimeout(() => save(r), 800); };
+    const row2 = html('<div class="hm-sl-o"></div>');
+    const chk = (label, key) => { const l = html('<label class="hm-chk"><input type="checkbox"' + (+r[key] ? ' checked' : '') + '> ' + label + '</label>'); l.querySelector('input').onchange = e => { r[key] = e.target.checked ? 1 : 0; save(r); c.classList.toggle('is-off', !+r.active); }; return l; };
+    row2.append(chk('Show', 'active'), chk('New tab', 'new_tab'));
+    const row3 = html('<div class="hm-sl-dev"><span>Display</span></div>');
+    row3.appendChild(hmDev(String(+r.show_m ? 1 : 0) + (+r.show_t ? 1 : 0) + (+r.show_d ? 1 : 0), f => { r.show_m = +f[0]; r.show_t = +f[1]; r.show_d = +f[2]; save(r); }));
+    b.append(lk, row2, row3);
     g.appendChild(c);
   });
   const add = html('<button type="button" class="hm-add"><i class="fas fa-plus"></i> Add a slide</button>');
-  add.onclick = () => EduMedia.pick(it => hmSend({ action: 'slide_save', id: 0, image_path: it.path, link: '', title: '', sort: rows.length + 1, active: 1 }));
+  add.onclick = () => EduMedia.pick(it => hmSend({ action: 'slide_save', id: 0, image_path: it.path, link: '', title: '', sort: rows.length + 1, active: 1, show_m: 1, show_t: 1, show_d: 1 }));
   g.appendChild(add);
-  g.appendChild(html('<p class="hm-desc">Pictures come from the Media Library (uploads become WebP). Best size: 1600 × 500 px; phone picture 800 × 400 px.</p>'));
+  g.appendChild(html('<p class="hm-desc">Best size 1600 × 500 px. Pictures come from the Media Library (uploads become WebP).</p>'));
+}
+
+/* ---- Categories: every class with phone / tablet / desktop, and how many in one row ---- */
+function hmCategories(wrap, H) {
+  if (!H.cats_vis || Array.isArray(H.cats_vis)) H.cats_vis = {};
+  const g = hmGroup('Categories', 'Tick where each class shows on the homepage.'); wrap.appendChild(g);
+  if (!HMDB) { g.appendChild(hintEl('Loading…')); return; }
+  const list = (HMDB.cats || []);
+  if (!list.length) { g.appendChild(html('<p class="hm-desc">No categories yet.</p>')); }
+  const tb = html('<div class="hm-ctab"><div class="hm-ctab-h"><span>Class</span><span class="hm-ctab-dh">' + DEV_SVG.m + DEV_SVG.t + DEV_SVG.d + '</span></div></div>');
+  list.forEach(c => {
+    const f = H.cats_vis[c.id] || '111';
+    const r = html('<div class="hm-ctab-r' + (f === '000' ? ' is-off' : '') + '"><span class="hm-ctab-n"></span></div>');
+    r.querySelector('.hm-ctab-n').textContent = c.name;
+    r.appendChild(hmDev(f, nf => { if (nf === '111') delete H.cats_vis[c.id]; else H.cats_vis[c.id] = nf; r.classList.toggle('is-off', nf === '000'); touch(); }));
+    tb.appendChild(r);
+  });
+  g.appendChild(tb);
+  const g2 = hmGroup('Categories in one row'); wrap.appendChild(g2);
+  const per = html('<div class="hm-per"><label>' + DEV_SVG.d + '<span>Desktop</span><input type="number" min="2" max="10"></label><label>' + DEV_SVG.m + '<span>Mobile</span><input type="number" min="2" max="5"></label></div>');
+  const [dI, mI] = per.querySelectorAll('input'); dI.value = H.cats_cols_d || 8; mI.value = H.cats_cols_m || 3;
+  dI.oninput = () => { H.cats_cols_d = Math.max(2, Math.min(10, +dI.value || 8)); touch(); };
+  mI.oninput = () => { H.cats_cols_m = Math.max(2, Math.min(5, +mI.value || 3)); touch(); };
+  g2.appendChild(per);
+}
+
+/* ---- Meet our teachers: every teacher, show / hide and order (saved at once) ---- */
+function hmTeachers(wrap) {
+  const g = hmGroup('Teachers', 'The eye shows or hides a teacher on the homepage; the arrows change the order.'); wrap.appendChild(g);
+  if (!HMDB) { g.appendChild(hintEl('Loading…')); return; }
+  g.appendChild(hmInstant('Changes save at once.'));
+  const rows = HMDB.teachers || [];
+  if (!rows.length) g.appendChild(html('<p class="hm-desc">No teachers yet — give a user the Teacher permission in Users.</p>'));
+  const order = (id, dir) => { const ids = rows.map(r => r.id), k = ids.indexOf(id), t = k + dir; if (t < 0 || t >= ids.length) return; [ids[k], ids[t]] = [ids[t], ids[k]]; hmSend({ action: 'teacher_order', ids: ids.join(',') }); };
+  rows.forEach((r, k) => {
+    const it = hmItem(r.photo, r.name, (r.subject || 'Teacher') + (r.show ? '' : ' · hidden'), !r.show, true);
+    it.querySelector('.hm-acts').append(
+      hmGhost(r.show ? 'fa-eye' : 'fa-eye-slash', r.show ? 'Hide on the homepage' : 'Show on the homepage', () => hmSend({ action: 'teacher_vis', id: r.id, show: r.show ? 0 : 1 }), r.show ? '' : 'is-off'),
+      hmGhost('fa-arrow-up', 'Move up', () => order(r.id, -1), k === 0 ? 'is-dis' : ''), hmGhost('fa-arrow-down', 'Move down', () => order(r.id, 1), k === rows.length - 1 ? 'is-dis' : ''));
+    g.appendChild(it);
+  });
 }
 
 /* ---- Free courses ---- */
@@ -1078,8 +1197,9 @@ function hmFree(wrap) {
   if (!HMDB) { g.appendChild(hintEl('Loading…')); return; }
   g.appendChild(hmInstant('Free courses save as soon as you change them.'));
   HMDB.free.forEach(r => {
-    const it = hmItem(r.thumb, r.title, (r.videos ? (+r.videos >= 100 ? '100+' : r.videos) + ' videos' : 'YouTube') + (+r.active ? '' : ' · hidden'), !+r.active);
-    it.querySelector('.hm-acts').append(hmGhost('fa-pen', 'Edit', () => { hmEdit = hmEdit === 'f' + r.id ? null : 'f' + r.id; rerender(); }), hmGhost('fa-rotate', 'Fetch again from YouTube', () => hmSend({ action: 'free_refresh', id: r.id })),
+    const it = hmItem(r.thumb_custom_url || r.thumb, r.title, (r.videos ? (+r.videos >= 100 ? '100+' : r.videos) + ' videos' : 'YouTube') + (r.thumb_custom_url ? ' · own picture' : '') + (+r.active ? '' : ' · hidden'), !+r.active);
+    it.querySelector('.hm-acts').append(hmGhost('fa-image', 'Own picture (Media Library)', () => EduMedia.pick(m => hmSend({ action: 'free_thumb', id: r.id, photo_path: m.path }))),
+      ...(r.thumb_custom_url ? [hmGhost('fa-rotate-left', 'Use the YouTube picture again', () => hmSend({ action: 'free_thumb', id: r.id, photo_path: '' }))] : []),hmGhost('fa-pen', 'Edit', () => { hmEdit = hmEdit === 'f' + r.id ? null : 'f' + r.id; rerender(); }), hmGhost('fa-rotate', 'Fetch again from YouTube', () => hmSend({ action: 'free_refresh', id: r.id })),
       hmGhost('fa-trash-can', 'Remove', () => { if (confirm('Remove this free course?')) hmSend({ action: 'free_delete', id: r.id }); }, 'danger'));
     g.appendChild(it);
     if (hmEdit === 'f' + r.id) {
@@ -1091,7 +1211,7 @@ function hmFree(wrap) {
       f.append(t, c, o, a, row); g.appendChild(f);
     }
   });
-  const g2 = hmGroup('Add a YouTube playlist', 'Title, picture and number of videos come from YouTube. The playlist must be Public or Unlisted.'); wrap.appendChild(g2);
+  const g2 = hmGroup('Add a YouTube playlist'); wrap.appendChild(g2);
   const u = hmInput('Playlist link', 'url', '', 'placeholder="https://www.youtube.com/playlist?list=…"'), t = hmInput('Title (optional)', 'text', '', 'maxlength="250" placeholder="Empty = YouTube’s title"'), c = hmCatSelect(0);
   const b = html('<button type="button" class="cz-btn-primary"><i class="fab fa-youtube"></i> Fetch &amp; add</button>');
   b.onclick = () => { const url = u.querySelector('input').value.trim(); if (!url) { alert('Paste the playlist link first.'); return; } b.disabled = true; b.textContent = 'Fetching…'; hmSend({ action: 'free_add', url, title: t.querySelector('input').value, category_id: c.querySelector('select').value, sort: 0 }).then(() => { b.disabled = false; }); };
@@ -1136,27 +1256,36 @@ function hmTopForm(r) {
   return f;
 }
 
-/* ---- Our Impact / Why choose us ---- */
+/* ---- Our Impact / Why choose us: rows of icon · text · (order) · remove ---- */
 function hmImpact(wrap, H) {
-  const g = hmGroup('Numbers', 'Leave a number empty and the site counts it (students, courses, free videos, PDF notes). Type your own, like <b>5000+</b>, to show that.'); wrap.appendChild(g);
+  const g = hmGroup('Numbers', 'Leave a number empty and the site counts it (students, courses, free videos, PDF notes). “Auto” icon = chosen for you.'); wrap.appendChild(g);
+  const t = html('<div class="hm-rows"><div class="hm-rows-h hm-imp-c"><span>Icon</span><span>Label</span><span>Number</span><span></span></div></div>');
   H.impact.forEach((it, i) => {
-    const r = html('<div class="hm-pair"><input type="text" placeholder="Label" maxlength="60"><input type="text" maxlength="20"></div>'), [l, v] = r.querySelectorAll('input');
-    l.value = it.l || ''; v.value = it.v || ''; v.placeholder = it.k && it.k !== 'years' ? 'auto' : '10+';
+    const r = html('<div class="hm-rowc hm-imp-c"><span class="hm-icw"></span><input type="text" placeholder="Label" maxlength="60"><input type="text" maxlength="20"><span class="hm-rowa"></span></div>');
+    r.querySelector('.hm-icw').appendChild(hmIconBtn(() => it.i || '', v => it.i = v));
+    const [l, v] = r.querySelectorAll('input'); l.value = it.l || ''; v.value = it.v || ''; v.placeholder = it.k && it.k !== 'years' ? 'auto' : '10+';
     l.oninput = () => { it.l = l.value; touch(); }; v.oninput = () => { it.v = v.value; touch(); };
-    r.appendChild(hmGhost('fa-trash-can', 'Remove', () => { H.impact.splice(i, 1); touch(); rerender(); }, 'danger')); g.appendChild(r);
+    r.querySelector('.hm-rowa').appendChild(hmGhost('fa-trash-can', 'Remove', () => { H.impact.splice(i, 1); touch(); rerender(); }, 'danger'));
+    t.appendChild(r);
   });
-  if (H.impact.length < 8) { const add = html('<button type="button" class="hm-add"><i class="fas fa-plus"></i> Add a number</button>'); add.onclick = () => { H.impact.push({ k: '', l: '', v: '' }); touch(); rerender(); }; g.appendChild(add); }
+  g.appendChild(t);
+  if (H.impact.length < 8) { const add = html('<button type="button" class="hm-add"><i class="fas fa-plus"></i> Add a number</button>'); add.onclick = () => { H.impact.push({ k: '', l: '', v: '', i: '' }); touch(); rerender(); }; g.appendChild(add); }
 }
 function hmWhy(wrap, H) {
   const g0 = hmGroup(''); g0.appendChild(cText('Text under the heading', () => H.why_text, v => H.why_text = v, { multi: true, hint: 'Empty = no text.' })); wrap.appendChild(g0);
-  const g = hmGroup('Points (' + H.why.length + ')', 'Each point gets a fitting icon from its words (board, quiz, test, growth, doubt …).'); wrap.appendChild(g);
+  const g = hmGroup('Points (' + H.why.length + ')', '“Auto” icon = chosen from the words of the point.'); wrap.appendChild(g);
+  const t = html('<div class="hm-rows"><div class="hm-rows-h hm-why-c"><span>Icon</span><span>Point</span><span>Order</span><span></span></div></div>');
   H.why.forEach((w, i) => {
-    const r = html('<div class="hm-pair hm-pair-1"><input type="text" maxlength="80" placeholder="e.g. Weekly tests"></div>'), t = r.querySelector('input'); t.value = w.t || '';
-    t.oninput = () => { w.t = t.value; touch(); };
-    r.append(hmGhost('fa-arrow-up', 'Move up', () => { if (i > 0) { [H.why[i - 1], H.why[i]] = [H.why[i], H.why[i - 1]]; touch(); rerender(); } }, i === 0 ? 'is-dis' : ''), hmGhost('fa-trash-can', 'Remove', () => { H.why.splice(i, 1); touch(); rerender(); }, 'danger'));
-    g.appendChild(r);
+    const r = html('<div class="hm-rowc hm-why-c"><span class="hm-icw"></span><input type="text" maxlength="80" placeholder="e.g. Weekly tests"><span class="hm-rowo"></span><span class="hm-rowa"></span></div>');
+    r.querySelector('.hm-icw').appendChild(hmIconBtn(() => w.i || '', v => w.i = v));
+    const tI = r.querySelector('input'); tI.value = w.t || ''; tI.oninput = () => { w.t = tI.value; touch(); };
+    r.querySelector('.hm-rowo').append(hmGhost('fa-arrow-up', 'Move up', () => { if (i > 0) { [H.why[i - 1], H.why[i]] = [H.why[i], H.why[i - 1]]; touch(); rerender(); } }, i === 0 ? 'is-dis' : ''),
+      hmGhost('fa-arrow-down', 'Move down', () => { if (i < H.why.length - 1) { [H.why[i + 1], H.why[i]] = [H.why[i], H.why[i + 1]]; touch(); rerender(); } }, i === H.why.length - 1 ? 'is-dis' : ''));
+    r.querySelector('.hm-rowa').appendChild(hmGhost('fa-trash-can', 'Remove', () => { H.why.splice(i, 1); touch(); rerender(); }, 'danger'));
+    t.appendChild(r);
   });
-  if (H.why.length < 12) { const add = html('<button type="button" class="hm-add"><i class="fas fa-plus"></i> Add a point</button>'); add.onclick = () => { H.why.push({ t: '' }); touch(); rerender(); }; g.appendChild(add); }
+  g.appendChild(t);
+  if (H.why.length < 12) { const add = html('<button type="button" class="hm-add"><i class="fas fa-plus"></i> Add a point</button>'); add.onclick = () => { H.why.push({ t: '', i: '' }); touch(); rerender(); }; g.appendChild(add); }
 }
 
 function showHome() {

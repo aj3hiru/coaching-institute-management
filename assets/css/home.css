@@ -433,3 +433,13 @@
 .hm-btc-i{background:none!important;align-self:start}
 .hm-btc-i .st-thumb,.hm-btc-i img{aspect-ratio:16/9!important;height:auto!important;min-height:0!important;width:100%}
 @media (max-width:1100px){.hm-btc{grid-template-columns:1fr!important;grid-template-rows:auto 1fr}} /* picture on top, details below */
+
+/* per-device visibility (Customize → Homepage): phone ≤ 760 · tablet 761–1100 · computer ≥ 1101 */
+@media (max-width:760px){.hv-m{display:none!important}}
+@media (min-width:761px) and (max-width:1100px){.hv-t{display:none!important}}
+@media (min-width:1101px){.hv-d{display:none!important}}
+/* categories: how many in one row */
+.hm-cats.hm-cats-n{grid-template-columns:repeat(var(--cc-d,8),minmax(0,1fr))!important}
+@media (max-width:1100px){.hm-cats.hm-cats-n{grid-template-columns:repeat(min(var(--cc-d,8),5),minmax(0,1fr))!important}}
+@media (max-width:760px){.hm-cats.hm-cats-n{grid-template-columns:repeat(var(--cc-m,3),minmax(0,1fr))!important}}
+.hm-imp-i svg,.hm-why-i svg{width:20px;height:20px}

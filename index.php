@@ -41,6 +41,7 @@ else {
 }
 $notes = sh_latest($pdo, 'notes', 12, 0, 0, '', $cfg['notes_sort']);
 $free = $pdo->query("SELECT * FROM hm_free WHERE active = 1 ORDER BY sort, id DESC LIMIT 12")->fetchAll(PDO::FETCH_ASSOC);
+foreach ($free as &$__f) if (!empty($__f['thumb_custom'])) $__f['thumb'] = sh_upload_url($__f['thumb_custom']); unset($__f); // own picture (Customize → Homepage)
 $posts = $pdo->query("SELECT p.id, p.title, p.slug, p.date, m.file_path AS img, c.name AS cat FROM posts p LEFT JOIN media m ON m.id = p.featured_image_id
     LEFT JOIN categories c ON c.id = p.category_id WHERE p.status = 'published' ORDER BY p.date DESC LIMIT " . (int)$cfg['posts_count'])->fetchAll(PDO::FETCH_ASSOC);
 $teacherNames = [];
@@ -57,7 +58,7 @@ $auto = [
 $teachers = sh_home_teachers($pdo);
 $toppers = $pdo->query("SELECT * FROM hm_toppers WHERE active = 1 ORDER BY sort, id")->fetchAll(PDO::FETCH_ASSOC);
 $impact = [];
-foreach ($cfg['impact'] as $it) { $v = trim((string)$it['v']); if ($v === '' && isset($auto[$it['k'] ?? ''])) $v = number_format($auto[$it['k']]) . ($auto[$it['k']] >= 10 ? '+' : ''); if ($v !== '') $impact[] = [$it['l'], $v, $it['k'] ?? '']; }
+foreach ($cfg['impact'] as $it) { $v = trim((string)$it['v']); if ($v === '' && isset($auto[$it['k'] ?? ''])) $v = number_format($auto[$it['k']]) . ($auto[$it['k']] >= 10 ? '+' : ''); if ($v !== '') $impact[] = [$it['l'], $v, $it['k'] ?? '', (string)($it['i'] ?? '')]; }
 $classes = [];
 try { $classes = $pdo->query("SELECT name FROM ci_classes ORDER BY sort, name")->fetchAll(PDO::FETCH_COLUMN); } catch (Throwable) {}
 $range = $classes ? reset($classes) . ' – ' . end($classes) : '5th – 12th';
@@ -96,7 +97,7 @@ $short0 = function (string $n) { $p = preg_split('/\s+/', trim(preg_replace('/\(
 <section class="hm-hs" data-hs data-auto="5000" aria-roledescription="carousel" aria-label="Highlights">
   <div class="hs-track">
   <?php if ($slides): foreach ($slides as $i => $sl): $img = sh_e(sh_upload_url($sl['image'])); $alt = sh_e($sl['title'] ?: $brand); ?>
-    <div class="hs-s hm-slide" role="group" aria-label="Slide <?= $i + 1 ?> of <?= count($slides) ?>"><?php if ($sl['link']): ?><a href="<?= sh_e($sl['link']) ?>"<?= $sl['new_tab'] ? ' target="_blank" rel="noopener"' : '' ?>><?php endif; ?>
+    <div class="hs-s hm-slide<?= isset($sl['show_m']) && !(int)$sl['show_m'] ? ' hv-m' : '' ?><?= isset($sl['show_t']) && !(int)$sl['show_t'] ? ' hv-t' : '' ?><?= isset($sl['show_d']) && !(int)$sl['show_d'] ? ' hv-d' : '' ?>" role="group" aria-label="Slide <?= $i + 1 ?> of <?= count($slides) ?>"><?php if ($sl['link']): ?><a href="<?= sh_e($sl['link']) ?>"<?= $sl['new_tab'] ? ' target="_blank" rel="noopener"' : '' ?>><?php endif; ?>
       <picture><?php if ($sl['mobile_image']): ?><source media="(max-width:700px)" srcset="<?= sh_e(sh_upload_url($sl['mobile_image'])) ?>"><?php endif; ?><img src="<?= $img ?>" alt="<?= $alt ?>"<?= $i ? ' loading="lazy"' : ' fetchpriority="high"' ?>></picture>
     <?php if ($sl['link']): ?></a><?php endif; ?></div>
   <?php endforeach; endif; ?>
@@ -120,7 +121,7 @@ $short0 = function (string $n) { $p = preg_split('/\s+/', trim(preg_replace('/\(
 <section class="hm-sec hm-cats-s"><div class="sp-wrap">
   <?php $cd = $cfg['cats_d']; $cm = $cfg['cats_m']; $nc = count($cats); $hasMore = ($cd && $nc > $cd) || ($cm && $nc > $cm); $ci = 0; ?>
   <div class="hm-h"><div><h2><?= sh_e($ttl('categories')) ?></h2></div><?php if ($hasMore): ?><button type="button" class="hm-cats-all<?= $cd && $nc > $cd ? ' d' : '' ?><?= $cm && $nc > $cm ? ' m' : '' ?>" aria-expanded="false" data-more="All ›" data-less="Show less">All ›</button><?php else: ?><a href="/courses/">All ›</a><?php endif; ?></div>
-  <div class="hm-cats" id="hmCats"><?php foreach ($cats as $c): $ci++; ?><a class="hm-cat<?= $cd && $ci > $cd ? ' xd' : '' ?><?= $cm && $ci > $cm ? ' xm' : '' ?>" href="<?= sh_e(sh_cat_url($c['slug'])) ?>"><span class="hm-cat-i"><?php if ($c['icon']): ?><img src="<?= sh_e(sh_upload_url($c['icon'])) ?>" alt="" loading="lazy" width="44" height="44"><?php else: ?><b><?= sh_e(mb_strtoupper(mb_substr(preg_replace('/^Class\s+/i', '', $c['name']), 0, 2))) ?></b><?php endif; ?></span><span class="hm-cat-n"><?= sh_e($c['name']) ?></span><?= (int)$c['items'] ? '<small>' . (int)$c['items'] . ' course' . ((int)$c['items'] === 1 ? '' : 's') . '</small>' : '<small class="soon">Coming soon</small>' ?></a><?php endforeach; ?></div>
+  <div class="hm-cats hm-cats-n" id="hmCats" style="--cc-d:<?= (int)$cfg['cats_cols_d'] ?>;--cc-m:<?= (int)$cfg['cats_cols_m'] ?>"><?php foreach ($cats as $c): $ci++; $cv = (string)($cfg['cats_vis'][(int)$c['id']] ?? '111'); if ($cv === '000') continue; ?><a class="hm-cat<?= $cv[0] === '0' ? ' hv-m' : '' ?><?= $cv[1] === '0' ? ' hv-t' : '' ?><?= $cv[2] === '0' ? ' hv-d' : '' ?>" href="<?= sh_e(sh_cat_url($c['slug'])) ?>"><span class="hm-cat-i"><?php if ($c['icon']): ?><img src="<?= sh_e(sh_upload_url($c['icon'])) ?>" alt="" loading="lazy" width="44" height="44"><?php else: ?><b><?= sh_e(mb_strtoupper(mb_substr(preg_replace('/^Class\s+/i', '', $c['name']), 0, 2))) ?></b><?php endif; ?></span><span class="hm-cat-n"><?= sh_e($c['name']) ?></span><?= (int)$c['items'] ? '<small>' . (int)$c['items'] . ' course' . ((int)$c['items'] === 1 ? '' : 's') . '</small>' : '<small class="soon">Coming soon</small>' ?></a><?php endforeach; ?></div>
 </div></section>
 <?php endif; ?>
 <?php $S['categories'] = ob_get_clean(); ?>
@@ -188,7 +189,7 @@ $short0 = function (string $n) { $p = preg_split('/\s+/', trim(preg_replace('/\(
 <?php if ($impact): ?>
 <section class="hm-imp"><div class="sp-wrap">
   <div class="hm-h c"><h2><?= sh_e($ttl('impact')) ?></h2></div>
-  <div class="hm-imp-g"><?php $ii = ['students' => 'user', 'courses' => 'video', 'free' => 'playsolid', 'notes' => 'notes']; foreach ($impact as [$l, $v, $k]): ?><div><span class="hm-imp-i"><?= $ico($ii[$k] ?? 'gauge') ?></span><span class="hm-imp-t"><b data-count="<?= sh_e($v) ?>"><?= sh_e($v) ?></b><small><?= sh_e($l) ?></small></span></div><?php endforeach; ?></div>
+  <div class="hm-imp-g"><?php $ii = ['students' => 'user', 'courses' => 'video', 'free' => 'playsolid', 'notes' => 'notes']; foreach ($impact as [$l, $v, $k, $iic]): ?><div><span class="hm-imp-i"><?= $iic !== '' ? sh_pick_icon($iic) : $ico($ii[$k] ?? 'gauge') ?></span><span class="hm-imp-t"><b data-count="<?= sh_e($v) ?>"><?= sh_e($v) ?></b><small><?= sh_e($l) ?></small></span></div><?php endforeach; ?></div>
 </div></section>
 <?php endif; ?>
 <?php $S['impact'] = ob_get_clean(); ?>
@@ -204,7 +205,7 @@ $short0 = function (string $n) { $p = preg_split('/\s+/', trim(preg_replace('/\(
     // icon from the point's words, so a point typed in admin still gets a fitting one
     $wk = ['board|smart|digital' => 'board', 'mcq|quiz' => 'quiz', 'test|exam' => 'calendar', 'growth|guidance|progress' => 'trend', 'competitive|zero|level|rank' => 'trophy', 'doubt' => 'chat', 'teacher|faculty' => 'user', 'pace|record|any ?time|video' => 'play', 'note|pdf' => 'notes', 'course|chapter' => 'layers'];
     foreach ($cfg['why'] as $i => $w): $wn = $wi[$i % count($wi)]; foreach ($wk as $rx => $n) if (preg_match('/' . $rx . '/i', $w['t'])) { $wn = $n; break; } ?>
-    <li><span class="hm-why-i"><?= $ico($wn) ?></span><b><?= htmlspecialchars($w['t']) ?></b></li>
+    <li><span class="hm-why-i"><?= ($w['i'] ?? '') !== '' ? sh_pick_icon((string)$w['i']) : $ico($wn) ?></span><b><?= htmlspecialchars($w['t']) ?></b></li>
   <?php endforeach; ?></ol>
 </div></section>
 <?php $S['why'] = ob_get_clean(); ?>

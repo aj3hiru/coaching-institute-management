@@ -5,6 +5,7 @@ require_once INCLUDES_PATH . '/shop.php';
 $pdo = sh_db();
 $id = (int)($_GET['id'] ?? 0);
 $all = $pdo->query("SELECT * FROM hm_free WHERE active = 1 ORDER BY sort, id DESC")->fetchAll(PDO::FETCH_ASSOC);
+foreach ($all as &$__f) if (!empty($__f['thumb_custom'])) $__f['thumb'] = sh_upload_url($__f['thumb_custom']); unset($__f); // own picture
 $f = null; foreach ($all as $x) if ((int)$x['id'] === $id) $f = $x;
 if ($id && !$f) { http_response_code(404); require ROOT_PATH . '/templates/page_not_found.php'; exit; }
 sh_redirect_clean($f ? sh_free_url($f) : '/free-courses/');

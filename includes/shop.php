@@ -14,7 +14,7 @@
  */
 require_once __DIR__ . '/settings.php';
 
-const SH_SCHEMA = 10;
+const SH_SCHEMA = 11;
 
 function sh_db(): PDO
 {
@@ -146,6 +146,11 @@ function sh_tables(PDO $pdo): void
         id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, name VARCHAR(120) NOT NULL, photo VARCHAR(255) NULL, result VARCHAR(160) NULL,
         class_name VARCHAR(80) NULL, year VARCHAR(10) NULL, note VARCHAR(255) NULL, sort INT NOT NULL DEFAULT 0, active TINYINT(1) NOT NULL DEFAULT 1,
         created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP)$t");
+    // v11: slides shown per device (phone / tablet / computer); a free course can have its own picture
+    $add('hm_slides', 'show_m', 'TINYINT(1) NOT NULL DEFAULT 1');
+    $add('hm_slides', 'show_t', 'TINYINT(1) NOT NULL DEFAULT 1');
+    $add('hm_slides', 'show_d', 'TINYINT(1) NOT NULL DEFAULT 1');
+    $add('hm_free', 'thumb_custom', 'VARCHAR(255) NULL');
     edu_settings_save('shop', ['schema' => SH_SCHEMA]);
 }
 
@@ -557,12 +562,52 @@ function sh_safe_next(string $n, string $fallback = '/account/'): string
 }
 
 /** Small line icons for the store pages. */
+/** Icons offered in Customize → Homepage (Our Impact, Why choose us). */
+const SH_PICK_ICONS = ['user', 'users', 'video', 'play', 'playsolid', 'notes', 'pdf', 'file', 'book', 'layers', 'calendar', 'clock', 'check', 'quiz', 'trophy', 'trend', 'gauge', 'board', 'chat', 'pen', 'shield', 'device', 'download', 'eye', 'flag', 'grid', 'compass', 'infinity', 'mail', 'cart', 'lock', 'receipt'];
+/** An icon chosen in the Customizer: an icon name, or a custom SVG (cleaned: shapes only — no scripts, events or links). */
+function sh_pick_icon(string $v): string
+{
+    $v = trim($v);
+    if ($v === '') return '';
+    if (!str_starts_with($v, '<')) return sh_icon($v);
+    return sh_svg_clean($v);
+}
+function sh_svg_clean(string $svg): string
+{
+    if (strlen($svg) > 20000 || !class_exists('DOMDocument')) return '';
+    $ok = ['svg', 'g', 'path', 'circle', 'rect', 'line', 'polyline', 'polygon', 'ellipse', 'defs', 'lineargradient', 'stop', 'title'];
+    $attrs = ['viewbox', 'width', 'height', 'fill', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin', 'd', 'cx', 'cy', 'r', 'rx', 'ry', 'x', 'y', 'x1', 'y1', 'x2', 'y2',
+        'points', 'transform', 'opacity', 'fill-rule', 'clip-rule', 'fill-opacity', 'stroke-opacity', 'offset', 'stop-color', 'id', 'gradientunits', 'xmlns'];
+    $d = new DOMDocument();
+    $prev = libxml_use_internal_errors(true);
+    $loaded = $d->loadXML($svg, LIBXML_NONET);
+    libxml_clear_errors(); libxml_use_internal_errors($prev);
+    if (!$loaded || !$d->documentElement || strtolower($d->documentElement->localName) !== 'svg') return '';
+    $walk = function (DOMNode $n) use (&$walk, $ok, $attrs) {
+        foreach (iterator_to_array($n->childNodes) as $c) {
+            if ($c instanceof DOMElement) {
+                if (!in_array(strtolower($c->localName), $ok, true)) { $n->removeChild($c); continue; }
+                foreach (iterator_to_array($c->attributes) as $a) {
+                    $an = strtolower($a->nodeName); $val = (string)$a->nodeValue;
+                    if (!in_array($an, $attrs, true) || preg_match('/javascript:|url\s*\(\s*[^#]/i', $val)) $c->removeAttribute($a->nodeName);
+                }
+                $walk($c);
+            } elseif (!($c instanceof DOMText)) $n->removeChild($c);
+        }
+    };
+    $root = $d->documentElement;
+    foreach (iterator_to_array($root->attributes) as $a) if (!in_array(strtolower($a->nodeName), $attrs, true)) $root->removeAttribute($a->nodeName);
+    $walk($root);
+    $root->setAttribute('aria-hidden', 'true');
+    return (string)$d->saveXML($root);
+}
 function sh_icon(string $n): string
 {
     static $p = [
         'play' => '<circle cx="12" cy="12" r="10"/><path d="m10 8 6 4-6 4Z"/>',
         'arrow' => '<path d="M5 12h14M13 6l6 6-6 6"/>',
         'mail' => '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>',
+        'users' => '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.2a6.5 6.5 0 0 1 3.5 5.8"/>',
         'pdf' => '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M7.5 17v-4h1.2a1.2 1.2 0 0 1 0 2.4H7.5M11.5 17v-4h.9a2 2 0 0 1 0 4ZM15.5 17v-4h2M15.5 15h1.5"/>',
         'board' => '<rect x="2" y="3" width="20" height="13" rx="2"/><path d="M8 21h8M12 16v5M6 12l3-3 3 2 5-5"/>',
         'quiz' => '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="m8 8 1.5 1.5L12 7M8 14l1.5 1.5L12 13M14 8h3M14 14h3"/>',
@@ -1051,7 +1096,9 @@ function sh_home_cfg(): array
         'courses_filter' => sh_home_pick((string)es('home', 'courses_filter', ''), ['all', 'launched', 'upcoming'], 'all'),
         'batches_filter' => sh_home_pick((string)es('home', 'batches_filter', ''), ['all', 'launched', 'upcoming'], 'all'),
         'notes_sort' => sh_home_pick((string)es('home', 'notes_sort', ''), ['latest', 'popular'], 'latest'),
-        'cats_d' => max(0, min(40, (int)es('home', 'cats_d', '0'))), 'cats_m' => max(0, min(40, (int)es('home', 'cats_m', '0'))), // 0 = all
+        'cats_d' => 0, 'cats_m' => 0, // (old "how many to show" — every category shows now; hide single ones below)
+        'cats_vis' => (array)(json_decode((string)es('home', 'cats_vis', ''), true) ?: []), // category id => "111" (phone, tablet, computer)
+        'cats_cols_d' => max(2, min(10, (int)es('home', 'cats_cols_d', '8'))), 'cats_cols_m' => max(2, min(5, (int)es('home', 'cats_cols_m', '3'))), // categories in one row
         'posts_count' => max(1, min(20, (int)es('home', 'posts_count', '10'))),
     ];
 }
@@ -1068,11 +1115,12 @@ function sh_home_sanitize(array $h): array
     }
     foreach (SH_HOME_SECTIONS as $id => $_) if (!isset($seen[$id])) $secs[] = ['id' => $id, 'on' => 1, 'title' => ''];
     $why = [];
-    foreach (array_slice((array)($h['why'] ?? []), 0, 12) as $w) { $t = $str($w['t'] ?? '', 80); if ($t !== '') $why[] = ['t' => $t, 'd' => '']; }
+    $icon = fn($v) => ($v = trim((string)$v)) === '' ? '' : (str_starts_with($v, '<') ? sh_svg_clean($v) : (in_array($v, SH_PICK_ICONS, true) ? $v : ''));
+    foreach (array_slice((array)($h['why'] ?? []), 0, 12) as $w) { $t = $str($w['t'] ?? '', 80); if ($t !== '') $why[] = ['t' => $t, 'd' => '', 'i' => $icon($w['i'] ?? '')]; }
     $imp = [];
     foreach (array_slice((array)($h['impact'] ?? []), 0, 8) as $it) {
         $l = $str($it['l'] ?? '', 60); if ($l === '') continue;
-        $k = (string)($it['k'] ?? ''); $imp[] = ['k' => in_array($k, ['students', 'courses', 'free', 'notes', 'years'], true) ? $k : '', 'l' => $l, 'v' => $str($it['v'] ?? '', 20)];
+        $k = (string)($it['k'] ?? ''); $imp[] = ['k' => in_array($k, ['students', 'courses', 'free', 'notes', 'years'], true) ? $k : '', 'l' => $l, 'v' => $str($it['v'] ?? '', 20), 'i' => $icon($it['i'] ?? '')];
     }
     $flag = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES;
     return ['sections' => json_encode($secs, $flag), 'why' => json_encode($why, $flag), 'impact' => json_encode($imp, $flag),
@@ -1080,7 +1128,9 @@ function sh_home_sanitize(array $h): array
         'courses_filter' => sh_home_pick((string)($h['courses_filter'] ?? ''), ['all', 'launched', 'upcoming'], 'all'),
         'batches_filter' => sh_home_pick((string)($h['batches_filter'] ?? ''), ['all', 'launched', 'upcoming'], 'all'),
         'notes_sort' => sh_home_pick((string)($h['notes_sort'] ?? ''), ['latest', 'popular'], 'latest'),
-        'cats_d' => (string)max(0, min(40, (int)($h['cats_d'] ?? 0))), 'cats_m' => (string)max(0, min(40, (int)($h['cats_m'] ?? 0))),
+        'cats_d' => '0', 'cats_m' => '0',
+        'cats_vis' => json_encode(array_filter(array_map(fn($v) => preg_match('/^[01]{3}$/', (string)$v) ? (string)$v : '111', (array)($h['cats_vis'] ?? [])), fn($v, $k) => ctype_digit((string)$k) && $v !== '111', ARRAY_FILTER_USE_BOTH) ?: new stdClass()),
+        'cats_cols_d' => (string)max(2, min(10, (int)($h['cats_cols_d'] ?? 8))), 'cats_cols_m' => (string)max(2, min(5, (int)($h['cats_cols_m'] ?? 3))),
         'posts_count' => (string)max(1, min(20, (int)($h['posts_count'] ?? 10)))];
 }
 

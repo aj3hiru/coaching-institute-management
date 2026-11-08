@@ -13,7 +13,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['json'])) { // lists for
     $up = fn($rows, $keys) => array_map(function ($r) use ($keys) { foreach ($keys as $k) $r[$k . '_url'] = $r[$k] ? sh_upload_url($r[$k]) : ''; return $r; }, $rows);
     echo json_encode([
         'slides' => $up($pdo->query("SELECT * FROM hm_slides ORDER BY sort, id")->fetchAll(PDO::FETCH_ASSOC), ['image', 'mobile_image']),
-        'free' => array_map(fn($f) => $f + ['site_url' => sh_free_url($f)], $pdo->query("SELECT * FROM hm_free ORDER BY sort, id DESC")->fetchAll(PDO::FETCH_ASSOC)),
+        'free' => array_map(fn($f) => $f + ['site_url' => sh_free_url($f), 'thumb_custom_url' => !empty($f['thumb_custom']) ? sh_upload_url($f['thumb_custom']) : ''], $pdo->query("SELECT * FROM hm_free ORDER BY sort, id DESC")->fetchAll(PDO::FETCH_ASSOC)),
+        // every teacher (shown or hidden on the homepage), in the homepage order
+        'teachers' => (function () use ($pdo) {
+            $ids = array_keys(sh_teachers($pdo)); if (!$ids) return [];
+            $rows = $pdo->query("SELECT u.id, u.username, a.name AS author_name, a.profile_image, t.display_name, t.photo, t.subject, t.show_home, t.sort FROM users u LEFT JOIN authors a ON a.user_id = u.id
+                LEFT JOIN sh_teacher_info t ON t.user_id = u.id WHERE u.id IN (" . implode(',', array_map('intval', $ids)) . ") ORDER BY COALESCE(t.sort, 0), u.id")->fetchAll(PDO::FETCH_ASSOC);
+            return array_map(fn($r) => ['id' => (int)$r['id'], 'name' => trim((string)($r['display_name'] ?: $r['author_name'] ?: $r['username'])), 'subject' => (string)$r['subject'],
+                'photo' => ($ph = (string)($r['photo'] ?: $r['profile_image'])) !== '' ? sh_upload_url($ph) : '', 'show' => $r['show_home'] === null ? 1 : (int)$r['show_home']], $rows);
+        })(),
         'toppers' => $up($pdo->query("SELECT * FROM hm_toppers ORDER BY sort, id")->fetchAll(PDO::FETCH_ASSOC), ['photo']),
         'cats' => array_map(fn($k, $c) => ['id' => (int)$k, 'name' => $c['name']], array_keys(sh_categories($pdo, true)), sh_categories($pdo, true)),
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
@@ -37,10 +45,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (($m = $media('mobile_path')) !== '') { if ($m !== $mob) sh_image_drop($mob); $mob = $m; }
             if (!empty($_POST['mobile_rm'])) { sh_image_drop($mob); $mob = ''; }
             if ($img === '') throw new RuntimeException('Please choose the slide image.');
-            $v = [$img, $mob ?: null, $link((string)($_POST['link'] ?? '')), mb_substr(trim((string)($_POST['title'] ?? '')), 0, 200) ?: null, !empty($_POST['new_tab']) ? 1 : 0, (int)($_POST['sort'] ?? 0), !empty($_POST['active']) ? 1 : 0];
-            if ($row) { $v[] = $id; $pdo->prepare("UPDATE hm_slides SET image=?, mobile_image=?, link=?, title=?, new_tab=?, sort=?, active=? WHERE id=?")->execute($v); }
-            else $pdo->prepare("INSERT INTO hm_slides (image, mobile_image, link, title, new_tab, sort, active) VALUES (?,?,?,?,?,?,?)")->execute($v);
+            $dev = fn($k) => array_key_exists($k, $_POST) ? (!empty($_POST[$k]) ? 1 : 0) : (int)($row[$k] ?? 1); // phone / tablet / computer (kept when not sent)
+            $v = [$img, $mob ?: null, $link((string)($_POST['link'] ?? '')), mb_substr(trim((string)($_POST['title'] ?? '')), 0, 200) ?: null, !empty($_POST['new_tab']) ? 1 : 0, (int)($_POST['sort'] ?? 0), !empty($_POST['active']) ? 1 : 0, $dev('show_m'), $dev('show_t'), $dev('show_d')];
+            if ($row) { $v[] = $id; $pdo->prepare("UPDATE hm_slides SET image=?, mobile_image=?, link=?, title=?, new_tab=?, sort=?, active=?, show_m=?, show_t=?, show_d=? WHERE id=?")->execute($v); }
+            else $pdo->prepare("INSERT INTO hm_slides (image, mobile_image, link, title, new_tab, sort, active, show_m, show_t, show_d) VALUES (?,?,?,?,?,?,?,?,?,?)")->execute($v);
             admin_flash('Slide saved.');
+        } elseif ($a === 'free_thumb') { // own picture for a free course (Media Library) — empty = back to YouTube's
+            $go = 'free';
+            $m = $media('photo_path');
+            $pdo->prepare("UPDATE hm_free SET thumb_custom = ? WHERE id = ?")->execute([$m !== '' ? $m : null, $id]);
+        } elseif ($a === 'teacher_vis' || $a === 'teacher_order') { // Meet our teachers: show / hide and order
+            $go = 'toppers'; $ins = $pdo->prepare("INSERT INTO sh_teacher_info (user_id, show_home, sort) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE " . ($a === 'teacher_vis' ? 'show_home = VALUES(show_home)' : 'sort = VALUES(sort)'));
+            $valid = array_keys(sh_teachers($pdo));
+            if ($a === 'teacher_vis') { if (in_array($id, $valid, true)) $ins->execute([$id, !empty($_POST['show']) ? 1 : 0, 0]); }
+            else foreach (array_values(array_filter(array_map('intval', explode(',', (string)($_POST['ids'] ?? ''))), fn($x) => in_array($x, $valid, true))) as $k => $uid) $ins->execute([$uid, 1, $k + 1]);
         } elseif ($a === 'slide_order' || $a === 'top_order') { // new order from the Customizer: ids in order
             $go = $a === 'slide_order' ? 'slides' : 'toppers'; $tb = $a === 'slide_order' ? 'hm_slides' : 'hm_toppers';
             $q = $pdo->prepare("UPDATE $tb SET sort = ? WHERE id = ?");
