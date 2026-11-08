@@ -155,9 +155,10 @@ function renderComments($comments, $depth=0) {
 }
 
 // TOC Generation
-function generateTOC($c){
+function generateTOC($c, $heading = ''){
     if(!$c||!is_string($c))return['toc'=>'','content'=>$c];
-    $i=[];$l=2;$t='<div class="toc"><h2>Table of Contents</h2><ol>';
+    if (trim((string)$heading) === '') $heading = (function_exists('th') ? trim((string)th('p_toc_heading')) : '') ?: 'Table of Contents'; // Customize → Single Post → Table of contents
+    $i=[];$l=2;$t='<div class="toc"><h2 class="em-wt"><span class="em-wt-l">'.htmlspecialchars($heading).'</span></h2><ol>';
     $c=preg_replace_callback('/<h([2-6])>(.*?)<\/h\1>/i',function($a)use(&$t,&$i,&$l){
         $lev=(int)$a[1];$hPlain=trim(strip_tags($a[2]));$hHTML=trim($a[2]);if(!$hPlain)return $a[0];
         // Hindi and other scripts keep their letters (a Latin-only id made Hindi headings unreachable)

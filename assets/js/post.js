@@ -192,14 +192,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const h2 = toc.querySelector('h2');
   if (!h2) return;
   const button = document.createElement('button');
-  button.textContent = '[Hide]';
+  button.type = 'button'; button.className = 'em-wt-a'; button.setAttribute('aria-expanded', 'true'); button.setAttribute('aria-label', 'Hide contents');
+  button.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
   h2.appendChild(button);
   const ol = toc.querySelector(':scope > ol');
   ol.style.height = ol.scrollHeight + "px";
   button.addEventListener('click', () => {
     const isCollapsed = toc.classList.toggle('collapsed');
     ol.style.height = isCollapsed ? '0px' : ol.scrollHeight + 'px';
-    button.textContent = isCollapsed ? '[Show]' : '[Hide]';
+    button.setAttribute('aria-expanded', isCollapsed ? 'false' : 'true'); button.setAttribute('aria-label', isCollapsed ? 'Show contents' : 'Hide contents');
   });
 
 });

@@ -43,7 +43,7 @@ function edu_theme_defaults(): array
         'f_follow_sub' => 'Get Latest Job Updates On Social Media', 'f_follow_btn' => '', 'f_follow_btn_url' => '',
         'f_copyright' => '© {year} {site}. All rights reserved.',
         // Sidebar (post pages)
-        'sb_post' => '1', 'sb_heading' => 'More from {category}', 'sb_count' => 5, 'sb_source' => 'category', 'sb_sticky' => '0',
+        'sb_post' => '1', 'sb_heading' => 'More from {category}', 'sb_count' => 5, 'sb_source' => 'category', 'sb_sticky' => '0', 'nf_title' => 'Page not found', 'nf_text' => 'The page you are looking for may have moved or no longer exists. Search the site, or jump to one of these.', 'nf_post_title' => 'This post is not available', 'nf_post_text' => 'The post you opened may have been removed or its address has changed. Search for it, or pick up something new below.', 'nf_courses' => '1', 'nf_cats' => '1', 'nf_posts' => '1', 'sb_search' => '1', 'sb_search_heading' => 'Search', 'sb_cats' => '1', 'sb_cats_heading' => 'Categories', 'sb_cats_count' => 10, 'p_toc_heading' => 'Table of Contents',
         // Post template
         'p_breadcrumb' => '1', 'p_cat_badge' => '1', 'p_author_date' => '1', 'p_date_shown' => 'updated', 'p_reading_time' => '1',
         'p_pref_source' => '1', 'p_gnews' => '1', 'p_gnews_url' => 'https://news.google.com/home', 'p_featured' => '1', 'p_caption' => '0', 'p_summary' => '1', 'p_summary_heading' => 'Summary', 'p_summary_pos' => 'before_content',

@@ -413,21 +413,31 @@ const PANELS = [
   ]},
   { id: 'menus', icon: 'fa-bars', label: 'Menus', sub: 'Primary menu and the menu strip', render: renderMenus },
   { id: 'f_copy', icon: 'fa-copyright', label: 'Copyright', sub: '', design: ['footer_bar'], fields: [['text', 'f_copyright', 'Copyright text', { hint: 'Shortcodes: [year] [site_title] [site_link]' }]] },
+  { id: 'nf', icon: 'fa-triangle-exclamation', label: '404 Page', sub: '', fields: [
+    ['text', 'nf_title', 'Heading'], ['textarea', 'nf_text', 'Text'],
+    ['text', 'nf_post_title', 'Heading (missing post)'], ['textarea', 'nf_post_text', 'Text (missing post)'],
+    ['toggle', 'nf_courses', 'Latest courses'], ['toggle', 'nf_cats', 'Popular categories'], ['toggle', 'nf_posts', 'Latest posts'],
+  ] },
   { id: 'f_scroll', icon: 'fa-arrow-up', label: 'Scroll To Top', sub: '', fields: [['toggle', 'f_totop', 'Enable scroll to top']] },
   { id: 'buttons', icon: 'fa-square', label: 'Buttons', sub: '', design: ['buttons'], render: renderButtons },
   { id: 'footer', icon: 'fa-shoe-prints', label: 'Footer Columns', design: ['footer_widgets'], sub: 'Columns, follow box, copyright', render: renderFooter },
   { id: 'sidebar', icon: 'fa-table-columns', design: ['sidebar'], label: 'Sidebar', sub: 'Where it shows and what it lists', fields: [
     ['toggle', 'sb_post', 'Posts (articles)'],
-    ['text', 'sb_heading', 'Heading', { hint: '{category} = the post’s category.' }],
+    ['toggle', 'sb_search', 'Search box'],
+    ['text', 'sb_search_heading', 'Search heading'],
+    ['text', 'sb_heading', 'Posts heading', { hint: '{category} = the post’s category.' }],
     ['range', 'sb_count', 'Number of posts', { min: 3, max: 10 }],
     ['seg', 'sb_source', 'Posts', { options: [['category', 'Same category'], ['latest', 'Latest']] }],
+    ['toggle', 'sb_cats', 'Categories'],
+    ['text', 'sb_cats_heading', 'Categories heading'],
+    ['range', 'sb_cats_count', 'How many categories', { min: 3, max: 30 }],
     ['toggle', 'sb_sticky', 'Sticky while scrolling'],
   ]},
   { id: 'post', icon: 'fa-file-lines', label: 'Single Post', sub: '', design: ['cards'], render: renderPost, defs: [
     ['Top of the post', [['toggle', 'p_breadcrumb', 'Breadcrumb'], ['toggle', 'p_cat_badge', 'Category label (⚡ CATEGORY)'], ['toggle', 'p_author_date', 'Author & date row'], ['seg', 'p_date_shown', 'Date shown', { options: [['updated', 'Last updated'], ['published', 'Published']] }], ['toggle', 'p_reading_time', 'Reading time'], ['toggle', 'p_pref_source', '“Add as a preferred source on Google”'], ['toggle', 'p_gnews', 'Google News icon (own box)'], ['text', 'p_gnews_url', 'Google News link', { hint: 'Your publication page on news.google.com.' }]]],
     ['Featured image', [['toggle', 'p_featured', 'Featured image'], ['toggle', 'p_caption', 'Caption under the image (alt text)']]],
     ['Summary & Key Points', [['toggle', 'p_summary', 'Summary box'], ['text', 'p_summary_heading', 'Summary heading'], ['seg', 'p_summary_pos', 'Summary position', { options: [['before_featured', 'Before image'], ['after_featured', 'After image'], ['before_content', 'Before content']] }], ['toggle', 'p_keypoints', 'Key Points box'], ['text', 'p_keypoints_heading', 'Key Points heading'], ['seg', 'p_keypoints_style', 'Bullet style', { options: [['dot', 'Dot'], ['check', 'Check'], ['number', 'Number']] }], ['range', 'p_keypoints_after', 'Show after paragraph (0 = above the article)', { min: 0, max: 6 }]]],
-    ['Table of contents', [['toggle', 'p_toc', 'Table of contents'], ['toggle', 'p_toc_collapsed', 'Start collapsed']]],
+    ['Table of contents', [['toggle', 'p_toc', 'Table of contents'], ['text', 'p_toc_heading', 'Heading'], ['toggle', 'p_toc_collapsed', 'Start collapsed']]],
     ['End of the post', [['toggle', 'p_faqs', 'FAQs'], ['toggle', 'p_tags', 'Tags'], ['toggle', 'p_share', 'Share buttons'], ['toggle', 'p_author_box', 'Author box'], ['toggle', 'p_comments', 'Comments']]],
     ['Related posts', [['toggle', 'p_related', 'Related posts grid'], ['text', 'p_related_heading', 'Related heading'], ['range', 'p_related_count', 'How many', { min: 2, max: 9 }]]],
     ['Join boxes', [['toggle', 'p_join', 'Join WhatsApp / Telegram boxes'], ['text', 'p_join_whatsapp', 'WhatsApp link'], ['text', 'p_join_telegram', 'Telegram link']]],
@@ -461,11 +471,11 @@ let dirty = false, panel = null, draftTimer = null, subOpen = null;
 const CZ_NAV = ['identity', { id: 'global', label: 'Global', items: ['typography', 'colors', 'container', 'buttons'] },
   { id: 'header', label: 'Header', items: ['h_primary', 'h_strip', 'h_search', 'h_account', 'h_button', 'h_offcanvas', 'h_above'] },
   { id: 'posttypes', label: 'Post Types', items: ['home', 'post', 'alsoread', 'progress'] }, 'homepage', 'sidebar',
-  { id: 'footer', label: 'Footer', items: ['footer', 'f_copy'] }, { id: 'general', label: 'General', items: ['f_scroll', 'consent', 'shortcodes'] },
+  { id: 'footer', label: 'Footer', items: ['footer', 'f_copy'] }, { id: 'general', label: 'General', items: ['f_scroll', 'nf', 'consent', 'shortcodes'] },
   'menus', 'css'];
 const CZ_STORE = <?= json_encode(is_file(ROOT_PATH . '/account/login.php')) ?>;
 if (CZ_STORE) { const oc = PANELS.find(x => x.id === 'h_offcanvas'); if (oc) oc.fields = oc.fields.filter(f => f[1] !== 'h_drawer_sub').map(f => f[1] === 'h_drawer_login' ? ['toggle', 'h_drawer_login', 'Courses & Student Login buttons'] : f); }
-const CZ_DEP = { h_voice: 'h_search', h_search_placeholder: 'h_search', h_login_text: 'h_login', h_login_url: 'h_login', h_sub_text: 'h_sub', h_sub_icon: 'h_sub', h_sub_url: 'h_sub',
+const CZ_DEP = { sb_search: 'sb_post', sb_cats: 'sb_post', sb_search_heading: 'sb_search', sb_cats_heading: 'sb_cats', sb_cats_count: 'sb_cats', h_voice: 'h_search', h_search_placeholder: 'h_search', h_login_text: 'h_login', h_login_url: 'h_login', h_sub_text: 'h_sub', h_sub_icon: 'h_sub', h_sub_url: 'h_sub',
   h_drawer_title: 'h_drawer_hello', h_drawer_text: 'h_drawer_hello', h_drawer_sub: 'h_sub', h_topbar_text: 'h_topbar', sb_heading: 'sb_post', sb_count: 'sb_post', sb_source: 'sb_post', sb_sticky: 'sb_post',
   rp_label: 'rp_button', rp_desktop: 'rp_button', f_play_url: 'f_play' };
 if (!CZ_STORE) CZ_DEP.h_drawer_login = 'h_login';
@@ -510,7 +520,7 @@ function field(f) {
   const w = document.createElement('div');
   if (type === 'hint') { w.className = 'cz-hint'; w.textContent = key; return w; }
   if (type === 'heading') { const h = document.createElement('h3'); h.className = 'cz-heading'; h.textContent = key; return h; }
-  if (CZ_DEP[key] && String(getV(CZ_DEP[key])) !== '1') return document.createComment(key); // its main switch is off
+  for (let k = key; CZ_DEP[k]; k = CZ_DEP[k]) if (String(getV(CZ_DEP[k])) !== '1') return document.createComment(key); // a main switch above it is off
   const v = getV(key);
   if (type === 'toggle') {
     w.innerHTML = '<label class="cz-toggle"><span class="cz-toggle-text">' + esc(label) + (ex.hint ? '<small>' + esc(ex.hint) + '</small>' : '') + '</span><input type="checkbox"' + (String(v) === '1' ? ' checked' : '') + '><span class="cz-switch" aria-hidden="true"></span></label>';
@@ -891,7 +901,7 @@ function renderButtons(wrap) { wrap.appendChild(typoRow('buttons', 'Font')); }
 // Post Types ▸ Single Post: the parts of an article as one list — 👁 shows / hides, ⌄ opens its options (like Astra's Structure)
 const POST_EYE = [['p_breadcrumb'], ['p_cat_badge'], ['p_author_date', ['p_date_shown', 'p_reading_time']], ['p_featured', ['p_caption']],
   ['p_summary', ['p_summary_heading', 'p_summary_pos']], ['p_keypoints', ['p_keypoints_heading', 'p_keypoints_style', 'p_keypoints_after']],
-  ['p_toc', ['p_toc_collapsed']], ['p_faqs'], ['p_tags'], ['p_share'], ['p_author_box'], ['p_comments'], ['p_related', ['p_related_heading', 'p_related_count']],
+  ['p_toc', ['p_toc_heading', 'p_toc_collapsed']], ['p_faqs'], ['p_tags'], ['p_share'], ['p_author_box'], ['p_comments'], ['p_related', ['p_related_heading', 'p_related_count']],
   ['p_join', ['p_join_whatsapp', 'p_join_telegram']], ['p_pref_source'], ['p_gnews', ['p_gnews_url']]];
 const EYE_NAMES = { p_cat_badge: 'Category label', p_author_date: 'Author & date', p_summary: 'Summary', p_keypoints: 'Key Points', p_related: 'Related posts', p_join: 'Join WhatsApp / Telegram', p_pref_source: 'Preferred source (Google)', p_gnews: 'Google News' };
 function eyeList(keys, defs) {
@@ -1641,6 +1651,7 @@ function showPanel(p, keep) {
   if (p.id === 'post' || p.id === 'alsoread' || p.id === 'progress' || p.id === 'sidebar' || p.id === 'typography') goTo(<?= json_encode($latestUrl) ?>);
   else if (p.id === 'home') goTo('/latest-update');
   else if (p.id === 'homepage') goTo('/');
+  else if (p.id === 'nf') goTo('/page-that-does-not-exist');
 }
 function goTo(path) { if (path === framePath) return; framePath = path; reloadFrame(); }
 $('cz-back').onclick = showHome;
