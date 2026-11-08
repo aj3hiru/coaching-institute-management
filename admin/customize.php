@@ -805,7 +805,7 @@ function renderMenus(wrap) {
     blk.appendChild(cToggle('Dark mode icon at the end of the strip', () => T.menu_dark_icon === '1', v => T.menu_dark_icon = v ? '1' : '0'));
     wrap.appendChild(blk);
     if (T.strip_source === 'categories') { wrap.appendChild(hintEl('Every category is listed automatically, newest categories included. Switch to “Custom menu” to choose the links yourself.')); return; }
-    menuEditor(wrap, () => T.strip_items, v => T.strip_items = v, false, 'strip');
+    menuEditor(wrap, () => T.strip_items, v => T.strip_items = v, true, 'strip'); // nested: a link with links under it = a drop-down
   } else {
     menuEditor(wrap, () => T.menu, v => T.menu = v, true, 'primary');
   }

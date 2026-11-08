@@ -22,7 +22,8 @@ if (th('strip_source') === 'categories') {
         if ($__sdb) foreach ($__sdb->query("SELECT name, slug FROM categories ORDER BY views DESC, name ASC LIMIT 60") as $c) $__strip[] = ['label' => $c['name'], 'url' => '/categories/' . $c['slug'], 'newTab' => false];
     } catch (Throwable $e) { $__strip = []; }
 } else {
-    $__strip = array_map(fn($m) => ['label' => (string)$m['label'], 'url' => (string)$m['url'], 'newTab' => !empty($m['newTab'])], (array)th('strip_items', []));
+    $__strip = array_map(fn($m) => ['label' => (string)$m['label'], 'url' => (string)$m['url'], 'newTab' => !empty($m['newTab']),
+        'children' => array_map(fn($c) => ['label' => (string)($c['label'] ?? ''), 'url' => (string)($c['url'] ?? ''), 'newTab' => !empty($c['newTab'])], array_filter((array)($m['children'] ?? []), 'is_array'))], (array)th('strip_items', []));
 }
 $__tgt = fn($m) => !empty($m['newTab']) ? ' target="_blank" rel="noopener"' : '';
 $__ico = [
@@ -127,7 +128,45 @@ if ($__school) {
 }
 .nb-hr-nav .nb-strip-search{display:none;align-items:center;justify-content:center;flex:0 0 auto;padding-left:14px;padding-right:14px}
 @media (max-width:400px){.nb-hr-brand .nb-brand-link.nb-brand-school{height:48px}.nb-brand-school .nb-emblem{width:36px;height:42px}.nb-sb-school .site-title{font-size:16.5px}.nb-sb-school .nb-brand-line{font-size:10.5px}}
+/* menu strip drop-downs (a group of links under one name) */
+.nb-dd{position:relative;display:inline-flex;flex:0 0 auto}
+.nb-dd-b{position:relative;display:inline-flex;align-items:center;gap:5px;padding:14px 2px;border:0;background:none;color:#1d2327;font:inherit;font-size:15px;font-weight:600;cursor:pointer;white-space:nowrap}
+.nb-dd-b svg{transition:transform .18s;opacity:.7}
+.nb-dd-b::after{content:"";position:absolute;left:0;right:0;bottom:8px;height:2px;background:var(--gc-accent,#0c6878);transform:scaleX(0);transition:transform .18s}
+.nb-dd-b:hover,.nb-dd-b[aria-expanded="true"],.nb-dd-b.current{color:var(--gc-accent,#0c6878)}
+.nb-dd-b:hover::after,.nb-dd-b.current::after,.nb-dd-b[aria-expanded="true"]::after{transform:scaleX(1)}
+.nb-dd-b[aria-expanded="true"] svg{transform:rotate(180deg)}
+.nb-dd-p{position:fixed;z-index:100000;min-width:230px;max-width:calc(100vw - 24px);padding:6px;background:#fff;border:1px solid #e5e7eb;border-radius:10px;box-shadow:0 14px 34px rgba(15,23,42,.16)}
+.nb-dd-p[hidden]{display:none!important}
+.nb-dd-p a{display:block!important;padding:10px 12px!important;border-radius:6px;color:#1f2937!important;font-size:14.5px!important;font-weight:500!important;white-space:nowrap;text-decoration:none!important}
+.nb-dd-p a::after{display:none!important}
+.nb-dd-p a:hover{background:#f1f5f9;color:var(--gc-accent,#0c6878)!important}
+.nb-dd-p a.current{background:#eef7f8;color:var(--gc-accent,#0c6878)!important;font-weight:700!important}
+.nb-dd-p a.nb-dd-all{font-weight:700!important;border-bottom:1px solid #f1f5f9;border-radius:6px 6px 0 0;margin-bottom:4px}
+html[data-theme="dark"] .nb-dd-b{color:#e5e7eb}html[data-theme="dark"] .nb-dd-p{background:#151b23;border-color:#263040}html[data-theme="dark"] .nb-dd-p a{color:#e5e7eb!important}html[data-theme="dark"] .nb-dd-p a:hover{background:#1f2937}
 </style>
+<script>
+(function () { // menu strip drop-downs: click / tap (hover too with a mouse); the card sits under its button (the strip scrolls sideways)
+  var open = null, hoverT = 0, hoverAt = 0;
+  function place(b, p) { var r = b.getBoundingClientRect(), w = Math.min(p.offsetWidth || 240, window.innerWidth - 24), x = Math.max(12, Math.min(r.left + r.width / 2 - w / 2, window.innerWidth - w - 12)); p.style.left = x + 'px'; p.style.top = (r.bottom + 2) + 'px'; }
+  function shut() { if (!open) return; open.b.setAttribute('aria-expanded', 'false'); open.p.hidden = true; open = null; }
+  function show(b) { var p = document.getElementById(b.getAttribute('aria-controls')); if (!p) return; if (open && open.b !== b) shut(); p.hidden = false; place(b, p); b.setAttribute('aria-expanded', 'true'); open = { b: b, p: p }; }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('.nb-dd-b');
+    if (b) { e.preventDefault(); if (open && open.b === b) { if (Date.now() - hoverAt > 600) shut(); } else show(b); return; } // a click right after the mouse opened it keeps it open
+    if (open && !open.p.contains(e.target)) shut();
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') shut(); });
+  var lastW = window.innerWidth; // phones fire resize when the address bar slides: only a real width change closes it
+  window.addEventListener('resize', function () { if (Math.abs(window.innerWidth - lastW) > 2) { lastW = window.innerWidth; shut(); } else if (open) place(open.b, open.p); }); window.addEventListener('scroll', function () { if (open) place(open.b, open.p); }, { passive: true });
+  document.addEventListener('scroll', function (e) { if (open && e.target.classList && e.target.classList.contains('inb-scroll-menu-inner')) shut(); }, true);
+  if (window.matchMedia && matchMedia('(hover: hover) and (pointer: fine)').matches) {
+    document.addEventListener('mouseover', function (e) { var d = e.target.closest && e.target.closest('.nb-dd, .nb-dd-p'); clearTimeout(hoverT);
+      if (d) { var b = d.classList.contains('nb-dd') ? d.querySelector('.nb-dd-b') : document.querySelector('[aria-controls="' + d.id + '"]'); if (b && (!open || open.b !== b)) { show(b); hoverAt = Date.now(); } }
+      else if (open) hoverT = setTimeout(shut, 220); });
+  }
+})();
+</script>
 <?php endif; ?>
 <?php if ($__schoolFull): include __DIR__ . '/header-school.php'; else: ?>
 <header class="nb-header nb-h-racing" id="site-navigation">
@@ -197,7 +236,10 @@ if ($__school) {
   <nav class="nb-hr-nav" aria-label="Main navigation">
     <div class="inb-scroll-menu nb-strip nb-strip--plain nb-strip--center">
       <div class="inb-scroll-menu-inner">
-        <?php foreach ($__strip as $m): ?><a href="<?= htmlspecialchars($m['url']) ?>"<?= $__active($m['url']) ? ' class="current" aria-current="page"' : '' ?><?= $__tgt($m) ?>><?= htmlspecialchars($m['label']) ?></a><?php endforeach; ?>
+        <?php foreach ($__strip as $__i => $m): if (!empty($m['children'])): // a group: button + drop-down card
+          $__cur = array_filter($m['children'], fn($c) => $c['url'] !== '/' && $__active($c['url'])); ?><div class="nb-dd"><button type="button" class="nb-dd-b<?= $__cur ? ' current' : '' ?>" aria-haspopup="true" aria-expanded="false" aria-controls="nbdd<?= $__i ?>"><?= htmlspecialchars($m['label']) ?><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+          <div class="nb-dd-p" id="nbdd<?= $__i ?>" role="menu" hidden><?php if ($m['url'] !== '' && $m['url'] !== '#'): ?><a role="menuitem" class="nb-dd-all" href="<?= htmlspecialchars($m['url']) ?>"<?= $__tgt($m) ?>>All <?= htmlspecialchars($m['label']) ?></a><?php endif; ?><?php foreach ($m['children'] as $c): ?><a role="menuitem" href="<?= htmlspecialchars($c['url']) ?>"<?= $c['url'] !== '/' && $__active($c['url']) ? ' class="current" aria-current="page"' : '' ?><?= $__tgt($c) ?>><?= htmlspecialchars($c['label']) ?></a><?php endforeach; ?></div></div><?php
+        else: ?><a href="<?= htmlspecialchars($m['url']) ?>"<?= $__active($m['url']) ? ' class="current" aria-current="page"' : '' ?><?= $__tgt($m) ?>><?= htmlspecialchars($m['label']) ?></a><?php endif; endforeach; ?>
         <?php if (th_on('h_dark') && th_on('menu_dark_icon')): ?><a href="#" class="dark-mode-toggle nb-strip-dark" aria-label="Dark mode"><svg class="nb-moon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></a><?php endif; ?>
         <?php if (th_on('h_search') && $__school): ?><a href="/search" role="button" class="nb-strip-search" data-hsearch aria-label="Search" aria-controls="eduHSearch"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></a><?php endif; ?>
       </div>

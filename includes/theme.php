@@ -266,7 +266,7 @@ function edu_theme_sanitize(array $theme): array
         return $o;
     };
     $links = fn($list, bool $kids) => array_values(array_filter(array_map(fn($i) => $link((array)$i, $kids), array_slice((array)$list, 0, 60)), fn($i) => $i['label'] !== '' && $i['url'] !== ''));
-    foreach (['menu' => true, 'strip_items' => false, 'f_links' => false] as $k => $kids) if (isset($theme[$k])) $theme[$k] = $links($theme[$k], $kids);
+    foreach (['menu' => true, 'strip_items' => true, 'f_links' => false] as $k => $kids) if (isset($theme[$k])) $theme[$k] = $links($theme[$k], $kids);
     if (isset($theme['strip_source'])) $theme['strip_source'] = $theme['strip_source'] === 'categories' ? 'categories' : 'custom';
     if (isset($theme['f_columns'])) {
         $theme['f_columns'] = array_values(array_map(fn($c) => [
