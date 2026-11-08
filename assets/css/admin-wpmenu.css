@@ -12,7 +12,7 @@
 /* top items */
 .sidebar.sb .sb-link{position:relative;display:flex;align-items:center;gap:8px;margin:0;padding:8px 12px 8px 10px;min-height:36px;border-radius:0!important;font-size:14px;font-weight:400;line-height:18px;color:#f0f0f1!important;background:transparent;text-decoration:none;transition:none}
 .sidebar.sb .sb-icon{width:24px;font-size:16px;color:#a7aaad;transition:none}
-.sidebar.sb .sb-link:hover,.sidebar.sb .sb-link:focus-visible,.sidebar.sb [data-submenu]:hover > .sb-row .sb-link,.sidebar.sb [data-submenu].fly > .sb-row .sb-link{background:#2c3338;color:#72aee6!important;outline:0}
+.sidebar.sb .sb-link:hover,.sidebar.sb .sb-link:focus-visible,.sidebar.sb [data-submenu]:hover > .sb-row .sb-link,.sidebar.sb [data-submenu].fly > .sb-row .sb-link{background:#1d2327;color:#72aee6!important;outline:0} /* WordPress: the row keeps its colour, only the words turn blue */
 .sidebar.sb .sb-link:hover .sb-icon,.sidebar.sb [data-submenu]:hover > .sb-row .sb-icon,.sidebar.sb [data-submenu].fly > .sb-row .sb-icon{color:#72aee6}
 .sidebar.sb .sb-button{color:#f0f0f1!important;font-size:14px;font-weight:400}
 /* the page you are on: blue, with the little white arrow pointing at the page */
@@ -20,7 +20,7 @@
 .sidebar.sb .sb-link.active:not(.sb-sub) .sb-icon,.sidebar.sb [data-force="1"] > .sb-row .sb-icon{color:#fff!important}
 .sidebar.sb .sb-link.active:not(.sb-sub)::after,.sidebar.sb [data-force="1"] > .sb-row .sb-link::after{content:"";position:absolute;right:0;top:50%;margin-top:-8px;border:8px solid transparent;border-right-color:#f0f0f1;pointer-events:none}
 .sidebar.sb .sb-row{position:relative;margin:0}
-.sidebar.sb .sb-chev{width:34px;height:36px;color:#a7aaad;border-radius:0!important}.sidebar.sb .sb-chev:hover{background:#2c3338;color:#72aee6}
+.sidebar.sb .sb-chev{width:34px;height:36px;color:#a7aaad;border-radius:0!important}.sidebar.sb .sb-chev:hover{background:transparent;color:#72aee6}
 .sidebar.sb [data-force="1"] .sb-chev{color:#fff;background:#2271b1}
 /* sub-menu of the current item: open below it, dark grey */
 .sidebar.sb .sb-submenu{background:#2c3338;transition:none}
@@ -35,7 +35,8 @@
   .sidebar.sb{transform:none!important;overflow:visible!important} /* so a fly-out (position:fixed) is placed on the page, not cut off inside the sidebar */
   .sidebar.sb .sb-chev{display:none}
   .sidebar.sb [data-submenu].fly > .sb-submenu:not(.open){position:fixed;z-index:10050;display:block;max-height:none;overflow:visible;min-width:180px;padding:7px 0 8px;box-shadow:0 3px 5px rgba(0,0,0,.2)}
-  .sidebar.sb [data-submenu].fly > .sb-submenu:not(.open)::before{content:"";position:absolute;left:-16px;top:10px;border:8px solid transparent;border-right-color:#2c3338}
+  /* the WordPress hover arrow: a small triangle on the right edge of the hovered item, in the fly-out's colour, joining the two */
+  .sidebar.sb [data-submenu]:not([data-force="1"]).fly > .sb-row::after{content:" ";position:absolute;right:0;top:10px;width:0;height:0;border:8px solid transparent;border-right-color:#2c3338;pointer-events:none;z-index:10051}
   .sidebar.sb [data-submenu].fly > .sb-submenu:not(.open) .sb-link.sb-sub{padding:6px 16px 6px 14px;white-space:nowrap}
 }
 /* phones / tablets: the arrow opens the sub-menu below */
