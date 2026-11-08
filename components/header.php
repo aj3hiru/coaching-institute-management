@@ -37,8 +37,12 @@ $__ico = [
     'fa-link' => '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
 ];
 $__path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
-$__active = function (string $url) use ($__path): bool {
-    return $url === '/' ? $__path === '/' : strpos($__path, $url) === 0;
+$__active = function (string $url) use ($__path): bool { // is this menu link the page being viewed (or a page under it)?
+    $u = parse_url($url);
+    if (!empty($u['host']) && strcasecmp(preg_replace('/^www\./i', '', $u['host']), preg_replace('/^www\./i', '', (string)($_SERVER['HTTP_HOST'] ?? ''))) !== 0) return false; // another site
+    $p = '/' . trim((string)($u['path'] ?? '/'), '/'); $here = '/' . trim($__path, '/');
+    if ($p === '/') return $here === '/';
+    return $here === $p || strpos($here . '/', $p . '/') === 0;
 };
 require_once INCLUDES_PATH . '/settings.php';
 $__so = edu_social();
