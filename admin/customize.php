@@ -248,6 +248,83 @@ body{margin:0;overflow:hidden}
 .hm-photo-i{width:54px;height:70px;border-radius:4px;overflow:hidden;background:#fff;border:1px solid #dcdcde;display:grid;place-items:center;color:#a7aaad}.hm-photo-i img{width:100%;height:100%;object-fit:cover}
 .hm-pair{display:grid;grid-template-columns:1fr 84px auto;gap:6px;align-items:center}
 .hm-pair-1{grid-template-columns:1fr auto auto}
+/* ===== Homepage screens, WordPress Customizer look: grey panel, slim white widgets, 30px controls ===== */
+#cz-body.hm-bg{background:#f0f0f1;gap:0}
+.hm-bg .hm-grp{gap:8px;padding:14px 0;border-bottom:1px solid #dcdcde}
+.hm-bg .hm-grp:first-child{padding-top:2px}.hm-bg .hm-grp:last-child{border-bottom:0}
+.hm-bg .hm-grp > h4{font-size:14px;font-weight:600;letter-spacing:0;text-transform:none;color:#1d2327;line-height:1.4}
+.hm-bg .hm-desc,.hm-bg .cz-hint{font-size:12px;font-style:italic;color:#646970;line-height:1.5}
+.hm-bg .cz-field{gap:4px}.hm-bg .cz-label{font-size:13px;font-weight:600;color:#1d2327}
+.hm-bg .cz-field input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]),.hm-bg .cz-field select{height:30px;min-height:30px;padding:0 8px;border:1px solid #8c8f94;border-radius:4px;background:#fff;font-size:13px;line-height:28px;box-shadow:none;box-sizing:border-box;width:100%}
+.hm-bg .cz-field textarea{min-height:64px;padding:5px 8px;border:1px solid #8c8f94;border-radius:4px;font-size:13px;line-height:1.5;box-shadow:none}
+.hm-bg .cz-field input:focus,.hm-bg .cz-field select:focus,.hm-bg .cz-field textarea:focus{border-color:#2271b1;box-shadow:0 0 0 1px #2271b1;outline:0}
+.hm-bg .cz-toggle-text{font-size:13px;font-weight:600}
+.hm-bg .cz-seg button{padding:6px;font-size:12.5px}
+.hm-bg .hm-lead{font-style:italic;font-size:12px}
+.hm-bg .hm-row{min-height:42px}.hm-bg .hm-nm{font-size:13.5px;font-weight:600}
+/* WordPress buttons */
+.hm-btn{display:inline-flex;align-items:center;gap:5px;height:30px;padding:0 10px;border:1px solid #2271b1;border-radius:3px;background:#f6f7f7;color:#2271b1;font:400 13px/1 inherit;cursor:pointer;white-space:nowrap}
+.hm-btn:hover{background:#f0f0f1;border-color:#0a4b78;color:#0a4b78}.hm-btn i{font-size:11px}
+.hm-btn-p{background:#2271b1;color:#fff}.hm-btn-p:hover{background:#135e96;color:#fff}
+.hm-bg .hm-add{align-self:flex-start;height:30px;border:1px solid #2271b1;border-style:solid;background:#f6f7f7;color:#2271b1;font-weight:400}
+.hm-bg .hm-add:hover{background:#f0f0f1;color:#0a4b78;border-color:#0a4b78}
+/* widgets */
+.hm-wl{display:flex;flex-direction:column;gap:6px}
+.hm-w{background:#fff;border:1px solid #dcdcde;border-radius:2px}
+.hm-w:hover{border-color:#a7aaad}.hm-w.open{border-color:#8c8f94;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.hm-w.is-off .hm-w-lead,.hm-w.is-off .hm-w-t{opacity:.55}
+.hm-w-bar{display:flex;align-items:center;gap:9px;min-height:42px;padding:5px 4px 5px 8px;cursor:pointer;user-select:none;box-sizing:border-box}
+.hm-w-bar:focus-visible{outline:2px solid #2271b1;outline-offset:-2px}
+.hm-w.open .hm-w-bar{border-bottom:1px solid #f0f0f1}
+.hm-w-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.hm-w-t b{font-size:13px;font-weight:600;color:#1d2327;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hm-w-t small{font-size:11.5px;color:#646970;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hm-w-x{display:flex;align-items:center}.hm-w-x .hm-ic{width:24px;height:24px;font-size:10.5px;color:#8c8f94}
+.hm-w-x .hm-ic:hover{color:#1d2327}
+.hm-w-arr{width:22px;text-align:center;color:#787c82;font-size:13px;transition:transform .15s}.hm-w.open .hm-w-arr{transform:rotate(180deg)}
+.hm-w-lead{display:flex;flex:0 0 auto}
+.hm-w-th{display:block;width:52px;height:29px;flex:0 0 auto;border-radius:2px;overflow:hidden;background:#f0f0f1}.hm-w-th img{width:100%;height:100%;object-fit:cover;display:block}
+.hm-w-ic{width:28px;height:28px;flex:0 0 auto;display:grid!important;place-items:center;border-radius:4px;background:#f0f6fc;color:#2271b1}
+.hm-w-ic svg{width:15px;height:15px}.hm-w-ic.auto{background:#f6f7f7;color:#a7aaad}
+.hm-w-in{display:flex;flex-direction:column;gap:12px;padding:12px 10px 10px}
+.hm-w-f{display:flex;align-items:center;justify-content:space-between;padding-top:10px;border-top:1px solid #f0f0f1}
+.hm-w-del{border:0;background:none;padding:0;color:#b32d2e;font-size:13px;cursor:pointer;text-decoration:underline;text-underline-offset:2px}.hm-w-del:hover{color:#8a2424}
+.hm-w-pic{display:flex;flex-direction:column;align-items:flex-start;gap:8px}
+.hm-w-pic img{display:block;width:100%;aspect-ratio:16/5;object-fit:cover;border-radius:2px;background:#f0f0f1}
+.hm-w-chks{display:flex;flex-direction:column;gap:7px}
+.hm-bg .hm-chk{font-size:13px}.hm-bg .hm-chk input{margin:0}
+.hm-icrow{display:flex;align-items:center;gap:10px}.hm-icrow .cz-hint{flex:1}
+.hm-bg .hm-icb{width:40px;height:34px;background:#fff;border-color:#8c8f94}
+/* device buttons: one joined group, blue = shown, slashed grey = hidden */
+.hm-bg .hm-dev{display:inline-flex;gap:0;width:max-content;border:1px solid #8c8f94;border-radius:4px;overflow:hidden;background:#fff}
+.hm-bg .hm-dev-o{position:relative;width:34px;height:28px;padding:0;display:grid;place-items:center;border:0;border-radius:0;background:#fff;color:#a7aaad;cursor:pointer}
+.hm-bg .hm-dev-o + .hm-dev-o{border-left:1px solid #dcdcde}
+.hm-bg .hm-dev-o svg{width:15px;height:15px}
+.hm-bg .hm-dev-o.on{background:#f0f6fc;color:#2271b1}
+.hm-bg .hm-dev-o:not(.on)::after{content:"";position:absolute;left:50%;top:50%;width:20px;height:1.5px;background:#a7aaad;transform:translate(-50%,-50%) rotate(-45deg)}
+.hm-bg .hm-dev-o:hover{color:#135e96}
+/* categories */
+.hm-clist{background:#fff;border:1px solid #dcdcde;border-radius:2px}
+.hm-crow{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:40px;padding:5px 6px 5px 12px}
+.hm-crow + .hm-crow{border-top:1px solid #f0f0f1}
+.hm-crow-n{font-size:13px;color:#1d2327;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hm-crow.is-off .hm-crow-n{color:#a7aaad;text-decoration:line-through}
+.hm-crow .hm-dev-o{width:30px;height:26px}
+.hm-bg .hm-per{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.hm-bg .hm-per label{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:4px 4px 4px 10px;border:1px solid #dcdcde;border-radius:2px;background:#fff;font-size:13px;color:#1d2327}
+.hm-per-l{display:flex;align-items:center;gap:6px}.hm-bg .hm-per svg{width:15px;height:15px;color:#50575e}
+.hm-bg .hm-per input{width:50px!important;height:28px!important;border:1px solid #8c8f94!important;border-radius:4px!important;text-align:center;font-size:13px}
+/* item rows (free courses, toppers, teachers) */
+.hm-bg .hm-item{gap:9px;padding:6px 4px 6px 8px;border-radius:2px;min-height:42px;box-sizing:border-box}
+.hm-bg .hm-item:hover{border-color:#a7aaad}
+.hm-bg .hm-item-i{width:52px;height:29px;border-radius:2px}
+.hm-bg .hm-item.tall .hm-item-i{width:30px;height:38px}
+.hm-bg .hm-item-t b{font-size:13px}.hm-bg .hm-item-t small{font-size:11.5px}
+.hm-bg .hm-item .hm-ic{width:26px;height:26px;font-size:11.5px}
+.hm-bg .hm-form{background:#fff;border-color:#8c8f94;border-radius:2px;margin-top:-7px}
+.hm-bg .hm-instant{font-size:11.5px;font-style:italic}
+.hm-bg .hm-src{font-style:italic;font-size:12px;padding-top:12px}
+
 .hm-pair input{min-width:0;height:32px;box-sizing:border-box}
 .cz-btn-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 </style>
@@ -1020,7 +1097,7 @@ function hmInstant(t) { return html('<p class="hm-instant"><i class="fas fa-bolt
 const slideFields = r => ({ action: 'slide_save', id: r.id, link: r.link || '', title: r.title || '', sort: r.sort, ...(+r.new_tab ? { new_tab: 1 } : {}), ...(+r.active ? { active: 1 } : {}) });
 
 function renderHomepage(wrap) {
-  const H = state.home;
+  const H = state.home; $('cz-body').classList.add('hm-bg');
   if (!HMDB) hmLoad(rerender);
   const back = $('cz-back');
   if (!hmOpen) {
@@ -1058,8 +1135,8 @@ function renderHomepage(wrap) {
   $('cz-head-small').textContent = 'Customizing ▸ Homepage'; $('cz-head-title').textContent = hmName(x);
   back.onclick = () => { hmOpen = null; hmEdit = null; rerender(); $('cz-body').scrollTop = 0; };
   const g0 = hmGroup('');
-  g0.appendChild(cToggle('Show this section', () => !!x.on, v => { x.on = v ? 1 : 0; }));
-  if (x.id !== 'slider') g0.appendChild(cText('Heading', () => x.title, v => { x.title = v; $('cz-head-title').textContent = hmName(x); }, { placeholder: x.id === 'why' ? 'Why choose ' + HOME_BRAND : HOME_SECTIONS[x.id], hint: 'Empty = the heading shown in grey.' }));
+  g0.appendChild(cToggle('Show on the homepage', () => !!x.on, v => { x.on = v ? 1 : 0; }));
+  if (x.id !== 'slider') g0.appendChild(cText('Section heading', () => x.title, v => { x.title = v; $('cz-head-title').textContent = hmName(x); }, { placeholder: x.id === 'why' ? 'Why choose ' + HOME_BRAND : HOME_SECTIONS[x.id] }));
   wrap.appendChild(g0);
   const opt = (label, key, options) => cSeg(label, () => H[key], v => H[key] = v, options);
   if (x.id === 'courses' || x.id === 'batches') {
@@ -1086,16 +1163,37 @@ const DEV_SVG = {
 };
 const DEV_NAME = { m: 'Phone', t: 'Tablet', d: 'Desktop' };
 // flags = "111" (phone, tablet, computer); onChange gets the new flags
-function hmDev(flags, onChange) {
+function hmDev(flags, onChange) { // icon buttons: blue = shown, grey with a slash = hidden
   const w = html('<div class="hm-dev" role="group" aria-label="Show on"></div>');
   ['m', 't', 'd'].forEach((k, i) => {
     const on = (flags || '111')[i] !== '0';
-    const l = html('<label class="hm-dev-o' + (on ? ' on' : '') + '" title="Show on ' + DEV_NAME[k] + '">' + DEV_SVG[k] + '<input type="checkbox"' + (on ? ' checked' : '') + ' aria-label="' + DEV_NAME[k] + '"></label>');
-    l.querySelector('input').onchange = e => { const f = (flags || '111').split(''); f[i] = e.target.checked ? '1' : '0'; flags = f.join(''); l.classList.toggle('on', e.target.checked); onChange(flags); };
-    w.appendChild(l);
+    const b = html('<button type="button" class="hm-dev-o' + (on ? ' on' : '') + '" aria-pressed="' + on + '" title="' + DEV_NAME[k] + ': ' + (on ? 'shown' : 'hidden') + '">' + DEV_SVG[k] + '</button>');
+    b.onclick = e => { e.stopPropagation(); const f = (flags || '111').split(''); f[i] = f[i] === '0' ? '1' : '0'; flags = f.join(''); const now = f[i] === '1'; b.classList.toggle('on', now); b.setAttribute('aria-pressed', now); b.title = DEV_NAME[k] + ': ' + (now ? 'shown' : 'hidden'); onChange(flags); };
+    w.appendChild(b);
   });
   return w;
 }
+/* WordPress-style widget: a slim title bar that opens to its settings (one open at a time) */
+function hmWidget(key, o) {
+  const open = hmEdit === key;
+  const w = html('<div class="hm-w' + (open ? ' open' : '') + (o.off ? ' is-off' : '') + '"><div class="hm-w-bar" role="button" tabindex="0" aria-expanded="' + open + '"><span class="hm-w-lead"></span><span class="hm-w-t"><b></b><small></small></span><span class="hm-w-x"></span><i class="fas fa-caret-down hm-w-arr" aria-hidden="true"></i></div></div>');
+  const lead = w.querySelector('.hm-w-lead');
+  if (!o.lead) lead.remove(); else if (typeof o.lead === 'string') lead.innerHTML = o.lead; else lead.appendChild(o.lead);
+  w.querySelector('b').textContent = o.title || '';
+  const sm = w.querySelector('small'); if (o.sub) sm.textContent = o.sub; else sm.remove();
+  (o.extra || []).forEach(e => w.querySelector('.hm-w-x').appendChild(e));
+  const bar = w.querySelector('.hm-w-bar'), tog = () => { hmEdit = open ? null : key; rerender(); };
+  bar.onclick = tog; bar.onkeydown = e => { if (e.target === bar && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); tog(); } };
+  if (open) {
+    const body = html('<div class="hm-w-in"></div>'); o.body(body, w);
+    const f = html('<div class="hm-w-f"><span></span><button type="button" class="hm-btn hm-w-done">Done</button></div>');
+    if (o.remove) { const d = html('<button type="button" class="hm-w-del">' + esc(o.removeLabel || 'Remove') + '</button>'); d.onclick = o.remove; f.firstChild.appendChild(d); }
+    f.querySelector('.hm-w-done').onclick = () => { hmEdit = null; rerender(); };
+    body.appendChild(f); w.appendChild(body);
+  }
+  return w;
+}
+function hmAddBtn(label, onClick) { const b = html('<button type="button" class="hm-btn hm-add"><i class="fas fa-plus"></i> ' + esc(label) + '</button>'); b.onclick = onClick; return b; }
 // icon picker: the site's icons, or paste an SVG; '' = automatic
 function hmIconBtn(get, set) {
   const b = html('<button type="button" class="hm-icb" title="Choose icon"></button>');
@@ -1121,55 +1219,56 @@ function hmIconBtn(get, set) {
 function hmSlides(wrap) {
   const g = hmGroup('Slides'); wrap.appendChild(g);
   if (!HMDB) { g.appendChild(hintEl('Loading…')); return; }
-  g.appendChild(hmInstant('Slides save as soon as you change them.'));
   const rows = HMDB.slides;
   if (!rows.length) g.appendChild(html('<p class="hm-desc">No slides yet — the homepage shows ready-made picture banners until you add one.</p>'));
   const order = (id, dir) => { const ids = rows.map(r => r.id), k = ids.indexOf(id), t = k + dir; if (t < 0 || t >= ids.length) return; [ids[k], ids[t]] = [ids[t], ids[k]]; hmSend({ action: 'slide_order', ids: ids.join(',') }); };
   const save = r => hmSend({ ...slideFields(r), show_m: +r.show_m ? 1 : 0, show_t: +r.show_t ? 1 : 0, show_d: +r.show_d ? 1 : 0 }, { quiet: true });
+  const list = html('<div class="hm-wl"></div>'); g.appendChild(list);
   rows.forEach((r, k) => {
     ['show_m', 'show_t', 'show_d'].forEach(c => { if (r[c] === undefined || r[c] === null) r[c] = 1; });
-    const c = html('<div class="hm-sl' + (+r.active ? '' : ' is-off') + '"><div class="hm-sl-img"><img alt=""><span class="hm-slide-n">' + (k + 1) + '</span><div class="hm-sl-acts"></div></div><div class="hm-sl-b"></div></div>');
-    c.querySelector('img').src = r.image_url;
-    const acts = c.querySelector('.hm-sl-acts');
-    acts.append(hmGhost('fa-image', 'Replace picture', () => EduMedia.pick(it => hmSend({ ...slideFields(r), image_path: it.path }))),
-      hmGhost('fa-arrow-up', 'Move up', () => order(r.id, -1), k === 0 ? 'is-dis' : ''), hmGhost('fa-arrow-down', 'Move down', () => order(r.id, 1), k === rows.length - 1 ? 'is-dis' : ''),
-      hmGhost('fa-trash-can', 'Delete slide', () => { if (confirm('Delete this slide?')) hmSend({ action: 'slide_delete', id: r.id }); }, 'danger'));
-    const b = c.querySelector('.hm-sl-b');
-    const lk = html('<label class="hm-link"><i class="fas fa-link"></i><input type="text" placeholder="Link when clicked"></label>');
-    const li = lk.querySelector('input'); li.value = r.link || '';
-    li.oninput = () => { r.link = li.value; clearTimeout(hmLinkT[r.id]); hmLinkT[r.id] = setTimeout(() => save(r), 800); };
-    const row2 = html('<div class="hm-sl-o"></div>');
-    const chk = (label, key) => { const l = html('<label class="hm-chk"><input type="checkbox"' + (+r[key] ? ' checked' : '') + '> ' + label + '</label>'); l.querySelector('input').onchange = e => { r[key] = e.target.checked ? 1 : 0; save(r); c.classList.toggle('is-off', !+r.active); }; return l; };
-    row2.append(chk('Show', 'active'), chk('New tab', 'new_tab'));
-    const row3 = html('<div class="hm-sl-dev"><span>Display</span></div>');
-    row3.appendChild(hmDev(String(+r.show_m ? 1 : 0) + (+r.show_t ? 1 : 0) + (+r.show_d ? 1 : 0), f => { r.show_m = +f[0]; r.show_t = +f[1]; r.show_d = +f[2]; save(r); }));
-    b.append(lk, row2, row3);
-    g.appendChild(c);
+    const th = html('<span class="hm-w-th"><img alt=""></span>'); th.querySelector('img').src = r.image_url;
+    const where = ['m', 't', 'd'].filter(d => +r['show_' + d]).map(d => DEV_NAME[d]);
+    const sub = (r.link ? r.link.replace(/^https?:\/\/(www\.)?/, '') : 'No link') + (where.length < 3 ? ' · ' + (where.join(', ') || 'no device') + ' only' : '');
+    list.appendChild(hmWidget('s' + r.id, {
+      lead: th, title: 'Slide ' + (k + 1) + (+r.active ? '' : ' — hidden'), sub, off: !+r.active,
+      extra: [hmGhost('fa-arrow-up', 'Move up', () => order(r.id, -1), k === 0 ? 'is-dis' : ''), hmGhost('fa-arrow-down', 'Move down', () => order(r.id, 1), k === rows.length - 1 ? 'is-dis' : '')],
+      removeLabel: 'Delete slide', remove: () => { if (confirm('Delete this slide?')) { hmEdit = null; hmSend({ action: 'slide_delete', id: r.id }); } },
+      body: (b, w) => {
+        const pic = html('<div class="hm-w-pic"><img alt=""><button type="button" class="hm-btn">Change image</button></div>');
+        pic.querySelector('img').src = r.image_url; pic.querySelector('button').onclick = () => EduMedia.pick(it => hmSend({ ...slideFields(r), image_path: it.path }));
+        const lk = html('<label class="cz-field"><span class="cz-label">Link</span><input type="text" placeholder="https://…  or  /courses/"><small class="cz-hint">Where the slide goes when clicked. Empty = no link.</small></label>');
+        const li = lk.querySelector('input'); li.value = r.link || '';
+        li.oninput = () => { r.link = li.value; w.querySelector('.hm-w-t small').textContent = li.value || 'No link'; clearTimeout(hmLinkT[r.id]); hmLinkT[r.id] = setTimeout(() => save(r), 800); };
+        const chk = (label, key) => { const l = hmCheck(label, +r[key]); l.querySelector('input').onchange = e => { r[key] = e.target.checked ? 1 : 0; save(r); w.classList.toggle('is-off', !+r.active); }; return l; };
+        const ck = html('<div class="hm-w-chks"></div>'); ck.append(chk('Show this slide', 'active'), chk('Open the link in a new tab', 'new_tab'));
+        const dv = html('<div class="cz-field"><span class="cz-label">Show on</span></div>');
+        dv.appendChild(hmDev(String(+r.show_m ? 1 : 0) + (+r.show_t ? 1 : 0) + (+r.show_d ? 1 : 0), f => { r.show_m = +f[0]; r.show_t = +f[1]; r.show_d = +f[2]; save(r); }));
+        b.append(pic, lk, ck, dv);
+      }
+    }));
   });
-  const add = html('<button type="button" class="hm-add"><i class="fas fa-plus"></i> Add a slide</button>');
-  add.onclick = () => EduMedia.pick(it => hmSend({ action: 'slide_save', id: 0, image_path: it.path, link: '', title: '', sort: rows.length + 1, active: 1, show_m: 1, show_t: 1, show_d: 1 }));
-  g.appendChild(add);
-  g.appendChild(html('<p class="hm-desc">Best size 1600 × 500 px. Pictures come from the Media Library (uploads become WebP).</p>'));
+  g.appendChild(hmAddBtn('Add slide', () => EduMedia.pick(it => hmSend({ action: 'slide_save', id: 0, image_path: it.path, link: '', title: '', sort: rows.length + 1, active: 1, show_m: 1, show_t: 1, show_d: 1 }))));
+  g.appendChild(html('<p class="hm-desc">Best size 1600 × 500 px. Slides save as soon as you change them.</p>'));
 }
 
 /* ---- Categories: every class with phone / tablet / desktop, and how many in one row ---- */
 function hmCategories(wrap, H) {
   if (!H.cats_vis || Array.isArray(H.cats_vis)) H.cats_vis = {};
-  const g = hmGroup('Categories', 'Tick where each class shows on the homepage.'); wrap.appendChild(g);
+  const g = hmGroup('Classes', 'Click a device icon to show or hide that class on phones, tablets or computers.'); wrap.appendChild(g);
   if (!HMDB) { g.appendChild(hintEl('Loading…')); return; }
   const list = (HMDB.cats || []);
-  if (!list.length) { g.appendChild(html('<p class="hm-desc">No categories yet.</p>')); }
-  const tb = html('<div class="hm-ctab"><div class="hm-ctab-h"><span>Class</span><span class="hm-ctab-dh">' + DEV_SVG.m + DEV_SVG.t + DEV_SVG.d + '</span></div></div>');
+  if (!list.length) { g.appendChild(html('<p class="hm-desc">No categories yet.</p>')); return; }
+  const tb = html('<div class="hm-clist"></div>');
   list.forEach(c => {
     const f = H.cats_vis[c.id] || '111';
-    const r = html('<div class="hm-ctab-r' + (f === '000' ? ' is-off' : '') + '"><span class="hm-ctab-n"></span></div>');
-    r.querySelector('.hm-ctab-n').textContent = c.name;
+    const r = html('<div class="hm-crow' + (f === '000' ? ' is-off' : '') + '"><span class="hm-crow-n"></span></div>');
+    r.querySelector('.hm-crow-n').textContent = c.name;
     r.appendChild(hmDev(f, nf => { if (nf === '111') delete H.cats_vis[c.id]; else H.cats_vis[c.id] = nf; r.classList.toggle('is-off', nf === '000'); touch(); }));
     tb.appendChild(r);
   });
   g.appendChild(tb);
-  const g2 = hmGroup('Categories in one row'); wrap.appendChild(g2);
-  const per = html('<div class="hm-per"><label>' + DEV_SVG.d + '<span>Desktop</span><input type="number" min="2" max="10"></label><label>' + DEV_SVG.m + '<span>Mobile</span><input type="number" min="2" max="5"></label></div>');
+  const g2 = hmGroup('Classes in one row'); wrap.appendChild(g2);
+  const per = html('<div class="hm-per"><label><span class="hm-per-l">' + DEV_SVG.d + 'Desktop</span><input type="number" min="2" max="10"></label><label><span class="hm-per-l">' + DEV_SVG.m + 'Mobile</span><input type="number" min="2" max="5"></label></div>');
   const [dI, mI] = per.querySelectorAll('input'); dI.value = H.cats_cols_d || 8; mI.value = H.cats_cols_m || 3;
   dI.oninput = () => { H.cats_cols_d = Math.max(2, Math.min(10, +dI.value || 8)); touch(); };
   mI.oninput = () => { H.cats_cols_m = Math.max(2, Math.min(5, +mI.value || 3)); touch(); };
@@ -1205,7 +1304,7 @@ function hmItem(img, title, sub, off, tall) {
 function hmFree(wrap) {
   const g = hmGroup('Playlists'); wrap.appendChild(g);
   if (!HMDB) { g.appendChild(hintEl('Loading…')); return; }
-  g.appendChild(hmInstant('Free courses save as soon as you change them.'));
+  
   HMDB.free.forEach(r => {
     const it = hmItem(r.thumb_custom_url || r.thumb, r.title, (r.videos ? (+r.videos >= 100 ? '100+' : r.videos) + ' videos' : 'YouTube') + (r.thumb_custom_url ? ' · own picture' : '') + (+r.active ? '' : ' · hidden'), !+r.active);
     it.querySelector('.hm-acts').append(hmGhost('fa-image', 'Own picture (Media Library)', () => EduMedia.pick(m => hmSend({ action: 'free_thumb', id: r.id, photo_path: m.path }))),
@@ -1223,7 +1322,7 @@ function hmFree(wrap) {
   });
   const g2 = hmGroup('Add a YouTube playlist'); wrap.appendChild(g2);
   const u = hmInput('Playlist link', 'url', '', 'placeholder="https://www.youtube.com/playlist?list=…"'), t = hmInput('Title (optional)', 'text', '', 'maxlength="250" placeholder="Empty = YouTube’s title"'), c = hmCatSelect(0);
-  const b = html('<button type="button" class="cz-btn-primary"><i class="fab fa-youtube"></i> Fetch &amp; add</button>');
+  const b = html('<button type="button" class="hm-btn hm-btn-p"><i class="fab fa-youtube"></i> Fetch &amp; add</button>');
   b.onclick = () => { const url = u.querySelector('input').value.trim(); if (!url) { alert('Paste the playlist link first.'); return; } b.disabled = true; b.textContent = 'Fetching…'; hmSend({ action: 'free_add', url, title: t.querySelector('input').value, category_id: c.querySelector('select').value, sort: 0 }).then(() => { b.disabled = false; }); };
   g2.append(u, t, c, b);
 }
@@ -1232,7 +1331,7 @@ function hmFree(wrap) {
 function hmToppers(wrap) {
   const g = hmGroup('Students'); wrap.appendChild(g);
   if (!HMDB) { g.appendChild(hintEl('Loading…')); return; }
-  g.appendChild(hmInstant('Toppers save as soon as you change them.'));
+  
   const rows = HMDB.toppers;
   const order = (id, dir) => { const ids = rows.map(r => r.id), k = ids.indexOf(id), t = k + dir; if (t < 0 || t >= ids.length) return; [ids[k], ids[t]] = [ids[t], ids[k]]; hmSend({ action: 'top_order', ids: ids.join(',') }); };
   rows.forEach((r, k) => {
@@ -1243,7 +1342,7 @@ function hmToppers(wrap) {
     if (hmEdit === 't' + r.id) g.appendChild(hmTopForm(r));
   });
   if (hmEdit === 't0') g.appendChild(hmTopForm(null));
-  else { const add = html('<button type="button" class="hm-add"><i class="fas fa-plus"></i> Add a topper</button>'); add.onclick = () => { hmEdit = 't0'; rerender(); }; g.appendChild(add); }
+  else { g.appendChild(hmAddBtn('Add topper', () => { hmEdit = 't0'; rerender(); })); }
 }
 function hmTopForm(r) {
   const f = html('<div class="hm-form"></div>');
@@ -1267,40 +1366,51 @@ function hmTopForm(r) {
 }
 
 /* ---- Our Impact / Why choose us: rows of icon · text · (order) · remove ---- */
+function hmIcoLead(v, fallback) { return '<span class="hm-w-ic' + (v ? '' : ' auto') + '" title="' + (v ? 'Icon' : 'Automatic icon') + '">' + (v ? (v.startsWith('<') ? v : (PICK_ICONS[v] || '')) : (PICK_ICONS[fallback] || '')) + '</span>'; }
+function hmIconField(get, set, w, fallback) {
+  const f = html('<div class="cz-field"><span class="cz-label">Icon</span><div class="hm-icrow"><span class="hm-icw"></span><small class="cz-hint">Pick one, or paste your own SVG. “Auto” = chosen for you.</small></div></div>');
+  f.querySelector('.hm-icw').appendChild(hmIconBtn(get, v => { set(v); w.querySelector('.hm-w-lead').innerHTML = hmIcoLead(v, fallback); }));
+  return f;
+}
 function hmImpact(wrap, H) {
-  const g = hmGroup('Numbers', 'Leave a number empty and the site counts it (students, courses, free videos, PDF notes). “Auto” icon = chosen for you.'); wrap.appendChild(g);
-  const t = html('<div class="hm-rows"><div class="hm-rows-h hm-imp-c"><span>Icon</span><span>Label</span><span>Number</span><span></span></div></div>');
+  const g = hmGroup('Numbers'); wrap.appendChild(g);
+  const list = html('<div class="hm-wl"></div>'); g.appendChild(list);
   H.impact.forEach((it, i) => {
-    const r = html('<div class="hm-rowc hm-imp-c"><span class="hm-icw"></span><input type="text" placeholder="Label" maxlength="60"><input type="text" maxlength="20"><span class="hm-rowa"></span></div>');
-    r.querySelector('.hm-icw').appendChild(hmIconBtn(() => it.i || '', v => it.i = v));
-    const [l, v] = r.querySelectorAll('input'); l.value = it.l || ''; v.value = it.v || ''; v.placeholder = it.k && it.k !== 'years' ? 'auto' : '10+';
-    l.oninput = () => { it.l = l.value; touch(); }; v.oninput = () => { it.v = v.value; touch(); };
-    r.querySelector('.hm-rowa').appendChild(hmGhost('fa-trash-can', 'Remove', () => { H.impact.splice(i, 1); touch(); rerender(); }, 'danger'));
-    t.appendChild(r);
+    const auto = it.k && it.k !== 'years';
+    list.appendChild(hmWidget('i' + i, {
+      lead: hmIcoLead(it.i, 'trend'), title: it.l || '(no label)', sub: it.v || (auto ? 'Counted automatically' : ''),
+      remove: () => { H.impact.splice(i, 1); hmEdit = null; touch(); rerender(); },
+      body: (b, w) => {
+        b.append(hmIconField(() => it.i || '', v => { it.i = v; touch(); }, w, 'trend'),
+          cText('Label', () => it.l, v => { it.l = v; w.querySelector('.hm-w-t b').textContent = v || '(no label)'; }),
+          cText('Number', () => it.v, v => { it.v = v; }, { placeholder: auto ? 'Counted by the site' : 'e.g. 10+', hint: auto ? 'Empty = the site counts it for you.' : '' }));
+      }
+    }));
   });
-  g.appendChild(t);
-  if (H.impact.length < 8) { const add = html('<button type="button" class="hm-add"><i class="fas fa-plus"></i> Add a number</button>'); add.onclick = () => { H.impact.push({ k: '', l: '', v: '', i: '' }); touch(); rerender(); }; g.appendChild(add); }
+  if (H.impact.length < 8) g.appendChild(hmAddBtn('Add number', () => { H.impact.push({ k: '', l: '', v: '', i: '' }); hmEdit = 'i' + (H.impact.length - 1); touch(); rerender(); }));
 }
 function hmWhy(wrap, H) {
-  const g0 = hmGroup(''); g0.appendChild(cText('Text under the heading', () => H.why_text, v => H.why_text = v, { multi: true, hint: 'Empty = no text.' })); wrap.appendChild(g0);
-  const g = hmGroup('Points (' + H.why.length + ')', '“Auto” icon = chosen from the words of the point.'); wrap.appendChild(g);
-  const t = html('<div class="hm-rows"><div class="hm-rows-h hm-why-c"><span>Icon</span><span>Point</span><span>Order</span><span></span></div></div>');
-  H.why.forEach((w, i) => {
-    const r = html('<div class="hm-rowc hm-why-c"><span class="hm-icw"></span><input type="text" maxlength="80" placeholder="e.g. Weekly tests"><span class="hm-rowo"></span><span class="hm-rowa"></span></div>');
-    r.querySelector('.hm-icw').appendChild(hmIconBtn(() => w.i || '', v => w.i = v));
-    const tI = r.querySelector('input'); tI.value = w.t || ''; tI.oninput = () => { w.t = tI.value; touch(); };
-    r.querySelector('.hm-rowo').append(hmGhost('fa-arrow-up', 'Move up', () => { if (i > 0) { [H.why[i - 1], H.why[i]] = [H.why[i], H.why[i - 1]]; touch(); rerender(); } }, i === 0 ? 'is-dis' : ''),
-      hmGhost('fa-arrow-down', 'Move down', () => { if (i < H.why.length - 1) { [H.why[i + 1], H.why[i]] = [H.why[i], H.why[i + 1]]; touch(); rerender(); } }, i === H.why.length - 1 ? 'is-dis' : ''));
-    r.querySelector('.hm-rowa').appendChild(hmGhost('fa-trash-can', 'Remove', () => { H.why.splice(i, 1); touch(); rerender(); }, 'danger'));
-    t.appendChild(r);
+  const g0 = hmGroup(''); g0.appendChild(cText('Text under the heading', () => H.why_text, v => H.why_text = v, { multi: true, placeholder: 'Optional' })); wrap.appendChild(g0);
+  const g = hmGroup('Points'); wrap.appendChild(g);
+  const list = html('<div class="hm-wl"></div>'); g.appendChild(list);
+  const move = (i, d) => { const j = i + d; if (j < 0 || j >= H.why.length) return; [H.why[i], H.why[j]] = [H.why[j], H.why[i]]; if (hmEdit === 'w' + i) hmEdit = 'w' + j; touch(); rerender(); };
+  H.why.forEach((w0, i) => {
+    list.appendChild(hmWidget('w' + i, {
+      lead: hmIcoLead(w0.i, 'check'), title: w0.t || '(empty point)',
+      extra: [hmGhost('fa-arrow-up', 'Move up', () => move(i, -1), i === 0 ? 'is-dis' : ''), hmGhost('fa-arrow-down', 'Move down', () => move(i, 1), i === H.why.length - 1 ? 'is-dis' : '')],
+      remove: () => { H.why.splice(i, 1); hmEdit = null; touch(); rerender(); },
+      body: (b, w) => {
+        b.append(hmIconField(() => w0.i || '', v => { w0.i = v; touch(); }, w, 'check'),
+          cText('Point', () => w0.t, v => { w0.t = v; w.querySelector('.hm-w-t b').textContent = v || '(empty point)'; }, { placeholder: 'e.g. Weekly tests' }));
+      }
+    }));
   });
-  g.appendChild(t);
-  if (H.why.length < 12) { const add = html('<button type="button" class="hm-add"><i class="fas fa-plus"></i> Add a point</button>'); add.onclick = () => { H.why.push({ t: '', i: '' }); touch(); rerender(); }; g.appendChild(add); }
+  if (H.why.length < 12) g.appendChild(hmAddBtn('Add point', () => { H.why.push({ t: '', i: '' }); hmEdit = 'w' + (H.why.length - 1); touch(); rerender(); }));
 }
 
 function showHome() {
   panel = null; addingFor = null; document.querySelectorAll('.cz-additems').forEach(x => x.remove()); $('cz-back').hidden = true; $('cz-head-small').textContent = 'You are customizing'; $('cz-head-title').textContent = <?= json_encode(edu_site_name()) ?>;
-  const b = $('cz-body'); b.innerHTML = '';
+  const b = $('cz-body'); b.innerHTML = ''; b.classList.remove('hm-bg');
   const nav = document.createElement('nav'); nav.className = 'cz-nav';
   PANELS.filter(p => !CZ_ONLY || CZ_ONLY.includes(p.id)).forEach(p => {
     const btn = document.createElement('button'); btn.type = 'button';
@@ -1322,7 +1432,7 @@ function showPanel(p, keep) {
   if (!keep) { menuView = null; miOpen = null; addingFor = null; arOpen = undefined; openFont = null; openRule = null; gpalEditing = null; hmOpen = null; hmEdit = null; $('cz-back').onclick = showHome; }
   if (!addingFor) document.querySelectorAll('.cz-additems').forEach(x => x.remove());
   panel = p; $('cz-back').hidden = false; $('cz-head-small').textContent = 'Customizing'; $('cz-head-title').textContent = p.label;
-  const b = $('cz-body'); b.innerHTML = '';
+  const b = $('cz-body'); b.innerHTML = ''; b.classList.remove('hm-bg');
   const wrap = document.createElement('div'); wrap.className = 'cz-panel-fields';
   if (p.fields) p.fields.forEach(f => wrap.appendChild(field(f)));
   if (p.sections) p.sections.forEach((s, i) => wrap.appendChild(section(s[0], s[1], i === 0)));
