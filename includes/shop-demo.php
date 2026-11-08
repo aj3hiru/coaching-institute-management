@@ -436,6 +436,76 @@ function sh_demo_people(PDO $pdo): string
     return count($info['tinfo']) . ' teacher profiles and ' . count($J['toppers']) . ' toppers added.';
 }
 
+/** More demo content for Class 5 (includes/demo/class5): video courses made from YouTube playlists (paid, free and
+    upcoming batches), PDF notes packs (free and paid) and free YouTube courses. Remembered in shop.demo like the rest,
+    so "Remove demo data" removes it too. Runs once. */
+function sh_demo_class5(PDO $pdo): string
+{
+    sh_tables($pdo);
+    $info = sh_demo_info();
+    if (!empty($info['class5'])) return 'Class 5 demo content is already added.';
+    $dir = __DIR__ . '/demo/class5';
+    $J = json_decode((string)@file_get_contents("$dir/class5.json"), true);
+    if (!$J) throw new RuntimeException('Class 5 demo content is missing (includes/demo/class5/class5.json).');
+    $cat = (int)$pdo->query("SELECT id FROM sh_categories WHERE slug = 'class-5'")->fetchColumn();
+    if (!$cat) throw new RuntimeException('There is no class-5 category.');
+    $j = fn($v) => json_encode($v, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    $T = []; // demo teachers from the showcase (rk, av, ns …), when they are there
+    $SC = json_decode((string)@file_get_contents(__DIR__ . '/demo/showcase/showcase.json'), true) ?: [];
+    foreach (array_keys($SC['teachers'] ?? []) as $i => $k) { $id = (int)$pdo->query("SELECT id FROM users WHERE email = " . $pdo->quote('demo.teacher' . ($i + 1) . '@example.com'))->fetchColumn(); if ($id) $T[$k] = $id; }
+    $pub = function (string $file) use ($dir): string {
+        $to = ROOT_PATH . '/uploads/store'; @mkdir($to, 0755, true);
+        $name = 'demo-' . bin2hex(random_bytes(3)) . '-' . $file;
+        if (!@copy("$dir/$file", "$to/$name")) throw new RuntimeException("Could not copy $file");
+        return '/uploads/store/' . $name;
+    };
+    $media = sh_media_dir();
+    $new = []; $free = [];
+    $pdo->beginTransaction();
+    try {
+        foreach (array_reverse($J['courses'], true) as $ci => $c) { // last first, so the first one is the newest
+            $pdo->prepare("INSERT INTO sh_products (type, title, slug, subtitle, description, thumb, price, mrp, validity_days, status, sort, category_id, teacher_id, starts_at, includes)
+                VALUES ('course',?,?,?,?,?,?,?,?, 'published', ?,?,?,?,?)")->execute([$c['title'], sh_unique_slug($pdo, $c['title']), $c['subtitle'], $c['desc'], $pub($c['key'] . '.jpg'),
+                $c['price'], $c['mrp'], $c['days'], 60 + (int)$ci, $cat, $T[$c['teacher']] ?? null, $c['starts'] ? date('Y-m-d', strtotime('+' . (int)$c['starts'] . ' days')) : null,
+                $j(['Chapter-wise video lectures', 'Watch on any phone or computer', 'Ask doubts under any lecture'])]);
+            $pid = (int)$pdo->lastInsertId(); $new[] = $pid;
+            $ls = 0; $ss = 0;
+            foreach ($c['chapters'] as $ch) {
+                $pdo->prepare("INSERT INTO sh_sections (product_id, title, sort) VALUES (?,?,?)")->execute([$pid, mb_substr($ch['t'], 0, 200), ++$ss]);
+                $sid = (int)$pdo->lastInsertId(); $no = 0;
+                foreach ($ch['l'] as $l) $pdo->prepare("INSERT INTO sh_lessons (product_id, section_id, title, video_url, free, sort, lecture_no, doubts_on) VALUES (?,?,?,?,?,?,?,1)")
+                    ->execute([$pid, $sid, mb_substr($l['t'], 0, 200), 'https://www.youtube.com/watch?v=' . $l['id'], $ls < 1 ? 1 : 0, ++$ls, ++$no]);
+            }
+        }
+        foreach (array_reverse($J['notes'], true) as $ni => $n) {
+            $pdo->prepare("INSERT INTO sh_products (type, title, slug, subtitle, description, thumb, price, mrp, validity_days, status, sort, category_id) VALUES ('notes',?,?,?,?,?,?,?,0,'published',?,?)")
+                ->execute([$n['title'], sh_unique_slug($pdo, $n['title']), $n['subtitle'], $n['desc'], $pub($n['key'] . '.jpg'), $n['price'], $n['mrp'], 80 + (int)$ni, $cat]);
+            $pid = (int)$pdo->lastInsertId(); $new[] = $pid;
+            @mkdir("$media/$pid", 0750, true);
+            $rel = $pid . '/demo-' . bin2hex(random_bytes(4)) . '-' . $n['pdf'];
+            if (!@copy("$dir/{$n['pdf']}", "$media/$rel")) throw new RuntimeException('Could not copy ' . $n['pdf']);
+            $pages = preg_match_all('#/Type\s*/Page[^s]#', (string)file_get_contents("$media/$rel")) ?: 1;
+            $pdo->prepare("INSERT INTO sh_files (product_id, title, file, size, pages, free, sort) VALUES (?,?,?,?,?,?,1)")
+                ->execute([$pid, preg_replace('/\s*\((Free )?Demo\)$/', '', $n['title']), $rel, filesize("$media/$rel"), $pages, (float)$n['price'] > 0 ? 0 : 1]);
+        }
+        $fi = (int)$pdo->query("SELECT COALESCE(MAX(sort),0) FROM hm_free")->fetchColumn();
+        foreach ($J['free'] as $f) {
+            $pdo->prepare("INSERT INTO hm_free (url, list_id, video_id, title, thumb, channel, videos, category_id, sort, active) VALUES (?,?,?,?,?,?,?,?,?,1)")
+                ->execute(['https://www.youtube.com/playlist?list=' . $f['list'], $f['list'], $f['video'], $f['title'], 'https://i.ytimg.com/vi/' . $f['video'] . '/hqdefault.jpg', $f['channel'], $f['videos'], $cat, ++$fi]);
+            $free[] = (int)$pdo->lastInsertId();
+        }
+        $info = sh_demo_info();
+        $info['products'] = array_merge($info['products'], $new); $info['free'] = array_merge($info['free'], $free); $info['class5'] = 1;
+        edu_settings_save('shop', ['demo' => json_encode($info)]);
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        throw $e;
+    }
+    sh_home_refresh();
+    return 'Class 5 demo added: ' . count($J['courses']) . ' courses, ' . count($J['notes']) . ' notes packs, ' . count($free) . ' free YouTube courses.';
+}
+
 /** Removes exactly what sh_demo_add made (products with their videos / PDFs, demo accounts, demo orders). */
 function sh_demo_remove(PDO $pdo): string
 {

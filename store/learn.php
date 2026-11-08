@@ -157,7 +157,7 @@ $ico = fn($n) => sh_icon($n);
   <aside class="lp-side">
     <?php if (!$own && $lockedLeft): ?>
     <div class="lp-unlock"><b>Unlock the full <?= $isCourse ? 'course' : 'notes' ?></b><span><?= $lockedLeft ?> more lesson<?= $lockedLeft === 1 ? '' : 's' ?> / PDF<?= $lockedLeft === 1 ? '' : 's' ?> are locked.</span>
-      <a class="lp-btn" href="<?= sh_e(sh_url($p)) ?>#buy"><?= (float)$p['price'] > 0 ? 'Buy for ' . sh_money($p['price']) : 'Enrol for free' ?></a></div>
+      <a class="lp-btn" href="<?= sh_e(sh_url($p)) ?>#buy"><?= (float)$p['price'] > 0 ? 'Buy for ' . sh_money($p['price']) : sh_cta($p, '') ?></a></div>
     <?php endif; ?>
     <?php
     // lesson list like the free courses: number · picture · title (YouTube's picture, a PDF tile, or the course picture)

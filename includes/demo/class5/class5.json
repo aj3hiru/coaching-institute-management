@@ -1,0 +1,1259 @@
+{
+ "courses": [
+  {
+   "key": "c5-maths",
+   "title": "Class 5 Maths Mela — Complete Course (Demo)",
+   "subtitle": "All 15 chapters of the new NCERT Maths Mela — explanation and one-shot revision",
+   "word": "Maths",
+   "line": "Maths Mela",
+   "tags": "Fractions · Angles · Data",
+   "color": [
+    "#4f46e5",
+    "#7c3aed"
+   ],
+   "desc": "A demo video course for the new NCERT Class 5 Maths Mela book.\n\nEvery chapter has explanation lectures and a one-shot revision. The first lecture is free to watch.\n\nVideos: public YouTube lectures by Magnet Brains, added as a playlist.",
+   "price": 599,
+   "mrp": 1199,
+   "days": 365,
+   "starts": null,
+   "teacher": "rk",
+   "chapters": [
+    {
+     "t": "Getting started",
+     "l": [
+      {
+       "id": "Orz7HA6C3x4",
+       "t": "Mathematics Mela – Book Overview and Strategy"
+      }
+     ]
+    },
+    {
+     "t": "Chapter 1 — We the Travellers—I",
+     "l": [
+      {
+       "id": "8yOFIMbCtj8",
+       "t": "We the Travellers—I - Explanation (Part 1)"
+      },
+      {
+       "id": "xGSb2XkzrxI",
+       "t": "We the Travellers—I - Explanation (Part 2)"
+      },
+      {
+       "id": "TdhSc4kncxU",
+       "t": "We the Travellers—I - One Shot Revision"
+      }
+     ]
+    },
+    {
+     "t": "Chapter 2 — Fractions",
+     "l": [
+      {
+       "id": "bO1ZNwWRlYw",
+       "t": "Fractions - Explanation (Part 1)"
+      },
+      {
+       "id": "SFhtIr8y2J0",
+       "t": "Fractions - Explanation (Part 2)"
+      },
+      {
+       "id": "c-iR4J9Qupw",
+       "t": "Fractions - One Shot Revision"
+      }
+     ]
+    },
+    {
+     "t": "Chapter 3 — Angles as Turns",
+     "l": [
+      {
+       "id": "1qVPfKKCDEY",
+       "t": "Angles as Turns - Explanation (Part 1)"
+      },
+      {
+       "id": "-dQMPjenaGU",
+       "t": "Angles as Turns - Explanation (Part 2)"
+      },
+      {
+       "id": "3QzpBvo4A_A",
+       "t": "Angles as Turns - One Shot Revision"
+      }
+     ]
+    },
+    {
+     "t": "Chapter 4 — We the Travellers II",
+     "l": [
+      {
+       "id": "bx9wg3btnb4",
+       "t": "We the Travellers II - Explanation (Part 1)"
+      },
+      {
+       "id": "3vJ78DgKHwc",
+       "t": "We the Travellers II - Explanation (Part 2)"
+      },
+      {
+       "id": "y_Q5lhFTM7k",
+       "t": "We the Travellers II - One Shot Revision"
+      }
+     ]
+    },
+    {
+     "t": "Chapter 5 — Far and Near",
+     "l": [
+      {
+       "id": "-NpUznJ5458",
+       "t": "Far and Near - Explanation (Part 1)"
+      },
+      {
+       "id": "BFKoPg-khmI",
+       "t": "Far and Near - Explanation (Part 2)"
+      },
+      {
+       "id": "jEFJPVwXj0w",
+       "t": "Far and Near - One Shot Revision"
+      }
+     ]
+    },
+    {
+     "t": "Chapter 6 — The Dairy Farm",
+     "l": [
+      {
+       "id": "2zHs1_hi1IA",
+       "t": "The Dairy Farm - Explanation (Part 1)"
+      },
+      {
+       "id": "CMy3WgFwE_s",
+       "t": "The Dairy Farm - Explanation (Part 2)"
+      }
+     ]
+    },
+    {
+     "t": "Chapter 6 — The Dairy farm",
+     "l": [
+      {
+       "id": "FvaVDLJfP4s",
+       "t": "The Dairy farm - One Shot Revision"
+      }
+     ]
+    },
+    {
+     "t": "Chapter 7 — Shapes and Patterns",
+     "l": [
+      {
+       "id": "ShZVNDYWnQw",
+       "t": "Shapes and Patterns - Explanation"
+      }
+     ]
+    },
+    {
+     "t": "Chapter 8 — Weight and Capacity",
+     "l": [
+      {
+       "id": "RUyQXmGnwU4",
+       "t": "Weight and Capacity - Explanation (Part 1)"
+      },
+      {
+       "id": "HuFmptWAiuU",
+       "t": "Weight and Capacity - Explanation (Part 2)"
+      },
+      {
+       "id": "Kay_n_Ijs_8",
+       "t": "Weight and Capacity - One Shot Revision"
+      }
+     ]
+    },
+    {
+     "t": "Chapter 9 — Coconut Farm",
+     "l": [
+      {
+       "id": "lJJ-CSS3lu8",
+       "t": "Coconut Farm - Explanation (Part 1)"
+      },
+      {
+       "id": "PN_jwk2ra2g",
+       "t": "Coconut Farm - Explanation (Part 2)"
+      },
+      {
+       "id": "xeCjMBMBPVw",
+       "t": "Coconut Farm - One Shot Revision"
+      }
+     ]
+    },
+    {
+     "t": "Chapter 10 — Symmetrical Designs",
+     "l": [
+      {
+       "id": "2lz-L-sEY2Q",
+       "t": "Symmetrical Designs - Explanation"
+      }
+     ]
+    },
+    {
+     "t": "Chapter 11 — Grandmother’s Quilt",
+     "l": [
+      {
+       "id": "pSx2UEpvs48",
+       "t": "Grandmother’s Quilt - Explanation"
+      }
+     ]
+    },
+    {
+     "t": "Chapter 12 — Racing Seconds",
+     "l": [
+      {
+       "id": "2NAafJ3Xkpw",
+       "t": "Racing Seconds - Explanation (Part 1)"
+      }
+     ]
+    },
+    {
+     "t": "Chapter 13 — Animal Jumps",
+     "l": [
+      {
+       "id": "xmmPW_fglEE",
+       "t": "Animal Jumps - Explanation"
+      }
+     ]
+    },
+    {
+     "t": "Chapter 14 — Maps and Locations",
+     "l": [
+      {
+       "id": "qqnU-ZAlScs",
+       "t": "Maps and Locations - Explanation"
+      }
+     ]
+    },
+    {
+     "t": "Chapter 15 — Data Through Pictures",
+     "l": [
+      {
+       "id": "MxqpYLlhz_M",
+       "t": "Data Through Pictures - Explanation"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "c5-english",
+   "title": "Class 5 English Gulmohar — Complete Course (Demo)",
+   "subtitle": "Stories, poems, exercises and grammar — chapter by chapter",
+   "word": "English",
+   "line": "Gulmohar Book",
+   "tags": "Stories · Poems · Grammar",
+   "color": [
+    "#db2777",
+    "#9333ea"
+   ],
+   "desc": "A demo video course for Class 5 English (Gulmohar). Explanation and exercise lectures for every story and poem.\n\nVideos: public YouTube lectures by Magnet Brains.",
+   "price": 449,
+   "mrp": 899,
+   "days": 365,
+   "starts": null,
+   "teacher": "av",
+   "chapters": [
+    {
+     "t": "Introduction",
+     "l": [
+      {
+       "id": "IMufeQ-ophM",
+       "t": "Class 5 English Gulmohar Book - Syllabus Overview"
+      },
+      {
+       "id": "WgSJcWWanek",
+       "t": "Old Mister Laughter Poem - Homework Solutions 4"
+      },
+      {
+       "id": "9W2wYTxrd0E",
+       "t": "The Thief Is Caught Story - Exercise (Part 2)"
+      },
+      {
+       "id": "LtXFqqbZ8N0",
+       "t": "One Friday Morning Story - Exercise (Part 2) with Grammar"
+      }
+     ]
+    },
+    {
+     "t": "Chapter 1",
+     "l": [
+      {
+       "id": "hk9N7V_1hUY",
+       "t": "The Invention of Shoes Story - Explanation"
+      },
+      {
+       "id": "5xd7sSK_ix4",
+       "t": "The Invention of Shoes Story - Exercise"
+      },
+      {
+       "id": "KQOjUEB850s",
+       "t": "Books Poem - Explanation"
+      },
+      {
+       "id": "4YfkFvp6yvo",
+       "t": "Books Poem - Exercise"
+      }
+     ]
+    },
+    {
+     "t": "Chapter 2",
+     "l": [
+      {
+       "id": "WcUzN0BGPa0",
+       "t": "Ivan's Story - Explanation"
+      },
+      {
+       "id": "LQEi6Zk2oiQ",
+       "t": "Ivan's Story - Exercise (Part 1)"
+      },
+      {
+       "id": "UBUZMygn2bU",
+       "t": "Ivan's Story - Exercise (Part 2) with Grammar"
+      },
+      {
+       "id": "3FznL1kVUeg",
+       "t": "Tiger Poem - Explanation"
+      },
+      {
+       "id": "9qu-6ODOP4A",
+       "t": "Tiger Poem - Exercise"
+      }
+     ]
+    },
+    {
+     "t": "Chapter 3",
+     "l": [
+      {
+       "id": "UpN_DYFKfbQ",
+       "t": "A Rupee Goes a Long Way Story - Explanation"
+      },
+      {
+       "id": "0Q0RTU073kQ",
+       "t": "A Rupee Goes a Long Way Story - Exercise (Part 1)"
+      }
+     ]
+    },
+    {
+     "t": "Chapter 4",
+     "l": [
+      {
+       "id": "duTsUJ70Rj4",
+       "t": "Five Children and It Story - Explanation"
+      },
+      {
+       "id": "h24X8LOBgdo",
+       "t": "Five Children and It Story - Exercise (Part 1)"
+      },
+      {
+       "id": "OQlKqJAS60M",
+       "t": "Five Children and It Story - Exercise (Part 2)"
+      }
+     ]
+    },
+    {
+     "t": "Chapter 5",
+     "l": [
+      {
+       "id": "GSpu2dX2yg0",
+       "t": "Maui's Kite Story - Explanation"
+      },
+      {
+       "id": "vrMLc4Ug494",
+       "t": "Maui's Kite Story - Exercise (Part 1)"
+      },
+      {
+       "id": "QJiCHdYW1JA",
+       "t": "Maui's Kite Story - Exercise (Part 2) with Grammar"
+      },
+      {
+       "id": "fPbzRf9PtMg",
+       "t": "Spring Poem - Explanation"
+      },
+      {
+       "id": "XQ1XNFuodu8",
+       "t": "Spring Poem - Home Work Solutions 3"
+      },
+      {
+       "id": "rGnPNwqt3bY",
+       "t": "Spring Poem - Exercise"
+      }
+     ]
+    },
+    {
+     "t": "Chapter 6",
+     "l": [
+      {
+       "id": "Z4rRfvRy6zo",
+       "t": "Sam and the Secret Call Story - Explanation"
+      },
+      {
+       "id": "IaK1LhHGVrI",
+       "t": "Sam & the Secret Call Story - Home Work Solutions 4"
+      },
+      {
+       "id": "4oRj7OQ4tGY",
+       "t": "Sam and the Secret Call Story - Exercise (Part 1)"
+      },
+      {
+       "id": "tGLLVpTCOek",
+       "t": "Sam and the Secret Call Story - Exercise (Part 2)"
+      },
+      {
+       "id": "ZiGzWg5czUQ",
+       "t": "Old Mister Laughter Poem - Explanation"
+      },
+      {
+       "id": "jEHV4x4sxwA",
+       "t": "Old Mister Laughter Poem - Exercise"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "c5-hindi",
+   "title": "Class 5 Hindi Veena — All Chapters (Free Demo)",
+   "subtitle": "हर पाठ की व्याख्या और प्रश्न-उत्तर — नई NCERT वीणा",
+   "word": "हिंदी",
+   "line": "Veena — All Chapters",
+   "tags": "व्याख्या · प्रश्न-उत्तर",
+   "color": [
+    "#ea580c",
+    "#dc2626"
+   ],
+   "desc": "A free demo course: every chapter of the new NCERT Class 5 Hindi book Veena, with explanation and question-answer lectures.\n\nVideos: public YouTube lectures by EduMagnet.",
+   "price": 0,
+   "mrp": 499,
+   "days": 0,
+   "starts": null,
+   "teacher": "ns",
+   "chapters": [
+    {
+     "t": "Chapter 1",
+     "l": [
+      {
+       "id": "ya57IaU_Vis",
+       "t": "Kiran (Kavita) Explanation"
+      },
+      {
+       "id": "XeToIe0wjmU",
+       "t": "Kiran (Kavita) Question Answer"
+      }
+     ]
+    },
+    {
+     "t": "Chapter 2",
+     "l": [
+      {
+       "id": "SA4szXppD1s",
+       "t": "Nyaay Ki Kursi | Explanation"
+      },
+      {
+       "id": "SoAP3bzf200",
+       "t": "Nyaay Ki Kursi | Explanation"
+      }
+     ]
+    },
+    {
+     "t": "Chapter 3",
+     "l": [
+      {
+       "id": "MGAupS6-1FA",
+       "t": "Chand Ka Kurta | Explanation"
+      },
+      {
+       "id": "-rE7rT7lSok",
+       "t": "Chand Ka Kurta Question Answer"
+      }
+     ]
+    },
+    {
+     "t": "Chapter 4",
+     "l": [
+      {
+       "id": "640yhyHIG3s",
+       "t": "साङकेन | Explanation"
+      },
+      {
+       "id": "XaMYqFU5FeQ",
+       "t": "Question Answer साङकेन"
+      }
+     ]
+    },
+    {
+     "t": "Chapter 5",
+     "l": [
+      {
+       "id": "J6Z1kIGSagI",
+       "t": "Sundariya | Explanation"
+      },
+      {
+       "id": "WcS4FnjARYc",
+       "t": "Question Answer Sundariya"
+      }
+     ]
+    },
+    {
+     "t": "Chapter 6",
+     "l": [
+      {
+       "id": "iBnOLpz8PTs",
+       "t": "Chatur Chitrkar (Kavita) Explanation"
+      },
+      {
+       "id": "FQ-zKk550xI",
+       "t": "Chatur Chitrkar (Kavita) Question Answer"
+      }
+     ]
+    },
+    {
+     "t": "Chapter 7",
+     "l": [
+      {
+       "id": "R6gMopVEYsU",
+       "t": "Mera Bachpan Explanation"
+      },
+      {
+       "id": "sNfsMyb6HuE",
+       "t": "Mera Bachpan Question Answer"
+      }
+     ]
+    },
+    {
+     "t": "Chapter 8",
+     "l": [
+      {
+       "id": "pPPjzMglUME",
+       "t": "Kaziranga Rashtriya Udyan Ki Yatra Explanation"
+      },
+      {
+       "id": "BjfsjlBkKg4",
+       "t": "Kaziranga Rashtriya Udyan Ki Yatra Question Answer"
+      }
+     ]
+    },
+    {
+     "t": "Chapter 9",
+     "l": [
+      {
+       "id": "aw0p_hqwJ_Y",
+       "t": "Nyaay  | Explanation"
+      },
+      {
+       "id": "a7qcCKG-E0k",
+       "t": "Question Answer Nyaay  | Explanation"
+      }
+     ]
+    },
+    {
+     "t": "Chapter 10",
+     "l": [
+      {
+       "id": "olwy93m9tWI",
+       "t": "Teen Machhliyan  | Explanation"
+      },
+      {
+       "id": "wVjWRxXBAZs",
+       "t": "Teen Machhliyan Question Answer"
+      }
+     ]
+    },
+    {
+     "t": "Chapter 11",
+     "l": [
+      {
+       "id": "DGUiIPtN7Qg",
+       "t": "Hamare Yah Kalamandir Explanation"
+      },
+      {
+       "id": "zdVWi8CICBo",
+       "t": "Hamare Yah Kalamandir Question  Answer"
+      }
+     ]
+    },
+    {
+     "t": "Chapter 12",
+     "l": [
+      {
+       "id": "F3dxkkpzLio",
+       "t": "Ganga Ki Kahani Explanation"
+      },
+      {
+       "id": "3sOx-BY_w-g",
+       "t": "Ganga Ki Kahani Question Answer"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "c5-gk",
+   "title": "Class 5 General Knowledge — Fun Facts (Free Demo)",
+   "subtitle": "Plants, animals, India and the world — short, fun lectures",
+   "word": "GK",
+   "line": "General Knowledge",
+   "tags": "Nature · India · World",
+   "color": [
+    "#0891b2",
+    "#2563eb"
+   ],
+   "desc": "A free demo GK course for Class 5 — short lectures with exercises.\n\nVideos: public YouTube lectures by Magnet Brains.",
+   "price": 0,
+   "mrp": 299,
+   "days": 0,
+   "starts": null,
+   "teacher": "av",
+   "chapters": [
+    {
+     "t": "Part 1 — Nature & Animals",
+     "l": [
+      {
+       "id": "3NSMEXBZ2xg",
+       "t": "Syllabus Overview"
+      },
+      {
+       "id": "seLia0IZzc8",
+       "t": "Endangered Plants - Explanation"
+      },
+      {
+       "id": "qTWBV17YarY",
+       "t": "Endangered Plants - Exercise"
+      },
+      {
+       "id": "LI4M-4m7ZfQ",
+       "t": "Amazing Trees - Explanation"
+      },
+      {
+       "id": "-6USz_55IOs",
+       "t": "Amazing Trees - Exercise"
+      },
+      {
+       "id": "qtCxxkeYHz0",
+       "t": "Hibernating Animals - Explanation"
+      },
+      {
+       "id": "v3e_kPsaj9o",
+       "t": "Hibernating Animals - Exercise"
+      },
+      {
+       "id": "S0U-hmcks50",
+       "t": "Bioreserves - Explanation"
+      },
+      {
+       "id": "dWOKxh-Hbo8",
+       "t": "Bioreserves - Exercise"
+      }
+     ]
+    },
+    {
+     "t": "Part 2 — India & the World",
+     "l": [
+      {
+       "id": "ZxN3JLCdiG4",
+       "t": "The Great Religious Teachers of India - Explanation"
+      },
+      {
+       "id": "vrtyq1uFQVg",
+       "t": "The Great Religious Teachers of India - Exercise"
+      },
+      {
+       "id": "U-1nqDSdaY0",
+       "t": "Famous Temples of India - Explanation"
+      },
+      {
+       "id": "WuhqqdjSswQ",
+       "t": "Famous Temples of India - Exercise"
+      },
+      {
+       "id": "m_Xgbc-5XzU",
+       "t": "Museums of the World - Explanation"
+      },
+      {
+       "id": "25XJq-CYrXU",
+       "t": "Museums of the World - Exercise"
+      },
+      {
+       "id": "JIN7imeymz4",
+       "t": "Country, Capital and Currency - Explanation"
+      },
+      {
+       "id": "IeGGDCze6cA",
+       "t": "Country, Capital and Currency - Explanation"
+      },
+      {
+       "id": "ZSIJvzojPWU",
+       "t": "Country, Capital and Currency - Exercise"
+      },
+      {
+       "id": "hyw4oFNeXvY",
+       "t": "Great Scientists - Explanation"
+      },
+      {
+       "id": "oWOeLfmoQDE",
+       "t": "Great Scientists - Exercise"
+      },
+      {
+       "id": "S7Sj53Z32Ms",
+       "t": "Deficiency Diseases - Explanation"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "c5-maths-batch",
+   "title": "Class 5 Maths Mela — New Batch 2026-27 (Demo)",
+   "subtitle": "Live-style batch: every chapter in small parts, with practice",
+   "word": "Maths",
+   "line": "New Batch 2026-27",
+   "tags": "Chapter-wise · Practice",
+   "color": [
+    "#0f766e",
+    "#0e7490"
+   ],
+   "desc": "A demo upcoming batch for Class 5 Maths Mela. Join before the batch starts — every chapter is taught in small parts.\n\nVideos: public YouTube lectures by Saloni ma'am (Zenith Guru Shiksha).",
+   "price": 699,
+   "mrp": 1399,
+   "days": 365,
+   "starts": 7,
+   "teacher": "rk",
+   "chapters": [
+    {
+     "t": "Chapter 1 — We the travellers -I",
+     "l": [
+      {
+       "id": "_96umgh4lR8",
+       "t": "We the travellers -I · Part 1"
+      },
+      {
+       "id": "lsHpDh-pEoY",
+       "t": "We the travellers -I · Part C"
+      },
+      {
+       "id": "WePh1NnYCqQ",
+       "t": "We the travellers -I · Part D"
+      },
+      {
+       "id": "qC30xqqpUCA",
+       "t": "We the travellers -I · Part E"
+      }
+     ]
+    },
+    {
+     "t": "Chapter 2 — Fractions",
+     "l": [
+      {
+       "id": "IFzFJK3ilXQ",
+       "t": "Fractions · Part A"
+      },
+      {
+       "id": "kmscm-wrm3w",
+       "t": "Fractions · Part B"
+      },
+      {
+       "id": "Ly9yRJbprc8",
+       "t": "Fractions · Part C"
+      }
+     ]
+    },
+    {
+     "t": "Chapter 3 — Angles and Turns",
+     "l": [
+      {
+       "id": "b23LaPMOsv0",
+       "t": "Angles and Turns · Part A"
+      },
+      {
+       "id": "nBYNW3BDkYY",
+       "t": "Angles and Turns · Part B"
+      }
+     ]
+    },
+    {
+     "t": "Chapter 4 — We The Travellers - II",
+     "l": [
+      {
+       "id": "ZR_JNU9VAwQ",
+       "t": "We The Travellers - II · Part A"
+      },
+      {
+       "id": "-kvXvSv1U5k",
+       "t": "We The Travellers - II · Part B"
+      },
+      {
+       "id": "0AqzIf8p-BM",
+       "t": "We The Travellers - II · Part C"
+      },
+      {
+       "id": "xa3WTp99jH0",
+       "t": "We The Travellers - II · Part D"
+      },
+      {
+       "id": "9Vy0K9aDhSM",
+       "t": "We The Travellers - II · Part E"
+      }
+     ]
+    },
+    {
+     "t": "Chapter 5 — Far and Near",
+     "l": [
+      {
+       "id": "hPiK3qkHV1c",
+       "t": "Far and Near · Part A"
+      },
+      {
+       "id": "pWEvyakaObQ",
+       "t": "Far and Near · Part B"
+      },
+      {
+       "id": "ENMHf2NbDgA",
+       "t": "Far and Near · Part C"
+      }
+     ]
+    },
+    {
+     "t": "Chapter 6 — The Dairy Farm",
+     "l": [
+      {
+       "id": "ez-lhu46q1o",
+       "t": "The Dairy Farm · Part A"
+      },
+      {
+       "id": "uhOzY1bSiaE",
+       "t": "The Dairy Farm · Part B"
+      },
+      {
+       "id": "tDFqKDJxgWY",
+       "t": "The Dairy Farm · Part C"
+      },
+      {
+       "id": "_28CQ-KztB0",
+       "t": "The Dairy Farm · Part D"
+      },
+      {
+       "id": "R7IlJ68bCFM",
+       "t": "The Dairy Farm · Part E"
+      }
+     ]
+    },
+    {
+     "t": "Chapter 7 — Shapes and Patterns",
+     "l": [
+      {
+       "id": "EieR4I-moTY",
+       "t": "Shapes and Patterns · Part A"
+      },
+      {
+       "id": "ufLrktrBYik",
+       "t": "Shapes and Patterns · Part B"
+      },
+      {
+       "id": "ffQw5SYgMTQ",
+       "t": "Shapes and Patterns · Part C"
+      }
+     ]
+    },
+    {
+     "t": "Chapter 8 — Weight and Capacity",
+     "l": [
+      {
+       "id": "QTWQnFnrflQ",
+       "t": "Weight and Capacity · Part A"
+      },
+      {
+       "id": "sLK6pak2mtM",
+       "t": "Weight and Capacity · Part B"
+      },
+      {
+       "id": "dE-pF4Y7cJg",
+       "t": "Weight and Capacity · Part C"
+      },
+      {
+       "id": "FGBIaoHuxEg",
+       "t": "Weight and Capacity · Part D"
+      }
+     ]
+    },
+    {
+     "t": "Chapter 9 — Coconut Farm",
+     "l": [
+      {
+       "id": "vLjZbUU-aLc",
+       "t": "Coconut Farm · Part B"
+      },
+      {
+       "id": "0psM24QU1r8",
+       "t": "Coconut Farm · Part C"
+      },
+      {
+       "id": "sbwc14_CNFE",
+       "t": "Coconut Farm · Part D"
+      },
+      {
+       "id": "KZfwKZy7yA0",
+       "t": "Coconut Farm · Part E"
+      },
+      {
+       "id": "-gX6cxm4g2g",
+       "t": "Coconut Farm · Part F"
+      }
+     ]
+    },
+    {
+     "t": "Chapter 10 — Symmetrical Designs",
+     "l": [
+      {
+       "id": "sshXNByCIhY",
+       "t": "Symmetrical Designs · Part A"
+      },
+      {
+       "id": "3tnZlHGnVVk",
+       "t": "Symmetrical Designs · Part B"
+      }
+     ]
+    },
+    {
+     "t": "Chapter 11 — Grandmother’s Quilt",
+     "l": [
+      {
+       "id": "HEtyUx8BWHo",
+       "t": "Grandmother’s Quilt · Part A"
+      },
+      {
+       "id": "A9nWw5XhLvE",
+       "t": "Grandmother’s Quilt · Part B"
+      }
+     ]
+    },
+    {
+     "t": "Chapter 12 — Racing Seconds",
+     "l": [
+      {
+       "id": "sxU1wv3L89E",
+       "t": "Racing Seconds · Part A"
+      },
+      {
+       "id": "2UGav8VRk4A",
+       "t": "Racing Seconds · Part B"
+      }
+     ]
+    },
+    {
+     "t": "Chapter 13 — Animal Jumps",
+     "l": [
+      {
+       "id": "QttO6x1-aKg",
+       "t": "Animal Jumps · Part A"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "c5-evs-batch",
+   "title": "Class 5 EVS Our Wondrous World — Exam Batch (Demo)",
+   "subtitle": "New NCERT EVS — explanation, question answers and worksheets",
+   "word": "EVS",
+   "line": "Exam Batch",
+   "tags": "Water · Food · Energy",
+   "color": [
+    "#16a34a",
+    "#0d9488"
+   ],
+   "desc": "A demo upcoming exam batch for the new NCERT Class 5 EVS book Our Wondrous World.\n\nVideos: public YouTube lectures (KV Teacher Universal).",
+   "price": 399,
+   "mrp": 799,
+   "days": 180,
+   "starts": 15,
+   "teacher": "ns",
+   "chapters": [
+    {
+     "t": "Chapter 1 — Water — The Essence of Life",
+     "l": [
+      {
+       "id": "8t0NL8B8Gt8",
+       "t": "Water: The Essence of Life Class 5 | Ch 1 | Full Explanation"
+      },
+      {
+       "id": "uQQuSPkbGv8",
+       "t": "Water - The Essence of Life Class 5 EVS Chapter 1 Question Answer| Part 3"
+      },
+      {
+       "id": "k8UoM4djSRA",
+       "t": "Water - The Essence of Life Class 5 EVS /TWAU Chapter 1 Explanation| Part 2"
+      },
+      {
+       "id": "poEbQ8XItz0",
+       "t": "Water - The Essence of Life Class 5 EVS Chapter 1 Question Answer"
+      }
+     ]
+    },
+    {
+     "t": "Chapter 2 — Journey of a River",
+     "l": [
+      {
+       "id": "cZgBqbQAZK0",
+       "t": "Journey of a River Class 5 EVS | Chapter 2 Worksheet | NCERT"
+      },
+      {
+       "id": "ObHwT9cts_8",
+       "t": "Journey of a River Class 5 EVS Chapter 2 Question Answer Part 3"
+      },
+      {
+       "id": "3zEf3bwaSkQ",
+       "t": "Journey of a River Class 5 TWAU Chapter 2 Explanation and Question Answers"
+      },
+      {
+       "id": "XUyFvDJ3opc",
+       "t": "Journey of a River Class 5 EVS Chapter 2 Question Answer Part 1 | NCERT Our Wondrous World"
+      }
+     ]
+    },
+    {
+     "t": "Chapter 3 — The Mystery of Food",
+     "l": [
+      {
+       "id": "PXCdqE47bBw",
+       "t": "The Mystery of Food Class 5 EVS | Chapter 3 | Worksheet | Santoor"
+      },
+      {
+       "id": "kNmMEkTSlgk",
+       "t": "The Mystery of Food Class 5 EVS Chapter 3  | Question Answer part-3"
+      },
+      {
+       "id": "3a9xtbn143o",
+       "t": "The Mystery of Food Class 5 EVS Chapter 3 Question Answer | Part 1"
+      }
+     ]
+    },
+    {
+     "t": "Chapter 4 — Our School: A Happy Place",
+     "l": [
+      {
+       "id": "pQAoaf8FtG0",
+       "t": "Our School: A Happy Place Class 5 EVS /TWAU | Ch 4 Question Answer| Part 2"
+      },
+      {
+       "id": "WM0nIrdb-CU",
+       "t": "Our School: A Happy Place Class 5 EVS Chapter 4 Question Answer| Our Wondrous World"
+      }
+     ]
+    },
+    {
+     "t": "Chapter 5 — Our Vibrant Country",
+     "l": [
+      {
+       "id": "EQ8zjLveQwo",
+       "t": "Our Vibrant Country Class 5 EVS | Ch 5 | Worksheet Solution"
+      },
+      {
+       "id": "fgIGy8oSqf0",
+       "t": "Our Vibrant Country Class 5 EVS  Chapter 5 | Question Answer Part 2 Ncert Our Wondrous World"
+      },
+      {
+       "id": "d3-V_yrATKU",
+       "t": "Our Vibrant Country Class 5 EVS Chapter 5 Explanation + Question Answer | Part 1"
+      }
+     ]
+    },
+    {
+     "t": "Chapter 6 — Some Unique Places",
+     "l": [
+      {
+       "id": "ZWOCWC9-8dc",
+       "t": "Class 5 EVS Worksheets | Some Unique Places | NCERT 2025"
+      },
+      {
+       "id": "PcSt6tkb6PU",
+       "t": "Some Unique Places Class 5 EVS Chapter 6 Question Answer| Part 2"
+      },
+      {
+       "id": "8sTDvCw_UFA",
+       "t": "Some Unique Places Class 5 EVS | Chapter 6 Explanation +Question Answer Part 1"
+      }
+     ]
+    },
+    {
+     "t": "Chapter 7 — Energy: How Things Work",
+     "l": [
+      {
+       "id": "1k_9p1sKOJ8",
+       "t": "Energy How Things Work | Class 5 Our Wondrous World | Part 1"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "c5-evs-hindi",
+   "title": "Class 5 EVS Revision Batch in Hindi (Free Demo)",
+   "subtitle": "आस-पास — chapter 1 to 11, हिन्दी में",
+   "word": "EVS",
+   "line": "Revision in Hindi",
+   "tags": "आस-पास · हिन्दी",
+   "color": [
+    "#ca8a04",
+    "#ea580c"
+   ],
+   "desc": "A free demo upcoming revision batch — EVS chapters explained in Hindi.\n\nVideos: public YouTube lectures by Better Kids Education.",
+   "price": 0,
+   "mrp": 399,
+   "days": 0,
+   "starts": 25,
+   "teacher": "ns",
+   "chapters": [
+    {
+     "t": "Chapters 1–6",
+     "l": [
+      {
+       "id": "ZkMq5XXy9vA",
+       "t": "Chapter 1 कैसे पहचाना चींटी ने दोस्त को"
+      },
+      {
+       "id": "Uq3Al8oQw3w",
+       "t": "Chapter 2 कहानी सपेरों की"
+      },
+      {
+       "id": "FTxtZN9LZvo",
+       "t": "Chapter 3 चखने से पचने तक"
+      },
+      {
+       "id": "T83bz4rtOy8",
+       "t": "Chapter 4 खाएँ आम बारहों महीने!"
+      },
+      {
+       "id": "YyJOiY_1g28",
+       "t": "Chapter 5 बीज, बीज, बीज"
+      },
+      {
+       "id": "lTdGGmJ8F6Y",
+       "t": "Chapter 6 बूँद बूँद,दरिया दरिया"
+      }
+     ]
+    },
+    {
+     "t": "Chapters 7–11",
+     "l": [
+      {
+       "id": "grb-Hn4tr6M",
+       "t": "Chapter 7 पानी के प्रयोग"
+      },
+      {
+       "id": "7GG53ua6KgA",
+       "t": "Chapter 8 मच्छरों की दावत"
+      },
+      {
+       "id": "tZT2MRAd2_4",
+       "t": "Chapter 9 डायरी कमर सीधी, ऊपर चढ़ो"
+      },
+      {
+       "id": "KWAdksFQlfU",
+       "t": "Chapter 10 बोलती इमारतें"
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "notes": [
+  {
+   "key": "n5-maths",
+   "title": "Class 5 Maths Mela — Practice Worksheets (Free Demo)",
+   "subtitle": "Large numbers, fractions and angles — practice with answers",
+   "word": "Worksheets",
+   "line": "Class 5 Maths",
+   "tags": "Numbers · Fractions · Angles",
+   "color": [
+    "#4338ca",
+    "#0e7490"
+   ],
+   "badge": "FREE PDF",
+   "price": 0,
+   "mrp": 49,
+   "pdf": "n5-maths.pdf",
+   "desc": "Free practice worksheets for Class 5 Maths Mela, with an answer key."
+  },
+  {
+   "key": "n5-english",
+   "title": "Class 5 English Grammar Notes (Demo)",
+   "subtitle": "Nouns, pronouns, verbs, tenses and articles — with exercises",
+   "word": "Grammar",
+   "line": "Class 5 English",
+   "tags": "Nouns · Verbs · Tenses",
+   "color": [
+    "#be185d",
+    "#7e22ce"
+   ],
+   "badge": "PDF NOTES",
+   "price": 39,
+   "mrp": 79,
+   "pdf": "n5-english.pdf",
+   "desc": "Short, clear grammar notes for Class 5 with examples and practice exercises."
+  },
+  {
+   "key": "n5-evs",
+   "title": "Class 5 EVS — Quick Revision Notes (Demo)",
+   "subtitle": "Our Wondrous World — key points of every chapter",
+   "word": "Revision",
+   "line": "Class 5 EVS",
+   "tags": "Water · Food · Energy",
+   "color": [
+    "#15803d",
+    "#0f766e"
+   ],
+   "badge": "PDF NOTES",
+   "price": 29,
+   "mrp": 59,
+   "pdf": "n5-evs.pdf",
+   "desc": "Chapter-wise key points for the new NCERT Class 5 EVS book, for quick revision before tests."
+  },
+  {
+   "key": "n5-hindi",
+   "title": "Class 5 Hindi Vyakaran Notes (Demo)",
+   "subtitle": "संज्ञा, सर्वनाम, विशेषण, क्रिया, पर्यायवाची और विलोम",
+   "word": "व्याकरण",
+   "line": "Class 5 Hindi",
+   "tags": "संज्ञा · सर्वनाम · विलोम",
+   "color": [
+    "#c2410c",
+    "#b91c1c"
+   ],
+   "badge": "PDF NOTES",
+   "price": 49,
+   "mrp": 99,
+   "pdf": "n5-hindi.pdf",
+   "desc": "Class 5 Hindi grammar notes in simple Hindi, with examples and practice."
+  },
+  {
+   "key": "n5-gk",
+   "title": "Class 5 GK Quiz Book — 40 Questions (Free Demo)",
+   "subtitle": "India, science, sports and the world — with answers",
+   "word": "GK Quiz",
+   "line": "Class 5",
+   "tags": "India · Science · Sports",
+   "color": [
+    "#0369a1",
+    "#4f46e5"
+   ],
+   "badge": "FREE PDF",
+   "price": 0,
+   "mrp": 39,
+   "pdf": "n5-gk.pdf",
+   "desc": "40 general knowledge questions for Class 5 students, with answers at the end."
+  }
+ ],
+ "free": [
+  {
+   "list": "PLVLoWQFkZbhVUMz2O9n_V22DDjr5qp91f",
+   "video": "4StoAwxJ8T4",
+   "title": "Class 5 Maths — Full Chapter Videos (Old NCERT)",
+   "channel": "Magnet Brains",
+   "videos": 14
+  },
+  {
+   "list": "PLKq2f58jzscUVDPm9q_UpLEQW2sLxEILt",
+   "video": "zw6lijb2crM",
+   "title": "Class 5 EVS — All Exercises",
+   "channel": "Multitasking Kartavya",
+   "videos": 15
+  }
+ ]
+}

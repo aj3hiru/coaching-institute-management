@@ -84,13 +84,13 @@ $ico = fn($n) => sh_icon($n);
       <div class="hm-btc ls-card">
         <a class="hm-btc-i" href="<?= sh_e(sh_url($p)) ?>" tabindex="-1" aria-hidden="true"><?= sh_thumb_html($p) ?></a>
         <div class="hm-btc-b">
-          <div class="hm-btc-tags"><?= $isUp ? '<span class="t-up">Upcoming batch</span>' : ($isNotes ? '<span class="t-new">PDF notes</span>' : '<span class="t-new">Video course</span>') ?><?= $catName($p) !== '' ? '<span>' . sh_e($catName($p)) . '</span>' : '' ?><?= $free ? '<span class="t-free hm-splash">Free</span>' : '' ?></div>
+          <div class="hm-btc-tags"><?= $isUp ? '<span class="t-up">Upcoming batch</span>' : ($isNotes ? '<span class="t-new">PDF notes</span>' : '<span class="t-new">Video course</span>') ?><?= $catName($p) !== '' ? '<span>' . sh_e($catName($p)) . '</span>' : '' ?></div>
           <h3><a href="<?= sh_e(sh_url($p)) ?>"><?= sh_e($p['title']) ?></a></h3>
           <?php if ($p['subtitle']): ?><p><?= sh_e($p['subtitle']) ?></p><?php endif; ?>
           <ul class="hm-btc-m"><?php if ($bt !== ''): ?><li><?= $ico('calendar') ?> <?= sh_e($bt) ?></li><?php endif; ?><?php if ($tn !== ''): ?><li><?= $ico('user') ?> <?= sh_e($tn) ?></li><?php endif; ?>
             <?php if ($isNotes): ?><li><?= $ico('pdf') ?> <?= (int)$p['files'] ?> PDF<?= (int)$p['files'] === 1 ? '' : 's' ?></li><?php else: ?><li><?= $ico('video') ?> <?= (int)$p['lessons'] ?> lecture<?= (int)$p['lessons'] === 1 ? '' : 's' ?></li><?php endif; ?>
             <?php if ((int)$p['validity_days']): ?><li><?= $ico('clock') ?> <?= (int)$p['validity_days'] ?> days access</li><?php endif; ?></ul>
-          <div class="hm-btc-f"><span class="hm-btc-p"><?= sh_price_html($p) ?></span><a class="hm-btn hm-splash" href="<?= sh_e(sh_url($p)) ?>"><?= $isUp ? 'Join this batch' : ($isNotes ? 'View notes' : 'View course') ?> <?= $ico('arrow') ?></a></div>
+          <div class="hm-btc-f"><span class="hm-btc-p"><?= sh_price_html($p) ?></span><a class="hm-btn hm-splash" href="<?= sh_e(sh_url($p)) ?>"><?= $isUp ? 'Join this batch' : sh_cta($p, $isNotes ? 'View notes' : 'View course') ?> <?= $ico('arrow') ?></a></div>
         </div></div>
     <?php endforeach; ?></div>
   <?php endif; ?>

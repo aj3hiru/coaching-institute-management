@@ -903,3 +903,15 @@ a.st-li:hover{background:#f7fbfc}a.st-li:hover svg{color:var(--sa)}
 }
 [data-theme="dark"] .au{background:#151b23;border-color:#263040}[data-theme="dark"] .au-head h1{color:#e5e7eb}[data-theme="dark"] .au-in input{background:#0f141b;border-color:#334155;color:#e5e7eb}[data-theme="dark"] .au-alt{border-color:#263040}
 .au-in.st-pw .au-eye{top:50%;right:6px;width:36px;height:36px;transform:translateY(-50%)} /* inside the field (beats the old .st-pw button rule) */
+
+/* free items everywhere: struck original price + "100% FREE" with a shine (sh_free_price) */
+.st-free100{position:relative;overflow:hidden;isolation:isolate;display:inline-flex;align-items:center;padding:3px 9px;border-radius:5px;background:#16a34a;color:#fff!important;font-size:13px;font-weight:800;letter-spacing:.04em;line-height:1.3;white-space:nowrap;vertical-align:middle}
+.st-free100::after{content:"";position:absolute;top:-30%;bottom:-30%;left:-70%;width:45%;z-index:1;pointer-events:none;background:linear-gradient(100deg,transparent,rgba(255,255,255,.75),transparent);transform:skewX(-20deg);animation:stFreeSweep 2.8s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){.st-free100::after{animation:none;display:none}}
+.hc-p .st-free100{font-size:11.5px;padding:2px 7px;order:2!important}
+.hm-btc-p .st-free100{font-size:15px;padding:4px 11px;order:2}
+.sp-price .st-free100{font-size:20px;padding:5px 14px;border-radius:7px}
+.st-mbar .sp-price .st-free100{font-size:15px;padding:4px 10px}
+.nt-price .st-free100{font-size:12px;margin-left:0}.nt-price s + .st-free100{margin-left:6px}
+.hc-go.hc-join{color:#15803d}
+@media (max-width:760px){.hc-p .st-free100{font-size:10.5px;padding:2px 6px}.hm-btc-p .st-free100{font-size:13px}}

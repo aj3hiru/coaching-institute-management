@@ -51,13 +51,13 @@ $link = fn(array $x) => '/notes/?' . http_build_query(array_filter(['q' => $qq, 
   <?php foreach ($rows as $p): $own = isset($owned[$p['id']]); $off = $p['mrp'] !== null && (float)$p['mrp'] > (float)$p['price'] ? (int)round(100 - (float)$p['price'] * 100 / (float)$p['mrp']) : 0; ?>
     <article class="nt-card">
       <a class="nt-cover" href="<?= sh_e(sh_url($p)) ?>"><?php if ($p['thumb']): ?><img src="<?= sh_e($p['thumb']) ?>" alt="" loading="lazy"><?php else: ?><span><?= sh_e($p['title']) ?></span><?php endif; ?>
-        <?php if ((float)$p['price'] <= 0): ?><em class="nt-tag free">FREE</em><?php elseif ($off): ?><em class="nt-tag"><?= $off ?>% OFF</em><?php endif; ?></a>
+        <?php if ((float)$p['price'] <= 0): ?><em class="nt-tag free">100% FREE</em><?php elseif ($off): ?><em class="nt-tag"><?= $off ?>% OFF</em><?php endif; ?></a>
       <div class="nt-cb">
         <h3><a href="<?= sh_e(sh_url($p)) ?>"><?= sh_e($p['title']) ?></a></h3>
         <?php if ($p['subtitle']): ?><p><?= sh_e($p['subtitle']) ?></p><?php endif; ?>
         <div class="nt-meta"><span><?= $ico('file') ?> <?= (int)$p['files'] ?> PDF<?= (int)$p['files'] === 1 ? '' : 's' ?></span><?php if ((int)$p['pages']): ?><span><?= (int)$p['pages'] ?> pages</span><?php endif; ?><?php if ($p['rating']): ?><span class="nt-rt">★ <?= number_format((float)$p['rating'], 1) ?></span><?php endif; ?></div>
         <div class="nt-foot">
-          <div class="nt-price"><?= $own ? '<span class="st-own">✓ In your library</span>' : ((float)$p['price'] > 0 ? '<b>' . sh_money($p['price']) . '</b>' . ($off ? '<s>' . sh_money($p['mrp']) . '</s>' : '') : '<b class="g">Free</b>') ?></div>
+          <div class="nt-price"><?= $own ? '<span class="st-own">✓ In your library</span>' : ((float)$p['price'] > 0 ? '<b>' . sh_money($p['price']) . '</b>' . ($off ? '<s>' . sh_money($p['mrp']) . '</s>' : '') : sh_free_price($p)) ?></div>
           <?php if ($own): ?><a class="nt-btn" href="<?= sh_e(sh_learn_url($p['slug'])) ?>">Read</a>
           <?php elseif ($p['free_file']): ?><a class="nt-btn ghost" href="<?= sh_e(sh_learn_url($p['slug'], 'f=' . (int)$p['free_file'])) ?>">Free preview</a>
           <?php else: ?><a class="nt-btn" href="<?= sh_e(sh_url($p)) ?>"><?= (float)$p['price'] > 0 ? 'Get notes' : 'Read free' ?></a><?php endif; ?>

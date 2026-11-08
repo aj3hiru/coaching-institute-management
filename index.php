@@ -139,7 +139,7 @@ $short0 = function (string $n) { $p = preg_split('/\s+/', trim(preg_replace('/\(
           <h3><a href="<?= sh_e(sh_url($p)) ?>"><?= sh_e($p['title']) ?></a></h3>
           <?php if ($p['subtitle']): ?><p><?= sh_e($p['subtitle']) ?></p><?php endif; ?>
           <ul class="hm-btc-m"><?php if ($bt !== ''): ?><li><?= $ico('calendar') ?> <?= sh_e($bt) ?></li><?php endif; ?><?php if ($tn !== ''): ?><li><?= $ico('user') ?> <?= sh_e($tn) ?></li><?php endif; ?><li><?= $ico('video') ?> <?= (int)$p['lessons'] ?> lecture<?= (int)$p['lessons'] === 1 ? '' : 's' ?></li></ul>
-          <div class="hm-btc-f"><span class="hm-btc-p"><?= sh_price_html($p) ?></span><a class="hm-btn hm-splash" href="<?= sh_e(sh_url($p)) ?>"><?= $isUp ? 'Join this batch' : 'View course' ?> <?= $ico('arrow') ?></a></div>
+          <div class="hm-btc-f"><span class="hm-btc-p"><?= sh_price_html($p) ?></span><a class="hm-btn hm-splash" href="<?= sh_e(sh_url($p)) ?>"><?= $isUp ? 'Join this batch' : sh_cta($p, 'View course') ?> <?= $ico('arrow') ?></a></div>
         </div></div></div>
     <?php endforeach; ?></div>
     <?php if (count($batches) > 1): ?><button type="button" class="hs-prev" aria-label="Previous">‹</button><button type="button" class="hs-next" aria-label="Next">›</button><div class="hs-dots"></div><?php endif; ?>

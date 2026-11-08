@@ -662,11 +662,22 @@ function sh_icon(string $n): string
 /** Price block for a product card / page. */
 function sh_price_html(array $p): string
 {
-    if ((float)$p['price'] <= 0) return '<b>Free</b>';
+    if ((float)$p['price'] <= 0) return sh_free_price($p);
     // original price (struck out), then the discount, then the selling price
     if ($p['mrp'] !== null && (float)$p['mrp'] > (float)$p['price'])
         return '<s>' . sh_money($p['mrp']) . '</s><span class="off">' . (int)round(100 - (float)$p['price'] * 100 / (float)$p['mrp']) . '% off</span><b>' . sh_money($p['price']) . '</b>';
     return '<b>' . sh_money($p['price']) . '</b>';
+}
+/** A free item: the original price struck out (when one is set), then "100% FREE" with a shine. */
+function sh_free_price(array $p): string
+{
+    return ($p['mrp'] !== null && (float)$p['mrp'] > 0 ? '<s>' . sh_money($p['mrp']) . '</s>' : '') . '<span class="st-free100">100% FREE</span>';
+}
+/** Button text on cards: free items invite to join (courses) or to get the notes. */
+function sh_cta(array $p, string $paid): string
+{
+    if ((float)$p['price'] > 0) return $paid;
+    return $p['type'] === 'notes' ? 'Get free notes' : 'Join batch';
 }
 function sh_thumb_html(array $p): string
 {
@@ -1038,14 +1049,14 @@ function sh_mini_card(array $p, string $cat = ''): string
 {
     [$bt, $up] = sh_batch($p);
     $meta = $p['type'] === 'notes' ? (int)($p['files'] ?? 0) . ' PDF' . ((int)($p['files'] ?? 0) === 1 ? '' : 's') : (int)($p['lessons'] ?? 0) . ' lecture' . ((int)($p['lessons'] ?? 0) === 1 ? '' : 's');
-    // nothing on the thumbnail: "Upcoming" sits beside the class (CLASS 10 | UPCOMING), "Free" beside View details
+    // nothing on the thumbnail: "Upcoming" sits beside the class (CLASS 10 | UPCOMING); a free item shows its struck price + 100% FREE and "Join batch"
     $free = (float)$p['price'] <= 0;
     $top = ($cat !== '' ? '<small class="hc-cat">' . sh_e($cat) . '</small>' : '') . ($up ? ($cat !== '' ? '<i class="hc-sep">|</i>' : '') . '<em class="hc-up">Upcoming</em>' : '');
     $mi = $bt !== '' ? sh_icon('calendar') : ($p['type'] === 'notes' ? sh_icon('pdf') : sh_icon('video'));
     return '<a class="hc" href="' . sh_e(sh_url($p)) . '"><span class="hc-img">' . sh_thumb_html($p) . '</span>'
         . '<span class="hc-b">' . ($top !== '' ? '<span class="hc-top">' . $top . '</span>' : '') . '<b class="hc-t">' . sh_e($p['title']) . '</b>'
-        . '<small class="hc-m' . ($bt === '' && $p['type'] === 'notes' ? ' hc-pdf' : '') . '">' . $mi . sh_e($bt !== '' ? $bt : $meta) . '</small>' . ($free ? '' : '<span class="hc-p">' . sh_price_html($p) . '</span>')
-        . '<span class="hc-f"><span class="hc-go">View details ' . sh_icon('arrow') . '</span>' . ($free ? '<em class="hc-free hm-splash">Free</em>' : '') . '</span></span></a>';
+        . '<small class="hc-m' . ($bt === '' && $p['type'] === 'notes' ? ' hc-pdf' : '') . '">' . $mi . sh_e($bt !== '' ? $bt : $meta) . '</small>' . '<span class="hc-p">' . sh_price_html($p) . '</span>'
+        . '<span class="hc-f"><span class="hc-go' . ($free ? ' hc-join' : '') . '">' . sh_cta($p, 'View details') . ' ' . sh_icon('arrow') . '</span></span></span></a>';
 }
 /** Published courses / notes for the homepage lists and "View more".
     $when: '' all · 'launched' already started (or no start date) · 'upcoming' batch starts today or later (soonest first).

@@ -28,8 +28,10 @@ $freeF = array_values(array_filter($files, fn($f) => $f['free']));
 $lu = fn(string $q = '') => sh_learn_url($p['slug'], $q, $pv); // study page links
 $buyers = (int)$pdo->query("SELECT COUNT(*) FROM sh_access WHERE product_id = $pid AND revoked = 0")->fetchColumn();
 $updated = $p['updated_at'] ?: $p['created_at'];
-$priceTxt = (float)$p['price'] > 0 ? sh_money($p['price']) : 'Free';
+$isFree = (float)$p['price'] <= 0;
+$priceTxt = $isFree ? '<span class="st-free100">100% FREE</span>' : sh_money($p['price']); // free: struck original price + 100% FREE
 $off = $p['mrp'] !== null && (float)$p['mrp'] > (float)$p['price'] ? (int)round(100 - (float)$p['price'] * 100 / (float)$p['mrp']) : 0;
+$joinTxt = $isFree ? ($p['type'] === 'notes' ? 'Get free notes' : 'Join batch') : 'Buy now';
 $vd = (int)$p['validity_days'];
 $validity = $vd ? ($vd % 365 === 0 ? ($vd / 365) . ' year' . ($vd / 365 > 1 ? 's' : '') : $vd . ' days') . ' access' : 'Lifetime access';
 $desc = trim((string)$p['description']);
@@ -90,17 +92,17 @@ $tabs = array_filter(['about' => $desc !== '' ? 'About' : '', 'content' => $isCo
         <a class="sp-btn" href="<?= sh_e($lu()) ?>"><?= $isCourse ? 'Continue learning' : 'Open notes' ?></a>
         <?php if (!$mine): ?><a class="sp-btn sp-ghost" href="#reviews" data-write>Rate this <?= $isCourse ? 'course' : 'pack' ?></a><?php endif; ?>
       <?php else: ?>
-        <div class="sp-price"><?php if ($off): ?><s><?= sh_money($p['mrp']) ?></s><?php endif; ?><b><?= $priceTxt ?></b><?php if ($off): ?><span class="sp-off"><?= $off ?>% off</span><?php endif; ?></div>
+        <div class="sp-price"><?php if ($off): ?><s><?= sh_money($p['mrp']) ?></s><?php endif; ?><?= $isFree ? $priceTxt : '<b>' . $priceTxt . '</b>' ?><?php if ($off && !$isFree): ?><span class="sp-off"><?= $off ?>% off</span><?php endif; ?></div>
         <div class="st-msg err" id="stBuyMsg" hidden></div>
         <?php if ($u): ?>
-          <button type="button" class="sp-btn" data-buy="<?= $pid ?>" data-t="<?= sh_e(sh_csrf()) ?>"><?= (float)$p['price'] > 0 ? 'Buy now' : 'Enrol for free' ?></button>
+          <button type="button" class="sp-btn" data-buy="<?= $pid ?>" data-t="<?= sh_e(sh_csrf()) ?>"><?= $joinTxt ?></button>
         <?php else: ?>
-          <a class="sp-btn" href="/account/login?next=<?= rawurlencode(sh_url($p)) ?>"><?= (float)$p['price'] > 0 ? 'Buy now' : 'Enrol for free' ?></a>
+          <a class="sp-btn" href="/account/login?next=<?= rawurlencode(sh_url($p)) ?>"><?= $joinTxt ?></a>
         <?php endif; ?>
         <?php if ($preview): ?><a class="sp-btn sp-ghost" href="<?= sh_e($preview) ?>">Try free preview</a><?php endif; ?>
         <?php if (!$u): ?><p class="sp-note">You will log in or create a free account first.</p><?php endif; ?>
       <?php endif; ?>
-      <p class="sp-secure"><?= $ico('shield') ?> <?= sh_pay_demo() ? 'Demo payment — UPI, cards, net banking (no real money)' : 'Secure payment by Razorpay — UPI, cards, net banking' ?></p>
+      <?php if (!$isFree): ?><p class="sp-secure"><?= $ico('shield') ?> <?= sh_pay_demo() ? 'Demo payment — UPI, cards, net banking (no real money)' : 'Secure payment by Razorpay — UPI, cards, net banking' ?></p><?php endif; ?>
     </div>
   </aside>
 
@@ -205,7 +207,7 @@ $tabs = array_filter(['about' => $desc !== '' ? 'About' : '', 'content' => $isCo
   </div>
 </div>
 
-<div class="st-mbar"><div class="sp-price"><?= $own ? '<span class="sp-owned">' . $ico('check') . ' In your library</span>' : ($off ? '<s>' . sh_money($p['mrp']) . '</s>' : '') . '<b>' . $priceTxt . '</b>' ?></div>
-  <?php if ($own): ?><a class="sp-btn" href="<?= sh_e($lu()) ?>"><?= $isCourse ? 'Continue' : 'Open notes' ?></a><?php else: ?><button type="button" class="sp-btn" onclick="var b=document.querySelector('.sp-card [data-buy], .sp-card a.sp-btn');b.scrollIntoView({block:'center'});b.click();"><?= (float)$p['price'] > 0 ? 'Buy now' : 'Enrol free' ?></button><?php endif; ?></div>
+<div class="st-mbar"><div class="sp-price"><?= $own ? '<span class="sp-owned">' . $ico('check') . ' In your library</span>' : ($off ? '<s>' . sh_money($p['mrp']) . '</s>' : '') . ($isFree ? $priceTxt : '<b>' . $priceTxt . '</b>') ?></div>
+  <?php if ($own): ?><a class="sp-btn" href="<?= sh_e($lu()) ?>"><?= $isCourse ? 'Continue' : 'Open notes' ?></a><?php else: ?><button type="button" class="sp-btn" onclick="var b=document.querySelector('.sp-card [data-buy], .sp-card a.sp-btn');b.scrollIntoView({block:'center'});b.click();"><?= $joinTxt ?></button><?php endif; ?></div>
 <?php if ($u && !$own): ?><script>window.ST_BUYER = <?= json_encode(['name' => $u['name'], 'email' => $u['email'], 'contact' => $u['mobile']], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) ?>; window.ST_SITE = <?= json_encode(edu_site_name(), JSON_HEX_TAG) ?>;</script><?php endif; ?>
 <?php require ROOT_PATH . '/components/store-close.php'; ?>

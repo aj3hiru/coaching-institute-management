@@ -38,11 +38,6 @@ $nts = $wantN ? sh_latest($pdo, 'notes', 9, 0, $cid) : []; $moreN = count($nts) 
 $frees = [];
 if ($t === '') { try { $frees = $pdo->query("SELECT * FROM hm_free WHERE active = 1" . ($cid ? " AND category_id = $cid" : '') . " ORDER BY sort, id DESC LIMIT 12")->fetchAll(PDO::FETCH_ASSOC);
     foreach ($frees as &$__f) if (!empty($__f['thumb_custom'])) $__f['thumb'] = sh_upload_url($__f['thumb_custom']); unset($__f); } catch (Throwable) {} }
-// totals for the hero
-$cnt = ['course' => 0, 'upcoming' => 0, 'notes' => 0, 'free' => 0];
-foreach ($pdo->query("SELECT type, (starts_at IS NOT NULL AND starts_at >= CURDATE()) up, (price <= 0) fr, COUNT(*) n FROM sh_products WHERE status = 'published'" . ($cid ? " AND category_id = $cid" : '') . " GROUP BY type, up, fr")->fetchAll(PDO::FETCH_ASSOC) as $r) {
-    $n = (int)$r['n']; if ($r['type'] === 'notes') $cnt['notes'] += $n; else { $cnt['course'] += $n; if ((int)$r['up']) $cnt['upcoming'] += $n; } if ((int)$r['fr']) $cnt['free'] += $n; }
-$cnt['free'] += count($frees);
 $tNames = [];
 foreach ($upc as $p) if (!empty($p['teacher_id'])) $tNames[(int)$p['teacher_id']] ??= sh_teacher_name($pdo, (int)$p['teacher_id']);
 $catName = fn(array $p) => $cats[(int)($p['category_id'] ?? 0)]['name'] ?? '';
@@ -56,21 +51,10 @@ require ROOT_PATH . '/components/store-open.php';
 ?>
 <link rel="stylesheet" href="/assets/css/home.css?v=<?= @filemtime(ROOT_PATH . '/assets/css/home.css') ?: 1 ?>">
 <div class="sp-wrap"><p class="st-crumb cp-crumb"><a href="/">Home</a> › <?= $cat ? '<a href="/all-categories/">Categories</a> › ' . sh_e($cat['name']) : 'Courses &amp; Notes' ?></p>
-<header class="cp-hero">
-  <span class="cp-hero-i"><?php if ($cat && $cat['icon']): ?><img src="<?= sh_e(sh_upload_url($cat['icon'])) ?>" alt="" width="64" height="64"><?php else: ?><b><?= sh_e($cat ? mb_strtoupper(mb_substr(preg_replace('/^Class\s+/i', '', $cat['name']), 0, 2)) : '') ?></b><?php if (!$cat) echo $ico('video'); ?><?php endif; ?></span>
-  <div class="cp-hero-b">
-    <small class="cp-eyebrow"><?= $cat ? 'Category' : 'Online store' ?></small>
-    <h1><?= sh_e($cat ? $cat['name'] : $stTitle) ?></h1>
-    <?php if ($cat && $cat['description']): ?><div class="cp-lead"><?= nl2br(sh_e($cat['description'])) ?></div>
-    <?php else: ?><p class="cp-lead"><?= $cat ? 'Video courses, new batches and PDF notes for ' . sh_e($cat['name']) . ' — learn from our teachers on any phone or computer.' : 'Recorded classes and notes from our teachers — buy once, study anytime on your phone or computer.' ?></p><?php endif; ?>
-    <ul class="cp-stats">
-      <?php if ($cnt['course']): ?><li><?= $ico('video') ?><b><?= $cnt['course'] ?></b> <?= $cnt['course'] === 1 ? 'course' : 'courses' ?></li><?php endif; ?>
-      <?php if ($cnt['upcoming']): ?><li><?= $ico('calendar') ?><b><?= $cnt['upcoming'] ?></b> upcoming</li><?php endif; ?>
-      <?php if ($cnt['notes']): ?><li><?= $ico('pdf') ?><b><?= $cnt['notes'] ?></b> PDF notes</li><?php endif; ?>
-      <?php if ($cnt['free']): ?><li class="cp-st-free hm-splash"><?= $ico('playsolid') ?><b><?= $cnt['free'] ?></b> free</li><?php endif; ?>
-    </ul>
-  </div>
-  <span class="cp-hero-art" aria-hidden="true"><i></i><i></i><i></i></span>
+<header class="cp-head">
+  <h1><?= sh_e($cat ? $cat['name'] : $stTitle) ?></h1>
+  <?php if ($cat && $cat['description']): ?><div class="cp-sub"><?= nl2br(sh_e($cat['description'])) ?></div>
+  <?php else: ?><p class="cp-sub"><?= $cat ? 'Video courses, new batches and PDF notes for ' . sh_e($cat['name']) . '.' : 'Recorded classes and notes from our teachers — buy once, study anytime.' ?></p><?php endif; ?>
 </header></div>
 
 <?php if (!$upc && !$crs && !$nts && !$frees): ?>
@@ -85,7 +69,7 @@ require ROOT_PATH . '/components/store-open.php';
       <div class="hs-s"><div class="hm-btc">
         <a class="hm-btc-i" href="<?= sh_e(sh_url($p)) ?>" tabindex="-1" aria-hidden="true"><?= sh_thumb_html($p) ?></a>
         <div class="hm-btc-b">
-          <div class="hm-btc-tags"><span class="t-up">Upcoming batch</span><?= $catName($p) !== '' ? '<span>' . sh_e($catName($p)) . '</span>' : '' ?><?= $fr ? '<span class="t-free hm-splash">Free</span>' : '' ?></div>
+          <div class="hm-btc-tags"><span class="t-up">Upcoming batch</span><?= $catName($p) !== '' ? '<span>' . sh_e($catName($p)) . '</span>' : '' ?></div>
           <h3><a href="<?= sh_e(sh_url($p)) ?>"><?= sh_e($p['title']) ?></a></h3>
           <?php if ($p['subtitle']): ?><p><?= sh_e($p['subtitle']) ?></p><?php endif; ?>
           <ul class="hm-btc-m"><?php if ($bt !== ''): ?><li><?= $ico('calendar') ?> <?= sh_e($bt) ?></li><?php endif; ?><?php if ($tn !== ''): ?><li><?= $ico('user') ?> <?= sh_e($tn) ?></li><?php endif; ?><li><?= $ico('video') ?> <?= $plural((int)$p['lessons'], 'lecture', 'lectures') ?></li><?php if ((int)$p['validity_days']): ?><li><?= $ico('clock') ?> <?= (int)$p['validity_days'] ?> days access</li><?php endif; ?></ul>
@@ -117,7 +101,7 @@ require ROOT_PATH . '/components/store-open.php';
 <section class="hm-sec" id="free"><div class="sp-wrap">
   <div class="hm-h"><div><h2>Free courses</h2><p class="hm-hsub">Full playlists — free for every student.</p></div><a href="/free-courses/">All free courses ›</a></div>
   <div class="hm-fs" data-hs><div class="hs-track"><?php foreach ($frees as $f): ?>
-    <div class="hs-s"><a class="hm-fc" href="<?= sh_e(sh_free_url($f)) ?>"><span class="hm-fc-i"><img src="<?= sh_e($f['thumb'] ?: '') ?>" alt="" loading="lazy" onerror="this.remove()"><span class="hm-fc-pl"><?= $ico('playsolid') ?></span><?php if ($f['videos']): ?><em><?= (int)$f['videos'] >= 100 ? '100+' : (int)$f['videos'] ?> videos</em><?php endif; ?><i class="cp-free-b hm-splash">Free</i></span>
+    <div class="hs-s"><a class="hm-fc" href="<?= sh_e(sh_free_url($f)) ?>"><span class="hm-fc-i"><img src="<?= sh_e($f['thumb'] ?: '') ?>" alt="" loading="lazy" onerror="this.remove()"><span class="hm-fc-pl"><?= $ico('playsolid') ?></span><?php if ($f['videos']): ?><em><?= (int)$f['videos'] >= 100 ? '100+' : (int)$f['videos'] ?> videos</em><?php endif; ?></span>
       <span class="hm-fc-b"><small>FREE<?= $f['category_id'] && isset($cats[(int)$f['category_id']]) ? ' · ' . sh_e($cats[(int)$f['category_id']]['name']) : '' ?></small><b><?= sh_e($f['title']) ?></b></span></a></div>
   <?php endforeach; ?></div>
     <button type="button" class="hs-prev" aria-label="Previous">‹</button><button type="button" class="hs-next" aria-label="Next">›</button><div class="hs-dots"></div></div>
