@@ -4,7 +4,6 @@
   'use strict';
   var C = window.SHC || {}, f = document.getElementById('slcForm');
   var course = document.getElementById('slcCourse');
-  if (course) course.addEventListener('change', function () { if (course.value) location.href = '/admin/shop-lecture.php?course=' + course.value; });
   if (!f || !document.getElementById('slcTitle')) return;
   var $ = function (s) { return f.querySelector(s); }, $$ = function (s) { return [].slice.call(f.querySelectorAll(s)); };
 
@@ -44,6 +43,24 @@
   secNew.querySelector('input').addEventListener('input', autoName); unitNew.querySelector('input').addEventListener('input', autoName);
   title.addEventListener('input', function () { title.dataset.auto = '0'; });
   onSec(); if (!title.value) { title.dataset.auto = '1'; autoName(); }
+  // the course can be chosen here: its chapters and units come in without reloading (nothing typed is lost)
+  var courseIn = $('[name=course]');
+  if (course) course.addEventListener('change', function () {
+    courseIn.value = course.value || '';
+    if (!course.value) return;
+    fetch('/admin/shop-lecture.php?chapters=' + encodeURIComponent(course.value), { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (d) {
+      if (d.error) { msg.textContent = d.error; return; }
+      sec.innerHTML = ''; d.chapters.forEach(function (c) { var o = document.createElement('option'); o.value = c.id; o.textContent = c.title; o.setAttribute('data-next', c.next); sec.appendChild(o); });
+      var nw = document.createElement('option'); nw.value = '-1'; nw.setAttribute('data-next', '1'); nw.textContent = '+ New chapter…'; sec.appendChild(nw);
+      sec.value = String(d.pick || (d.chapters.length ? d.chapters[d.chapters.length - 1].id : -1));
+      unit.innerHTML = '<option value="0" data-sec="*">— No unit —</option>'; d.units.forEach(function (u) { var o = document.createElement('option'); o.value = u.id; o.setAttribute('data-sec', u.sec); o.textContent = u.title; unit.appendChild(o); });
+      var nu = document.createElement('option'); nu.value = '-1'; nu.setAttribute('data-sec', '*'); nu.textContent = '+ New unit…'; unit.appendChild(nu);
+      title.dataset.prefix = d.prefix || ''; if (!title.value.trim()) title.dataset.auto = '1';
+      if (window.SHC) SHC.pid = d.course;
+      try { history.replaceState(null, '', '/admin/shop-lecture.php?course=' + d.course); } catch (e) {}
+      onSec(); clearErr(course);
+    });
+  });
 
   // --- video link check ----------------------------------------------------
   var url = $('#slcUrl'), probe = $('#slcProbe'), dur = $('#slcDur'), last = '';
@@ -216,7 +233,7 @@
     m.querySelector('[data-go]').addEventListener('click', function () {
       var r = cfg.parse(ta.value || '');
       if (r.errs.length) { er.hidden = false; er.textContent = r.errs.slice(0, 8).join('\n') + (r.errs.length > 8 ? '\n… and ' + (r.errs.length - 8) + ' more' : ''); return; }
-      r.qs.forEach(cfg.fill); close(); gate();
+      r.qs.forEach(cfg.fill); close();
       msg.style.color = '#15803d'; msg.textContent = r.qs.length + ' question' + (r.qs.length === 1 ? '' : 's') + ' added.';
     });
   });
@@ -237,30 +254,36 @@
     paintThumb();
   }
 
-  // --- one step after another: the whole form stays open, but a part works only when the required part before it is filled
-  //     chapter → lecture name → video link (or the PDF) → everything else (notes, VVI, quiz, options, save)
-  var pdfIn = $('#slcPdf'), keptVideo = !!f.querySelector('.slc-kept');
-  function stepsOk() {
-    var chapter = sec.value !== '-1' ? !!sec.value : !!secNew.querySelector('input').value.trim();
-    var name = chapter && !!title.value.trim();
-    var pdf = kindV() === 'pdf';
-    var media = name && (pdf ? !!(pdfIn && (pdfIn.files.length || pdfIn.dataset.has)) : (/^https?:\/\/\S+$/i.test(url.value.trim()) || keptVideo));
-    return { 2: chapter, 3: name, 4: media, need4: pdf ? 'Choose the lecture PDF first.' : 'Paste the video link first.' };
+  // --- Publish: every required part is checked; a missing one is marked, the page jumps to it and says it is required ---
+  var errBox = $('#slcErrBox');
+  function clearErr(el) {
+    if (!el) return; el.classList.remove('slc-err-f');
+    var box = el.closest('.ci-f, .meta-panel-body'), n = box && box.querySelector(':scope > .slc-req'); if (n) n.remove();
+    var pnl = el.closest('.meta-panel'); if (pnl && !pnl.querySelector('.slc-err-f')) pnl.classList.remove('slc-has-err');
+    if (errBox && !f.querySelector('.slc-err-f')) errBox.classList.remove('on');
   }
-  function gate() {
-    var ok = stepsOk();
-    $$('[data-step]').forEach(function (p) {
-      var on = !!ok[p.getAttribute('data-step')];
-      p.classList.toggle('slc-locked', !on);
-      if ('inert' in p) p.inert = !on;
-      var n = p.querySelector(':scope > .slc-need'), why = p.getAttribute('data-step') === '4' ? ok.need4 : p.getAttribute('data-need');
-      if (!on && !n) { n = document.createElement('span'); n.className = 'slc-need'; p.insertBefore(n, p.firstChild); }
-      if (n) { n.textContent = '🔒 ' + why; n.hidden = on; }
-    });
+  function markErr(el, text) {
+    el.classList.add('slc-err-f');
+    var box = el.closest('.ci-f') || el.parentNode;
+    if (!box.querySelector(':scope > .slc-req')) { var n = document.createElement('span'); n.className = 'slc-req'; n.textContent = text; box.appendChild(n); }
+    var pnl = el.closest('.meta-panel'); if (pnl) pnl.classList.add('slc-has-err');
   }
-  ['input', 'change'].forEach(function (ev) { f.addEventListener(ev, gate); });
-  document.addEventListener('admin-select-change', gate);
-  gate();
+  f.addEventListener('input', function (e) { if (e.target.classList && e.target.classList.contains('slc-err-f')) clearErr(e.target); });
+  f.addEventListener('change', function (e) { if (e.target.classList && e.target.classList.contains('slc-err-f')) clearErr(e.target); if (e.target === sec) clearErr(secNew.querySelector('input')); });
+  if (course) course.addEventListener('change', function () { clearErr(course); });
+  f.addEventListener('submit', function (e) {
+    var miss = [];
+    var need = function (ok, el, name, text) { if (ok) { clearErr(el); return; } miss.push({ el: el, name: name }); markErr(el, text || name + ' is required — fill it in.'); };
+    if (course && !course.disabled) need(!!(+courseIn.value || +course.value), course, 'Course', 'Choose the course — this is required.');
+    if (sec.value === '-1') need(!!secNew.querySelector('input').value.trim(), secNew.querySelector('input'), 'New chapter name', 'Write the chapter name — this is required.');
+    else need(!!sec.value, sec, 'Chapter', 'Choose the chapter — this is required.');
+    need(!!title.value.trim(), title, 'Lecture name', 'Write the lecture name — this is required.');
+    if (kindV() !== 'pdf') need(/^https?:\/\/\S+$/i.test(url.value.trim()) || !!f.querySelector('.slc-kept'), url, 'Video link', 'Paste the video link (YouTube or any other source) — this is required.');
+    if (!miss.length) { if (errBox) errBox.classList.remove('on'); return; }
+    e.preventDefault(); e.stopImmediatePropagation();
+    if (errBox) { errBox.textContent = 'Fill the required: ' + miss.map(function (m) { return m.name; }).join(', ') + '.'; errBox.classList.add('on'); }
+    var first = miss[0].el; first.scrollIntoView({ behavior: 'smooth', block: 'center' }); setTimeout(function () { try { first.focus({ preventScroll: true }); } catch (x) {} }, 350);
+  }, true);
   $$('[data-next]').forEach(function (b) { if (b.tagName === 'BUTTON') b.addEventListener('click', function () { $('#slcNext').value = '1'; }); });
   f.addEventListener('submit', function (e) {
     var pdfKind = kindV() === 'pdf';
