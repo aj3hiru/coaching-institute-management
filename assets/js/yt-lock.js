@@ -14,7 +14,6 @@
   var QORDER = ['hd2160', 'hd1440', 'hd1080', 'hd720', 'large', 'medium'];
   var store = { get: function () { try { return localStorage.getItem('ytq') || 'auto'; } catch (e) { return 'auto'; } }, set: function (v) { try { localStorage.setItem('ytq', v); } catch (e) {} } };
   function frame(box) { return box.querySelector('iframe'); }
-  var DOT = 8; // how many times bigger the frame is laid out (8 → YouTube's middle icon is a tiny dot)
   function sizeFrame(box) {
     var f = frame(box), q = box._q || 'auto'; if (!f) return;
     var props = ['width', 'height', 'top', 'left', 'transform', 'transform-origin', 'max-width'];
@@ -24,12 +23,10 @@
     var left = (W - pw) / 2, top = (H - ph) / 2;
     var set = function (k, v) { f.style.setProperty(k, v, 'important'); };
     var plain = q === 'auto' || !QMAP[q];
-    if (plain) {
-      // The frame is laid out DOT× bigger and scaled down to the picture: the video looks the same, but YouTube's own
-      // middle play / pause icon (drawn inside its frame at a fixed size) shrinks to a dot. Play / pause = our bar.
-      var K = DOT, fw = pw * K, fh = ph * K;
-      set('max-width', 'none'); set('width', fw + 'px'); set('height', (2 * fh) + 'px'); set('left', left + 'px'); set('top', (top - ph / 2) + 'px');
-      set('transform-origin', '0 0'); set('transform', 'scale(' + (1 / K) + ')');
+    if (plain && Math.abs(W / H - 16 / 9) < 0.02) { props.forEach(function (k) { f.style.removeProperty(k); }); return; } // normal 16:9 box: the CSS does it
+    if (plain) { // frame twice as tall as the picture, centred on it (YouTube's bars fall outside)
+      ['transform', 'transform-origin'].forEach(function (k) { f.style.removeProperty(k); });
+      set('max-width', 'none'); set('width', pw + 'px'); set('height', (2 * ph) + 'px'); set('left', left + 'px'); set('top', (top - ph / 2) + 'px');
       return;
     }
     // YouTube picks the quality from the frame's width: the frame is laid out as wide as the chosen video (1280 for 720p …)
