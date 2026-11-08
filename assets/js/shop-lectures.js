@@ -19,7 +19,7 @@
   function color(sid) { var i = C.secs.findIndex(function (s) { return s.id === sid; }); return i < 0 ? 'transparent' : COLORS[i % COLORS.length]; }
   function secOpts(sel) { return '<option value="0">— No chapter —</option>' + C.secs.map(function (s) { return '<option value="' + s.id + '"' + (s.id === sel ? ' selected' : '') + '>' + esc(s.title) + '</option>'; }).join(''); }
   function unitOpts(sid, sel) { var u = C.units[sid] || []; return '<option value="0">' + (sid ? (u.length ? '— No unit —' : '— no units —') : '—') + '</option>' + u.map(function (x) { return '<option value="' + x.id + '"' + (x.id === sel ? ' selected' : '') + '>' + esc(x.title) + '</option>'; }).join(''); }
-  function setDirty(v) { dirty = v; $('lsDirty').hidden = !v; }
+  function setDirty(v) { dirty = v; $('lsDirty').hidden = !v; if ($('lsDirty2')) $('lsDirty2').hidden = !v; }
   window.addEventListener('beforeunload', function (e) { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
 
   // ---- rows ----
@@ -116,6 +116,11 @@
       .catch(function (e) { b.disabled = false; fail(e); throw e; });
   }
   $('lsSave').addEventListener('click', function () { save(false); });
+  if ($('lsPublish')) $('lsPublish').addEventListener('click', function () { // Publish box: status + the sheet
+    var b = this; b.disabled = true;
+    (dirty ? save(true) : Promise.resolve()).then(function () { return post({ action: 'status', status: $('lsStatus').value }); })
+      .then(function () { b.innerHTML = '<i class="fas fa-check"></i> Saved'; setTimeout(function () { b.innerHTML = '<i class="fas fa-check"></i> Save'; }, 1500); }).catch(fail).then(function () { b.disabled = false; });
+  });
   document.addEventListener('keydown', function (e) { if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); save(false); } });
   window.lcBeforeOpen = function () { return dirty ? save(true) : null; }; // the popup opens on saved data
   window.onLectureSaved = function () { setDirty(false); location.reload(); };

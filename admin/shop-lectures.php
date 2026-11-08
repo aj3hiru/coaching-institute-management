@@ -112,6 +112,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $pdo->prepare("UPDATE sh_products SET yt_skip = ? WHERE id = ?")->execute([$skip ? json_encode(array_values(array_unique($skip))) : null, $pid]);
                 admin_log('shop_lecture', "Removed $n lecture(s) from course #$pid");
                 $out(['ok' => true, 'removed' => $n]);
+            case 'status': // Publish box: draft / published / hidden
+                $st = in_array($_POST['status'] ?? '', ['draft', 'published', 'hidden'], true) ? $_POST['status'] : 'draft';
+                $pdo->prepare("UPDATE sh_products SET status = ?, updated_at = NOW() WHERE id = ?")->execute([$st, $pid]);
+                $out(['ok' => true, 'status' => $st]);
             case 'unskip': // let removed playlist videos come back with the next scan
                 $pdo->prepare("UPDATE sh_products SET yt_skip = NULL WHERE id = ?")->execute([$pid]);
                 $out(['ok' => true]);
@@ -149,6 +153,14 @@ $skipN = $P ? count(json_decode((string)$P['yt_skip'], true) ?: []) : 0;
 <style>
 .ls-card input:not([type=checkbox]):not(.nm):not(.t),.ls-card select,.ls-pick select{padding:0 10px;border:1px solid #d1d5db;background:#fff;font:inherit;font-size:13.5px}
 .ls-card input:not([type=checkbox]):focus{border-color:var(--ci-acc,#7c3aed);outline:0}
+.ls-top{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:16px;align-items:start}
+@media (max-width:1100px){.ls-top{grid-template-columns:1fr}}
+.ls-side{min-width:0}
+.ls-sf label{display:block;font-weight:600;font-size:13px;margin:0 0 6px}.ls-sf select{width:100%;height:38px}
+.ls-facts{list-style:none;margin:12px 0;padding:0;font-size:13px;color:#374151}.ls-facts li{display:flex;gap:8px;align-items:baseline;padding:5px 0;border-bottom:1px dashed #eef0f3}.ls-facts li:last-child{border-bottom:0}.ls-facts i{width:16px;color:#9ca3af;text-align:center}
+.ls-pub{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.ls-pub .ci-btn{flex:1;justify-content:center}
+#lsDirty2{display:block;margin-top:6px}
+.ls-course img{width:100%;aspect-ratio:16/9;object-fit:cover;display:block;margin:0 0 10px}.ls-course b{display:block;line-height:1.35}.ls-course .ci-muted{font-size:13px}
 .ls-pick{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;padding:14px 16px;border:1px solid #e5e7eb;background:#fff;margin:0 0 14px}
 .ls-pick .ci-f{min-width:min(460px,100%);margin:0}
 .ls-card{border:1px solid #e5e7eb;background:#fff;margin:0 0 14px}
@@ -212,6 +224,8 @@ table.ls-t{width:100%;border-collapse:collapse;font-size:13.5px}
 <?php if (!$courses): ?><p class="ci-muted" style="margin:0">No course yet — <a href="/admin/shop-products.php?new=1&type=course">add a course</a> first.</p><?php endif; ?></form>
 
 <?php if ($P): ?>
+<?php $stN = count($rows); $stFree = count(array_filter($rows, fn($r) => $r['free'])); $stNotes = array_sum(array_column($rows, 'n')); $stQ = array_sum(array_column($rows, 'q')); $stV = array_sum(array_column($rows, 'v')); ?>
+<div class="ls-top"><div class="ls-main">
 <div class="ls-card" id="lsPl"><h3><span><i class="fab fa-youtube" style="color:#dc2626"></i> YouTube playlist of this course</span><small>every video of it becomes a lecture · new videos come in by themselves</small></h3><div class="ls-body">
   <?php if ($P['yt_list']): ?>
   <div class="ls-linked"><i class="fab fa-youtube"></i><span class="sp"><b>Linked</b> · <a href="https://www.youtube.com/playlist?list=<?= ci_e($P['yt_list']) ?>" target="_blank" rel="noopener">open on YouTube</a><?= $P['yt_synced'] ? ' · checked ' . ci_e(date('d M, h:i A', strtotime($P['yt_synced']))) : '' ?></span>
@@ -231,6 +245,29 @@ table.ls-t{width:100%;border-collapse:collapse;font-size:13.5px}
   <div class="ls-chs" id="lsChList"></div>
   <div class="ls-chadd"><input id="lsChName" maxlength="200" placeholder="New chapter name — e.g. Chapter 1 — Numbers"><button type="button" class="ci-btn ci-ghost" id="lsChAdd"><i class="fas fa-plus"></i> Add chapter</button></div>
 </div></div>
+
+</div>
+<aside class="ls-side">
+  <div class="ls-card"><h3><span>Publish</span></h3><div class="ls-body">
+    <div class="ls-sf"><label for="lsStatus">Status</label><select id="lsStatus"><?php foreach (['published' => 'Published — students can buy it', 'draft' => 'Draft — not on the site', 'hidden' => 'Hidden — only with the link'] as $k => $l): ?><option value="<?= $k ?>"<?= $P['status'] === $k ? ' selected' : '' ?>><?= $l ?></option><?php endforeach; ?></select></div>
+    <ul class="ls-facts">
+      <li><i class="fas fa-film"></i> <b><?= $stN ?></b> lecture<?= $stN === 1 ? '' : 's' ?> · <b><?= count($secs) ?></b> chapter<?= count($secs) === 1 ? '' : 's' ?></li>
+      <li><i class="fas fa-unlock"></i> <b><?= $stFree ?></b> free preview</li>
+      <li><i class="fas fa-file-pdf"></i> <b><?= $stNotes ?></b> notes PDFs · <b><?= $stQ ?></b> MCQs · <b><?= $stV ?></b> VVI</li>
+      <li><i class="fab fa-youtube"></i> <?= $P['yt_list'] ? 'Playlist linked' . ($P['yt_synced'] ? ' · checked ' . ci_e(date('d M, h:i A', strtotime($P['yt_synced']))) : '') : 'No playlist yet' ?></li>
+    </ul>
+    <span class="ls-dirty" id="lsDirty2" hidden>Unsaved changes in the sheet</span>
+    <div class="ls-pub"><a class="ci-btn ci-ghost" href="<?= ci_e(sh_url($P)) ?>?preview=1" target="_blank"><i class="fas fa-eye"></i> Preview</a><button type="button" class="ci-btn" id="lsPublish"><i class="fas fa-check"></i> Save</button></div>
+  </div></div>
+  <div class="ls-card"><h3><span>Course</span></h3><div class="ls-body ls-course">
+    <?php $cImg = $P['thumb'] ?: (($iy = sh_yt_id((string)$P['intro_url'])) ? 'https://i.ytimg.com/vi/' . $iy . '/hqdefault.jpg' : ''); ?>
+    <?= $cImg ? '<img src="' . ci_e($cImg) . '" alt="">' : '' ?>
+    <b><?= ci_e($P['title']) ?></b>
+    <span class="ci-muted"><?= (float)$P['price'] > 0 ? '₹' . number_format((float)$P['price']) : 'Free' ?><?= $P['intro_url'] ? ' · has intro video' : '' ?></span>
+    <div class="ls-pub"><a class="ci-btn ci-ghost ci-sm" href="/admin/shop-products.php?edit=<?= $pid ?>&amp;type=course"><i class="fas fa-pen"></i> Edit course details</a><a class="ci-btn ci-ghost ci-sm" data-embed href="/admin/shop-lecture.php?course=<?= $pid ?>&amp;embed=1"><i class="fas fa-plus"></i> Add lecture by link</a></div>
+  </div></div>
+</aside>
+</div>
 
 <div class="ls-card" id="lsSheet">
   <div class="ls-tools">
