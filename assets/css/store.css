@@ -848,3 +848,7 @@ a.st-li:hover{background:#f7fbfc}a.st-li:hover svg{color:var(--sa)}
   .ls-list .ls-card .hm-btn{min-height:34px;font-size:12.5px;padding:0 8px}
 }
 [data-theme="dark"] .ls-fbar{background:#151b23;border-color:#263040}[data-theme="dark"] .ls-cs-t a{background:#111827;border-color:#263040;color:#e5e7eb!important}[data-theme="dark"] .ls-pill{background:#111827}
+/* no glow around fields when they are clicked — only the border turns the accent colour */
+.ls-search:focus-within,.st-f input:focus,.ac-sel:focus,.ac-form textarea:focus,.ac-form input:focus,.lt-ask textarea:focus,
+.st input:focus,.st textarea:focus,.st select:focus{box-shadow:none!important;outline:none}
+.ls-search input:focus{box-shadow:none!important;outline:none}
