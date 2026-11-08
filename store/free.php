@@ -53,10 +53,7 @@ $ico = fn($n) => sh_icon($n);
   <h1>Free Courses</h1><p class="st-lead">Complete free courses — watch any time.</p>
   <?php $more = $all; if (!$more): ?><div class="st-empty">Free courses are coming soon.</div><?php endif; ?>
 <?php endif; ?>
-<div class="st-grid">
-<?php foreach ($more as $x): ?>
-  <a class="st-card fr-card" href="<?= sh_e(sh_free_url($x)) ?>"><span class="fr-th"><img src="<?= sh_e($x['thumb'] ?: '') ?>" alt="" loading="lazy" onerror="this.remove()"><em><?= $ico('playsolid') ?><?= $x['videos'] ? ((int)$x['videos'] >= 100 ? '100+' : (int)$x['videos']) . ' videos' : 'Watch' ?></em></span>
-    <div class="st-cb"><h3><?= sh_e($x['title']) ?></h3><span class="st-meta"><?= sh_e($x['channel'] ?: 'Free course') ?></span><div class="st-price"><span class="st-own">Free</span></div></div></a>
-<?php endforeach; ?>
-</div>
+<?php $fcCats = sh_categories($pdo); ?>
+<link rel="stylesheet" href="/assets/css/home.css?v=<?= @filemtime(ROOT_PATH . '/assets/css/home.css') ?: 1 ?>">
+<div class="hm-grid fr-grid"><?php foreach ($more as $x) echo sh_free_card($x, $x['category_id'] && isset($fcCats[(int)$x['category_id']]) ? $fcCats[(int)$x['category_id']]['name'] : ''); ?></div>
 <?php require ROOT_PATH . '/components/store-close.php'; ?>

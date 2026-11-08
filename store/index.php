@@ -81,10 +81,9 @@ require ROOT_PATH . '/components/store-open.php';
 
 <?php if ($frees): ?>
 <section class="hm-sec" id="free"><div class="sp-wrap">
-  <div class="hm-h"><div><h2>Free courses</h2><p class="hm-hsub">Full playlists — free for every student.</p></div><a href="/free-courses/">All free courses ›</a></div>
+  <div class="hm-h"><div><h2>Free courses</h2></div><a href="/free-courses/">All free courses ›</a></div>
   <div class="hm-fs" data-hs><div class="hs-track"><?php foreach ($frees as $f): ?>
-    <div class="hs-s"><a class="hm-fc" href="<?= sh_e(sh_free_url($f)) ?>"><span class="hm-fc-i"><img src="<?= sh_e($f['thumb'] ?: '') ?>" alt="" loading="lazy" onerror="this.remove()"><span class="hm-fc-pl"><?= $ico('playsolid') ?></span><?php if ($f['videos']): ?><em><?= (int)$f['videos'] >= 100 ? '100+' : (int)$f['videos'] ?> videos</em><?php endif; ?></span>
-      <span class="hm-fc-b"><small>FREE<?= $f['category_id'] && isset($cats[(int)$f['category_id']]) ? ' · ' . sh_e($cats[(int)$f['category_id']]['name']) : '' ?></small><b><?= sh_e($f['title']) ?></b></span></a></div>
+    <div class="hs-s"><?= sh_free_card($f, $f['category_id'] && isset($cats[(int)$f['category_id']]) ? $cats[(int)$f['category_id']]['name'] : '') ?></div>
   <?php endforeach; ?></div>
     <button type="button" class="hs-prev" aria-label="Previous">‹</button><button type="button" class="hs-next" aria-label="Next">›</button><div class="hs-dots"></div></div>
 </div></section>

@@ -463,3 +463,13 @@
   .st.cp .cp-head h1{font-size:24px}.cp-sub{font-size:14px}
   .cp .hm-sec{padding-top:32px}.cp .hm-h h2{font-size:21px}.cp .hm-hsub{font-size:13.5px}
 }
+
+/* free YouTube course card: FREE + category, title, lectures, teacher */
+.hm-fc-b .hm-fc-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.hm-fc-b .hm-fc-top .st-free100{font-size:10.5px;padding:2px 7px;letter-spacing:.05em}
+.hm-fc-b .hm-fc-top .hc-cat{color:var(--sa,#0c6878);font-weight:800;font-size:11.5px;letter-spacing:.06em;text-transform:uppercase}
+.hm-fc-b small.hm-fc-m,.hm-fc-b small.hm-fc-t{display:flex;align-items:center;gap:6px;color:#6b7280;font-weight:500;font-size:12.5px;letter-spacing:0}
+.hm-fc-b small.hm-fc-t{color:#374151;font-weight:600;margin-top:auto;padding-top:6px;border-top:1px solid #f1f5f9}
+.hm-fc-b small svg{width:14px;height:14px;flex:0 0 auto}
+.hm-fc-b{flex:1}
+.fr-grid{margin-top:8px}.fr-grid .hm-fc{border-radius:5px;overflow:hidden}

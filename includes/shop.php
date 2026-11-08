@@ -1058,6 +1058,16 @@ function sh_mini_card(array $p, string $cat = ''): string
         . '<small class="hc-m' . ($bt === '' && $p['type'] === 'notes' ? ' hc-pdf' : '') . '">' . $mi . sh_e($bt !== '' ? $bt : $meta) . '</small>' . '<span class="hc-p">' . sh_price_html($p) . '</span>'
         . '<span class="hc-f"><span class="hc-go' . ($free ? ' hc-join' : '') . '">' . ($up ? sh_cta($p, 'Join batch') : sh_cta($p, 'View details')) . ' ' . sh_icon('arrow') . '</span></span></span></a>';
 }
+/** Free YouTube course card (homepage, category pages): FREE tag + category, title, lectures, teacher (channel). */
+function sh_free_card(array $f, string $cat = ''): string
+{
+    $n = (int)($f['videos'] ?? 0);
+    return '<a class="hm-fc" href="' . sh_e(sh_free_url($f)) . '"><span class="hm-fc-i"><img src="' . sh_e((string)($f['thumb'] ?? '')) . '" alt="" loading="lazy" onerror="this.remove()"><span class="hm-fc-pl">' . sh_icon('playsolid') . '</span></span>'
+        . '<span class="hm-fc-b"><span class="hm-fc-top"><em class="st-free100">FREE</em>' . ($cat !== '' ? '<small class="hc-cat">' . sh_e($cat) . '</small>' : '') . '</span>'
+        . '<b>' . sh_e($f['title']) . '</b>'
+        . ($n ? '<small class="hm-fc-m">' . sh_icon('video') . ($n >= 100 ? '100+' : $n) . ' lecture' . ($n === 1 ? '' : 's') . '</small>' : '')
+        . (trim((string)($f['channel'] ?? '')) !== '' ? '<small class="hm-fc-t">' . sh_icon('user') . sh_e($f['channel']) . '</small>' : '') . '</span></a>';
+}
 /** Published courses / notes for the homepage lists and "View more".
     $when: '' all · 'launched' already started (or no start date) · 'upcoming' batch starts today or later (soonest first).
     $sort: 'latest' newest first · 'popular' most students first. */
