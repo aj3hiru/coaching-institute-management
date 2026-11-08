@@ -145,7 +145,7 @@
 
   // ---- show / hide password ----
   document.querySelectorAll('.st-pw button').forEach(function (b) {
-    b.addEventListener('click', function () { var i = b.parentNode.querySelector('input'); var show = i.type === 'password'; i.type = show ? 'text' : 'password'; b.textContent = show ? 'Hide' : 'Show'; b.setAttribute('aria-pressed', show ? 'true' : 'false'); });
+    b.addEventListener('click', function () { var i = b.parentNode.querySelector('input'); var show = i.type === 'password'; i.type = show ? 'text' : 'password'; if (b.hasAttribute('data-eye')) { b.classList.toggle('on', show); b.setAttribute('aria-label', show ? 'Hide password' : 'Show password'); } else b.textContent = show ? 'Hide' : 'Show'; b.setAttribute('aria-pressed', show ? 'true' : 'false'); });
   });
 })();
 /* Lesson player ⚙ menu: speed 0.5x–2x and quality (Auto picks by internet speed and player size; drops a step when the

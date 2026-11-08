@@ -16,17 +16,18 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 $stTitle = 'Log in';
 require ROOT_PATH . '/components/store-open.php';
 ?>
-<div class="st-auth">
-  <h1>Log in</h1>
-  <p class="st-lead">Open your courses and notes.</p>
-  <?php if (isset($_GET['reset'])): ?><div class="st-msg ok">Your new password is saved. Please log in.</div><?php endif; ?>
-  <?php if ($err): ?><div class="st-msg err"><?= sh_e($err) ?></div><?php endif; ?>
-  <form method="post" novalidate><?= sh_csrf_field() ?><input type="hidden" name="next" value="<?= sh_e($next) ?>">
-    <div class="st-f"><label for="li-id">Mobile number or email</label><input id="li-id" name="id" autocomplete="username" required value="<?= sh_e($id) ?>" autofocus></div>
-    <div class="st-f"><label for="li-pw">Password</label><div class="st-pw"><input id="li-pw" type="password" name="pass" autocomplete="current-password" required><button type="button" aria-label="Show password">Show</button></div></div>
-    <p style="text-align:right;margin:-6px 0 14px;font-size:14px"><a href="/account/forgot">Forgot password?</a></p>
-    <button class="st-btn block" type="submit">Log in</button>
-  </form>
-  <p class="alt">New here? <a href="/account/register?next=<?= rawurlencode($next) ?>">Create an account</a></p>
+<div class="au">
+  <?= sh_auth_side('login') ?>
+  <section class="au-main">
+    <div class="au-head"><h1>Log in</h1><p>Open your courses and notes.</p></div>
+    <?php if (isset($_GET['reset'])): ?><div class="st-msg ok">Your new password is saved. Please log in.</div><?php endif; ?>
+    <?php if ($err): ?><div class="st-msg err"><?= sh_e($err) ?></div><?php endif; ?>
+    <form method="post" novalidate class="au-form"><?= sh_csrf_field() ?><input type="hidden" name="next" value="<?= sh_e($next) ?>">
+      <div class="au-f"><label for="li-id">Mobile number or email</label><div class="au-in"><?= sh_auth_icon('user') ?><input id="li-id" name="id" autocomplete="username" required value="<?= sh_e($id) ?>" placeholder="98xxxxxxxx or you@email.com" autofocus></div></div>
+      <div class="au-f"><div class="au-lrow"><label for="li-pw">Password</label><a href="/account/forgot">Forgot password?</a></div><div class="au-in st-pw"><?= sh_auth_icon('lock') ?><input id="li-pw" type="password" name="pass" autocomplete="current-password" required placeholder="Your password"><?= sh_eye_btn() ?></div></div>
+      <button class="au-btn" type="submit">Log in <?= sh_icon('arrow') ?></button>
+    </form>
+    <p class="au-alt">New here? <a href="/account/register?next=<?= rawurlencode($next) ?>">Create a free account</a></p>
+  </section>
 </div>
 <?php require ROOT_PATH . '/components/store-close.php'; ?>

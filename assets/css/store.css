@@ -852,3 +852,54 @@ a.st-li:hover{background:#f7fbfc}a.st-li:hover svg{color:var(--sa)}
 .ls-search:focus-within,.st-f input:focus,.ac-sel:focus,.ac-form textarea:focus,.ac-form input:focus,.lt-ask textarea:focus,
 .st input:focus,.st textarea:focus,.st select:focus{box-shadow:none!important;outline:none}
 .ls-search input:focus{box-shadow:none!important;outline:none}
+
+/* ===== log in / sign up (account/login.php, account/register.php) ===== */
+.au{display:grid;grid-template-columns:minmax(0,.95fr) minmax(0,1.05fr);max-width:980px;margin:22px auto 34px;border-radius:14px;overflow:hidden;background:#fff;border:1px solid #e5e7eb;box-shadow:0 18px 50px rgba(15,23,42,.08)}
+.au-side{position:relative;display:flex;flex-direction:column;gap:26px;padding:34px 32px;color:#fff;overflow:hidden;
+  background:radial-gradient(520px 320px at 110% -10%,rgba(124,58,237,.55),transparent 60%),radial-gradient(420px 300px at -20% 110%,rgba(20,184,166,.45),transparent 60%),linear-gradient(150deg,var(--sa,#0c6878),#0b3d4a 60%,#1e1b4b)}
+.au-side::after{content:"";position:absolute;right:-60px;bottom:-60px;width:220px;height:220px;border-radius:50%;border:30px solid rgba(255,255,255,.06)}
+.au-brand{display:flex;align-items:center;gap:12px;color:#fff!important;text-decoration:none!important;position:relative;z-index:1}
+.au-brand img{width:46px;height:46px;border-radius:50%;background:#fff;padding:3px;box-sizing:border-box;object-fit:contain}
+.au-brand b{display:block;font-size:18px;line-height:1.2}.au-brand small{display:block;font-size:12px;color:rgba(255,255,255,.75);margin-top:2px}
+.au-hero{position:relative;z-index:1}
+.au-hero h2{margin:0 0 8px;font-size:30px;line-height:1.15;color:#fff;font-weight:800;letter-spacing:-.01em}
+.au-hero p{margin:0;color:rgba(255,255,255,.82);font-size:15px;line-height:1.55}
+.au-pts{list-style:none;margin:auto 0 0;padding:0;display:flex;flex-direction:column;gap:14px;position:relative;z-index:1}
+.au-pts li{display:flex;gap:12px;align-items:center}
+.au-pts li > span{flex:0 0 auto;width:40px;height:40px;border-radius:10px;display:grid;place-items:center;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.18)}
+.au-pts svg{width:19px;height:19px;color:#fff}
+.au-pts b{display:block;font-size:14.5px}.au-pts small{display:block;font-size:12.5px;color:rgba(255,255,255,.75)}
+.au-main{padding:36px 38px 30px;display:flex;flex-direction:column}
+.au-head h1{margin:0 0 6px;font-size:26px;line-height:1.2;color:#0f172a;letter-spacing:-.01em}
+.au-head p{margin:0 0 20px;color:#64748b;font-size:14.5px}
+.au-main .st-msg{margin:0 0 16px;border-radius:8px}
+.au-form{display:flex;flex-direction:column;gap:14px}
+.au-f label{display:block;margin:0 0 6px;font-size:13px;font-weight:700;color:#334155}
+.au-f small{display:block;margin-top:5px;font-size:12px;color:#94a3b8}
+.au-lrow{display:flex;justify-content:space-between;align-items:baseline}.au-lrow a{font-size:13px;font-weight:600}
+.au-in{position:relative;display:flex;align-items:center}
+.au-in input{width:100%;height:48px;padding:0 44px 0 42px;border:1px solid #d6dbe3;border-radius:10px;background:#f8fafc;font:inherit;font-size:15px;color:#0f172a;outline:none;transition:border-color .15s,background .15s;box-sizing:border-box}
+.au-in input::placeholder{color:#a0a8b5}
+.au-in input:hover{border-color:#c2c9d4}
+.au-in input:focus{border-color:var(--sa,#0c6878);background:#fff;box-shadow:none}
+.au-ic{position:absolute;left:13px;top:50%;transform:translateY(-50%);display:grid;color:#94a3b8;pointer-events:none}.au-ic svg{width:18px;height:18px}
+.au-in:focus-within .au-ic{color:var(--sa,#0c6878)}
+.au-eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:36px;height:36px;border:0;border-radius:8px;background:none;color:#94a3b8;cursor:pointer;display:grid;place-items:center}
+.au-eye:hover{background:#eef2f6;color:#334155}.au-eye svg{width:19px;height:19px}.au-eye .c{display:none}.au-eye.on .c{display:inline}.au-eye.on .o{display:none}
+.au-in.st-pw button{height:36px}
+.au-two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.au-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:50px;margin-top:6px;border:0;border-radius:10px;background:linear-gradient(135deg,var(--sa,#0c6878),#0e8a9e);color:#fff;font:inherit;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 8px 20px rgba(12,104,120,.22);transition:transform .15s,box-shadow .15s}
+.au-btn:hover{transform:translateY(-1px);box-shadow:0 12px 26px rgba(12,104,120,.28)}.au-btn svg{width:18px;height:18px}
+.au-alt{margin:20px 0 0;padding-top:18px;border-top:1px solid #eef2f6;text-align:center;font-size:14px;color:#64748b}.au-alt a{font-weight:700}
+@media (max-width:860px){
+  .au{grid-template-columns:1fr;margin:12px auto 24px;border-radius:12px}
+  .au-side{padding:20px 18px;gap:12px}
+  .au-hero h2{font-size:21px;margin-bottom:4px}.au-hero p{font-size:13.5px}
+  .au-pts{flex-direction:row;gap:8px;margin:0;overflow-x:auto;scrollbar-width:none}.au-pts::-webkit-scrollbar{display:none}
+  .au-pts li{flex:0 0 auto;gap:7px;padding:6px 10px 6px 6px;border-radius:999px;background:rgba(255,255,255,.12)}
+  .au-pts li > span{width:26px;height:26px;border-radius:50%;border:0}.au-pts svg{width:14px;height:14px}.au-pts small{display:none}.au-pts b{font-size:12.5px;white-space:nowrap}
+  .au-main{padding:22px 18px 20px}.au-head h1{font-size:22px}
+  .au-two{grid-template-columns:1fr}
+}
+[data-theme="dark"] .au{background:#151b23;border-color:#263040}[data-theme="dark"] .au-head h1{color:#e5e7eb}[data-theme="dark"] .au-in input{background:#0f141b;border-color:#334155;color:#e5e7eb}[data-theme="dark"] .au-alt{border-color:#263040}
+.au-in.st-pw .au-eye{top:50%;right:6px;width:36px;height:36px;transform:translateY(-50%)} /* inside the field (beats the old .st-pw button rule) */

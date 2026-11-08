@@ -562,6 +562,7 @@ function sh_icon(string $n): string
     static $p = [
         'play' => '<circle cx="12" cy="12" r="10"/><path d="m10 8 6 4-6 4Z"/>',
         'arrow' => '<path d="M5 12h14M13 6l6 6-6 6"/>',
+        'mail' => '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>',
         'pdf' => '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M7.5 17v-4h1.2a1.2 1.2 0 0 1 0 2.4H7.5M11.5 17v-4h.9a2 2 0 0 1 0 4ZM15.5 17v-4h2M15.5 15h1.5"/>',
         'board' => '<rect x="2" y="3" width="20" height="13" rx="2"/><path d="M8 21h8M12 16v5M6 12l3-3 3 2 5-5"/>',
         'quiz' => '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="m8 8 1.5 1.5L12 7M8 14l1.5 1.5L12 13M14 8h3M14 14h3"/>',
@@ -900,6 +901,20 @@ function sh_lesson_thumb(array $l, array $p): string
 }
 /** The FREE badge (with the light sweep) for free lessons / PDFs. */
 function sh_free_badge(): string { return '<span class="st-freeb">Free</span>'; }
+/** Log in / sign up: the brand panel on the left (on phones a slim band on top). */
+function sh_auth_side(string $mode): string
+{
+    if (!function_exists('ci_brand')) require_once INCLUDES_PATH . '/institute.php';
+    $b = ci_brand();
+    $h = $mode === 'login' ? ['Welcome back!', 'Log in to continue your classes, notes and progress.'] : ['Start learning today', 'One free account for all your courses, notes and doubts.'];
+    $pts = [['video', 'Recorded classes', 'Watch any time, pause and repeat'], ['pdf', 'PDF notes', 'Chapter-wise notes to read and download'], ['chat', 'Doubt solving', 'Ask the teacher under any lecture']];
+    $li = ''; foreach ($pts as [$i, $t, $d]) $li .= '<li><span>' . sh_icon($i) . '</span><div><b>' . sh_e($t) . '</b><small>' . sh_e($d) . '</small></div></li>';
+    return '<aside class="au-side"><a class="au-brand" href="/"><img src="' . sh_e($b['emblem']) . '" alt="" width="44" height="44"><span><b>' . sh_e($b['title']) . '</b>' . ($b['line'] !== '' ? '<small>' . sh_e($b['line']) . '</small>' : '') . '</span></a>'
+        . '<div class="au-hero"><h2>' . sh_e($h[0]) . '</h2><p>' . sh_e($h[1]) . '</p></div><ul class="au-pts">' . $li . '</ul></aside>';
+}
+/** An input with an icon inside (log in / sign up). */
+function sh_auth_icon(string $n): string { return '<span class="au-ic" aria-hidden="true">' . sh_icon($n) . '</span>'; }
+function sh_eye_btn(): string { return '<button type="button" class="au-eye" data-eye aria-label="Show password" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path class="o" d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle class="o" cx="12" cy="12" r="3"/><path class="c" d="M3 3l18 18M10.6 5.1A10 10 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.2 4.1M6.6 6.6C3.9 8.3 2 12 2 12s3.5 7 10 7c1.7 0 3.2-.4 4.5-1.1"/></svg></button>'; }
 function sh_is_direct_video(string $url): bool { return (bool)preg_match('#\.(mp4|m4v|webm|mov)(\?|$)#i', $url); }
 
 /** Notes PDFs of one lecture. */
