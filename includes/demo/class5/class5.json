@@ -1151,6 +1151,221 @@
      ]
     }
    ]
+  },
+  {
+   "key": "c5-english-batch",
+   "title": "Class 5 English — Exam Batch (Demo)",
+   "subtitle": "Chapters 7 to 12 — stories, poems and exercises before the exam",
+   "word": "English",
+   "line": "Exam Batch",
+   "tags": "Chapters 7–12 · Exercises",
+   "color": [
+    "#9333ea",
+    "#c026d3"
+   ],
+   "desc": "A demo upcoming exam batch for Class 5 English (Gulmohar), chapters 7 to 12.\n\nVideos: public YouTube lectures by Magnet Brains.",
+   "price": 349,
+   "mrp": 699,
+   "days": 180,
+   "starts": 10,
+   "teacher": "av",
+   "chapters": [
+    {
+     "t": "Chapter 7",
+     "l": [
+      {
+       "id": "d89aayd1Gnk",
+       "t": "The Thief is Caught Story - Explanation"
+      },
+      {
+       "id": "WENhbSRrsB8",
+       "t": "The Thief Is Caught Story - Exercise (Part 1)"
+      }
+     ]
+    },
+    {
+     "t": "Chapter 8",
+     "l": [
+      {
+       "id": "XACWpiIBgDQ",
+       "t": "Demosthenes Story - Explanation"
+      },
+      {
+       "id": "U301gIBfibg",
+       "t": "Demosthenes Story - Exercise (Part 1)"
+      },
+      {
+       "id": "sR9e2C1_j9c",
+       "t": "Demosthenes Story - Exercise (Part 2)"
+      },
+      {
+       "id": "qUnbLb6cgDA",
+       "t": "The Roadside Locksmith Poem - Explanation"
+      },
+      {
+       "id": "kJB2JIfEn5w",
+       "t": "The Roadside Locksmith Poem - Exercise"
+      }
+     ]
+    },
+    {
+     "t": "Chapter 9",
+     "l": [
+      {
+       "id": "ClDHy8GrZpA",
+       "t": "A Rare Species of Uncle Story - Explanation"
+      },
+      {
+       "id": "aNPJtCAG0UU",
+       "t": "A Rare Species of Uncle Story - Exercise (Part 1)"
+      },
+      {
+       "id": "I2_rXOBp5ns",
+       "t": "A Rare Species of Uncle Story -Exercise(Part 2) with Grammar"
+      },
+      {
+       "id": "oVbmglkxkKA",
+       "t": "Ring Out Wild Bells Poem - Exercise"
+      },
+      {
+       "id": "qYqoGz6ic3c",
+       "t": "Ring Out Wild Bells Poem - Explanation"
+      }
+     ]
+    },
+    {
+     "t": "Chapter 10",
+     "l": [
+      {
+       "id": "QCiIl1jVk1c",
+       "t": "Tamarind Poem - Explanation"
+      },
+      {
+       "id": "AqIadWuOt_Y",
+       "t": "Tamarind Poem - Exercise"
+      },
+      {
+       "id": "MPpbaqpOOF4",
+       "t": "One Friday Morning Story - Explanation"
+      },
+      {
+       "id": "Hb4nG5hq0QQ",
+       "t": "One Friday Morning Story - Exercise (Part 1)"
+      }
+     ]
+    },
+    {
+     "t": "Chapter 11",
+     "l": [
+      {
+       "id": "otR8YxqnyJA",
+       "t": "The Piper of Manas Story - Explanation"
+      },
+      {
+       "id": "YOJqEimosE8",
+       "t": "The Piper of Manas Story - Exercise (Part 1)"
+      },
+      {
+       "id": "LTYDqrSUQFk",
+       "t": "The Piper of Manas Story - Exercise(Part 2)"
+      }
+     ]
+    },
+    {
+     "t": "Chapter 12",
+     "l": [
+      {
+       "id": "zf0syN4bTH8",
+       "t": "The Christmas Carol Story - Explanation"
+      },
+      {
+       "id": "cgpRhI0_HPU",
+       "t": "The Christmas Carol Story - Exercise (Part 1)"
+      },
+      {
+       "id": "toI5VEF4LYA",
+       "t": "The Christmas Carol Story - Exercise (Part 2)"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "c5-gk-batch",
+   "title": "Class 5 GK Olympiad Batch (Free Demo)",
+   "subtitle": "Sports, awards, scientists and the environment — quiz practice",
+   "word": "GK",
+   "line": "Olympiad Batch",
+   "tags": "Quiz · Practice",
+   "color": [
+    "#1d4ed8",
+    "#0891b2"
+   ],
+   "desc": "A free demo upcoming batch for GK olympiad practice.\n\nVideos: public YouTube lectures by Magnet Brains.",
+   "price": 0,
+   "mrp": 299,
+   "days": 0,
+   "starts": 20,
+   "teacher": "av",
+   "chapters": [
+    {
+     "t": "Olympiad practice",
+     "l": [
+      {
+       "id": "cWGTP7v14cg",
+       "t": "Deficiency Diseases - Exercise"
+      },
+      {
+       "id": "I5uiBI0R1Zc",
+       "t": "Sports, Cups and Trophies - Explanation"
+      },
+      {
+       "id": "kx52MOFh2wI",
+       "t": "Sports, Cups and Trophies - Exercise"
+      },
+      {
+       "id": "6lwbi9iZnkU",
+       "t": "Cricket World - Explanation"
+      },
+      {
+       "id": "YFhI1lMmWM8",
+       "t": "Cricket World - Exercise"
+      },
+      {
+       "id": "uFYG-5wWpBs",
+       "t": "Dances of the World - Explanation"
+      },
+      {
+       "id": "Ac6GBbEhOz4",
+       "t": "Dances of the World - Exercise"
+      },
+      {
+       "id": "pQ2TrhXudGY",
+       "t": "The Oscar Awards - Explanation"
+      },
+      {
+       "id": "Y6ZsGkPEX8I",
+       "t": "The Oscar Awards - Exercise"
+      },
+      {
+       "id": "fq2ANXftZsQ",
+       "t": "Famous Environmentalists - Explanation"
+      },
+      {
+       "id": "aHei_XUKb8k",
+       "t": "Famous Environmentalists - Exercise"
+      },
+      {
+       "id": "M-qpZj75tDo",
+       "t": "Life Cycle of Butterfly - Explanation"
+      },
+      {
+       "id": "ABTfeR1DCIY",
+       "t": "Life Cycle of Butterfly - Exercise"
+      }
+     ]
+    }
+   ]
   }
  ],
  "notes": [

@@ -39,7 +39,6 @@ $frees = [];
 if ($t === '') { try { $frees = $pdo->query("SELECT * FROM hm_free WHERE active = 1" . ($cid ? " AND category_id = $cid" : '') . " ORDER BY sort, id DESC LIMIT 12")->fetchAll(PDO::FETCH_ASSOC);
     foreach ($frees as &$__f) if (!empty($__f['thumb_custom'])) $__f['thumb'] = sh_upload_url($__f['thumb_custom']); unset($__f); } catch (Throwable) {} }
 $tNames = [];
-foreach ($upc as $p) if (!empty($p['teacher_id'])) $tNames[(int)$p['teacher_id']] ??= sh_teacher_name($pdo, (int)$p['teacher_id']);
 $catName = fn(array $p) => $cats[(int)($p['category_id'] ?? 0)]['name'] ?? '';
 $others = array_values(array_filter($cats, fn($c) => !$cat || (int)$c['id'] !== $cid));
 $allC = $cat ? '/courses/?c=' . rawurlencode($cat['slug']) : '/courses/';
@@ -51,33 +50,16 @@ require ROOT_PATH . '/components/store-open.php';
 ?>
 <link rel="stylesheet" href="/assets/css/home.css?v=<?= @filemtime(ROOT_PATH . '/assets/css/home.css') ?: 1 ?>">
 <div class="sp-wrap"><p class="st-crumb cp-crumb"><a href="/">Home</a> › <?= $cat ? '<a href="/all-categories/">Categories</a> › ' . sh_e($cat['name']) : 'Courses &amp; Notes' ?></p>
-<header class="cp-head">
-  <h1><?= sh_e($cat ? $cat['name'] : $stTitle) ?></h1>
-  <?php if ($cat && $cat['description']): ?><div class="cp-sub"><?= nl2br(sh_e($cat['description'])) ?></div>
-  <?php else: ?><p class="cp-sub"><?= $cat ? 'Video courses, new batches and PDF notes for ' . sh_e($cat['name']) . '.' : 'Recorded classes and notes from our teachers — buy once, study anytime.' ?></p><?php endif; ?>
-</header></div>
+<h1 class="screen-reader-text"><?= sh_e($cat ? $cat['name'] : $stTitle) ?></h1></div>
 
 <?php if (!$upc && !$crs && !$nts && !$frees): ?>
 <section class="hm-sec"><div class="sp-wrap"><div class="cp-empty"><?= $ico('notes') ?><b>Nothing here yet</b><p>New courses and notes<?= $cat ? ' for ' . sh_e($cat['name']) : '' ?> are coming soon.</p><a class="hm-btn hm-pro hm-splash" href="/courses/">See all courses <span class="hm-pro-a"><?= $ico('arrow') ?></span></a></div></div></section>
 <?php endif; ?>
 
-<?php if ($upc): ?>
-<section class="hm-sec hm-bt-s" id="upcoming"><div class="sp-wrap">
-  <div class="hm-h"><div><h2>Upcoming batches</h2><p class="hm-hsub">New batches<?= $cat ? ' for ' . sh_e($cat['name']) : '' ?> — join before the first class.</p></div><a href="/upcoming-courses/<?= $cat ? '?c=' . rawurlencode($cat['slug']) : '' ?>">View all ›</a></div>
-  <div class="hm-bt" data-hs data-auto="6500">
-    <div class="hs-track"><?php foreach ($upc as $p): [$bt] = sh_batch($p); $tn = $tNames[(int)($p['teacher_id'] ?? 0)] ?? ''; $fr = (float)$p['price'] <= 0; ?>
-      <div class="hs-s"><div class="hm-btc">
-        <a class="hm-btc-i" href="<?= sh_e(sh_url($p)) ?>" tabindex="-1" aria-hidden="true"><?= sh_thumb_html($p) ?></a>
-        <div class="hm-btc-b">
-          <div class="hm-btc-tags"><span class="t-up">Upcoming batch</span><?= $catName($p) !== '' ? '<span>' . sh_e($catName($p)) . '</span>' : '' ?></div>
-          <h3><a href="<?= sh_e(sh_url($p)) ?>"><?= sh_e($p['title']) ?></a></h3>
-          <?php if ($p['subtitle']): ?><p><?= sh_e($p['subtitle']) ?></p><?php endif; ?>
-          <ul class="hm-btc-m"><?php if ($bt !== ''): ?><li><?= $ico('calendar') ?> <?= sh_e($bt) ?></li><?php endif; ?><?php if ($tn !== ''): ?><li><?= $ico('user') ?> <?= sh_e($tn) ?></li><?php endif; ?><li><?= $ico('video') ?> <?= $plural((int)$p['lessons'], 'lecture', 'lectures') ?></li><?php if ((int)$p['validity_days']): ?><li><?= $ico('clock') ?> <?= (int)$p['validity_days'] ?> days access</li><?php endif; ?></ul>
-          <div class="hm-btc-f"><span class="hm-btc-p"><?= sh_price_html($p) ?></span><a class="hm-btn hm-splash" href="<?= sh_e(sh_url($p)) ?>">Join this batch <?= $ico('arrow') ?></a></div>
-        </div></div></div>
-    <?php endforeach; ?></div>
-    <?php if (count($upc) > 1): ?><button type="button" class="hs-prev" aria-label="Previous">‹</button><button type="button" class="hs-next" aria-label="Next">›</button><div class="hs-dots"></div><?php endif; ?>
-  </div>
+<?php if ($upc): // upcoming batches: cards (3 at a time on computers) in a slider; each card has its Upcoming tag ?>
+<section class="hm-sec cp-up-s" id="upcoming" aria-label="Upcoming batches"><div class="sp-wrap">
+  <div class="hm-ns cp-up" data-hs><div class="hs-track"><?php foreach ($upc as $p): ?><div class="hs-s"><?= sh_mini_card($p, $catName($p)) ?></div><?php endforeach; ?></div>
+    <?php if (count($upc) > 1): ?><button type="button" class="hs-prev" aria-label="Previous">‹</button><button type="button" class="hs-next" aria-label="Next">›</button><div class="hs-dots"></div><?php endif; ?></div>
 </div></section>
 <?php endif; ?>
 

@@ -1056,7 +1056,7 @@ function sh_mini_card(array $p, string $cat = ''): string
     return '<a class="hc" href="' . sh_e(sh_url($p)) . '"><span class="hc-img">' . sh_thumb_html($p) . '</span>'
         . '<span class="hc-b">' . ($top !== '' ? '<span class="hc-top">' . $top . '</span>' : '') . '<b class="hc-t">' . sh_e($p['title']) . '</b>'
         . '<small class="hc-m' . ($bt === '' && $p['type'] === 'notes' ? ' hc-pdf' : '') . '">' . $mi . sh_e($bt !== '' ? $bt : $meta) . '</small>' . '<span class="hc-p">' . sh_price_html($p) . '</span>'
-        . '<span class="hc-f"><span class="hc-go' . ($free ? ' hc-join' : '') . '">' . sh_cta($p, 'View details') . ' ' . sh_icon('arrow') . '</span></span></span></a>';
+        . '<span class="hc-f"><span class="hc-go' . ($free ? ' hc-join' : '') . '">' . ($up ? sh_cta($p, 'Join batch') : sh_cta($p, 'View details')) . ' ' . sh_icon('arrow') . '</span></span></span></a>';
 }
 /** Published courses / notes for the homepage lists and "View more".
     $when: '' all · 'launched' already started (or no start date) · 'upcoming' batch starts today or later (soonest first).

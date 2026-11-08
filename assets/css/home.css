@@ -455,6 +455,10 @@
 .cp-empty{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;padding:44px 20px;border:1.5px dashed #d1d5db;border-radius:14px;background:#fafafa}
 .cp-empty > svg{width:42px;height:42px;color:var(--sa,#0c6878)}.cp-empty b{font-size:19px;color:#111827}.cp-empty p{margin:0 0 8px;color:#6b7280}
 .cp-others{padding-bottom:20px}
+.cp .hm-sec.cp-up-s{padding-top:4px!important}
+.cp-up .hs-s{flex-basis:calc((100% - 32px) / 3)}
+@media (max-width:760px){.cp-up .hs-s{flex-basis:calc((100% - 12px) / 2)}}
+.cp .screen-reader-text{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
 @media (max-width:760px){
   .st.cp .cp-head h1{font-size:24px}.cp-sub{font-size:14px}
   .cp .hm-sec{padding-top:32px}.cp .hm-h h2{font-size:21px}.cp .hm-hsub{font-size:13.5px}

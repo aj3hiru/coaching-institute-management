@@ -438,12 +438,12 @@ function sh_demo_people(PDO $pdo): string
 
 /** More demo content for Class 5 (includes/demo/class5): video courses made from YouTube playlists (paid, free and
     upcoming batches), PDF notes packs (free and paid) and free YouTube courses. Remembered in shop.demo like the rest,
-    so "Remove demo data" removes it too. Runs once. */
+    so "Remove demo data" removes it too. Running it again adds only the items that are not there yet. */
 function sh_demo_class5(PDO $pdo): string
 {
     sh_tables($pdo);
     $info = sh_demo_info();
-    if (!empty($info['class5'])) return 'Class 5 demo content is already added.';
+    $again = !empty($info['class5']);
     $dir = __DIR__ . '/demo/class5';
     $J = json_decode((string)@file_get_contents("$dir/class5.json"), true);
     if (!$J) throw new RuntimeException('Class 5 demo content is missing (includes/demo/class5/class5.json).');
@@ -461,9 +461,14 @@ function sh_demo_class5(PDO $pdo): string
     };
     $media = sh_media_dir();
     $new = []; $free = [];
+    $have = function (string $title) use ($pdo, $info): bool { // already made by this demo
+        $q = $pdo->prepare("SELECT id FROM sh_products WHERE title = ?"); $q->execute([$title]);
+        return in_array((int)$q->fetchColumn(), array_map('intval', $info['products']), true);
+    };
     $pdo->beginTransaction();
     try {
         foreach (array_reverse($J['courses'], true) as $ci => $c) { // last first, so the first one is the newest
+            if ($again && $have($c['title'])) continue;
             $pdo->prepare("INSERT INTO sh_products (type, title, slug, subtitle, description, thumb, price, mrp, validity_days, status, sort, category_id, teacher_id, starts_at, includes)
                 VALUES ('course',?,?,?,?,?,?,?,?, 'published', ?,?,?,?,?)")->execute([$c['title'], sh_unique_slug($pdo, $c['title']), $c['subtitle'], $c['desc'], $pub($c['key'] . '.jpg'),
                 $c['price'], $c['mrp'], $c['days'], 60 + (int)$ci, $cat, $T[$c['teacher']] ?? null, $c['starts'] ? date('Y-m-d', strtotime('+' . (int)$c['starts'] . ' days')) : null,
@@ -478,6 +483,7 @@ function sh_demo_class5(PDO $pdo): string
             }
         }
         foreach (array_reverse($J['notes'], true) as $ni => $n) {
+            if ($again && $have($n['title'])) continue;
             $pdo->prepare("INSERT INTO sh_products (type, title, slug, subtitle, description, thumb, price, mrp, validity_days, status, sort, category_id) VALUES ('notes',?,?,?,?,?,?,?,0,'published',?,?)")
                 ->execute([$n['title'], sh_unique_slug($pdo, $n['title']), $n['subtitle'], $n['desc'], $pub($n['key'] . '.jpg'), $n['price'], $n['mrp'], 80 + (int)$ni, $cat]);
             $pid = (int)$pdo->lastInsertId(); $new[] = $pid;
@@ -489,7 +495,7 @@ function sh_demo_class5(PDO $pdo): string
                 ->execute([$pid, preg_replace('/\s*\((Free )?Demo\)$/', '', $n['title']), $rel, filesize("$media/$rel"), $pages, (float)$n['price'] > 0 ? 0 : 1]);
         }
         $fi = (int)$pdo->query("SELECT COALESCE(MAX(sort),0) FROM hm_free")->fetchColumn();
-        foreach ($J['free'] as $f) {
+        foreach ($again ? [] : $J['free'] as $f) {
             $pdo->prepare("INSERT INTO hm_free (url, list_id, video_id, title, thumb, channel, videos, category_id, sort, active) VALUES (?,?,?,?,?,?,?,?,?,1)")
                 ->execute(['https://www.youtube.com/playlist?list=' . $f['list'], $f['list'], $f['video'], $f['title'], 'https://i.ytimg.com/vi/' . $f['video'] . '/hqdefault.jpg', $f['channel'], $f['videos'], $cat, ++$fi]);
             $free[] = (int)$pdo->lastInsertId();
@@ -503,7 +509,7 @@ function sh_demo_class5(PDO $pdo): string
         throw $e;
     }
     sh_home_refresh();
-    return 'Class 5 demo added: ' . count($J['courses']) . ' courses, ' . count($J['notes']) . ' notes packs, ' . count($free) . ' free YouTube courses.';
+    return 'Class 5 demo: ' . count($new) . ' courses / notes packs and ' . count($free) . ' free YouTube courses added.';
 }
 
 /** Removes exactly what sh_demo_add made (products with their videos / PDFs, demo accounts, demo orders). */
