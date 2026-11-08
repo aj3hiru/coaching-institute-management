@@ -704,3 +704,6 @@ a.st-li:hover{background:#f7fbfc}a.st-li:hover svg{color:var(--sa)}
 .lp-cnt.c-vvi{background:#fff7ed;color:#c2410c}
 .lp-cnt.c-mcq{background:#eef7f8;color:var(--sa,#0c6878)}
 [data-theme="dark"] .lp-cnt{background:#1f2937}
+/* phones / tablets: when the lesson list (or a tab) reaches its end, the page carries on scrolling */
+@media (max-width:1000px){.lp-fr-l,.lp-side .lt-pane,.lp-side .lt-strip{overscroll-behavior:auto!important}}
+.lp-fr-l,.lp-side .lt-pane{overscroll-behavior:auto!important} /* computers too: the page carries on at the end of the list */
