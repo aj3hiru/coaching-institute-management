@@ -219,6 +219,7 @@ function admin_shell_head(): void
     // square corners + no shadows everywhere, and the themed dropdown for every <select>
     $root = $_SERVER['DOCUMENT_ROOT'] ?? '';
     echo '<link rel="stylesheet" href="/assets/css/admin-flat.css?v=' . (@filemtime($root . '/assets/css/admin-flat.css') ?: 1) . '">' . "\n";
+    echo '<link rel="stylesheet" href="/assets/css/admin-wpmenu.css?v=' . (@filemtime($root . '/assets/css/admin-wpmenu.css') ?: 1) . '">' . "\n"; // WordPress-style sidebar menu
     echo '<script src="/assets/js/admin-select.js?v=' . (@filemtime($root . '/assets/js/admin-select.js') ?: 1) . '" defer></script>' . "\n";
     echo '<script src="/assets/js/admin-display.js?v=' . (@filemtime($root . '/assets/js/admin-display.js') ?: 1) . '" defer></script>' . "\n";
     echo '<script src="/assets/js/admin-table.js?v=' . (@filemtime($root . '/assets/js/admin-table.js') ?: 1) . '" defer></script>' . "\n";
@@ -367,6 +368,25 @@ window.admShell = {
     const b = g.querySelector('.sb-title-btn'); if (b) b.setAttribute('aria-expanded', open ? 'true' : 'false');
   },
 };
+// WordPress-style fly-out: on a computer, a menu whose sub-menu is closed shows it to the right while hovered (or focused).
+(function () {
+  var mq = window.matchMedia('(min-width:1024px)'), shut = null;
+  function place(box) {
+    var sub = box.querySelector('.sb-submenu'); if (!sub || sub.classList.contains('open') || !mq.matches) return;
+    clearTimeout(shut); [].forEach.call(document.querySelectorAll('[data-submenu].fly'), function (o) { if (o !== box) o.classList.remove('fly'); });
+    var r = box.getBoundingClientRect(); box.classList.add('fly');
+    sub.style.left = r.right + 'px'; sub.style.top = r.top + 'px';
+    var h = sub.offsetHeight, max = window.innerHeight - 8; if (r.top + h > max) sub.style.top = Math.max(8, max - h) + 'px';
+  }
+  function hide(box) { shut = setTimeout(function () { box.classList.remove('fly'); }, 120); }
+  [].forEach.call(document.querySelectorAll('.sidebar.sb [data-submenu]'), function (box) {
+    box.addEventListener('mouseenter', function () { place(box); });
+    box.addEventListener('mouseleave', function () { hide(box); });
+    box.addEventListener('focusin', function () { place(box); });
+    box.addEventListener('focusout', function (e) { if (!box.contains(e.relatedTarget)) box.classList.remove('fly'); });
+  });
+  var nav = document.getElementById('admSbNav'); if (nav) nav.addEventListener('scroll', function () { [].forEach.call(document.querySelectorAll('[data-submenu].fly'), function (o) { o.classList.remove('fly'); }); });
+})();
 // Menus open only for the page you are on: after a refresh every other menu starts closed (nothing is remembered).
 try { Object.keys(localStorage).forEach(function (k) { if (/^nav_/.test(k)) localStorage.removeItem(k); }); } catch (e) {}
 (function () { var n = document.getElementById('admSbNav'); if (!n) return; try { n.scrollTop = +sessionStorage.getItem('adm_sb_scroll') || 0; } catch (e) {} n.addEventListener('scroll', function () { try { sessionStorage.setItem('adm_sb_scroll', n.scrollTop); } catch (e) {} }); })();

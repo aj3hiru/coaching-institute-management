@@ -1,0 +1,42 @@
+/* Admin sidebar in the WordPress admin-menu style (dark menu, blue current item, sub-menus that fly out on hover and
+   open below the current item). The logo block on top (.sb-head) keeps its own look and height. */
+.sidebar.sb{background:#1d2327;border-right:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen-Sans,Ubuntu,Cantarell,"Helvetica Neue",sans-serif}
+.sidebar.sb .sb-head{background:#fff}
+.sidebar.sb .sb-nav{padding:0 0 24px;scrollbar-width:thin;scrollbar-color:#50575e #1d2327}
+.sidebar.sb .sb-nav::-webkit-scrollbar-thumb{background:#50575e}
+.sidebar.sb .sb-section{margin:0;padding:0}
+/* group names: a quiet separator line like WordPress */
+.sidebar.sb .sb-title{margin:0;padding:14px 12px 5px;font-size:10.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#8c8f94!important;border-top:1px solid #2c3338}
+.sidebar.sb .sb-section:first-child .sb-title{border-top:0}
+.sidebar.sb .sb-title-btn{color:#8c8f94}.sidebar.sb .sb-title-btn:hover{color:#72aee6}
+/* top items */
+.sidebar.sb .sb-link{position:relative;display:flex;align-items:center;gap:8px;margin:0;padding:8px 12px 8px 10px;min-height:36px;border-radius:0!important;font-size:14px;font-weight:400;line-height:18px;color:#f0f0f1!important;background:transparent;text-decoration:none;transition:none}
+.sidebar.sb .sb-icon{width:24px;font-size:16px;color:#a7aaad;transition:none}
+.sidebar.sb .sb-link:hover,.sidebar.sb .sb-link:focus-visible,.sidebar.sb [data-submenu]:hover > .sb-row .sb-link,.sidebar.sb [data-submenu].fly > .sb-row .sb-link{background:#2c3338;color:#72aee6!important;outline:0}
+.sidebar.sb .sb-link:hover .sb-icon,.sidebar.sb [data-submenu]:hover > .sb-row .sb-icon,.sidebar.sb [data-submenu].fly > .sb-row .sb-icon{color:#72aee6}
+.sidebar.sb .sb-button{color:#f0f0f1!important;font-size:14px;font-weight:400}
+/* the page you are on: blue, with the little white arrow pointing at the page */
+.sidebar.sb .sb-link.active:not(.sb-sub),.sidebar.sb [data-force="1"] > .sb-row .sb-link,.sidebar.sb [data-force="1"]:hover > .sb-row .sb-link{background:#2271b1!important;color:#fff!important;font-weight:400}
+.sidebar.sb .sb-link.active:not(.sb-sub) .sb-icon,.sidebar.sb [data-force="1"] > .sb-row .sb-icon{color:#fff!important}
+.sidebar.sb .sb-link.active:not(.sb-sub)::after,.sidebar.sb [data-force="1"] > .sb-row .sb-link::after{content:"";position:absolute;right:0;top:50%;margin-top:-8px;border:8px solid transparent;border-right-color:#f0f0f1;pointer-events:none}
+.sidebar.sb .sb-row{position:relative;margin:0}
+.sidebar.sb .sb-chev{width:34px;height:36px;color:#a7aaad;border-radius:0!important}.sidebar.sb .sb-chev:hover{background:#2c3338;color:#72aee6}
+.sidebar.sb [data-force="1"] .sb-chev{color:#fff;background:#2271b1}
+/* sub-menu of the current item: open below it, dark grey */
+.sidebar.sb .sb-submenu{background:#2c3338;transition:none}
+.sidebar.sb .sb-submenu.open{padding:7px 0 8px}
+.sidebar.sb .sb-link.sb-sub{min-height:0;padding:6px 12px 6px 44px;font-size:13px;line-height:1.4;color:rgba(240,246,252,.7)!important}
+.sidebar.sb .sb-sub .sb-icon{display:none}
+.sidebar.sb .sb-link.sb-sub:hover,.sidebar.sb .sb-link.sb-sub:focus-visible{background:transparent;color:#72aee6!important}
+.sidebar.sb .sb-link.sb-sub.active{color:#fff!important;font-weight:600;background:transparent}
+.sidebar.sb .sb-badge{background:#d63638!important;color:#fff;border-radius:9px!important;min-width:18px;height:18px;font-size:9px;line-height:18px;padding:0 5px}
+/* computers: no arrows; a sub-menu that is not open flies out to the right on hover (placed by admin-wpmenu in shell.php) */
+@media (min-width:1024px){
+  .sidebar.sb{transform:none!important;overflow:visible!important} /* so a fly-out (position:fixed) is placed on the page, not cut off inside the sidebar */
+  .sidebar.sb .sb-chev{display:none}
+  .sidebar.sb [data-submenu].fly > .sb-submenu:not(.open){position:fixed;z-index:10050;display:block;max-height:none;overflow:visible;min-width:180px;padding:7px 0 8px;box-shadow:0 3px 5px rgba(0,0,0,.2)}
+  .sidebar.sb [data-submenu].fly > .sb-submenu:not(.open)::before{content:"";position:absolute;left:-16px;top:10px;border:8px solid transparent;border-right-color:#2c3338}
+  .sidebar.sb [data-submenu].fly > .sb-submenu:not(.open) .sb-link.sb-sub{padding:6px 16px 6px 14px;white-space:nowrap}
+}
+/* phones / tablets: the arrow opens the sub-menu below */
+@media (max-width:1023px){.sidebar.sb .sb-chev{display:flex}.sidebar.sb [data-force="1"] > .sb-row .sb-link::after{display:none}}
