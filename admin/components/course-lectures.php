@@ -71,6 +71,11 @@ $hm = $secsTotal ? (intdiv($secsTotal, 3600) ? intdiv($secsTotal, 3600) . 'h ' :
 .lc-row .lc-t{min-width:0}.lc-row .lc-t a{font-weight:700;color:#111827;text-decoration:none;display:block;line-height:1.35}.lc-row .lc-t a:hover{color:var(--ci-acc,#7c3aed)}
 .lc-row .lc-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:5px;align-items:center}
 .lc-free{font-size:12px;font-weight:700;border:1px solid #d1d5db;background:#fff;padding:4px 10px;cursor:pointer;color:#6b7280;white-space:nowrap}.lc-free.on{color:#15803d;border-color:#86efac;background:#f0fdf4}
+.lc-quick{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}.lc-quick a{font-size:12px;font-weight:600;padding:2px 8px;border:1px dashed #c4b5fd;color:var(--ci-acc,#7c3aed);text-decoration:none;background:#faf8ff}.lc-quick a:hover{border-style:solid;background:#f3effa}
+.lc-emb{position:fixed;inset:0;z-index:100050;background:rgba(17,24,39,.55);display:flex;align-items:center;justify-content:center;padding:18px}
+.lc-emb-box{width:min(1300px,100%);height:min(94vh,1000px);background:#fff;display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(15,23,42,.35)}
+.lc-emb-h{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid #e5e7eb}.lc-emb-h b{font-size:16px}
+.lc-emb iframe{flex:1;width:100%;border:0}
 .lc-empty{padding:16px;color:#6b7280;font-size:13.5px}
 .lc-empty a{font-weight:600}
 .shc-bar{height:6px;background:#e5e7eb;margin-top:6px;display:none}.shc-bar i{display:block;height:100%;width:0;background:var(--ci-acc,#4a3369);transition:width .2s}.shc-up.busy .shc-bar{display:block}
@@ -121,7 +126,7 @@ foreach ($blocks as $s): $open = count($blocks) <= 3 || $si < 2; ?>
     <span class="lc-tools" onclick="event.stopPropagation()">
       <?php if (isset($ytl[$s['id']])): $yl = $ytl[$s['id']]; ?><span class="shc-tag yt" title="New videos of this playlist come in by themselves<?= $yl['yt_synced'] ? ' · checked ' . ci_e(date('d M, h:i A', strtotime($yl['yt_synced']))) : '' ?>"><i class="fab fa-youtube"></i> Playlist</span>
         <?= $btn('sync_section', $s['id'], 'refresh', 'Sync now — fetch new videos from the playlist', ['anchor' => 'list']) ?><?= $btn('unlink_playlist', $s['id'], 'unlink', 'Unlink playlist (lectures stay)', ['anchor' => 'list'], 'Unlink the playlist from this chapter? The lectures already added stay.') ?><?php endif; ?>
-      <a class="ci-btn ci-ghost ci-sm" href="/admin/shop-lecture.php?course=<?= $pid ?>&chapter=<?= $s['id'] ?>"><i class="fas fa-plus"></i> Lecture</a>
+      <a class="ci-btn ci-ghost ci-sm" data-embed href="/admin/shop-lecture.php?course=<?= $pid ?>&amp;chapter=<?= $s['id'] ?>&amp;embed=1"><i class="fas fa-plus"></i> Lecture</a>
       <span class="ci-icos"><?= $btn('move_section', $s['id'], 'up', 'Move chapter up', ['dir' => -1, 'anchor' => 'list']) ?><?= $btn('move_section', $s['id'], 'down', 'Move chapter down', ['dir' => 1, 'anchor' => 'list']) ?><?= $btn('delete_section', $s['id'], 'trash', 'Remove chapter', ['anchor' => 'list'], 'Remove the chapter "' . $s['title'] . '"? Its lectures are kept.') ?></span>
     </span>
   <?php else: ?><span class="lc-no" style="background:#9ca3af">–</span><b style="flex:1">Without a chapter</b><span class="lc-cnt"><?= count($s['lessons']) ?> lecture<?= count($s['lessons']) === 1 ? '' : 's' ?></span><?php endif; ?>
@@ -140,9 +145,10 @@ foreach ($blocks as $s): $open = count($blocks) <= 3 || $si < 2; ?>
         <?php if ($xv['qa'] || $xv['links']): ?><span class="shc-tag gr">VVI <?= count($xv['qa']) ?></span><?php endif; ?>
         <?php if ($xq['items'] || $xq['links']): ?><span class="shc-tag gr">MCQ <?= count($xq['items']) ?></span><?php endif; ?>
         <?php if (!$l['doubts_on']): ?><span class="shc-tag no">Doubts off</span><?php endif; ?>
-      </div></div>
+      </div>
+      <div class="lc-quick"><a data-embed href="/admin/shop-lecture.php?id=<?= (int)$l['id'] ?>&amp;embed=1#notes"><i class="fas fa-file-pdf"></i> Notes PDF<?= $xn ? ' (' . $xn . ')' : '' ?></a><a data-embed href="/admin/shop-lecture.php?id=<?= (int)$l['id'] ?>&amp;embed=1#quiz"><i class="fas fa-list-check"></i> Quiz / MCQ<?= $xq['items'] ? ' (' . count($xq['items']) . ')' : '' ?></a><a data-embed href="/admin/shop-lecture.php?id=<?= (int)$l['id'] ?>&amp;embed=1#vvi"><i class="fas fa-circle-question"></i> VVI questions<?= $xv['qa'] ? ' (' . count($xv['qa']) . ')' : '' ?></a></div></div>
     <form method="post" action="/admin/shop-content.php?id=<?= $pid ?>"><?= csrf_field() ?><input type="hidden" name="action" value="toggle_free"><input type="hidden" name="id" value="<?= (int)$l['id'] ?>"><input type="hidden" name="anchor" value="list"><button class="lc-free<?= $l['free'] ? ' on' : '' ?>" type="submit" title="Click to change"><?= $l['free'] ? '<i class="fas fa-unlock"></i> Free' : '<i class="fas fa-lock"></i> Paid' ?></button></form>
-    <div class="ci-icos"><?= ci_ico('edit', '/admin/shop-lecture.php?id=' . (int)$l['id'], 'Edit lecture') ?><?= $btn('move_lesson', (int)$l['id'], 'up', 'Move up', ['dir' => -1, 'anchor' => 'list']) ?><?= $btn('move_lesson', (int)$l['id'], 'down', 'Move down', ['dir' => 1, 'anchor' => 'list']) ?><?= $btn('delete_lesson', (int)$l['id'], 'trash', 'Delete lecture', ['anchor' => 'list'], 'Delete the lecture "' . $l['title'] . '"?') ?></div>
+    <div class="ci-icos"><button type="button" class="ci-ico" aria-label="Quick edit" data-i="edit" data-qedit='<?= ci_e(json_encode(['id' => (int)$l['id'], 'title' => $l['title'], 'video_url' => (string)$l['video_url'], 'duration' => (string)$l['duration'], 'section_id' => (int)$l['section_id'], 'free' => (int)$l['free'], 'doubts_on' => (int)$l['doubts_on'], 'kept' => !empty($l['video_file'])], JSON_UNESCAPED_UNICODE)) ?>'><?= ci_svg('edit') ?></button><a class="ci-ico" data-embed href="/admin/shop-lecture.php?id=<?= (int)$l['id'] ?>&amp;embed=1" aria-label="Full editor (notes PDF, quiz, VVI)" data-i="view"><i class="fas fa-up-right-from-square"></i></a><?= $btn('move_lesson', (int)$l['id'], 'up', 'Move up', ['dir' => -1, 'anchor' => 'list']) ?><?= $btn('move_lesson', (int)$l['id'], 'down', 'Move down', ['dir' => 1, 'anchor' => 'list']) ?><?= $btn('delete_lesson', (int)$l['id'], 'trash', 'Delete lecture', ['anchor' => 'list'], 'Delete the lecture "' . $l['title'] . '"?') ?></div>
   </div>
   <?php endforeach; ?>
 </details>
@@ -169,5 +175,45 @@ foreach ($blocks as $s): $open = count($blocks) <= 3 || $si < 2; ?>
 </tbody></table></div><?php endif; ?>
 </div></div>
 </div>
+<div class="ci-modal" id="lcQuick" data-mform hidden><div class="ci-modal-box ci-modal-wide" role="dialog" aria-modal="true" aria-labelledby="lcQH">
+<div class="ci-card-h"><h3 id="lcQH">Quick edit lecture</h3><button type="button" class="ci-x" data-close aria-label="Close"><i class="fas fa-times"></i></button></div><div class="ci-card-b">
+<form method="post" action="/admin/shop-content.php?id=<?= $pid ?>"><?= csrf_field() ?><input type="hidden" name="action" value="quick_lesson"><input type="hidden" name="id" value=""><input type="hidden" name="anchor" value="list">
+<div class="ci-grid2 ci-mgrid">
+  <div class="ci-f" style="grid-column:1/-1"><label>Lecture name <span class="ci-req">*</span></label><input name="title" required maxlength="200"></div>
+  <div class="ci-f" style="grid-column:1/-1"><label>Video link</label><input name="video_url" maxlength="500" placeholder="YouTube or any other source — https://…"><span class="ci-hint" id="lcQKept" hidden>This lecture plays a video uploaded before — leave empty to keep it.</span></div>
+  <div class="ci-f"><label>Chapter</label><select name="section_id"><option value="0">— No chapter —</option><?php foreach ($secs as $k => $t): ?><option value="<?= (int)$k ?>"><?= ci_e($t) ?></option><?php endforeach; ?></select></div>
+  <div class="ci-f"><label>Length</label><input name="duration" maxlength="9" placeholder="filled in from YouTube"></div>
+  <label class="ci-f" style="flex-direction:row;display:flex;gap:8px;align-items:center;font-weight:600"><input type="checkbox" name="free" value="1"> This lecture is free</label>
+  <label class="ci-f" style="flex-direction:row;display:flex;gap:8px;align-items:center;font-weight:600"><input type="checkbox" name="doubts_on" value="1"> Doubts &amp; problems</label>
+</div>
+<p class="ci-muted" style="margin:10px 0 0;font-size:12.5px">Notes PDF, Quiz / MCQ and VVI questions: the buttons under each lecture open them right here.</p>
+<div class="ci-mfoot"><a class="ci-btn ci-ghost" id="lcQFull" href="#"><i class="fas fa-up-right-from-square"></i> Full editor</a><span style="flex:1"></span><button type="button" class="ci-btn ci-ghost" data-close>Cancel</button><button class="ci-btn" type="submit"><i class="fas fa-check"></i> Save lecture</button></div>
+</form></div></div></div>
+<script>
+document.addEventListener('click', function (e) {
+  var b = e.target.closest('[data-qedit]'); if (!b) return; e.preventDefault();
+  var d = JSON.parse(b.getAttribute('data-qedit')), m = document.getElementById('lcQuick'), f = m.querySelector('form');
+  f.id.value = d.id; f.title.value = d.title; f.video_url.value = d.video_url; f.duration.value = d.duration; f.section_id.value = String(d.section_id || 0);
+  f.free.checked = !!d.free; f.doubts_on.checked = !!d.doubts_on; document.getElementById('lcQKept').hidden = !d.kept; document.getElementById('lcQFull').href = '/admin/shop-lecture.php?id=' + d.id + '&embed=1'; document.getElementById('lcQFull').setAttribute('data-embed', '');
+  window.ciModal.open('#lcQuick');
+});
+</script>
+<!-- the lecture editor (notes PDF, quiz / MCQ, VVI …) in a popup on this page -->
+<div class="lc-emb" id="lcEmb" hidden><div class="lc-emb-box" role="dialog" aria-modal="true" aria-label="Lecture"><div class="lc-emb-h"><b id="lcEmbT">Lecture</b><button type="button" class="ci-btn ci-ghost ci-sm" id="lcEmbX"><i class="fas fa-times"></i> Close</button></div><iframe id="lcEmbF" title="Lecture editor"></iframe></div></div>
+<script>
+(function () {
+  var box = document.getElementById('lcEmb'), fr = document.getElementById('lcEmbF'), t = document.getElementById('lcEmbT');
+  function close() { box.hidden = true; fr.src = 'about:blank'; document.documentElement.style.overflow = ''; }
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest('a[data-embed]'); if (!a || e.ctrlKey || e.metaKey) return; e.preventDefault();
+    if (window.ciModal) try { window.ciModal.close('#lcQuick'); } catch (x) {}
+    t.textContent = /#quiz/.test(a.href) ? 'Quiz / MCQ' : (/#notes/.test(a.href) ? 'Notes PDF' : (/#vvi/.test(a.href) ? 'VVI questions' : (/course=/.test(a.href) ? 'Add lecture' : 'Edit lecture')));
+    fr.src = a.getAttribute('href'); box.hidden = false; document.documentElement.style.overflow = 'hidden';
+  });
+  document.getElementById('lcEmbX').addEventListener('click', close);
+  box.addEventListener('click', function (e) { if (e.target === box) close(); });
+  window.addEventListener('message', function (e) { if (e.origin === location.origin && e.data && e.data.lectureSaved) { close(); location.hash = 'lectures'; location.reload(); } });
+})();
+</script>
 <script>window.SHC = { pid: <?= $pid ?>, csrf: <?= json_encode(csrf_token()) ?>, self: <?= json_encode('/admin/shop-products.php?edit=' . $pid . '&type=' . $p['type']) ?> };</script>
 <script src="/assets/js/shop-admin.js?v=<?= @filemtime(ROOT_PATH . '/assets/js/shop-admin.js') ?: 1 ?>" defer></script>

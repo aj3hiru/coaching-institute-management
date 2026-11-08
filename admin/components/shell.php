@@ -87,10 +87,14 @@ function admin_shell_nav(): array
             $link($cp('classes'), 'Classes', '/admin/ci-classes.php', 'fa-chalkboard'),
             $link(true, 'Reports', '/admin/ci-reports.php', 'fa-file-pdf'),
         ] : []],
-        ['label' => 'Online Store', 'items' => (function () use ($cu, $link, $ci) {
+        ['label' => 'Online Store', 'items' => (function () use ($cu, $link, $ci, $sub) {
             require_once ($_SERVER['DOCUMENT_ROOT'] ?? '') . '/includes/shop.php';
             return [
-                $link(sh_perm($cu, 'products'), 'Online Courses', '/admin/shop-products.php?type=course', 'fa-photo-film'),
+                sh_perm($cu, 'products') ? ['label' => 'Online Courses', 'href' => '/admin/shop-products.php?type=course', 'icon' => 'fa-photo-film', 'items' => $sub([
+                    $link(true, 'All Courses', '/admin/shop-products.php?type=course', 'fa-list'),
+                    $link(true, 'Add Courses', '/admin/shop-products.php?new=1&type=course', 'fa-plus'),
+                    $link(true, 'Add Playlist', '/admin/shop-products.php?type=course&addpl=1', 'fa-circle-play'),
+                ])] : null,
                 $link(sh_perm($cu, 'products'), 'Add Lecture', '/admin/shop-lecture.php', 'fa-film'),
                 $link(sh_perm($cu, 'products'), 'PDF Notes', '/admin/shop-products.php?type=notes', 'fa-file-pdf'),
                 $link(sh_perm($cu, 'products'), 'Categories', '/admin/shop-categories.php', 'fa-shapes'),

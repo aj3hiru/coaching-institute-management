@@ -97,16 +97,16 @@
     if (rm) { var r = rm.closest('.slc-row'), b = r.parentNode; if (b.children.length > 1) r.remove(); else r.querySelectorAll('input:not([type=radio]), textarea').forEach(function (x) { x.value = ''; }); }
   });
 
-  // --- notes PDFs: chosen from PDF Media (upload new ones there), each with its own title; "Add more PDFs" adds more -----
+  // --- notes PDFs: chosen from Course notes (or from File Manager), each with its own title; "Add more PDFs" adds more -----
   var notesList = $('#slcNoteList'), notesBtn = $('#slcNotesAdd');
   function notesLabel() { notesBtn.querySelector('span').textContent = notesList.children.length ? 'Add more PDFs' : 'Add notes PDF'; }
   notesBtn.addEventListener('click', function () {
-    if (!window.PdfMedia) { msg.textContent = 'PDF Media is still loading — try again in a moment.'; return; }
+    if (!window.PdfMedia) { msg.textContent = 'The PDF list is still loading — try again in a moment.'; return; }
     PdfMedia.open({ onPick: function (items) {
       items.forEach(function (it) {
         if (notesList.querySelector('[data-mid="' + it.id + '"]')) return; // already added
         var row = document.createElement('div'); row.className = 'slc-nrow'; row.dataset.mid = it.id;
-        row.innerHTML = '<span class="slc-nico">PDF</span><input name="note_mtitle[' + it.id + ']" maxlength="200" aria-label="PDF title" title="Title — students see it and the downloaded file gets this name"><small>' + (it.pages ? it.pages + (it.pages === 1 ? ' page · ' : ' pages · ') : '') + 'from PDF Media · new</small>'
+        row.innerHTML = '<span class="slc-nico">PDF</span><input name="note_mtitle[' + it.id + ']" maxlength="200" aria-label="PDF title" title="Title — students see it and the downloaded file gets this name"><small>' + (it.pages ? it.pages + (it.pages === 1 ? ' page · ' : ' pages · ') : '') + 'new</small>'
           + '<button type="button" class="slc-nrm" style="border:0;background:none;cursor:pointer">Remove</button><input type="hidden" name="note_media[]" value="' + it.id + '">';
         row.querySelector('input').value = it.title;
         row.querySelector('button').addEventListener('click', function () { row.remove(); notesLabel(); });

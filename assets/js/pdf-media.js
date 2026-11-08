@@ -1,4 +1,5 @@
-/* PDF Media — the library of PDFs (admin/shop-pdfs.php) and its picker popup (Add lecture → Add notes PDF).
+/* Course notes PDFs (File Manager → Course notes) and the picker popup of Add lecture → Add notes PDF, which also offers
+   the PDFs of File Manager (copied into Course notes when added).
    PdfMedia.mount(el, { uploadButton })          the library page: upload, rename (title), open, delete
    PdfMedia.open({ onPick: function (items) {} }) the picker: choose one or more PDFs (or upload new ones), then "Add"
    Every PDF has a title: students see it and the downloaded file is named after it. */
@@ -106,17 +107,57 @@
     open: function (opts) {
       opts = opts || {};
       var m = document.createElement('div'); m.className = 'pm-modal';
-      m.innerHTML = '<div class="pm-box" role="dialog" aria-modal="true" aria-label="PDF Media"><div class="pm-head"><h3><i class="fas fa-file-pdf" style="color:#dc2626"></i> PDF Media</h3><button type="button" class="ci-btn ci-ghost ci-sm pm-x" aria-label="Close"><i class="fas fa-times"></i></button></div>'
-        + '<div class="pm-body"></div><div class="pm-foot"><span class="ci-muted pm-n">Choose one or more PDFs — or upload new ones from your device.</span><span style="display:flex;gap:8px"><button type="button" class="ci-btn ci-ghost pm-cancel">Cancel</button><button type="button" class="ci-btn pm-add" disabled><i class="fas fa-plus"></i> Add to lecture</button></span></div></div>';
+      m.innerHTML = '<div class="pm-box" role="dialog" aria-modal="true" aria-label="Choose PDFs"><div class="pm-head"><h3><i class="fas fa-file-pdf" style="color:#dc2626"></i> Choose notes PDFs</h3><button type="button" class="ci-btn ci-ghost ci-sm pm-x" aria-label="Close"><i class="fas fa-times"></i></button></div>'
+        + '<div class="pm-tabs"><button type="button" class="on" data-t="lib"><i class="fas fa-lock"></i> Course notes</button><button type="button" data-t="site"><i class="fas fa-folder-open"></i> File Manager PDFs</button></div>'
+        + '<div class="pm-body"><div class="pm-pane" data-p="lib"></div><div class="pm-pane" data-p="site" hidden><div class="pm-bar"><input type="search" placeholder="Search File Manager PDFs…"><span class="pm-count"></span></div><p class="ci-muted" style="margin:0 0 10px;font-size:12.5px">A PDF chosen here is copied into Course notes, so only students of the course can open it.</p><div class="pm-grid"></div></div></div>'
+        + '<div class="pm-foot"><span class="ci-muted pm-n">Choose one or more PDFs — or upload new ones from your device.</span><span style="display:flex;gap:8px"><button type="button" class="ci-btn ci-ghost pm-cancel">Cancel</button><button type="button" class="ci-btn pm-add" disabled><i class="fas fa-plus"></i> Add to lecture</button></span></div></div>';
       document.body.appendChild(m); document.documentElement.style.overflow = 'hidden';
-      var addB = m.querySelector('.pm-add'), nTxt = m.querySelector('.pm-n');
-      var lib = Library(m.querySelector('.pm-body'), { pick: true, ownUpload: true, onSelect: function (c) { addB.disabled = !c.length; addB.innerHTML = '<i class="fas fa-plus"></i> Add ' + (c.length ? c.length + ' ' : '') + 'to lecture'; nTxt.textContent = c.length ? c.length + ' chosen · the title you see is the name students get' : 'Choose one or more PDFs — or upload new ones from your device.'; } });
+      var addB = m.querySelector('.pm-add'), nTxt = m.querySelector('.pm-n'), libC = [], siteSel = {}, siteItems = [];
+      function paint() {
+        var n = libC.length + Object.keys(siteSel).length; addB.disabled = !n;
+        addB.innerHTML = '<i class="fas fa-plus"></i> Add ' + (n ? n + ' ' : '') + 'to lecture';
+        nTxt.textContent = n ? n + ' chosen · the title you see is the name students get' : 'Choose one or more PDFs — or upload new ones from your device.';
+      }
+      var lib = Library(m.querySelector('[data-p="lib"]'), { pick: true, ownUpload: true, onSelect: function (c) { libC = c; paint(); } });
+      // File Manager PDFs (public files): chosen ones are copied into Course notes when added
+      var sp = m.querySelector('[data-p="site"]'), sg = sp.querySelector('.pm-grid'), sq = sp.querySelector('input[type=search]'), st0, loaded = false;
+      function siteLoad() {
+        sg.innerHTML = '<div class="pm-empty" style="grid-column:1/-1">Loading…</div>';
+        fetch('/admin/shop-pdfs.php?site=1' + (sq.value.trim() ? '&q=' + encodeURIComponent(sq.value.trim()) : ''), { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (d) {
+          siteItems = d.items || []; sp.querySelector('.pm-count').textContent = siteItems.length + ' PDF' + (siteItems.length === 1 ? '' : 's');
+          sg.innerHTML = siteItems.length ? '' : '<div class="pm-empty" style="grid-column:1/-1">No PDF in File Manager' + (sq.value.trim() ? ' with this name' : ' yet') + '.</div>';
+          siteItems.forEach(function (it) {
+            var c = document.createElement('div'); c.className = 'pm-card' + (siteSel[it.id] ? ' sel' : ''); c.dataset.id = it.id;
+            c.innerHTML = '<span class="pm-chk"><i class="fas fa-check"></i></span><span class="pm-ico" title="Choose"><i class="fas fa-file-pdf"></i></span><input class="pm-t" maxlength="200" aria-label="Title for the course" value="' + esc(siteSel[it.id] || it.title) + '"><div class="pm-meta"><span>' + mb(it.size) + '</span><span>·</span><span>' + esc(it.date) + '</span></div><div class="pm-acts"><a href="' + esc(it.view) + '" target="_blank" rel="noopener">Open</a></div>';
+            var tog = function () { if (siteSel[it.id]) delete siteSel[it.id]; else siteSel[it.id] = c.querySelector('.pm-t').value.trim() || it.title; c.classList.toggle('sel', !!siteSel[it.id]); paint(); };
+            c.querySelector('.pm-ico').addEventListener('click', tog); c.querySelector('.pm-chk').addEventListener('click', tog);
+            c.querySelector('.pm-t').addEventListener('input', function () { if (siteSel[it.id]) siteSel[it.id] = this.value.trim() || it.title; });
+            sg.appendChild(c);
+          });
+        });
+      }
+      sq.addEventListener('input', function () { clearTimeout(st0); st0 = setTimeout(siteLoad, 250); });
+      m.querySelector('.pm-tabs').addEventListener('click', function (e) {
+        var b = e.target.closest('[data-t]'); if (!b) return;
+        m.querySelectorAll('.pm-tabs button').forEach(function (x) { x.classList.toggle('on', x === b); });
+        m.querySelectorAll('.pm-pane').forEach(function (p) { p.hidden = p.dataset.p !== b.dataset.t; });
+        if (b.dataset.t === 'site' && !loaded) { loaded = true; siteLoad(); }
+      });
       function close() { m.remove(); document.documentElement.style.overflow = ''; document.removeEventListener('keydown', key); }
       function key(e) { if (e.key === 'Escape') close(); }
       document.addEventListener('keydown', key);
       m.addEventListener('click', function (e) { if (e.target === m) close(); });
       m.querySelector('.pm-x').addEventListener('click', close); m.querySelector('.pm-cancel').addEventListener('click', close);
-      addB.addEventListener('click', function () { var c = lib.chosen(); if (!c.length) return; close(); if (opts.onPick) opts.onPick(c); });
+      addB.addEventListener('click', function () {
+        var chosen = lib.chosen(), ids = Object.keys(siteSel); if (!chosen.length && !ids.length) return;
+        addB.disabled = true; addB.textContent = 'Adding…';
+        Promise.all(ids.map(function (id) { return post({ action: 'import', media_id: id, title: siteSel[id] }); })).then(function (rs) {
+          var bad = rs.filter(function (r) { return !r.ok; });
+          if (bad.length) alert(bad[0].error || 'A PDF could not be added.');
+          rs.filter(function (r) { return r.ok; }).forEach(function (r) { chosen.push({ id: r.id, title: r.title, pages: r.pages, size: r.size }); });
+          close(); if (chosen.length && opts.onPick) opts.onPick(chosen);
+        });
+      });
     },
   };
 })();

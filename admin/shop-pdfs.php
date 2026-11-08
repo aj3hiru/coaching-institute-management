@@ -18,6 +18,15 @@ if (isset($_GET['view'])) {
     session_write_close();
     sh_send_file($path, 'application/pdf', $m['title'] . '.pdf', true); exit;
 }
+if (isset($_GET['site'])) { // PDFs of File Manager (the website's public files), to add as course notes
+    header('Content-Type: application/json; charset=utf-8'); header('Cache-Control: no-store');
+    $qq = trim((string)($_GET['q'] ?? ''));
+    $st = $pdo->prepare("SELECT id, file_path, title, uploaded_at FROM media WHERE (file_type = 'pdf' OR file_path LIKE '%.pdf')" . ($qq !== '' ? " AND (title LIKE ? OR file_path LIKE ?)" : '') . " ORDER BY id DESC LIMIT 300");
+    $st->execute($qq !== '' ? ["%$qq%", "%$qq%"] : []);
+    $root = rtrim((string)$_SERVER['DOCUMENT_ROOT'], '/');
+    exit(json_encode(['items' => array_values(array_filter(array_map(function ($r) use ($root) { $f = $root . '/' . ltrim($r['file_path'], '/'); if (!is_file($f)) return null;
+        return ['id' => (int)$r['id'], 'title' => trim((string)$r['title']) ?: preg_replace('/\.pdf$/i', '', basename($r['file_path'])), 'size' => filesize($f), 'date' => date('d M Y', strtotime((string)$r['uploaded_at'])), 'view' => '/' . ltrim($r['file_path'], '/')]; }, $st->fetchAll(PDO::FETCH_ASSOC))))], JSON_UNESCAPED_UNICODE));
+}
 if (isset($_GET['json'])) {
     header('Content-Type: application/json; charset=utf-8'); header('Cache-Control: no-store');
     $qq = trim((string)($_GET['q'] ?? ''));
@@ -31,6 +40,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_check();
     $ajax = !empty($_POST['ajax']); $id = (int)($_POST['id'] ?? 0); $a = (string)($_POST['action'] ?? '');
     $res = ['ok' => false];
+    if ($a === 'import') { // a File Manager PDF becomes course notes: a private copy (only buyers can open it), with its title
+        $q = $pdo->prepare("SELECT * FROM media WHERE id = ? AND (file_type = 'pdf' OR file_path LIKE '%.pdf')"); $q->execute([(int)($_POST['media_id'] ?? 0)]); $fm = $q->fetch(PDO::FETCH_ASSOC);
+        $src = $fm ? rtrim((string)$_SERVER['DOCUMENT_ROOT'], '/') . '/' . ltrim($fm['file_path'], '/') : '';
+        if (!$fm || !is_file($src)) $res['error'] = 'That PDF was not found in File Manager.';
+        else {
+            $dir = sh_media_dir() . '/library'; if (!is_dir($dir)) @mkdir($dir, 0750, true);
+            $rel = 'library/pm-' . bin2hex(random_bytes(6)) . '.pdf';
+            if (!@copy($src, sh_media_dir() . '/' . $rel)) $res['error'] = 'Could not copy the PDF.';
+            else {
+                @chmod(sh_media_dir() . '/' . $rel, 0640);
+                $t = mb_substr(trim((string)($_POST['title'] ?? '')) ?: (trim((string)$fm['title']) ?: preg_replace('/\.pdf$/i', '', basename($fm['file_path']))), 0, 200);
+                $pages = preg_match_all('#/Type\s*/Page[^s]#', (string)file_get_contents($src, false, null, 0, 20 * 1024 * 1024)) ?: null;
+                $pdo->prepare("INSERT INTO sh_pdf_media (title, file, size, pages, created_by) VALUES (?, ?, ?, ?, ?)")->execute([$t, $rel, filesize($src), $pages, (int)$me['id']]);
+                $res = ['ok' => true, 'id' => (int)$pdo->lastInsertId(), 'title' => $t, 'pages' => $pages, 'size' => filesize($src)];
+            }
+        }
+        if ($ajax) { header('Content-Type: application/json; charset=utf-8'); exit(json_encode($res, JSON_UNESCAPED_UNICODE)); }
+    }
     $q = $pdo->prepare("SELECT * FROM sh_pdf_media WHERE id = ?"); $q->execute([$id]); $m = $q->fetch(PDO::FETCH_ASSOC);
     if (!$m) $res['error'] = 'PDF not found.';
     elseif ($a === 'rename') {

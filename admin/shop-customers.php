@@ -14,7 +14,9 @@ if (isset($_GET['blockinfo'])) { // the Block popup: the account and every cours
     $q = $pdo->prepare("SELECT id, name, mobile, email, status, block_free, block_note FROM sh_users WHERE id = ?"); $q->execute([(int)$_GET['blockinfo']]); $bu = $q->fetch(PDO::FETCH_ASSOC);
     if (!$bu) exit(json_encode(['error' => 'Account not found']));
     $a = $pdo->prepare("SELECT a.id, a.source, a.revoked, a.blocked, a.expires_at, p.title, p.type, p.price FROM sh_access a JOIN sh_products p ON p.id = a.product_id WHERE a.user_id = ? ORDER BY a.blocked DESC, a.revoked, p.title"); $a->execute([(int)$bu['id']]);
-    exit(json_encode(['user' => $bu, 'items' => array_map(fn($x) => ['id' => (int)$x['id'], 'title' => $x['title'], 'kind' => $x['type'] === 'notes' ? 'PDF notes' : 'Video course', 'how' => ['purchase' => 'Bought', 'free' => 'Free', 'admin' => 'Given by staff'][$x['source']] ?? $x['source'],
+    $others = $pdo->prepare("SELECT id, title, type FROM sh_products WHERE id NOT IN (SELECT product_id FROM sh_access WHERE user_id = ?) ORDER BY status = 'published' DESC, title"); $others->execute([(int)$bu['id']]);
+    exit(json_encode(['user' => $bu, 'others' => array_map(fn($o) => ['id' => (int)$o['id'], 'title' => $o['title'] . ($o['type'] === 'notes' ? ' (PDF notes)' : '')], $others->fetchAll(PDO::FETCH_ASSOC)),
+        'items' => array_map(fn($x) => ['id' => (int)$x['id'], 'title' => $x['title'], 'kind' => $x['type'] === 'notes' ? 'PDF notes' : 'Video course', 'how' => ['purchase' => 'Bought', 'free' => 'Free', 'admin' => 'Given by staff', 'block' => 'Never had it'][$x['source']] ?? $x['source'],
         'blocked' => (int)$x['blocked'], 'active' => !(int)$x['revoked'] && !(int)$x['blocked'] && (!$x['expires_at'] || strtotime($x['expires_at']) > time()), 'free' => (float)$x['price'] <= 0], $a->fetchAll(PDO::FETCH_ASSOC))], JSON_UNESCAPED_UNICODE));
 }
 
@@ -79,8 +81,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             foreach ($pdo->query("SELECT id, blocked FROM sh_access WHERE user_id = $id")->fetchAll(PDO::FETCH_ASSOC) as $x) {
                 $on = in_array((int)$x['id'], $want, true);
                 if ($on && !(int)$x['blocked']) $pdo->prepare("UPDATE sh_access SET blocked = 1, revoked = 1, note = COALESCE(?, note) WHERE id = ?")->execute([$note ? 'Blocked: ' . $note : null, $x['id']]);
-                if (!$on && (int)$x['blocked']) $pdo->prepare("UPDATE sh_access SET blocked = 0, revoked = 0 WHERE id = ?")->execute([$x['id']]); // block lifted: the course opens again
+                if (!$on && (int)$x['blocked']) { // block lifted: the course opens again — or, for a course they never had, the row goes
+                    $src = (string)$pdo->query("SELECT source FROM sh_access WHERE id = " . (int)$x['id'])->fetchColumn();
+                    if ($src === 'block') $pdo->prepare("DELETE FROM sh_access WHERE id = ?")->execute([$x['id']]);
+                    else $pdo->prepare("UPDATE sh_access SET blocked = 0, revoked = 0 WHERE id = ?")->execute([$x['id']]);
+                }
             }
+            foreach (array_unique(array_map('intval', (array)($_POST['block_new'] ?? []))) as $np) // courses they don't have: they can't buy / join them
+                if ($np && (int)$pdo->query("SELECT COUNT(*) FROM sh_products WHERE id = $np")->fetchColumn())
+                    $pdo->prepare("INSERT INTO sh_access (user_id, product_id, source, granted_by, note, blocked, revoked) VALUES (?, ?, 'block', ?, ?, 1, 1) ON DUPLICATE KEY UPDATE blocked = 1, revoked = 1")->execute([$id, $np, (int)$me['id'], $note ? 'Blocked: ' . $note : 'Blocked']);
+            $want = array_merge($want, array_map('intval', (array)($_POST['block_new'] ?? [])));
             $free = !empty($_POST['block_free']) ? 1 : 0;
             if ($free) $pdo->exec("UPDATE sh_access SET blocked = 1, revoked = 1 WHERE user_id = $id AND source = 'free'");
             $susp = !empty($_POST['suspend']);
@@ -158,19 +168,74 @@ if ($id) {
 .cu-av{width:34px;height:34px;flex:0 0 auto;display:grid;place-items:center;background:#ede9fe;color:#6d28d9;font-weight:800;border-radius:50%!important}
 .cu-off td{opacity:.6}
 .cu-pg{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin:0 0 16px}.cu-pg a,.cu-pg span{min-width:34px;padding:6px 10px;border:1px solid #e5e7eb;background:#fff;text-align:center;text-decoration:none}.cu-pg .on{background:var(--ci-acc,#7c3aed);color:#fff;border-color:var(--ci-acc,#7c3aed)}
+.cv-head{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;padding:18px;border:1px solid #e5e7eb;background:#fff;margin:0 0 14px}
+.cv-av{width:64px;height:64px;flex:0 0 auto;display:grid;place-items:center;background:#ede9fe;color:#6d28d9;font-weight:800;font-size:26px;border-radius:50%!important;overflow:hidden}.cv-av img{width:100%;height:100%;object-fit:cover}
+.cv-who{flex:1;min-width:220px}.cv-who h2{margin:0 0 4px;font-size:20px}
+.cv-contact{display:flex;gap:14px;flex-wrap:wrap;font-size:13.5px}.cv-contact a{color:#374151;text-decoration:none}.cv-contact i{color:#9ca3af;margin-right:3px}
+.cv-badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.cv-badges a{text-decoration:none}
+.cv-note{margin:8px 0 0;font-size:13px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;padding:6px 10px}
+.cv-acts{display:flex;gap:8px;flex-wrap:wrap}.cv-ban{color:#b91c1c!important;border-color:#fecaca!important}
+.cv-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;margin:0 0 14px}
+.cv-tile{display:flex;gap:10px;align-items:center;padding:12px 14px;border:1px solid #e5e7eb;background:#fff}.cv-tile i{width:36px;height:36px;display:grid;place-items:center;background:#f3effa;color:var(--ci-acc,#7c3aed);flex:0 0 auto}
+.cv-tile b{display:block;font-size:16px}.cv-tile small{color:#6b7280;font-size:12px}
+.cv-grid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:14px;align-items:start}
+@media (max-width:1100px){.cv-grid{grid-template-columns:1fr}}
+.cv-side .ci-grid2{grid-template-columns:1fr!important}
 .bk-items{display:flex;flex-direction:column;gap:6px;max-height:300px;overflow:auto;border:1px solid #eef0f3;padding:8px}
 .bk-it{display:flex;gap:10px;align-items:center;padding:8px 10px;border:1px solid #e5e7eb;background:#fff;cursor:pointer}.bk-it.on{border-color:#fca5a5;background:#fef2f2}
 .bk-it small{color:#6b7280;font-size:12px;display:block}.bk-it .bk-st{margin-left:auto;font-size:11.5px}
+.bk-add{margin-top:8px}.bk-add select{width:100%}
 .bk-opt{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid #e5e7eb;margin-top:10px;cursor:pointer}.bk-opt small{display:block;color:#6b7280;font-size:12.5px;font-weight:400}
 .bk-susp{border-color:#fecaca;background:#fff7f7}.bk-susp b{color:#b91c1c}
 </style>
 </head>
 <body>
-<?php admin_shell_open($cu ? ci_e($cu['name']) : 'Store Customers', $cu ? 'Buyer account' : 'Online accounts of students and buyers', $cu ? '<a class="ci-btn ci-ghost" href="/admin/shop-customers.php"><i class="fas fa-arrow-left"></i> All customers</a><button type="button" class="ci-btn ci-ghost" data-block="' . (int)$cu['id'] . '" style="color:#b91c1c"><i class="fas fa-ban"></i> Block / suspend</button>' : (sh_perm($me, 'orders') ? '<button type="button" class="ci-btn" data-enroll="Enroll a student"><i class="fas fa-cart-plus"></i> Enroll student</button> ' : '') . '<button type="button" class="ci-btn ci-ghost" data-mopen="#mkForm"><i class="fas fa-user-plus"></i> Account only</button>'); ?>
+<?php admin_shell_open($cu ? ci_e($cu['name']) : 'Store Customers', $cu ? 'Buyer account' : 'Online accounts of students and buyers', $cu ? '<a class="ci-btn ci-ghost" href="/admin/shop-customers.php"><i class="fas fa-arrow-left"></i> All customers</a>' : (sh_perm($me, 'orders') ? '<button type="button" class="ci-btn" data-enroll="Enroll a student"><i class="fas fa-cart-plus"></i> Enroll student</button> ' : '') . '<button type="button" class="ci-btn ci-ghost" data-mopen="#mkForm"><i class="fas fa-user-plus"></i> Account only</button>'); ?>
 <div class="ci">
 <?= admin_flash() ?>
 <?php if ($cu): ?>
-<div class="ci-grid2">
+<?php $cvOpen = count(array_filter($acc, fn($x) => !$x['revoked'] && empty($x['blocked']) && (!$x['expires_at'] || strtotime($x['expires_at']) > time())));
+$cvBlocked = count(array_filter($acc, fn($x) => !empty($x['blocked']))); $cvPaid = array_filter($ord, fn($o) => $o['status'] === 'paid'); $cvSpent = array_sum(array_column($cvPaid, 'amount')); ?>
+<div class="cv-head">
+  <span class="cv-av"><?php if ($av = sh_avatar_url($cu)): ?><img src="<?= ci_e($av) ?>" alt=""><?php else: ?><?= ci_e(mb_strtoupper(mb_substr(trim($cu['name']), 0, 1))) ?><?php endif; ?></span>
+  <div class="cv-who"><h2><?= ci_e($cu['name']) ?></h2><div class="cv-contact"><a href="tel:<?= ci_e($cu['mobile']) ?>"><i class="fas fa-phone"></i> <?= ci_e($cu['mobile']) ?></a><a href="mailto:<?= ci_e($cu['email']) ?>"><i class="fas fa-envelope"></i> <?= ci_e($cu['email']) ?></a></div>
+    <div class="cv-badges"><?= $cu['status'] === 'active' ? '<span class="ci-badge ci-b-green">Active</span>' : '<span class="ci-badge ci-b-red"><i class="fas fa-ban"></i> Suspended</span>' ?><?= $cvBlocked ? '<span class="ci-badge ci-b-amber">Blocked from ' . $cvBlocked . ' course' . ($cvBlocked === 1 ? '' : 's') . '</span>' : '' ?><?= !empty($cu['block_free']) ? '<span class="ci-badge ci-b-amber">No free courses</span>' : '' ?><?= !empty($cu['sid']) ? '<a class="ci-badge ci-b-grey" href="/admin/student-view.php?id=' . (int)$cu['sid'] . '"><i class="fas fa-school"></i> Institute student · ' . ci_e($cu['reg_no']) . '</a>' : '' ?></div>
+    <?php if (!empty($cu['block_note']) && ($cu['status'] !== 'active' || $cvBlocked || !empty($cu['block_free']))): ?><p class="cv-note"><i class="fas fa-circle-info"></i> <?= ci_e($cu['block_note']) ?></p><?php endif; ?></div>
+  <div class="cv-acts"><?php if (sh_perm($me, 'orders')): ?><button type="button" class="ci-btn" data-enroll="Enroll <?= ci_e($cu['name']) ?>" data-enroll-uid="<?= $id ?>" data-enroll-name="<?= ci_e($cu['name']) ?>"><i class="fas fa-cart-shopping"></i> Enroll</button><?php endif; ?><button type="button" class="ci-btn ci-ghost cv-ban" data-block="<?= $id ?>"><i class="fas fa-ban"></i> Block / suspend</button></div>
+</div>
+<div class="cv-tiles">
+  <div class="cv-tile"><i class="fas fa-book-open"></i><div><b><?= $cvOpen ?></b><small>Can open now</small></div></div>
+  <div class="cv-tile"><i class="fas fa-indian-rupee-sign"></i><div><b><?= ci_money0($cvSpent) ?></b><small>Spent · <?= count($cvPaid) ?> paid order<?= count($cvPaid) === 1 ? '' : 's' ?></small></div></div>
+  <div class="cv-tile"><i class="fas fa-calendar-plus"></i><div><b><?= date('d M Y', strtotime($cu['created_at'])) ?></b><small>Joined</small></div></div>
+  <div class="cv-tile"><i class="fas fa-right-to-bracket"></i><div><b><?= $cu['last_login'] ? date('d M Y', strtotime($cu['last_login'])) : 'Never' ?></b><small>Last login</small></div></div>
+</div>
+<div class="cv-grid">
+  <div class="cv-main">
+<div class="ci-card"><div class="ci-card-h"><h3>Courses &amp; notes</h3><?php if (sh_perm($me, 'orders')): ?><button type="button" class="ci-btn ci-sm" data-enroll="Enroll <?= ci_e($cu['name']) ?>" data-enroll-uid="<?= $id ?>" data-enroll-name="<?= ci_e($cu['name']) ?>"><i class="fas fa-cart-plus"></i> Enroll in a course / notes (paid)</button><?php endif; ?></div><div class="ci-card-b">
+  <form method="post" class="ci-filters" style="margin:0 0 12px"><?= csrf_field() ?><input type="hidden" name="action" value="grant"><input type="hidden" name="uid" value="<?= $id ?>">
+    <div class="ci-f" style="min-width:260px"><label>Give a course / notes free</label><select name="product_id" required data-search><option value=""></option><?php foreach ($products as $pp): ?><option value="<?= (int)$pp['id'] ?>"><?= ci_e($pp['title'] . ' — ' . ((float)$pp['price'] > 0 ? ci_money0($pp['price']) : 'Free') . ($pp['status'] !== 'published' ? ' (' . $pp['status'] . ')' : '')) ?></option><?php endforeach; ?></select></div>
+    <div class="ci-f"><label>For how long</label><select name="days"><option value="">Product's own access period</option><option value="0">Lifetime</option><option value="30">1 month</option><option value="90">3 months</option><option value="180">6 months</option><option value="365">1 year</option></select></div>
+    <div class="ci-f"><label>Note</label><input name="note" maxlength="200" placeholder="e.g. Offline batch student, paid cash"></div>
+    <div class="ci-f"><label>&nbsp;</label><button class="ci-btn" type="submit"><i class="fas fa-key"></i> Give access</button></div>
+  </form>
+</div><div class="ci-card-b ci-p0 ci-table-wrap"><table class="ci-table"><thead><tr><th>Item</th><th>How</th><th>Since</th><th>Till</th><th>Action</th></tr></thead><tbody>
+<?php if (!$acc): ?><tr><td colspan="5" class="ci-empty">Nothing yet.</td></tr><?php endif; ?>
+<?php foreach ($acc as $x): $expired = $x['expires_at'] && strtotime($x['expires_at']) < time(); ?>
+<tr<?= $x['revoked'] ? ' style="opacity:.55"' : '' ?>><td><b><?= ci_e($x['title']) ?></b> <small class="ci-muted"><?= $x['type'] === 'notes' ? 'PDF notes' : 'Video course' ?></small></td>
+<td><?= ['purchase' => 'Bought', 'admin' => 'Given' . ($x['by_name'] ? ' by ' . ci_e($x['by_name']) : ''), 'free' => 'Free', 'block' => 'Never had it'][$x['source']] ?? ci_e($x['source']) ?><?= $x['note'] ? '<small class="ci-muted" style="display:block">' . ci_e($x['note']) . '</small>' : '' ?></td>
+<td class="ci-nw"><?= date('d M Y', strtotime($x['granted_at'])) ?></td>
+<td class="ci-nw"><?= !empty($x['blocked']) ? '<span class="ci-badge ci-b-red"><i class="fas fa-ban"></i> Blocked</span>' : ($x['revoked'] ? '<span class="ci-badge ci-b-red">Taken back</span>' : ($x['expires_at'] ? ($expired ? '<span class="ci-badge ci-b-amber">Ended ' . date('d M Y', strtotime($x['expires_at'])) . '</span>' : date('d M Y', strtotime($x['expires_at']))) : 'Lifetime') )?></td>
+<td><?= !empty($x['blocked']) ? ci_ico('ban', null, 'Change the block', 'button', ' data-block="' . $id . '"') : ($x['revoked'] ? ci_post_ico('check', 'Give back', ['action' => 'restore', 'aid' => $x['id'], 'uid' => $id]) : ci_post_ico('trash', 'Take back access', ['action' => 'revoke', 'aid' => $x['id'], 'uid' => $id], 'Take back access to ' . $x['title'] . '? (A paid purchase is not refunded by this.)') )?></td></tr>
+<?php endforeach; ?>
+</tbody></table></div></div>
+
+<div class="ci-card"><div class="ci-card-h"><h3>Orders</h3></div><div class="ci-card-b ci-p0 ci-table-wrap"><table class="ci-table"><thead><tr><th>Order</th><th>Item</th><th class="ci-num">Amount</th><th>Status</th><th>Payment id</th><th>Date</th></tr></thead><tbody>
+<?php if (!$ord): ?><tr><td colspan="6" class="ci-empty">No orders.</td></tr><?php endif; ?>
+<?php foreach ($ord as $o): ?><tr><td><?= ci_e($o['order_no'] ?: '#' . $o['id']) ?></td><td><?= ci_e($o['title']) ?></td><td class="ci-num"><?= ci_money0($o['amount']) ?></td><td><?= ['paid' => '<span class="ci-badge ci-b-green">Paid</span>', 'created' => '<span class="ci-badge ci-b-amber">Not paid</span>', 'failed' => '<span class="ci-badge ci-b-red">Failed</span>'][$o['status']] ?? '' ?></td><td><small><?= ci_e($o['rzp_payment'] ?: '—') ?></small></td><td class="ci-nw"><?= date('d M Y, h:i A', strtotime($o['paid_at'] ?: $o['created_at'])) ?></td></tr><?php endforeach; ?>
+</tbody></table></div></div>
+
+  </div>
+  <aside class="cv-side">
   <div class="ci-card"><div class="ci-card-h"><h3>Details</h3><?= $cu['status'] === 'active' ? '<span class="ci-badge ci-b-green">Active</span>' : '<span class="ci-badge ci-b-red">Suspended</span>' ?></div><div class="ci-card-b">
     <form method="post"><?= csrf_field() ?><input type="hidden" name="action" value="save"><input type="hidden" name="uid" value="<?= $id ?>">
     <div class="ci-grid2"><div class="ci-f"><label>Name</label><input name="name" required value="<?= ci_e($cu['name']) ?>"></div>
@@ -187,31 +252,8 @@ if ($id) {
     <div class="ci-f"><label>New password</label><input name="pass" minlength="4" autocomplete="new-password" placeholder="leave empty to make one"><span class="ci-hint">The student can also reset it by email from the login page.</span></div>
     <button class="ci-btn ci-ghost" type="submit" style="margin-top:8px" onclick="return confirm('Set a new password for this account?')">Set new password</button></form>
   </div></div>
+  </aside>
 </div>
-
-<div class="ci-card"><div class="ci-card-h"><h3>Can open</h3><?php if (sh_perm($me, 'orders')): ?><button type="button" class="ci-btn ci-sm" data-enroll="Enroll <?= ci_e($cu['name']) ?>" data-enroll-uid="<?= $id ?>" data-enroll-name="<?= ci_e($cu['name']) ?>"><i class="fas fa-cart-plus"></i> Enroll in a course / notes (paid)</button><?php endif; ?></div><div class="ci-card-b">
-  <form method="post" class="ci-filters" style="margin:0 0 12px"><?= csrf_field() ?><input type="hidden" name="action" value="grant"><input type="hidden" name="uid" value="<?= $id ?>">
-    <div class="ci-f" style="min-width:260px"><label>Give a course / notes free</label><select name="product_id" required data-search><option value=""></option><?php foreach ($products as $pp): ?><option value="<?= (int)$pp['id'] ?>"><?= ci_e($pp['title'] . ' — ' . ((float)$pp['price'] > 0 ? ci_money0($pp['price']) : 'Free') . ($pp['status'] !== 'published' ? ' (' . $pp['status'] . ')' : '')) ?></option><?php endforeach; ?></select></div>
-    <div class="ci-f"><label>For how long</label><select name="days"><option value="">Product's own access period</option><option value="0">Lifetime</option><option value="30">1 month</option><option value="90">3 months</option><option value="180">6 months</option><option value="365">1 year</option></select></div>
-    <div class="ci-f"><label>Note</label><input name="note" maxlength="200" placeholder="e.g. Offline batch student, paid cash"></div>
-    <div class="ci-f"><label>&nbsp;</label><button class="ci-btn" type="submit"><i class="fas fa-key"></i> Give access</button></div>
-  </form>
-</div><div class="ci-card-b ci-p0 ci-table-wrap"><table class="ci-table"><thead><tr><th>Item</th><th>How</th><th>Since</th><th>Till</th><th>Action</th></tr></thead><tbody>
-<?php if (!$acc): ?><tr><td colspan="5" class="ci-empty">Nothing yet.</td></tr><?php endif; ?>
-<?php foreach ($acc as $x): $expired = $x['expires_at'] && strtotime($x['expires_at']) < time(); ?>
-<tr<?= $x['revoked'] ? ' style="opacity:.55"' : '' ?>><td><b><?= ci_e($x['title']) ?></b> <small class="ci-muted"><?= $x['type'] === 'notes' ? 'PDF notes' : 'Video course' ?></small></td>
-<td><?= ['purchase' => 'Bought', 'admin' => 'Given' . ($x['by_name'] ? ' by ' . ci_e($x['by_name']) : ''), 'free' => 'Free'][$x['source']] ?? ci_e($x['source']) ?><?= $x['note'] ? '<small class="ci-muted" style="display:block">' . ci_e($x['note']) . '</small>' : '' ?></td>
-<td class="ci-nw"><?= date('d M Y', strtotime($x['granted_at'])) ?></td>
-<td class="ci-nw"><?= $x['revoked'] ? '<span class="ci-badge ci-b-red">Taken back</span>' : ($x['expires_at'] ? ($expired ? '<span class="ci-badge ci-b-amber">Ended ' . date('d M Y', strtotime($x['expires_at'])) . '</span>' : date('d M Y', strtotime($x['expires_at']))) : 'Lifetime') ?></td>
-<td><?= $x['revoked'] ? ci_post_ico('check', 'Give back', ['action' => 'restore', 'aid' => $x['id'], 'uid' => $id]) : ci_post_ico('trash', 'Take back access', ['action' => 'revoke', 'aid' => $x['id'], 'uid' => $id], 'Take back access to ' . $x['title'] . '? (A paid purchase is not refunded by this.)') ?></td></tr>
-<?php endforeach; ?>
-</tbody></table></div></div>
-
-<div class="ci-card"><div class="ci-card-h"><h3>Orders</h3></div><div class="ci-card-b ci-p0 ci-table-wrap"><table class="ci-table"><thead><tr><th>Order</th><th>Item</th><th class="ci-num">Amount</th><th>Status</th><th>Payment id</th><th>Date</th></tr></thead><tbody>
-<?php if (!$ord): ?><tr><td colspan="6" class="ci-empty">No orders.</td></tr><?php endif; ?>
-<?php foreach ($ord as $o): ?><tr><td><?= ci_e($o['order_no'] ?: '#' . $o['id']) ?></td><td><?= ci_e($o['title']) ?></td><td class="ci-num"><?= ci_money0($o['amount']) ?></td><td><?= ['paid' => '<span class="ci-badge ci-b-green">Paid</span>', 'created' => '<span class="ci-badge ci-b-amber">Not paid</span>', 'failed' => '<span class="ci-badge ci-b-red">Failed</span>'][$o['status']] ?? '' ?></td><td><small><?= ci_e($o['rzp_payment'] ?: '—') ?></small></td><td class="ci-nw"><?= date('d M Y, h:i A', strtotime($o['paid_at'] ?: $o['created_at'])) ?></td></tr><?php endforeach; ?>
-</tbody></table></div></div>
-
 <?php else: ?>
 <div class="ci-modal" id="mkForm" data-mform<?= isset($_GET['new']) ? ' data-open-now' : '' ?> hidden><div class="ci-modal-box ci-modal-wide" role="dialog" aria-modal="true" aria-labelledby="mkFormH">
 <div class="ci-card-h"><h3 id="mkFormH">Make an online account</h3><button type="button" class="ci-x" data-close aria-label="Close"><i class="fas fa-times"></i></button></div><div class="ci-card-b">
@@ -264,6 +306,7 @@ if ($id) {
 <input type="hidden" name="bq" value="<?= ci_e($_GET['q'] ?? '') ?>"><input type="hidden" name="bshow" value="<?= ci_e($_GET['show'] ?? '') ?>">
   <p class="ci-muted" style="margin:0 0 8px">Tick the courses this student must not open any more. A blocked course can't be bought or joined again by them. Untick to lift a block.</p>
   <div class="bk-items" id="bkItems"><p class="ci-muted" style="margin:6px">Loading…</p></div>
+  <div class="bk-add"><select id="bkOther" aria-label="Block from another course"><option value="">+ Block from another course (one they don't have)…</option></select></div>
   <label class="bk-opt"><input type="checkbox" name="block_free" value="1"><span><b>Block from every free course</b><small>Free courses they joined close, and they can't join free courses.</small></span></label>
   <label class="bk-opt bk-susp"><input type="checkbox" name="suspend" value="1"><span><b>Suspend the whole account</b><small>No login and no course at all, and this mobile number and email can't be used to make a new account.</small></span></label>
   <div class="ci-f" style="margin-top:10px"><label>Reason <span class="ci-muted" style="font-weight:400">(only staff see it)</span></label><input name="block_note" maxlength="255" placeholder="e.g. Shared the login with others, abusive in doubts"></div>
@@ -281,6 +324,7 @@ if ($id) {
     fetch('/admin/shop-customers.php?blockinfo=' + uid, { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (d) {
       if (d.error) { box.innerHTML = '<p style="color:#b91c1c;margin:6px">' + esc(d.error) + '</p>'; return; }
       document.getElementById('bkH').textContent = 'Block — ' + d.user.name;
+      var so = document.getElementById('bkOther'); so.innerHTML = '<option value="">+ Block from another course (one they don\'t have)…</option>' + (d.others || []).map(function (o) { return '<option value="' + o.id + '">' + esc(o.title) + '</option>'; }).join('');
       f.block_free.checked = +d.user.block_free === 1; f.suspend.checked = d.user.status !== 'active'; f.block_note.value = d.user.block_note || '';
       box.innerHTML = d.items.length ? d.items.map(function (it) {
         return '<label class="bk-it' + (it.blocked ? ' on' : '') + '"><input type="checkbox" name="block_access[]" value="' + it.id + '"' + (it.blocked ? ' checked' : '') + '><span><b>' + esc(it.title) + '</b><small>' + esc(it.kind) + ' · ' + esc(it.how) + (it.free && it.how !== 'Free' ? ' · free course' : '') + '</small></span><span class="bk-st ci-badge ' + (it.blocked ? 'ci-b-red">Blocked' : (it.active ? 'ci-b-green">Can open' : 'ci-b-grey">Closed')) + '</span></label>';
@@ -288,6 +332,13 @@ if ($id) {
     }).catch(function () { box.innerHTML = '<p style="color:#b91c1c;margin:6px">Could not load the courses.</p>'; });
   });
   box.addEventListener('change', function (e) { var l = e.target.closest('.bk-it'); if (l) l.classList.toggle('on', e.target.checked); });
+  document.getElementById('bkOther').addEventListener('change', function () { // a course they don't have: listed ticked, saved as blocked
+    var o = this.options[this.selectedIndex]; if (!this.value) return;
+    var p = box.querySelector('p'); if (p && !box.querySelector('.bk-it')) p.remove();
+    var l = document.createElement('label'); l.className = 'bk-it on';
+    l.innerHTML = '<input type="checkbox" name="block_new[]" value="' + this.value + '" checked><span><b>' + esc(o.textContent) + '</b><small>They don\'t have it — they won\'t be able to buy or join it</small></span><span class="bk-st ci-badge ci-b-red">New block</span>';
+    box.appendChild(l); o.remove(); this.value = '';
+  });
 })();
 </script>
 <?php if (sh_perm($me, 'orders')) require __DIR__ . '/components/sh-enroll.php'; ?>

@@ -16,6 +16,11 @@ if (isset($_GET['probe'])) { // check a video link (JSON)
     exit(json_encode(sh_video_probe((string)$_GET['probe']), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
 }
 
+$embed = !empty($_GET['embed']) || !empty($_POST['embed']); // shown inside the popup of the course page
+if (isset($_GET['embed_done'])) { // after saving inside the popup: tell the course page, which closes the popup and refreshes
+    $did = (int)$_GET['embed_done'];
+    exit('<!DOCTYPE html><meta charset="utf-8"><p style="font:15px Arial;padding:20px">Saved.</p><script>try{window.parent.postMessage({lectureSaved:' . $did . '},location.origin)}catch(e){}</script>');
+}
 $lid = (int)($_GET['id'] ?? $_POST['id'] ?? 0);
 $L = null;
 if ($lid) { $q = $pdo->prepare("SELECT * FROM sh_lessons WHERE id = ?"); $q->execute([$lid]); $L = $q->fetch(PDO::FETCH_ASSOC) ?: null; if (!$L) { header('Location: /admin/shop-products.php'); exit; } }
@@ -51,7 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $P) {
     $ajax = !empty($_POST['ajax']);
     $fail = function (string $m) use ($ajax, $P, $lid) {
         if ($ajax) { header('Content-Type: application/json'); http_response_code(400); exit(json_encode(['error' => $m])); }
-        admin_flash($m, 'error'); header('Location: /admin/shop-lecture.php?' . ($lid ? 'id=' . $lid : 'course=' . $P['id'])); exit;
+        admin_flash($m, 'error'); header('Location: /admin/shop-lecture.php?' . ($lid ? 'id=' . $lid : 'course=' . $P['id']) . ($embed ? '&embed=1' : '')); exit;
     };
     $pidI = (int)$P['id'];
     // chapter: chosen, or a new one
@@ -145,7 +150,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $P) {
     }
     admin_log('shop_lecture', ($L ? 'Edited' : 'Added') . " lecture #$newId \"$title\" in course #$pidI");
     $next = !empty($_POST['next']);
-    $go = $next ? '/admin/shop-lecture.php?course=' . $pidI . '&chapter=' . $sec . '&unit=' . $unit : '/admin/shop-content.php?id=' . $pidI . '#list';
+    $go = $next ? '/admin/shop-lecture.php?course=' . $pidI . '&chapter=' . $sec . '&unit=' . $unit . ($embed ? '&embed=1' : '') : ($embed ? '/admin/shop-lecture.php?embed_done=' . $newId : '/admin/shop-products.php?edit=' . $pidI . '&type=course#lectures');
     if ($ajax) { header('Content-Type: application/json'); exit(json_encode(['ok' => true, 'id' => $newId, 'go' => $go])); }
     admin_flash($L ? 'Lecture saved.' : 'Lecture added.' . ($next ? ' Add the next one.' : ''));
     header('Location: ' . $go); exit;
@@ -191,6 +196,11 @@ $vv = $L ? sh_variants($L) : [];
   html.slc-split .slc .editor-main{padding-right:8px}html.slc-split .slc .editor-sidebar-panel{padding-right:4px}
   html.slc-split .slc .editor-main>*,html.slc-split .slc .editor-sidebar-panel>*{flex:0 0 auto!important}
 }
+/* inside the course page's popup: only the editor */
+html.slc-embed #wpadminbar,html.slc-embed .admin-container>.sidebar,html.slc-embed .sidebar-overlay,html.slc-embed .top-nav .menu-toggle,html.slc-embed .top-nav .nav-right{display:none!important}
+html.slc-embed{--wp-admin--admin-bar--height:0px;margin-top:0!important}html.slc-embed body{padding-top:0!important}
+html.slc-embed .admin-container{display:block!important}html.slc-embed .main-content{margin:0!important}
+html.slc-embed .top-nav{padding:10px 16px!important;min-height:0!important}html.slc-embed .content-wrapper{padding:12px 16px!important}
 .slc-opt1{display:flex;gap:8px;align-items:center;font-weight:600;margin:0 0 10px;cursor:pointer}
 .slc-err-f{outline:2px solid #dc2626!important;outline-offset:2px}
 .slc-req{display:block;margin-top:6px;color:#b91c1c;font-size:12.5px;font-weight:600}
@@ -225,14 +235,14 @@ $vv = $L ? sh_variants($L) : [];
 @media (max-width:700px){.slc-opts{grid-template-columns:1fr}}
 </style>
 </head>
-<body>
-<?php admin_shell_open($L ? 'Edit lecture' : 'Add lecture', $P ? ci_e($P['title']) : 'Choose a course first', $P ? '<a class="ci-btn ci-ghost" href="/admin/shop-content.php?id=' . (int)$P['id'] . '"><i class="fas fa-list"></i> All lectures</a>' : ''); ?>
+<body<?= $embed ? ' class="slc-embed"' : '' ?>><?php if ($embed): ?><script>document.documentElement.classList.add('slc-embed');</script><?php endif; ?>
+<?php admin_shell_open($L ? 'Edit lecture' : 'Add lecture', $P ? ci_e($P['title']) : 'Choose a course first', $P ? '<a class="ci-btn ci-ghost" href="/admin/shop-products.php?edit=' . (int)$P['id'] . '&type=course#lectures"><i class="fas fa-list"></i> All lectures</a>' : ''); ?>
 <div class="ci slc">
 <?= admin_flash() ?>
 <?php if (!$courses): ?>
   <div class="ci-card"><div class="ci-card-b ci-empty">No online course yet. <a href="/admin/shop-products.php?new=1&type=course">Add a course</a> first.</div></div>
 <?php else: ?>
-<form method="post" id="slcForm" novalidate><?= csrf_field() ?><input type="hidden" name="id" value="<?= (int)($L['id'] ?? 0) ?>"><input type="hidden" name="course" value="<?= (int)($P['id'] ?? 0) ?>"><input type="hidden" name="next" id="slcNext" value="">
+<form method="post" id="slcForm" novalidate><?= csrf_field() ?><?php if ($embed): ?><input type="hidden" name="embed" value="1"><?php endif; ?><input type="hidden" name="id" value="<?= (int)($L['id'] ?? 0) ?>"><input type="hidden" name="course" value="<?= (int)($P['id'] ?? 0) ?>"><input type="hidden" name="next" id="slcNext" value="">
 <div class="editor-layout sx-layout">
 <div class="editor-main">
   <div class="meta-panel"><div class="meta-panel-body sx-titlebox"><div class="ci-f slc-titlef"><input name="title" id="slcTitle" class="post-title-input" required maxlength="200" placeholder="Lecture name" value="<?= ci_e($L['title'] ?? '') ?>" data-prefix="<?= ci_e($prefix) ?>" data-auto="<?= $L ? '0' : '1' ?>"><span class="ci-hint">Made for you: class + course – chapter – lecture number – unit. You can change it.</span></div></div></div>
@@ -249,22 +259,22 @@ $vv = $L ? sh_variants($L) : [];
   <div class="meta-panel slc-pdf"><div class="meta-panel-header"><span>Lecture PDF</span></div><div class="meta-panel-body">
     <input type="file" id="slcPdf" accept="application/pdf,.pdf"<?= !empty($L['pdf_file']) ? ' data-has="1"' : '' ?>><p class="slc-sub" style="margin-top:6px"><?= !empty($L['pdf_file']) ? 'A PDF is uploaded (' . (int)$L['pdf_pages'] . ' pages). Choose a file only to replace it.' : 'Students read it on their phone or computer.' ?></p>
   </div></div><?php endif; ?>
-  <div class="meta-panel"><div class="meta-panel-header"><span>Notes of this lecture</span><small class="ci-muted">PDF · optional · as many as you like</small></div><div class="meta-panel-body">
+  <div class="meta-panel" id="notes"><div class="meta-panel-header"><span>Notes of this lecture</span><small class="ci-muted">PDF · optional · as many as you like</small></div><div class="meta-panel-body">
   <p class="slc-sub">Shown in the <b>PDF Notes</b> tab under the video. Give each one a clear title, e.g. "Class notes", "Formula sheet", "Practice questions".</p>
   <div class="slc-notes" id="slcNoteList">
     <?php foreach ($notesF as $nf): ?><div class="slc-nrow"><span class="slc-nico">PDF</span><input name="note_title[<?= (int)$nf['id'] ?>]" maxlength="200" value="<?= ci_e($nf['title']) ?>" aria-label="Notes name"><small><?= (int)$nf['pages'] ?> page<?= (int)$nf['pages'] === 1 ? '' : 's' ?></small><label class="slc-nrm"><input type="checkbox" name="rm_note[]" value="<?= (int)$nf['id'] ?>"> Remove</label></div><?php endforeach; ?>
   </div>
   <button type="button" class="ci-btn ci-ghost ci-sm" id="slcNotesAdd" style="margin-top:8px"><i class="fas fa-plus"></i> <span><?= $notesF ? 'Add more PDFs' : 'Add notes PDF' ?></span></button>
-  <span class="slc-sub" style="display:block;margin-top:6px">Opens <a href="/admin/file-manager.php?tab=notes" target="_blank">PDF Media</a> — choose PDFs there or upload new ones from your device. The title you give is the name students see and the name of the downloaded file.</span>
+  <span class="slc-sub" style="display:block;margin-top:6px">Choose from Course notes or from <a href="/admin/file-manager.php" target="_blank">File Manager</a> PDFs, or upload new ones from your device. The title you give is the name students see and the name of the downloaded file.</span>
   </div></div>
-  <div class="meta-panel"><div class="meta-panel-header"><span>VVI questions</span><small class="ci-muted">optional</small></div><div class="meta-panel-body">
+  <div class="meta-panel" id="vvi"><div class="meta-panel-header"><span>VVI questions</span><small class="ci-muted">optional</small></div><div class="meta-panel-body">
   <p class="slc-sub">Write important questions with answers, and / or add links (an article or MCQ post on your website, a PDF…). Students see the questions first, then the links.</p>
   <div class="slc-rep" id="slcVqa"><?php foreach ($vvi['qa'] ?: [['', '']] as [$qq, $aa]): ?><div class="slc-row"><div class="slc-in"><input name="vq[]" maxlength="1000" placeholder="Question" value="<?= ci_e($qq) ?>"><textarea name="va[]" rows="2" maxlength="5000" placeholder="Answer"><?= ci_e($aa) ?></textarea></div><button type="button" class="ci-ico" data-i="trash" aria-label="Remove" data-rm><?= ci_svg('trash') ?></button></div><?php endforeach; ?></div>
   <div class="slc-bulkbar"><button type="button" class="ci-btn ci-ghost ci-sm" data-add="slcVqa"><i class="fas fa-plus"></i> Add question</button><button type="button" class="ci-btn ci-sm" data-bulk="vvi"><i class="fas fa-layer-group"></i> Bulk add questions</button></div>
   <div class="slc-rep" id="slcVl" style="margin-top:12px"><?php foreach ($vvi['links'] ?: [['', '']] as [$tt, $uu]): ?><div class="slc-row"><div class="slc-in" style="flex-direction:row"><input name="vlt[]" maxlength="150" placeholder="Button text, e.g. Important questions (article)" value="<?= ci_e($tt) ?>"><input name="vlu[]" maxlength="500" placeholder="https://…" value="<?= ci_e($uu) ?>"></div><button type="button" class="ci-ico" data-i="trash" aria-label="Remove" data-rm><?= ci_svg('trash') ?></button></div><?php endforeach; ?></div>
   <button type="button" class="ci-btn ci-ghost ci-sm" data-add="slcVl" style="margin-top:8px"><i class="fas fa-link"></i> Add link</button>
   </div></div>
-  <div class="meta-panel"><div class="meta-panel-header"><span>Quiz</span><small class="ci-muted">optional</small></div><div class="meta-panel-body">
+  <div class="meta-panel" id="quiz"><div class="meta-panel-header"><span>Quiz</span><small class="ci-muted">optional</small></div><div class="meta-panel-body">
   <p class="slc-sub">MCQs that students can attempt right under the video (tick the right option), and / or links to a quiz.</p>
   <div class="slc-rep" id="slcQz"><?php $qItems = $quiz['items'] ?: [['', ['', '', '', ''], 0, '']]; foreach ($qItems as $n => [$qq, $oo, $aa, $ee]): $oo = array_pad($oo, 4, ''); ?>
     <div class="slc-row"><div class="slc-in"><input name="qq[<?= $n ?>]" maxlength="1000" placeholder="Question" value="<?= ci_e($qq) ?>">
@@ -313,7 +323,8 @@ $vv = $L ? sh_variants($L) : [];
     window.scrollTo(0, 0); lay.style.height = 'auto';
     lay.style.height = Math.max(380, window.innerHeight - lay.getBoundingClientRect().top - 12) + 'px';
   }
-  fit(); window.addEventListener('resize', fit); window.addEventListener('load', function () { fit(); setTimeout(fit, 400); });
+  function jump() { var t = location.hash && document.getElementById(location.hash.slice(1)); if (t && t.closest('.editor-main')) t.scrollIntoView({ block: 'start' }); } // #notes / #quiz / #vvi from the course page
+  fit(); window.addEventListener('resize', fit); window.addEventListener('load', function () { fit(); setTimeout(function () { fit(); jump(); }, 400); });
 })();
 </script>
 <script>window.SHC = { pid: <?= (int)($P['id'] ?? 0) ?>, csrf: <?= json_encode(csrf_token()) ?>, self: '' };</script>

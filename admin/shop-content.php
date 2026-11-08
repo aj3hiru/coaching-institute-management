@@ -109,6 +109,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $pdo->prepare("UPDATE sh_sections SET yt_list = NULL, yt_synced = NULL WHERE id = ? AND product_id = ?")->execute([$id, $pid]);
                 admin_flash('Playlist unlinked. The lectures already added stay in the chapter.');
                 break;
+            case 'quick_lesson': // quick edit from the course page: name, video link, length, chapter, free, doubts
+                if (!(int)$pdo->query("SELECT COUNT(*) FROM sh_lessons WHERE id = $id AND product_id = $pid")->fetchColumn()) throw new RuntimeException('Lecture not found.');
+                $t = trim((string)($_POST['title'] ?? '')); if ($t === '') throw new RuntimeException('Write the lecture name.');
+                $sec = (int)($_POST['section_id'] ?? 0); if ($sec && !(int)$pdo->query("SELECT COUNT(*) FROM sh_sections WHERE id = $sec AND product_id = $pid")->fetchColumn()) $sec = 0;
+                $url = trim((string)($_POST['video_url'] ?? ''));
+                if ($url !== '' && !preg_match('#^https?://\S+$#i', $url)) throw new RuntimeException('The video link must start with https://');
+                $d = $dur($_POST['duration'] ?? '');
+                if ($url !== '' && !$d && ($yt = sh_yt_id($url))) $d = sh_yt_duration($yt) ?: null;
+                $set = "title = ?, section_id = ?, duration = COALESCE(?, duration), free = ?, doubts_on = ?"; $vals = [mb_substr($t, 0, 200), $sec ?: null, $d, !empty($_POST['free']) ? 1 : 0, !empty($_POST['doubts_on']) ? 1 : 0];
+                if ($url !== '') { $set .= ", video_url = ?"; $vals[] = $url; }
+                $vals[] = $id;
+                $pdo->prepare("UPDATE sh_lessons SET $set WHERE id = ?")->execute($vals);
+                admin_flash('Lecture saved.');
+                $_POST['anchor'] = 'list';
+                break;
             case 'bulk_youtube':
                 $sec = (int)($_POST['section_id'] ?? 0);
                 if ($sec && !(int)$pdo->query("SELECT COUNT(*) FROM sh_sections WHERE id = $sec AND product_id = $pid")->fetchColumn()) $sec = 0;
