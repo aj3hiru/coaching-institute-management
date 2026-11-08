@@ -89,7 +89,13 @@ $ico = fn($n) => sh_icon($n);
     <?php endif; ?>
     <div class="lp-head">
       <div><?php if (!empty($secOf[(int)$lesson['id']])): ?><span class="lp-ch"><?= sh_e($secOf[(int)$lesson['id']]) ?></span><?php endif; ?><h1><?= sh_e($lesson['title']) ?></h1>
-        <span class="lp-sub"><?= $lesson['duration'] ? sh_e($lesson['duration']) . ' · ' : '' ?><?= $lesson['free'] && !$owner ? 'Free preview' : 'Lesson ' . (array_search((int)$lesson['id'], array_map(fn($l) => (int)$l['id'], $all), true) + 1) . ' of ' . count($all) ?></span></div>
+        <?php // what this lesson has: icons + numbers only (nothing shown for what it does not have)
+        $hN = count(sh_lesson_notes($pdo, (int)$lesson['id'])); $hV = sh_vvi($lesson); $hQ = sh_quiz($lesson);
+        $hV = count($hV['qa']); $hQ = count($hQ['items']); // questions only (same numbers as the tabs)
+        $chip = fn($n, $icon, $label, $cls) => $n ? '<span class="lp-cnt ' . $cls . '" title="' . $n . ' ' . $label . '" aria-label="' . $n . ' ' . $label . '">' . $icon . '<b>' . $n . '</b></span>' : ''; ?>
+        <div class="lp-subrow"><span class="lp-sub"><?= $lesson['duration'] ? sh_e($lesson['duration']) . ' · ' : '' ?><?= $lesson['free'] && !$owner ? 'Free preview' : 'Lesson ' . (array_search((int)$lesson['id'], array_map(fn($l) => (int)$l['id'], $all), true) + 1) . ' of ' . count($all) ?></span><?php
+          $chips = $chip($hN, $ico('pdf'), 'PDF notes', 'c-pdf') . $chip($hV, $ico('flag'), 'VVI questions', 'c-vvi') . $chip($hQ, $ico('quiz'), 'MCQ questions', 'c-mcq');
+          if ($chips !== ''): ?><span class="lp-cnts"><?= $chips ?></span><?php endif; ?></div></div>
       <div class="lp-acts">
         <?php if ($owner): ?><button type="button" class="lp-btn ghost<?= isset($done[$lesson['id']]) ? ' is-done' : '' ?>" id="stDone" data-l="<?= (int)$lesson['id'] ?>" data-done="<?= isset($done[$lesson['id']]) ? 1 : 0 ?>" data-t="<?= sh_e(sh_csrf()) ?>"><?= $ico('check') ?> <span><?= isset($done[$lesson['id']]) ? 'Completed' : 'Mark as done' ?></span></button><?php endif; ?>
         <?php if ($prev): ?><a class="lp-btn ghost" href="<?= sh_e($lu('l=' . (int)$prev['id'])) ?>">‹ Previous</a><?php endif; ?>
