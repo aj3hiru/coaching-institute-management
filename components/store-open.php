@@ -24,4 +24,4 @@ $seo = [
 </head>
 <body>
 <?php require_once ROOT_PATH . '/components/header.php'; ?>
-<main class="st">
+<main class="st<?= !empty($stMain) ? ' ' . htmlspecialchars($stMain, ENT_QUOTES, 'UTF-8') : '' ?>">

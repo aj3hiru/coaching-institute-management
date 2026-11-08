@@ -71,19 +71,21 @@
 
   // ---- Our Courses: a grid (2 a row on phones, 4 shown first; 4 a row on computers, 8 shown first).
   //      View more shows the next ones right below — first those already on the page, then 8 more from the server.
-  var more = document.getElementById('hmMore'), grid = document.getElementById('hmCourses');
-  function hiddenCards() { return [].slice.call(grid.querySelectorAll('.hc')).filter(function (c) { return c.offsetParent === null; }); }
-  if (more && grid) {
-    var allBtn = document.getElementById('hmAll'), done = more.getAttribute('data-more') === '0';
+  //      Category pages use the same with [data-more-grid] buttons (their own type / category / filter).
+  function moreList(more, grid, allBtn) {
+    if (!more || !grid) return;
+    var hiddenCards = function () { return [].slice.call(grid.querySelectorAll('.hc')).filter(function (c) { return c.offsetParent === null; }); };
+    var done = more.getAttribute('data-more') === '0';
     var sync = function () { var left = hiddenCards().length; if (done && !left) { more.remove(); if (allBtn) allBtn.hidden = false; } };
     sync(); // e.g. a computer shows all 8 at once and the server has no more
     window.addEventListener('resize', function () { if (document.body.contains(more)) sync(); });
     more.addEventListener('click', function () {
       var hid = hiddenCards();
       if (hid.length) { hid.slice(0, 8).forEach(function (c) { c.classList.add('shown', 'hm-new'); }); sync(); return; }
-      var o = +more.getAttribute('data-o') || 0, label = more.innerHTML;
+      var o = +more.getAttribute('data-o') || 0, label = more.innerHTML, q = '';
+      ['w', 't', 'c'].forEach(function (k) { var v = more.getAttribute('data-' + k); if (v && v !== '0') q += '&' + k + '=' + encodeURIComponent(v); });
       more.disabled = true; more.textContent = 'Loading…';
-      fetch('/store/more?o=' + o + '&n=8' + (more.getAttribute('data-w') ? '&w=' + encodeURIComponent(more.getAttribute('data-w')) : '')).then(function (r) { return r.json(); }).then(function (d) {
+      fetch('/store/more?o=' + o + '&n=8' + q).then(function (r) { return r.json(); }).then(function (d) {
         var tmp = document.createElement('div'); tmp.innerHTML = d.html || '';
         [].slice.call(tmp.children).forEach(function (c) { c.classList.add('shown', 'hm-new'); grid.appendChild(c); });
         more.setAttribute('data-o', o + (d.count || 0));
@@ -93,6 +95,8 @@
       }).catch(function () { more.disabled = false; more.innerHTML = label; });
     });
   }
+  moreList(document.getElementById('hmMore'), document.getElementById('hmCourses'), document.getElementById('hmAll'));
+  [].forEach.call(document.querySelectorAll('[data-more-grid]'), function (b) { moreList(b, document.getElementById(b.getAttribute('data-more-grid')), document.getElementById(b.getAttribute('data-all') || '')); });
 
   // ---- Categories: "All" shows every category (the rest are hidden by the count set in Customize) ----
   var ca = document.querySelector('.hm-cats-all'), cg = document.getElementById('hmCats');

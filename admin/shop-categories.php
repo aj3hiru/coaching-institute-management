@@ -52,15 +52,19 @@ $open = $edit || isset($_GET['new']);
 <?php admin_shell_open('Categories', 'Course &amp; notes categories — shown on the homepage, each with its own page'); ?>
 <div class="ci">
 <?= admin_flash() ?>
-<?php if ($open): $c = $edit ?? []; ?>
-<div class="ci-card"><div class="ci-card-h"><h3><?= $edit ? 'Edit: ' . ci_e($c['name']) : 'Add a category' ?></h3><a href="/admin/shop-categories.php">Cancel</a></div><div class="ci-card-b">
-<form method="post" enctype="multipart/form-data"><?= csrf_field() ?><input type="hidden" name="action" value="save"><input type="hidden" name="id" value="<?= (int)($c['id'] ?? 0) ?>">
-<div class="ci-grid3">
-  <div class="ci-f" style="grid-column:span 2"><label>Category name</label><input name="name" id="scgName" required maxlength="120" placeholder="e.g. Class 10, NEET, Board Exam" value="<?= ci_e($c['name'] ?? '') ?>"></div>
+<?php $c = $edit ?? [];
+$cf = fn(array $c): string => ci_e(json_encode(['id' => (int)$c['id'], 'name' => $c['name'], 'slug' => $c['slug'], 'sort' => (int)$c['sort'], 'status' => $c['status'], 'description' => (string)$c['description'],
+    'seo_title' => (string)$c['seo_title'], 'seo_desc' => (string)$c['seo_desc']], JSON_UNESCAPED_UNICODE));
+$ci_url = fn(array $c): string => $c['icon'] ? ci_e(sh_upload_url($c['icon'])) : ''; ?>
+<div class="ci-modal" id="scgForm" data-mform<?= $open ? ' data-open-now' : '' ?> hidden><div class="ci-modal-box ci-modal-wide" role="dialog" aria-modal="true" aria-labelledby="scgFormH">
+<div class="ci-card-h"><h3 id="scgFormH" data-mtitle-target><?= $edit ? 'Edit category' : 'Add a category' ?></h3><button type="button" class="ci-x" data-close aria-label="Close"><i class="fas fa-times"></i></button></div><div class="ci-card-b">
+<form method="post" enctype="multipart/form-data" id="scgF"><?= csrf_field() ?><input type="hidden" name="action" value="save"><input type="hidden" name="id" value="<?= (int)($c['id'] ?? 0) ?>">
+<div class="ci-grid3 ci-mgrid">
+  <div class="ci-f" style="grid-column:span 2"><label>Category name <span class="ci-req">*</span></label><input name="name" id="scgName" required maxlength="120" placeholder="e.g. Class 10, NEET, Board Exam" value="<?= ci_e($c['name'] ?? '') ?>"></div>
   <div class="ci-f"><label>Order</label><input name="sort" type="number" value="<?= (int)($c['sort'] ?? 0) ?>"><span class="ci-hint">Smaller numbers show first.</span></div>
   <div class="ci-f"><label>Icon <span class="ci-muted" style="font-weight:400">(PNG with a clear background works best)</span></label>
-    <div style="display:flex;gap:10px;align-items:center"><span class="scg-ico" id="scgPrev"><?php if (!empty($c['icon'])): ?><img src="<?= ci_e(sh_upload_url($c['icon'])) ?>" alt=""><?php else: ?><b><?= ci_e(mb_substr($c['name'] ?? '?', 0, 1)) ?></b><?php endif; ?></span><input type="file" name="icon" id="scgIcon" accept="image/png,image/jpeg,image/webp,image/svg+xml,.svg"></div>
-    <?php if (!empty($c['icon'])): ?><label style="font-weight:400;margin-top:6px;display:flex;gap:6px;align-items:center"><input type="checkbox" name="icon_rm" value="1"> Remove icon</label><?php endif; ?></div>
+    <div style="display:flex;gap:10px;align-items:center"><span class="scg-ico" id="scgPrev" data-init="<?= ci_e(!empty($c['icon']) ? sh_upload_url($c['icon']) : '') ?>"><?php if (!empty($c['icon'])): ?><img src="<?= ci_e(sh_upload_url($c['icon'])) ?>" alt=""><?php else: ?><b><?= ci_e(mb_substr($c['name'] ?? '?', 0, 1)) ?></b><?php endif; ?></span><input type="file" name="icon" id="scgIcon" accept="image/png,image/jpeg,image/webp,image/svg+xml,.svg"></div>
+    <label id="scgRm" style="font-weight:400;margin-top:6px;display:flex;gap:6px;align-items:center"<?= empty($c['icon']) ? ' hidden' : '' ?>><input type="checkbox" name="icon_rm" value="1"> Remove icon</label></div>
   <div class="ci-f"><label>Link (slug)</label><input name="slug" id="scgSlug" maxlength="140" placeholder="made from the name" value="<?= ci_e($c['slug'] ?? '') ?>"><span class="ci-hint">Page: /category/<span id="scgSlugV"><?= ci_e($c['slug'] ?? '') ?></span></span></div>
   <div class="ci-f"><label>Show</label><select name="status"><option value="active">Show on the site</option><option value="hidden" <?= ($c['status'] ?? '') === 'hidden' ? 'selected' : '' ?>>Hidden</option></select></div>
   <div class="ci-f" style="grid-column:1/-1"><label>About this category <span class="ci-muted" style="font-weight:400">(optional — shown on its page)</span></label><textarea name="description" rows="3" maxlength="5000"><?= ci_e($c['description'] ?? '') ?></textarea></div>
@@ -72,17 +76,21 @@ $open = $edit || isset($_GET['new']);
   </div>
   <div class="scg-prev"><b id="scgPT"></b><small><?= ci_e(preg_replace('#^https?://#', '', rtrim(SITE_URL, '/'))) ?>/category/<span id="scgPS"></span></small><p id="scgPD"></p></div>
 </div>
-<div style="margin-top:14px"><button class="ci-btn" type="submit"><i class="fas fa-check"></i> Save category</button></div>
-</form></div></div>
-<script>(function(){var n=document.getElementById('scgName'),sl=document.getElementById('scgSlug'),t=document.getElementById('scgT'),d=document.getElementById('scgD'),site=<?= json_encode(edu_site_name()) ?>;
+<div class="ci-mfoot"><button type="button" class="ci-btn ci-ghost" data-close>Cancel</button><button class="ci-btn" type="submit"><i class="fas fa-check"></i> Save category</button></div>
+</form></div></div></div>
+<script>(function(){var n=document.getElementById('scgName'),sl=document.getElementById('scgSlug'),t=document.getElementById('scgT'),d=document.getElementById('scgD'),pv=document.getElementById('scgPrev'),fi=document.getElementById('scgIcon'),rm=document.getElementById('scgRm'),site=<?= json_encode(edu_site_name()) ?>;
 var slug=function(v){return v.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');};
 function paint(){var s=sl.value.trim()||slug(n.value);document.getElementById('scgSlugV').textContent=s;document.getElementById('scgPS').textContent=s;
 var tt=t.value.trim()||(n.value.trim()?n.value.trim()+' — Online Courses & Notes | '+site:'');document.getElementById('scgPT').textContent=tt;document.getElementById('scgTc').textContent='('+tt.length+' / 60 best)';
 var dd=d.value.trim()||'Video courses and PDF notes for '+(n.value.trim()||'this category')+' from '+site+'.';document.getElementById('scgPD').textContent=dd;document.getElementById('scgDc').textContent='('+dd.length+' / 160 best)';}
-[n,sl,t,d].forEach(function(e){e.addEventListener('input',paint);});paint();
-document.getElementById('scgIcon').addEventListener('change',function(){var f=this.files[0];if(!f)return;var p=document.getElementById('scgPrev');p.innerHTML='';var i=new Image();i.src=URL.createObjectURL(f);p.appendChild(i);});})();</script>
-<?php endif; ?>
-<div class="ci-card"><div class="ci-card-h"><h3>All categories (<?= count($cats) ?>)</h3><?php if (!$open): ?><a class="ci-btn ci-sm" href="/admin/shop-categories.php?new=1"><i class="fas fa-plus"></i> Add category</a><?php endif; ?></div>
+function icon(src,name){pv.innerHTML='';if(src){var i=new Image();i.src=src;i.alt='';pv.appendChild(i);}else{var b=document.createElement('b');b.textContent=(name||'?').charAt(0).toUpperCase();pv.appendChild(b);}}
+[n,sl,t,d].forEach(function(e){e.addEventListener('input',paint);e.addEventListener('change',paint);});paint();
+n.addEventListener('input',function(){if(!pv.querySelector('img'))icon('',n.value);});
+fi.addEventListener('change',function(){var f=this.files[0];if(f)icon(URL.createObjectURL(f));});
+// the popup is filled by admin-modal.js; here the icon preview and the "Remove icon" box follow the chosen row
+document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('[data-mopen="#scgForm"]');if(!b)return;
+  setTimeout(function(){var src=b.getAttribute('data-icon')||'';icon(src,n.value);rm.hidden=!src;rm.querySelector('input').checked=false;paint();},0);});})();</script>
+<div class="ci-card"><div class="ci-card-h"><h3>All categories (<?= count($cats) ?>)</h3><a class="ci-btn ci-sm" href="/admin/shop-categories.php?new=1" data-mopen="#scgForm" data-mtitle="Add a category" data-fill='{"id":0}'><i class="fas fa-plus"></i> Add category</a></div>
 <div class="ci-card-b ci-p0 ci-table-wrap"><table class="ci-table">
 <thead><tr><th>Icon</th><th>Category</th><th>Courses &amp; notes</th><th>Order</th><th>Status</th><th>Action</th></tr></thead><tbody>
 <?php if (!$cats): ?><tr><td colspan="6" class="ci-empty">No categories yet.</td></tr><?php endif; ?>
@@ -91,7 +99,7 @@ document.getElementById('scgIcon').addEventListener('change',function(){var f=th
 <td><b><?= ci_e($c['name']) ?></b><small class="ci-muted" style="display:block">/category/<?= ci_e($c['slug']) ?><?= $c['seo_title'] ? ' · SEO set' : '' ?></small></td>
 <td><?= (int)$c['items'] ?></td><td><?= (int)$c['sort'] ?></td>
 <td><?= $c['status'] === 'active' ? '<span class="ci-badge ci-b-green">Shown</span>' : '<span class="ci-badge ci-b-grey">Hidden</span>' ?></td>
-<td><div class="ci-icos"><?= ci_ico('eye', sh_cat_url($c['slug']), 'View', 'link', ' target="_blank"') ?><?= ci_ico('edit', '/admin/shop-categories.php?edit=' . (int)$c['id'], 'Edit') ?><?= ci_post_ico('trash', 'Delete', ['action' => 'delete', 'id' => $c['id']], 'Delete this category? Its courses stay, without a category.') ?></div></td></tr>
+<td><div class="ci-icos"><?= ci_ico('eye', sh_cat_url($c['slug']), 'View', 'link', ' target="_blank"') ?><?= ci_ico('edit', '/admin/shop-categories.php?edit=' . (int)$c['id'], 'Edit', 'link', ' data-mopen="#scgForm" data-mtitle="Edit category" data-fill="' . $cf($c) . '" data-icon="' . $ci_url($c) . '"') ?><?= ci_post_ico('trash', 'Delete', ['action' => 'delete', 'id' => $c['id']], 'Delete this category? Its courses stay, without a category.') ?></div></td></tr>
 <?php endforeach; ?>
 </tbody></table></div></div>
 </div>
