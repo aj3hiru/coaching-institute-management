@@ -14,7 +14,7 @@
  */
 require_once __DIR__ . '/settings.php';
 
-const SH_SCHEMA = 14;
+const SH_SCHEMA = 15;
 
 function sh_db(): PDO
 {
@@ -151,6 +151,15 @@ function sh_tables(PDO $pdo): void
     $add('hm_slides', 'show_t', 'TINYINT(1) NOT NULL DEFAULT 1');
     $add('hm_slides', 'show_d', 'TINYINT(1) NOT NULL DEFAULT 1');
     $add('hm_free', 'thumb_custom', 'VARCHAR(255) NULL');
+    // v15: blocking students — from one course (the access row stays, marked blocked), from every free course, or the whole
+    //      account suspended; a ban list keeps a suspended mobile / email from making a new account
+    $add('sh_access', 'blocked', 'TINYINT(1) NOT NULL DEFAULT 0');
+    $add('sh_users', 'block_free', 'TINYINT(1) NOT NULL DEFAULT 0');
+    $add('sh_users', 'block_note', 'VARCHAR(255) NULL');
+    $add('sh_users', 'blocked_at', 'DATETIME NULL');
+    $pdo->exec("CREATE TABLE IF NOT EXISTS sh_bans (
+        id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, kind VARCHAR(10) NOT NULL, value VARCHAR(190) NOT NULL, user_id INT UNSIGNED NULL,
+        reason VARCHAR(255) NULL, created_by INT UNSIGNED NULL, created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP, UNIQUE KEY uq_kv (kind, value))$t");
     // v14: PDF Media — a library of PDFs (each with its title) that lectures pick their notes from; a lecture's own picture
     $pdo->exec("CREATE TABLE IF NOT EXISTS sh_pdf_media (
         id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, title VARCHAR(200) NOT NULL, file VARCHAR(255) NOT NULL, size BIGINT UNSIGNED NOT NULL DEFAULT 0,
@@ -350,6 +359,7 @@ function sh_register(PDO $pdo, string $name, string $mobile, string $email, stri
     if (!preg_match('/^[6-9]\d{9}$/', $mobile)) throw new RuntimeException('Please enter a valid 10-digit mobile number.');
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) throw new RuntimeException('Please enter a valid email address.');
     if (strlen($pass) < 4) throw new RuntimeException('The password must have at least 4 characters.');
+    if (sh_banned($pdo, $mobile, $email)) throw new RuntimeException('This mobile number or email cannot be used to make an account. Please contact the institute.');
     $q = $pdo->prepare("SELECT mobile, email FROM sh_users WHERE mobile = ? OR email = ?");
     $q->execute([$mobile, $email]);
     foreach ($q as $r) {
@@ -361,6 +371,21 @@ function sh_register(PDO $pdo, string $name, string $mobile, string $email, stri
     return (int)$pdo->lastInsertId();
 }
 
+/** Is this mobile number or email on the ban list (a suspended account)? */
+function sh_banned(PDO $pdo, string $mobile, string $email): bool
+{
+    try { $q = $pdo->prepare("SELECT COUNT(*) FROM sh_bans WHERE (kind = 'mobile' AND value = ?) OR (kind = 'email' AND value = ?)"); $q->execute([sh_clean_mobile($mobile) ?: '-', strtolower(trim($email)) ?: '-']); return (int)$q->fetchColumn() > 0; }
+    catch (Throwable) { return false; }
+}
+/** May this buyer get this product (buy / join)? '' = yes, else the reason to show. Blocked from it, or from free items. */
+function sh_join_block(PDO $pdo, ?array $u, array $p): string
+{
+    if (!$u) return '';
+    $q = $pdo->prepare("SELECT blocked FROM sh_access WHERE user_id = ? AND product_id = ?"); $q->execute([(int)$u['id'], (int)$p['id']]);
+    if ((int)$q->fetchColumn()) return 'You cannot join this course. Please contact the institute.';
+    if ((float)$p['price'] <= 0 && !empty($u['block_free'])) return 'You cannot join free courses. Please contact the institute.';
+    return '';
+}
 /** Login with mobile number or email. Returns the user or null. Slows down repeated wrong tries. */
 function sh_check_login(PDO $pdo, string $id, string $pass): ?array
 {
@@ -412,7 +437,7 @@ function sh_product(PDO $pdo, $idOrSlug, bool $publishedOnly = true): ?array
 function sh_has_access(PDO $pdo, ?int $uid, int $pid): bool
 {
     if (!$uid) return false;
-    $q = $pdo->prepare("SELECT 1 FROM sh_access WHERE user_id = ? AND product_id = ? AND revoked = 0 AND (expires_at IS NULL OR expires_at > NOW())");
+    $q = $pdo->prepare("SELECT 1 FROM sh_access WHERE user_id = ? AND product_id = ? AND revoked = 0 AND blocked = 0 AND (expires_at IS NULL OR expires_at > NOW())");
     $q->execute([$uid, $pid]);
     return (bool)$q->fetchColumn();
 }
@@ -426,7 +451,7 @@ function sh_grant(PDO $pdo, int $uid, int $pid, string $source, ?int $orderId = 
     $exp = $days > 0 ? date('Y-m-d H:i:s', time() + $days * 86400) : null;
     $pdo->prepare("INSERT INTO sh_access (user_id, product_id, source, order_id, granted_by, note, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?)
         ON DUPLICATE KEY UPDATE source = VALUES(source), order_id = COALESCE(VALUES(order_id), order_id), granted_by = VALUES(granted_by),
-        note = VALUES(note), granted_at = NOW(), expires_at = VALUES(expires_at), revoked = 0")
+        note = VALUES(note), granted_at = NOW(), expires_at = VALUES(expires_at), revoked = 0, blocked = IF(VALUES(source) = 'admin', 0, blocked)") // staff giving it lifts a block
         ->execute([$uid, $pid, $source, $orderId, $by, mb_substr($note, 0, 200), $exp]);
 }
 
@@ -1117,6 +1142,25 @@ function sh_yt_sync_section(PDO $pdo, int $sid, int $freeFirst = 0): int
         $have[$v] = 1; $added++;
     }
     return $added;
+}
+/** Links a YouTube playlist to a chapter of a course ($sec = 0: a new chapter, named $title or after the playlist) and
+    adds its videos as lectures. Returns [chapter id, videos added]; throws RuntimeException with a message for the admin. */
+function sh_link_playlist(PDO $pdo, int $pid, string $url, int $sec = 0, string $title = '', int $freeFirst = 1): array
+{
+    $list = sh_yt_list(trim($url));
+    if (!$list) throw new RuntimeException('Paste the YouTube playlist link — it has "list=" in it.');
+    if (!sh_yt_playlist($list)) throw new RuntimeException('Could not read this playlist. On YouTube set the playlist to Public or Unlisted (videos inside can be Unlisted), then try again.');
+    if ($sec && !(int)$pdo->query("SELECT COUNT(*) FROM sh_sections WHERE id = $sec AND product_id = $pid")->fetchColumn()) $sec = 0;
+    if (!$sec) {
+        $t = trim($title);
+        if ($t === '') { $o = json_decode(sh_http_get('https://www.youtube.com/oembed?format=json&url=' . rawurlencode('https://www.youtube.com/playlist?list=' . $list), 12), true) ?: []; $t = (string)($o['title'] ?? '') ?: 'Lectures'; }
+        $sort = (int)$pdo->query("SELECT COALESCE(MAX(sort),0) + 1 FROM sh_sections WHERE product_id = $pid")->fetchColumn();
+        $pdo->prepare("INSERT INTO sh_sections (product_id, title, sort) VALUES (?, ?, ?)")->execute([$pid, mb_substr($t, 0, 200), $sort]);
+        $sec = (int)$pdo->lastInsertId();
+    }
+    $pdo->prepare("UPDATE sh_sections SET yt_list = ?, yt_synced = NULL WHERE id = ?")->execute([$list, $sec]);
+    @set_time_limit(300);
+    return [$sec, max(0, sh_yt_sync_section($pdo, $sec, max(0, $freeFirst)))];
 }
 /** Course pages call this: chapters linked to a playlist look for new videos at most every 6 hours. */
 function sh_yt_autosync(PDO $pdo, int $pid): void

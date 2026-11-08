@@ -17,6 +17,7 @@ try {
         if (!$p || !sh_on()) $out(['error' => 'This item is not available.'], 404);
         $go = sh_learn_url($p['slug']);
         if (sh_has_access($pdo, (int)$u['id'], (int)$p['id'])) $out(['ok' => true, 'owned' => true, 'go' => $go]);
+        if (($why = sh_join_block($pdo, $u, $p)) !== '') $out(['error' => $why], 403); // blocked from this course / from free courses
         if ((float)$p['price'] <= 0) { // free item: straight to the library
             sh_grant($pdo, (int)$u['id'], (int)$p['id'], 'free');
             $out(['ok' => true, 'free' => true, 'go' => $go]);

@@ -1,6 +1,7 @@
 <?php
 // Online store → Products: video courses and PDF notes packs (price, access period, thumbnail, status).
-// The videos / PDFs inside a product are managed on shop-content.php.
+// The edit page holds everything: details, a YouTube playlist (its videos become lectures and new ones come in by
+// themselves) and, below the form, the Lectures section (chapters, lectures with their PDFs / MCQs, course PDFs).
 require_once __DIR__ . '/components/guard.php';
 require_once INCLUDES_PATH . '/institute.php';
 require_once INCLUDES_PATH . '/shop.php';
@@ -53,8 +54,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($id) { $vals[] = $id; $pdo->prepare("UPDATE sh_products SET type=?, title=?, slug=?, subtitle=?, description=?, thumb=?, price=?, mrp=?, validity_days=?, status=?, sort=?, category_id=?, starts_at=?, teacher_id=?, faq=?, includes=?, updated_at=NOW() WHERE id=?")->execute($vals); }
             else { $pdo->prepare("INSERT INTO sh_products (type, title, slug, subtitle, description, thumb, price, mrp, validity_days, status, sort, category_id, starts_at, teacher_id, faq, includes) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")->execute($vals); $id = (int)$pdo->lastInsertId(); }
             admin_log('shop_product', "Saved store product #$id $title");
-            admin_flash(isset($_POST['go_content']) ? 'Saved. Now add the ' . ($type === 'course' ? 'lectures' : 'PDFs') . '.' : 'Saved.');
-            $back = isset($_POST['go_content']) ? ($type === 'course' ? '/admin/shop-lecture.php?course=' . $id : '/admin/shop-content.php?id=' . $id) : '/admin/shop-products.php?type=' . $type;
+            // a YouTube playlist: its videos become the lectures (a chapter follows the playlist)
+            $ytMsg = ''; $ytOk = false;
+            if ($type === 'course' && trim((string)($_POST['yt_url'] ?? '')) !== '') {
+                try { [, $nAdd] = sh_link_playlist($pdo, $id, (string)$_POST['yt_url'], (int)($_POST['yt_section'] ?? 0), trim((string)($_POST['yt_chapter'] ?? '')), (int)($_POST['yt_free'] ?? 1));
+                    $ytOk = true; $ytMsg = ' YouTube playlist linked — ' . $nAdd . ' video' . ($nAdd === 1 ? '' : 's') . ' added as lectures.'; }
+                catch (RuntimeException $ye) { $ytMsg = ' The playlist was not linked: ' . $ye->getMessage(); }
+            }
+            admin_flash((isset($_POST['go_content']) ? 'Saved. Now add the ' . ($type === 'course' ? 'lectures' : 'PDFs') . '.' : 'Saved.') . $ytMsg, $ytMsg !== '' && !$ytOk ? 'error' : 'success');
+            $back = $ytOk ? '/admin/shop-products.php?edit=' . $id . '&type=' . $type . '#lectures'
+                : (isset($_POST['go_content']) ? ($type === 'course' ? '/admin/shop-lecture.php?course=' . $id : '/admin/shop-products.php?edit=' . $id . '&type=' . $type . '#lectures') : (!empty($_POST['stay']) ? '/admin/shop-products.php?edit=' . $id . '&type=' . $type : '/admin/shop-products.php?type=' . $type));
         } elseif ($a === 'delete' && $id) {
             $sold = (int)$pdo->query("SELECT (SELECT COUNT(*) FROM sh_access WHERE product_id = $id) + (SELECT COUNT(*) FROM sh_orders WHERE product_id = $id AND status = 'paid')")->fetchColumn();
             if ($sold) throw new RuntimeException('People have bought or been given this item, so it cannot be deleted. Set it to Hidden instead.');
@@ -102,10 +111,14 @@ $badge = fn($s) => '<span class="ci-badge ' . ['published' => 'ci-b-green', 'dra
 .shp-prev{display:flex;gap:10px;align-items:center;margin-top:8px}.shp-prev img{width:120px;height:68px;object-fit:cover}
 .shp-rep{display:flex;flex-direction:column;gap:8px}.shp-row{display:grid;grid-template-columns:1fr 34px;gap:8px;align-items:start;border:1px solid #e5e7eb;padding:10px;background:#fafafa}
 .shp-row .shp-qa{display:flex;flex-direction:column;gap:6px}.shp-row input,.shp-row textarea{width:100%}.shp-sec{margin-top:18px;padding-top:14px;border-top:1px solid #eef0f3}.shp-sec > b{display:block;font-size:15px;margin-bottom:8px}
+.shp-yt .meta-panel-body input[name=yt_url],.shp-yt input[name=yt_chapter]{width:100%}
+.shp-yt-on{border-color:#fca5a5;box-shadow:0 0 0 3px #fee2e2}
+.shp-ylinked{font-size:13px;margin:0 0 8px;padding:7px 10px;background:#f0fdf4;border:1px solid #bbf7d0}.shp-ylinked i{color:#15803d}
+.shp-lect-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:26px 0 12px;padding-top:18px;border-top:2px solid #e5e7eb}.shp-lect-h h2{margin:0;font-size:19px}
 .shp-count{display:inline-flex;gap:6px;align-items:center;font-weight:700;color:#0c6878;background:#eef7f8;padding:8px 12px}</style>
 </head>
 <body>
-<?php admin_shell_open($open ? ($ep ? ($isC ? 'Edit course' : 'Edit notes') : ($isC ? 'Add a new course' : 'Add a notes pack')) : ($isC ? 'Online Courses' : 'PDF Notes'), $open ? ($ep ? ci_e($ep['title']) : ($isC ? 'A recorded video course for the website' : 'A PDF notes pack for the website')) : ($isC ? 'Recorded video courses sold on the website' : 'PDF notes packs sold on the website'), $open ? '<a class="ci-btn ci-ghost" href="/admin/shop-products.php?type=' . $fType . '"><i class="fas fa-arrow-left"></i> All ' . ($isC ? 'courses' : 'notes') . '</a>' : '<a class="ci-btn ci-ghost" href="' . ($isC ? '/store/' : '/notes/') . '" target="_blank"><i class="fas fa-store"></i> View on site</a>' . ($isC ? '<a class="ci-btn ci-ghost" href="/admin/shop-lecture.php"><i class="fas fa-film"></i> Add Lecture</a>' : '') . '<a class="ci-btn" href="?new=1&type=' . $fType . '"><i class="fas fa-plus"></i> ' . ($isC ? 'Add Course' : 'Add Notes') . '</a>'); ?>
+<?php admin_shell_open($open ? ($ep ? ($isC ? 'Edit course' : 'Edit notes') : ($isC ? 'Add a new course' : 'Add a notes pack')) : ($isC ? 'Online Courses' : 'PDF Notes'), $open ? ($ep ? ci_e($ep['title']) : ($isC ? 'A recorded video course for the website' : 'A PDF notes pack for the website')) : ($isC ? 'Recorded video courses sold on the website' : 'PDF notes packs sold on the website'), $open ? '<a class="ci-btn ci-ghost" href="/admin/shop-products.php?type=' . $fType . '"><i class="fas fa-arrow-left"></i> All ' . ($isC ? 'courses' : 'notes') . '</a>' : '<a class="ci-btn ci-ghost" href="' . ($isC ? '/store/' : '/notes/') . '" target="_blank"><i class="fas fa-store"></i> View on site</a>' . ($isC ? '<a class="ci-btn ci-ghost" href="/admin/shop-lecture.php"><i class="fas fa-film"></i> Add Lecture</a><a class="ci-btn ci-ghost" href="?new=1&amp;type=course&amp;yt=1"><i class="fab fa-youtube" style="color:#dc2626"></i> Course</a>' : '') . '<a class="ci-btn" href="?new=1&type=' . $fType . '"><i class="fas fa-plus"></i> ' . ($isC ? 'Add Course' : 'Add Notes') . '</a>'); ?>
 <div class="ci">
 <?= admin_flash() ?>
 <?php if (!sh_rzp_ready() && !sh_pay_demo()): ?><div class="ci-alert ci-alert-err">Online payment is not set up yet — buyers cannot pay until the Razorpay keys are saved in <a href="/admin/shop-settings.php">Store Settings</a>. Free items work already.</div><?php endif; ?>
@@ -120,6 +133,18 @@ $badge = fn($s) => '<span class="ci-badge ' . ['published' => 'ci-b-green', 'dra
       <input type="text" name="subtitle" class="sx-sub" maxlength="300" placeholder="Short line shown under the name — e.g. All chapters with solved examples, in Hindi" value="<?= ci_e($ep['subtitle'] ?? '') ?>">
       <div class="sx-link"><span>Web address:</span> <span class="ci-muted"><?= ci_e($base) ?></span><input name="slug" id="sxSlug" maxlength="150" placeholder="made-from-the-name" value="<?= ci_e($ep['slug'] ?? '') ?>"></div>
     </div></div>
+    <?php if ($isC): $epYt = $ep ? $pdo->query("SELECT s.id, s.title, s.yt_list, s.yt_synced, (SELECT COUNT(*) FROM sh_lessons l WHERE l.section_id = s.id) n FROM sh_sections s WHERE s.product_id = " . (int)$ep['id'] . " AND s.yt_list IS NOT NULL ORDER BY s.sort, s.id")->fetchAll(PDO::FETCH_ASSOC) : []; $epSecs = $ep ? $pdo->query("SELECT id, title FROM sh_sections WHERE product_id = " . (int)$ep['id'] . " ORDER BY sort, id")->fetchAll(PDO::FETCH_KEY_PAIR) : []; ?>
+    <div class="meta-panel shp-yt<?= isset($_GET['yt']) ? ' shp-yt-on' : '' ?>" id="ytPanel"><div class="meta-panel-header"><span><i class="fab fa-youtube" style="color:#dc2626"></i> YouTube playlist</span><small class="ci-muted">its videos become the lectures — new ones come in by themselves</small></div><div class="meta-panel-body">
+      <?php foreach ($epYt as $y): ?><div class="shp-ylinked"><i class="fas fa-link"></i> <b><?= ci_e($y['title']) ?></b> <span class="ci-muted">· <?= (int)$y['n'] ?> lectures<?= $y['yt_synced'] ? ' · checked ' . ci_e(date('d M, h:i A', strtotime($y['yt_synced']))) : '' ?></span> <a href="https://www.youtube.com/playlist?list=<?= ci_e($y['yt_list']) ?>" target="_blank" rel="noopener">open on YouTube</a></div><?php endforeach; ?>
+      <input name="yt_url" maxlength="500" placeholder="<?= $epYt ? 'Add another playlist — https://www.youtube.com/playlist?list=…' : 'https://www.youtube.com/playlist?list=…' ?>"<?= isset($_GET['yt']) ? ' autofocus' : '' ?>>
+      <div class="sx-two" style="margin-top:8px">
+        <div><label>Put its videos in</label><select name="yt_section"><option value="0">A new chapter</option><?php foreach ($epSecs as $k => $t): ?><option value="<?= (int)$k ?>"><?= ci_e($t) ?></option><?php endforeach; ?></select></div>
+        <div><label>Free preview</label><select name="yt_free"><option value="0">None</option><option value="1" selected>First video</option><option value="2">First 2 videos</option><option value="3">First 3 videos</option></select></div>
+      </div>
+      <input name="yt_chapter" maxlength="200" style="margin-top:8px" placeholder="New chapter name (empty = the playlist's name)">
+      <small class="ci-muted" style="display:block;margin-top:6px">Make a playlist on YouTube for this course and keep your videos <b>Unlisted</b> in it (the playlist itself Public or Unlisted). Saving adds every video as a lecture; videos you add to the playlist later come in by themselves. PDFs, MCQs and VVI questions are added to each lecture in the Lectures section below.</small>
+    </div></div>
+    <?php endif; ?>
     <div class="meta-panel"><div class="meta-panel-header"><span><?= $isC ? 'About this course' : 'About these notes' ?></span><small class="ci-muted">what students will learn</small></div><div class="meta-panel-body">
       <textarea name="description" rows="9" maxlength="20000" placeholder="Describe the <?= $isC ? 'course' : 'notes' ?> — chapters, who it is for, how it helps."><?= ci_e($ep['description'] ?? '') ?></textarea>
     </div></div>
@@ -131,17 +156,13 @@ $badge = fn($s) => '<span class="ci-badge ' . ['published' => 'ci-b-green', 'dra
       <div class="shp-rep" id="shpFaq"><?php foreach ($epFaq ?: [['q' => '', 'a' => '']] as $f): ?><div class="shp-row"><div class="shp-qa"><input name="faq_q[]" maxlength="300" placeholder="Question — e.g. Is this course in Hindi?" value="<?= ci_e($f['q'] ?? '') ?>"><textarea name="faq_a[]" rows="2" maxlength="3000" placeholder="Answer"><?= ci_e($f['a'] ?? '') ?></textarea></div><button type="button" class="ci-ico" data-i="trash" aria-label="Remove" data-rm><?= ci_svg('trash') ?></button></div><?php endforeach; ?></div>
       <div><button type="button" class="ci-btn ci-ghost ci-sm" data-add="shpFaq"><i class="fas fa-plus"></i> Add question</button></div>
     </div></div>
-    <?php if ($ep): ?><div class="meta-panel"><div class="meta-panel-header"><span><?= $isC ? 'Lectures' : 'PDF files' ?></span></div><div class="meta-panel-body sx-inside">
-      <?php if ($isC): ?><span class="shp-count"><i class="fas fa-film"></i> <?= $epLect ?> lecture<?= $epLect === 1 ? '' : 's' ?> — counted automatically</span><div class="sx-row"><a class="ci-btn ci-sm" href="/admin/shop-lecture.php?course=<?= (int)$ep['id'] ?>"><i class="fas fa-plus"></i> Add lecture</a><a class="ci-btn ci-ghost ci-sm" href="/admin/shop-content.php?id=<?= (int)$ep['id'] ?>"><i class="fas fa-list"></i> All lectures &amp; chapters</a></div>
-      <?php else: ?><div class="sx-row"><a class="ci-btn ci-sm" href="/admin/shop-content.php?id=<?= (int)$ep['id'] ?>"><i class="fas fa-file-pdf"></i> Upload / manage PDFs</a></div><?php endif; ?>
-    </div></div><?php endif; ?>
   </div>
   <div class="editor-sidebar-panel">
     <div class="meta-panel"><div class="meta-panel-header"><span>Publish</span></div><div class="meta-panel-body">
       <div><label>Status</label><select name="status"><?php foreach (['draft' => 'Draft', 'published' => 'Published', 'hidden' => 'Hidden'] as $k => $l): ?><option value="<?= $k ?>" <?= ($ep['status'] ?? 'draft') === $k ? 'selected' : '' ?>><?= $l ?></option><?php endforeach; ?></select></div>
       <div><label>Order on the site</label><input name="sort" type="number" value="<?= (int)($ep['sort'] ?? 0) ?>"></div>
       <?php if ($ep): ?><a class="sx-view" href="<?= ci_e(sh_url($ep)) ?>" target="_blank"><i class="fas fa-arrow-up-right-from-square"></i> View on site</a><?php endif; ?>
-      <div class="sx-pub"><button class="ci-btn ci-ghost" type="submit">Save</button><button class="ci-btn" type="submit" name="go_content" value="1"><i class="fas fa-check"></i> Save &amp; add <?= $isC ? 'lectures' : 'PDFs' ?></button></div>
+      <div class="sx-pub"><button class="ci-btn ci-ghost" type="submit" name="stay" value="1">Save</button><button class="ci-btn" type="submit" name="go_content" value="1"><i class="fas fa-check"></i> Save &amp; add <?= $isC ? 'lectures' : 'PDFs' ?></button></div>
       <a class="sx-cancel" href="/admin/shop-products.php?type=<?= $fType ?>">Cancel</a>
     </div></div>
     <div class="meta-panel"><div class="meta-panel-header"><span>Price</span></div><div class="meta-panel-body">
@@ -167,6 +188,10 @@ $badge = fn($s) => '<span class="ci-badge ' . ['published' => 'ci-b-green', 'dra
   </div>
 </div>
 </form>
+<?php if ($ep): $p = $ep; ?>
+<div class="shp-lect-h" id="lectures"><h2><i class="fas <?= $isC ? 'fa-film' : 'fa-file-pdf' ?>"></i> <?= $isC ? 'Lectures' : 'PDF files' ?></h2><?php if ($isC): ?><a class="ci-btn" href="/admin/shop-lecture.php?course=<?= (int)$ep['id'] ?>"><i class="fas fa-plus"></i> Add lecture</a><?php endif; ?></div>
+<?php require __DIR__ . '/components/course-lectures.php'; ?>
+<?php endif; ?>
 <script>
 (function () {
   var t = document.getElementById('sxTitle'), sl = document.getElementById('sxSlug'), touched = sl.value !== '';
