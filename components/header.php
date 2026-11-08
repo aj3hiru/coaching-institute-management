@@ -145,7 +145,11 @@ if ($__school) {
 .nb-dd-p a.nb-dd-all{font-weight:700!important;border-bottom:1px solid #f1f5f9;border-radius:6px 6px 0 0;margin-bottom:4px}
 /* Subscribe with a social icon: the button takes that brand's colour */
 .nb-hr-sub.has-ic{display:inline-flex;align-items:center;gap:7px;background:var(--nb-sb)!important;border-color:transparent!important;color:#fff!important}
-.nb-hr-sub.has-ic:hover{filter:brightness(.92);background:var(--nb-sb)!important}
+/* Subscribe: square corners, and the same look on hover (no colour change, no lift, no shadow) */
+.nb-hr-sub,.nb-hr-sub:hover,.nb-hr-sub:focus{border-radius:0!important;transform:none!important;box-shadow:none!important;filter:none!important}
+.nb-hr-sub:hover,.nb-hr-sub:focus{background:var(--t-buttons-background,var(--gc-accent,#0c6878))!important;color:#fff!important}
+.nb-hr-sub.has-ic:hover,.nb-hr-sub.has-ic:focus{background:var(--nb-sb)!important}
+.mnav-btn.solid.has-ic,.mnav-btn.solid.has-ic:hover{filter:none!important}
 .nb-hr-sub .nb-sub-ic{flex:0 0 auto}
 .mnav-btn.solid.has-ic{background:var(--nb-sb)!important;border-color:transparent!important;color:#fff!important}
 html[data-theme="dark"] .nb-dd-b{color:#e5e7eb}html[data-theme="dark"] .nb-dd-p{background:#151b23;border-color:#263040}html[data-theme="dark"] .nb-dd-p a{color:#e5e7eb!important}html[data-theme="dark"] .nb-dd-p a:hover{background:#1f2937}
