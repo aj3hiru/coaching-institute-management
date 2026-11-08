@@ -1892,7 +1892,7 @@ a.pf-st:hover { border-color: var(--primary); }
 .wps-input.small{width:5.5rem;max-width:none}
 .wps-desc{margin:.45rem 0 0;font-size:.8rem;color:#646970;line-height:1.5}
 .wps-media{display:flex;align-items:center;justify-content:flex-start;max-width:25rem;min-height:70px;padding:1rem;border:1px solid var(--gray-200);border-radius:6px;background:#fff;box-sizing:border-box}
-.wps-media img{display:block;width:auto;height:auto;max-width:100%;object-fit:contain}
+.wps-media img{display:block;width:auto;height:auto;max-width:100%;max-height:80px;object-fit:contain} /* logo preview at a normal size, like WordPress */
 .wps-media.empty{justify-content:center;border:1px dashed #c3c4c7;background:#f6f7f7;color:#646970;font-size:.82rem}
 .wps-media-actions{display:flex;align-items:center;justify-content:flex-start;gap:.5rem;flex-wrap:wrap;margin-top:.6rem}
 .wps-secondary{min-height:32px;padding:0 .8rem;border:1px solid var(--primary);border-radius:4px;background:#fff;color:var(--primary);font-size:.82rem;font-weight:500;cursor:pointer}
