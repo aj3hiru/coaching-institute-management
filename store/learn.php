@@ -153,30 +153,41 @@ $ico = fn($n) => sh_icon($n);
     <div class="lp-unlock"><b>Unlock the full <?= $isCourse ? 'course' : 'notes' ?></b><span><?= $lockedLeft ?> more lesson<?= $lockedLeft === 1 ? '' : 's' ?> / PDF<?= $lockedLeft === 1 ? '' : 's' ?> are locked.</span>
       <a class="lp-btn" href="<?= sh_e(sh_url($p)) ?>#buy"><?= (float)$p['price'] > 0 ? 'Buy for ' . sh_money($p['price']) : 'Enrol for free' ?></a></div>
     <?php endif; ?>
-    <div class="lp-list">
-      <div class="lp-list-h"><b><?= $isCourse ? 'Course content' : 'PDF notes' ?></b><?php if ($owner && $all): ?><small><?= $nDone ?>/<?= count($all) ?></small><?php endif; ?></div>
+    <?php
+    // lesson list like the free courses: number · picture · title (YouTube's picture, a PDF tile, or the course picture)
+    $thumbOf = function (array $l) use ($p) {
+        if (($l['kind'] ?? 'video') === 'pdf') return '';
+        if ($l['video_url'] && ($yid = sh_yt_id((string)$l['video_url']))) return 'https://i.ytimg.com/vi/' . $yid . '/mqdefault.jpg';
+        return (string)($p['thumb'] ?? '');
+    };
+    $nVid = count($all); $num = 0; $multi = count($cur) > 1;
+    ?>
+    <div class="lp-list lp-fr">
+      <div class="lp-list-h"><b><?= $isCourse ? 'Lessons' : 'PDF notes' ?></b><span><?= $isCourse ? ($owner && $all ? $nDone . ' / ' . $nVid . ' done' : $nVid . ' ' . ($nVid === 1 ? 'lesson' : 'lessons')) : count($files) . ' PDF' . (count($files) === 1 ? '' : 's') ?></span></div>
       <?php if ($owner && $all): ?><div class="lp-bar"><i style="width:<?= $pct ?>%"></i></div><?php endif; ?>
-      <?php foreach ($cur as $s): $hasCur = $lesson && in_array((int)$lesson['id'], array_map(fn($x) => (int)$x['id'], $s['lessons']), true); $sDone = count(array_filter($s['lessons'], fn($x) => isset($done[$x['id']]))); ?>
-      <details class="lp-sec"<?= $hasCur || count($cur) === 1 ? ' open' : '' ?>>
-        <summary><span class="sp-chev" aria-hidden="true"></span><b><?= sh_e($s['title'] !== '' ? $s['title'] : 'Lessons') ?></b><small><?= $owner ? $sDone . '/' . count($s['lessons']) : count($s['lessons']) ?></small></summary>
-        <?php foreach ($s['lessons'] as $l): $ok = $can($l); $on = $lesson && (int)$lesson['id'] === (int)$l['id']; $isDone = isset($done[$l['id']]);
-          $cls = 'lp-li' . ($on ? ' on' : '') . ($isDone ? ' done' : '') . ($ok ? '' : ' locked'); ?>
-          <a class="<?= $cls ?>" href="<?= sh_e($ok ? $lu('l=' . (int)$l['id']) : sh_url($p) . '#buy') ?>"<?= $ok ? '' : ' title="Buy the course to open this lesson"' ?>>
-            <span class="lp-st"><?= $ico(!$ok ? 'lock' : ($isDone ? 'check' : (($l['kind'] ?? 'video') === 'pdf' ? 'file' : ($on ? 'playsolid' : 'play')))) ?></span>
-            <span class="lp-lt"><?= sh_e($l['title']) ?><small><?= $l['duration'] ? sh_e($l['duration']) : '' ?><?= $l['free'] && !$owner ? ($l['duration'] ? ' · ' : '') . '<em>Free</em>' : '' ?></small></span></a>
+      <div class="lp-fr-l" id="lpList">
+      <?php foreach ($cur as $s): ?>
+        <?php if ($multi && $s['lessons']): ?><div class="lp-ch-h"><?= sh_e($s['title'] !== '' ? $s['title'] : 'Lessons') ?><small><?= count($s['lessons']) ?></small></div><?php endif; ?>
+        <?php foreach ($s['lessons'] as $l): $num++; $ok = $can($l); $on = $lesson && (int)$lesson['id'] === (int)$l['id']; $isDone = isset($done[$l['id']]); $th = $thumbOf($l); $isPdf = ($l['kind'] ?? 'video') === 'pdf'; ?>
+          <a class="lp-li<?= $on ? ' on' : '' ?><?= $isDone ? ' done' : '' ?><?= $ok ? '' : ' locked' ?>" href="<?= sh_e($ok ? $lu('l=' . (int)$l['id']) : sh_url($p) . '#buy') ?>"<?= $ok ? '' : ' title="Buy the course to open this lesson"' ?><?= $on ? ' aria-current="true"' : '' ?>>
+            <span class="lp-n"><?= $num ?></span>
+            <span class="lp-th<?= $isPdf || $th === '' ? ' ph' : '' ?>"><?php if (!$isPdf && $th !== ''): ?><img src="<?= sh_e($th) ?>" alt="" loading="lazy"><?php else: ?><?= $ico($isPdf ? 'pdf' : 'play') ?><?php endif; ?>
+              <?php if (!$ok): ?><i class="lp-tag lock"><?= $ico('lock') ?></i><?php elseif ($on): ?><i class="lp-tag now">Playing</i><?php elseif ($isDone): ?><i class="lp-tag ok"><?= $ico('check') ?></i><?php endif; ?></span>
+            <span class="lp-lt"><span class="lp-t2"><?= sh_e($l['title']) ?></span><small><?= $isPdf ? 'PDF' : ($l['duration'] ? sh_e($l['duration']) : 'Video') ?><?= $l['free'] && !$owner ? ' · <em>Free</em>' : '' ?></small></span></a>
         <?php endforeach; ?>
-      </details>
       <?php endforeach; ?>
       <?php if ($files): ?>
-      <details class="lp-sec"<?= $file || !$cur ? ' open' : '' ?>>
-        <summary><span class="sp-chev" aria-hidden="true"></span><b><?= $isCourse ? 'PDF notes' : 'Files' ?></b><small><?= count($files) ?></small></summary>
-        <?php foreach ($files as $f): $ok = $can($f); $on = $file && (int)$file['id'] === (int)$f['id']; ?>
-          <a class="lp-li<?= $on ? ' on' : '' ?><?= $ok ? '' : ' locked' ?>" href="<?= sh_e($ok ? $lu('f=' . (int)$f['id']) : sh_url($p) . '#buy') ?>">
-            <span class="lp-st"><?= $ico($ok ? 'file' : 'lock') ?></span><span class="lp-lt"><?= sh_e($f['title']) ?><small><?= $f['pages'] ? (int)$f['pages'] . ' pages' : 'PDF' ?><?= $f['free'] && !$owner ? ' · <em>Free</em>' : '' ?></small></span></a>
+        <?php if ($cur): ?><div class="lp-ch-h"><?= $isCourse ? 'PDF notes' : 'Files' ?><small><?= count($files) ?></small></div><?php endif; ?>
+        <?php foreach ($files as $k => $f): $ok = $can($f); $on = $file && (int)$file['id'] === (int)$f['id']; ?>
+          <a class="lp-li<?= $on ? ' on' : '' ?><?= $ok ? '' : ' locked' ?>" href="<?= sh_e($ok ? $lu('f=' . (int)$f['id']) : sh_url($p) . '#buy') ?>"<?= $on ? ' aria-current="true"' : '' ?>>
+            <span class="lp-n"><?= $k + 1 ?></span>
+            <span class="lp-th ph"><?= $ico('pdf') ?><?php if (!$ok): ?><i class="lp-tag lock"><?= $ico('lock') ?></i><?php elseif ($on): ?><i class="lp-tag now">Open</i><?php endif; ?></span>
+            <span class="lp-lt"><span class="lp-t2"><?= sh_e($f['title']) ?></span><small><?= $f['pages'] ? (int)$f['pages'] . ' pages' : 'PDF' ?><?= $f['free'] && !$owner ? ' · <em>Free</em>' : '' ?></small></span></a>
         <?php endforeach; ?>
-      </details>
       <?php endif; ?>
+      </div>
     </div>
+    <script>(function () { var l = document.getElementById('lpList'), c = l && l.querySelector('.lp-li.on'); if (c) l.scrollTop = c.offsetTop - l.offsetTop - 60; })();</script>
   </aside>
 </div>
 <?php if ($file || ($lesson && ($lesson['kind'] ?? '') === 'pdf')): ?><script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script><?php endif; ?>

@@ -610,3 +610,30 @@ a.st-li:hover{background:#f7fbfc}a.st-li:hover svg{color:var(--sa)}
 .fr-list img{width:96px;aspect-ratio:16/9;object-fit:cover;border-radius:4px;background:#e5e7eb;display:block}
 .fr-list .fr-t{font-size:13px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.fr-list button.on .fr-t{font-weight:700}
 @media (max-width:900px){.fr-wrap.has-list{grid-template-columns:1fr}.fr-wrap.has-list .fr-list{max-height:420px}}
+
+/* lesson page: list like the free courses — number · picture · title */
+.lp-grid{grid-template-columns:minmax(0,1fr) 360px}
+.lp-list.lp-fr{border-radius:5px;overflow:hidden;display:flex;flex-direction:column;max-height:min(640px,calc(100vh - 110px))}
+.lp-fr .lp-list-h{position:static}.lp-fr .lp-list-h span{font-size:12.5px;color:#6b7280}
+.lp-fr-l{overflow-y:auto;padding:6px;flex:1;min-height:0;overscroll-behavior:contain}
+.lp-ch-h{display:flex;justify-content:space-between;align-items:center;margin:8px 4px 4px;padding:6px 8px;font-size:12px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;color:#64748b;background:#f8fafc;border-radius:4px}
+.lp-ch-h small{font-weight:600;color:#94a3b8}
+.lp-fr .lp-li{display:grid;grid-template-columns:22px 104px minmax(0,1fr);gap:10px;align-items:center;padding:6px;border:0;border-radius:5px;margin:0;color:#111827!important;box-shadow:none}
+.lp-fr .lp-li:hover{background:#f3f4f6}
+.lp-fr .lp-li.on{background:#eef7f8;box-shadow:none}
+.lp-n{font-size:12px;color:#9ca3af;text-align:center}.lp-fr .lp-li.on .lp-n{color:var(--sa,#0c6878);font-weight:800}
+.lp-th{position:relative;width:104px;aspect-ratio:16/9;border-radius:4px;overflow:hidden;background:#e5e7eb;display:grid;place-items:center}
+.lp-th img{width:100%;height:100%;object-fit:cover;display:block}
+.lp-th.ph{background:linear-gradient(135deg,#eef2ff,#f1f5f9);color:#64748b}.lp-th.ph svg{width:26px;height:26px}.lp-th.ph svg[viewBox]{color:#dc2626}
+.lp-tag{position:absolute;right:4px;bottom:4px;display:grid;place-items:center;min-width:20px;height:20px;padding:0 6px;border-radius:3px;font-style:normal;font-size:10px;font-weight:800;line-height:1;color:#fff;background:rgba(17,24,39,.78)}
+.lp-tag svg{width:12px;height:12px}
+.lp-tag.ok{background:#16a34a;padding:0}.lp-tag.now{background:var(--sa,#0c6878);text-transform:uppercase;letter-spacing:.03em}
+.lp-tag.lock{left:0;top:0;right:0;bottom:0;border-radius:0;background:rgba(17,24,39,.45)}.lp-tag.lock svg{width:18px;height:18px}
+.lp-fr .lp-lt{font-size:13px;line-height:1.35;min-width:0}.lp-fr .lp-t2{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.lp-fr .lp-lt small{display:block;margin-top:3px;font-size:11.5px;color:#6b7280;font-weight:400}
+.lp-fr .lp-li.on .lp-lt{font-weight:700}
+.lp-fr .lp-li.locked{color:#6b7280!important}.lp-fr .lp-li.locked .lp-th img{filter:grayscale(.6)}
+.lp-fr .lp-li.done .lp-st{display:none}
+@media (max-width:1000px){.lp-grid{grid-template-columns:1fr}.lp-list.lp-fr{max-height:460px}}
+@media (max-width:420px){.lp-fr .lp-li{grid-template-columns:18px 92px minmax(0,1fr);gap:8px}.lp-th{width:92px}}
+[data-theme="dark"] .lp-fr .lp-li{color:#e5e7eb!important}[data-theme="dark"] .lp-fr .lp-li:hover{background:#1f2937}[data-theme="dark"] .lp-ch-h{background:#111827}
