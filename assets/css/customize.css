@@ -290,3 +290,84 @@
 .cz-dreset-btn:hover:not(:disabled) { background: #dc2626; color: #fff; }
 .cz-dreset-undo { align-self: flex-start; padding: 0; border: 0; background: none; color: #2563eb; font: inherit; font-size: 12.5px; text-decoration: underline; cursor: pointer; }
 .cz-dreset button:disabled { opacity: .6; cursor: default; }
+
+/* ===================================================================================================
+   WordPress Customizer pass (matches wp-admin/css/customize-controls.css): grey header, plain section
+   rows with a chevron, 30px controls, checkboxes, italic descriptions, sub-screens for sections.
+   =================================================================================================== */
+.cz-top { background: #f0f0f1; height: 45px; padding-right: 12px; }
+.cz-close { width: 45px; height: 45px; background: #f0f0f1; color: #3c434a; font-size: 20px; }
+.cz-close:hover { background: #fff; color: #3c434a; }
+.cz-status { visibility: hidden; }
+.cz-publish { height: 30px; padding: 0 12px; font-weight: 400; font-size: 13px; line-height: 28px; }
+.cz-publish:disabled { background: #f6f7f7 !important; border-color: #dcdcde !important; color: #a7aaad !important; }
+.cz-head { min-height: 71px; }
+.cz-head > div { padding: 10px 10px 11px 14px; gap: 1px; }
+.cz-head small { font-size: 13px; line-height: 1.9; color: #50575e; }
+.cz-head h1 { font-size: 20px; font-weight: 200; line-height: 26px; color: #1d2327; }
+.cz-back { width: 48px; flex: 0 0 48px; border-left: 4px solid #fff; font-size: 17px; color: #50575e; }
+.cz-back:hover { box-shadow: none; background: #f6f7f7; border-left-color: #2271b1; color: #2271b1; }
+.cz-body { padding: 12px 12px 40px; gap: 12px; }
+
+/* panel list (You are customizing …) and section rows: plain titles, chevron on the right */
+.cz-nav { margin: 3px -12px 0; border-top: 1px solid #dcdcde; }
+.cz-nav button, .cz-subrow { gap: 0; padding: 10px 10px 11px 10px; border: 0; border-bottom: 1px solid #dcdcde; border-left: 4px solid #fff; background: #fff; color: #50575e; font-size: 14px; line-height: 1.55; transition: color .15s, background .15s, border-color .15s; }
+.cz-nav button:hover, .cz-subrow:hover, .cz-nav button:focus-visible, .cz-subrow:focus-visible { box-shadow: none; background: #f6f7f7; color: #2271b1; border-left-color: #2271b1; outline: 0; }
+.cz-nav-ico, .cz-nav-text small { display: none !important; }
+.cz-nav-text strong { font-size: 14px; font-weight: 400; color: inherit; }
+.cz-nav button > i:last-child, .cz-subrow i { color: #a7aaad; font-size: 13px; }
+.cz-subs { display: flex; flex-direction: column; margin: 3px -12px 0; border-top: 1px solid #dcdcde; }
+.cz-subrow { display: flex; align-items: center; justify-content: space-between; width: 100%; text-align: left; cursor: pointer; font-family: inherit; }
+
+/* controls */
+.cz-field { gap: 4px; }
+.cz-label { font-size: 14px; font-weight: 600; line-height: 1.75; color: #1d2327; }
+.cz-hint { font-size: 13px; font-style: italic; line-height: 1.4; color: #646970; }
+.cz-field input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]), .cz-field select,
+.cz-social input, .cz-social select, .cz-inline-input, .cz-additems input, .cz-gpal-edit input:not([type="color"]) {
+  min-height: 30px; height: 30px; padding: 0 8px; border-radius: 4px; font-size: 14px; line-height: 2; box-shadow: 0 0 0 transparent;
+}
+.cz-field textarea { min-height: 70px; padding: 2px 6px; border-radius: 4px; font-size: 14px; line-height: 1.6; }
+.cz-root select { appearance: none; -webkit-appearance: none; padding-right: 24px !important; background: #fff url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M5%206l5%205%205-5%202%201-7%207-7-7%202-1z%22%20fill%3D%22%23555%22%2F%3E%3C%2Fsvg%3E") no-repeat right 5px top 55%; background-size: 16px 16px; cursor: pointer; }
+.cz-num input { min-height: 28px !important; height: 28px; }
+.cz-seg button { padding: 5px 6px; font-weight: 400; font-size: 13px; }
+.cz-seg button.active { background: #2271b1; }
+.cz-heading { font-size: 14px; font-weight: 600; letter-spacing: 0; text-transform: none; margin: 8px 0 0; }
+.cz-btn-primary { height: 30px; padding: 0 10px; font-weight: 400; font-size: 13px; }
+.cz-btn-outline { height: 30px; padding: 0 10px; background: #f6f7f7; font-size: 13px; }
+.cz-btn-outline:hover:not(:disabled) { background: #f0f0f1; border-color: #0a4b78; color: #0a4b78; }
+
+/* on / off = a WordPress checkbox in front of the label */
+.cz-toggle { justify-content: flex-start; gap: 0; align-items: flex-start; }
+.cz-toggle input { position: static; opacity: 1; pointer-events: auto; order: -1; flex: 0 0 auto; width: 16px; height: 16px; margin: 3px 8px 0 0; accent-color: #2271b1; cursor: pointer; }
+.cz-switch { display: none !important; }
+.cz-toggle-text { font-size: 14px; font-weight: 400; line-height: 1.5; color: #1d2327; }
+.cz-toggle-text small { font-size: 13px; font-style: italic; color: #646970; }
+
+/* footer */
+.cz-footer { height: 45px; background: #f0f0f1; padding: 0 6px 0 12px; }
+.cz-hide { font-size: 13px; color: #50575e; }
+.cz-devices button { min-width: 40px; height: 45px; padding: 0; justify-content: center; border-bottom-width: 4px; color: #646970; font-size: 15px; }
+.cz-devices button span { display: none; }
+.cz-devices button.active { color: #2271b1; border-bottom-color: #2271b1; }
+.cz-devices-sm button { min-width: 24px; height: 22px; font-size: 11px; border-bottom-width: 2px; }
+
+/* blocks / in-panel sections that stay */
+.cz-section, .cz-block { margin-left: -12px; margin-right: -12px; }
+.cz-section-head { font-weight: 400; color: #50575e; padding: 10px 12px 11px 14px; }
+.cz-section-head i { border: 0; width: auto; height: auto; font-size: 12px; color: #a7aaad; }
+.cz-section-body { padding: 4px 12px 14px; gap: 12px; }
+
+/* Homepage panel rows follow the same row look */
+.hm-bg .hm-list { margin: 0 -12px; }
+.hm-bg .hm-row { border-left: 4px solid #fff; padding-left: 4px; }
+.hm-bg .hm-row:hover { border-left-color: #2271b1; }
+.hm-bg .hm-nm { font-weight: 400; color: #50575e; font-size: 14px; }
+.hm-bg .cz-toggle-text { font-weight: 400; }
+/* WordPress: 12px between controls */
+.cz-panel-fields { display: flex; flex-direction: column; gap: 12px; }
+.cz-panel-fields > .cz-hint:first-child { margin-top: -2px; }
+.cz-dreset { margin: 24px 0 8px; padding: 12px; border: 1px solid #dcdcde; border-radius: 0; background: #fff; }
+.cz-dreset strong { color: #1d2327; font-weight: 600; font-size: 14px; }
+.cz-dreset small { font-style: italic; color: #646970; }
+.cz-dreset-btn { padding: 0 10px; height: 30px; border-radius: 3px; border-color: #b32d2e; color: #b32d2e; font-weight: 400; }

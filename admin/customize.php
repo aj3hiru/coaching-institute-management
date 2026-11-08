@@ -408,31 +408,13 @@ const PANELS = [
   { id: 'identity', icon: 'fa-id-card', label: 'Site Identity', sub: 'Logo, site title and the line under it', render: renderIdentity },
   { id: 'colors', icon: 'fa-palette', label: 'Colors', sub: 'Global colors and every area of the site', render: renderColors },
   { id: 'typography', icon: 'fa-font', label: 'Typography', sub: 'Fonts, sizes, weights', render: renderTypography },
-  { id: 'header', icon: 'fa-window-maximize', label: 'Header', sub: 'Search, bell, social icons, top bar', fields: [
-    ['toggle', 'h_sticky', 'Sticky header'],
-    ['toggle', 'h_search', 'Show search'],
-    ['toggle', 'h_voice', 'Voice search'],
-    ['text', 'h_search_placeholder', 'Placeholder'],
-    ['toggle', 'h_login', 'Show “Log in”'],
-    ['text', 'h_login_text', 'Log in text'],
-    ['text', 'h_login_url', 'Log in link', { hint: 'Empty = the admin login page.' }],
-    ['toggle', 'h_sub', 'Show “Subscribe”'],
-    ['text', 'h_sub_text', 'Subscribe text'],
-    ['select', 'h_sub_icon', 'Icon before the text', { options: [['', 'None (normal button)'], ['whatsapp', 'WhatsApp'], ['youtube', 'YouTube'], ['facebook', 'Facebook'], ['instagram', 'Instagram'], ['x', 'X (Twitter)'], ['telegram', 'Telegram'], ['linkedin', 'LinkedIn']], hint: 'With an icon, the button takes that app’s colour (WhatsApp green, YouTube red …). Tip: put your WhatsApp / YouTube link in “Subscribe link”.' }],
-    ['text', 'h_sub_url', 'Subscribe link', { hint: 'Empty = turns on job alerts (push notifications).' }],
-    ['heading', 'Mobile menu'],
-    ['toggle', 'h_drawer_hello', 'Show the greeting (“Hello, Reader”)'],
-    ['text', 'h_drawer_title', 'Greeting (mobile menu)'],
-    ['text', 'h_drawer_text', 'Text under the greeting'],
-    ['toggle', 'h_drawer_login', 'Show “Log in” in the mobile menu', { hint: 'Also needs “Show Log in” above.' }],
-    ['toggle', 'h_drawer_sub', 'Show “Subscribe” in the mobile menu', { hint: 'Also needs “Show Subscribe” above.' }],
-    ['heading', 'More'],
-    ['toggle', 'h_bell', 'Notification bell'],
-    ['toggle', 'h_socials', 'Social icons on the left'],
-    ['toggle', 'h_dark', 'Dark mode switch'],
-    ['range', 'h_width', 'Content width', { min: 960, max: 1600, step: 10, unit: 'px' }],
-    ['toggle', 'h_topbar', 'Show top bar (above the header)'],
-    ['textarea', 'h_topbar_text', 'Top bar text / HTML'],
+  { id: 'header', icon: 'fa-window-maximize', label: 'Header', sub: 'Search, bell, social icons, top bar', sections: [
+    ['General', [['toggle', 'h_sticky', 'Sticky header'], ['range', 'h_width', 'Content width', { min: 960, max: 1600, step: 10, unit: 'px' }], ['toggle', 'h_bell', 'Notification bell'], ['toggle', 'h_socials', 'Social icons on the left'], ['toggle', 'h_dark', 'Dark mode switch']]],
+    ['Search', [['toggle', 'h_search', 'Show search'], ['toggle', 'h_voice', 'Voice search'], ['text', 'h_search_placeholder', 'Placeholder']]],
+    ['Log in button', [['toggle', 'h_login', 'Show “Log in”'], ['text', 'h_login_text', 'Log in text'], ['text', 'h_login_url', 'Log in link', { hint: 'Empty = the admin login page.' }]]],
+    ['Subscribe button', [['toggle', 'h_sub', 'Show “Subscribe”'], ['text', 'h_sub_text', 'Subscribe text'], ['select', 'h_sub_icon', 'Icon before the text', { options: [['', 'None (normal button)'], ['whatsapp', 'WhatsApp'], ['youtube', 'YouTube'], ['facebook', 'Facebook'], ['instagram', 'Instagram'], ['x', 'X (Twitter)'], ['telegram', 'Telegram'], ['linkedin', 'LinkedIn']], hint: 'With an icon, the button takes that app’s colour (WhatsApp green, YouTube red …). Tip: put your WhatsApp / YouTube link in “Subscribe link”.' }], ['text', 'h_sub_url', 'Subscribe link', { hint: 'Empty = turns on job alerts (push notifications).' }]]],
+    ['Mobile menu', [['toggle', 'h_drawer_hello', 'Show the greeting (“Hello, Reader”)'], ['text', 'h_drawer_title', 'Greeting (mobile menu)'], ['text', 'h_drawer_text', 'Text under the greeting'], ['toggle', 'h_drawer_login', 'Show “Log in” in the mobile menu', { hint: 'Also needs “Show Log in” above.' }], ['toggle', 'h_drawer_sub', 'Show “Subscribe” in the mobile menu', { hint: 'Also needs “Show Subscribe” above.' }]]],
+    ['Top bar', [['toggle', 'h_topbar', 'Show top bar (above the header)'], ['textarea', 'h_topbar_text', 'Top bar text / HTML']]],
   ]},
   { id: 'menus', icon: 'fa-bars', label: 'Menus', sub: 'Primary menu and the menu strip', render: renderMenus },
   { id: 'footer', icon: 'fa-shoe-prints', label: 'Footer', sub: 'Columns, follow box, copyright', render: renderFooter },
@@ -476,7 +458,7 @@ const PANELS = [
 ];
 
 const $ = id => document.getElementById(id);
-let dirty = false, panel = null, draftTimer = null;
+let dirty = false, panel = null, draftTimer = null, subOpen = null;
 const getV = k => k.startsWith('g.') ? state.general[k.slice(2)] : state.theme[k];
 function setV(k, v) {
   if (k.startsWith('g.')) state.general[k.slice(2)] = v; else state.theme[k] = v;
@@ -1448,13 +1430,26 @@ function showHome() {
   if (!CZ_ONLY) b.appendChild(r); // reset is for admins only
 }
 function showPanel(p, keep) {
-  if (!keep) { menuView = null; miOpen = null; addingFor = null; arOpen = undefined; openFont = null; openRule = null; gpalEditing = null; hmOpen = null; hmEdit = null; $('cz-back').onclick = showHome; }
+  if (!keep) { subOpen = null; menuView = null; miOpen = null; addingFor = null; arOpen = undefined; openFont = null; openRule = null; gpalEditing = null; hmOpen = null; hmEdit = null; $('cz-back').onclick = showHome; }
   if (!addingFor) document.querySelectorAll('.cz-additems').forEach(x => x.remove());
   panel = p; $('cz-back').hidden = false; $('cz-head-small').textContent = 'Customizing'; $('cz-head-title').textContent = p.label;
   const b = $('cz-body'); b.innerHTML = ''; b.classList.remove('hm-bg');
   const wrap = document.createElement('div'); wrap.className = 'cz-panel-fields';
   if (p.fields) p.fields.forEach(f => wrap.appendChild(field(f)));
-  if (p.sections) p.sections.forEach((s, i) => wrap.appendChild(section(s[0], s[1], i === 0)));
+  if (p.sections) { // like WordPress: a panel lists its sections; each one opens on its own screen
+    if (p.sections.length === 1) p.sections[0][1].forEach(f => wrap.appendChild(field(f)));
+    else if (subOpen === null || !p.sections[subOpen]) {
+      $('cz-back').onclick = showHome;
+      const list = html('<div class="cz-subs"></div>');
+      p.sections.forEach((s, i) => { const r = html('<button type="button" class="cz-subrow"><span></span><i class="fas fa-chevron-right" aria-hidden="true"></i></button>'); r.firstChild.textContent = s[0]; r.onclick = () => { subOpen = i; showPanel(p, true); $('cz-body').scrollTop = 0; }; list.appendChild(r); });
+      wrap.appendChild(list);
+    } else {
+      const s = p.sections[subOpen];
+      $('cz-head-small').textContent = 'Customizing ▸ ' + p.label; $('cz-head-title').textContent = s[0];
+      $('cz-back').onclick = () => { subOpen = null; showPanel(p, true); $('cz-body').scrollTop = 0; };
+      s[1].forEach(f => wrap.appendChild(field(f)));
+    }
+  }
   if (p.render) p.render(wrap);
   b.appendChild(wrap);
   if (keep) return;
