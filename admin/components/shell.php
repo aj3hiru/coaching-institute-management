@@ -166,6 +166,7 @@ function admin_shell_nav(): array
         foreach ($g['items'] as $it) {
             if (!$it) continue;
             if (isset($it['items']) && !$it['items']) continue;
+            if (($it['href'] ?? '') === '#' && !empty($it['items'])) $it['href'] = $it['items'][0]['href']; // like WordPress: the menu opens its first page (its sub-menu then shows below)
             $items[] = $it;
         }
         if ($items) $out[] = ['label' => $g['label'], 'items' => $items, 'collapsible' => !empty($g['collapsible'])];

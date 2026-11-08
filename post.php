@@ -240,6 +240,7 @@ $__graph = edu_seo_module('schema'); // the combined @graph replaces this page's
 .single-post .toc.collapsed h2 button.em-wt-a svg{transform:none}
 .single-post .toc h2 button.em-wt-a:focus-visible{outline:2px solid #fff;outline-offset:-4px}
 .nb-ab-who .nb-ab-btn.nb-ab-btn-sm{display:inline-flex;align-items:center;align-self:flex-start;width:auto;height:28px;min-height:0;margin:6px 0 8px;padding:0 12px;border-radius:3px;font-size:13px;font-weight:600;line-height:1;background:var(--gc-accent,#0c6878);color:#fff!important;box-shadow:none}
+.nb-ab-line{display:flex;align-items:center;flex-wrap:wrap;gap:6px 12px;margin:4px 0 8px}.nb-ab-line .nb-ab-role{margin:0!important}.nb-ab-who .nb-ab-line .nb-ab-btn.nb-ab-btn-sm{margin:0;align-self:center}
 .nb-ab-who .nb-ab-btn.nb-ab-btn-sm:hover{background:color-mix(in srgb,var(--gc-accent,#0c6878) 82%,#000)}
 </style>
 <link rel="stylesheet" href="/assets/css/post.css?v=<?= @filemtime(ROOT_PATH . '/assets/css/post.css') ?>" media="print" onload="this.media='all'"><noscript><link rel="stylesheet" href="/assets/css/post.css"></noscript>
@@ -594,8 +595,7 @@ $__graph = edu_seo_module('schema'); // the combined @graph replaces this page's
                 <a class="nb-ab-img" href="<?= $abUrl ?>" tabindex="-1" aria-hidden="true"><img src="<?= $authorImg ?>" alt="<?= htmlspecialchars($post['author_name']) ?>" width="110" height="110" loading="lazy" onerror="this.onerror=null;this.src='/assets/img/user.png'"></a>
                 <div class="nb-ab-who">
                   <h3 class="nb-ab-name"><a href="<?= $abUrl ?>"><?= htmlspecialchars($post['author_name']) ?></a> <span class="nb-ap-tick" title="Verified author"><?= edu_social_svg('verified', 20) ?></span></h3>
-                  <?php if (!empty($post['author_designation'])): ?><p class="nb-ab-role"><?= htmlspecialchars($post['author_designation']) ?></p><?php endif; ?>
-                  <a class="nb-ab-btn nb-ab-btn-sm" href="<?= $abUrl ?>">View Profile</a>
+                  <div class="nb-ab-line"><?php if (!empty($post['author_designation'])): ?><p class="nb-ab-role"><?= htmlspecialchars($post['author_designation']) ?></p><?php endif; ?><a class="nb-ab-btn nb-ab-btn-sm" href="<?= $abUrl ?>">View Profile</a></div>
                   <div class="nb-ab-row">
                     <?php if ($abSoc): ?><nav class="nb-ap-soc" aria-label="<?= htmlspecialchars($post['author_name']) ?> on social media"><?php foreach ($abSoc as $net => $u): ?><a href="<?= htmlspecialchars($u) ?>" target="_blank" rel="noopener nofollow" aria-label="<?= ucfirst($net === 'x' ? 'X (Twitter)' : $net) ?>"><?= edu_social_svg($net, 16) ?></a><?php endforeach; ?></nav><?php else: ?><span></span><?php endif; ?>
                   </div>
