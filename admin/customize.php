@@ -458,11 +458,19 @@ const PANELS = [
 const $ = id => document.getElementById(id);
 let dirty = false, panel = null, draftTimer = null, subOpen = null;
 // the list on the first screen, ordered and grouped like the WordPress (GeneratePress / Astra) Customizer
-const CZ_NAV = [{ id: 'global', label: 'Global', items: ['typography', 'colors', 'container', 'buttons'] },
-  { id: 'header', label: 'Header', items: ['identity', 'h_primary', 'h_strip', 'h_search', 'h_account', 'h_button', 'h_offcanvas', 'h_above'] },
+const CZ_NAV = ['identity', { id: 'global', label: 'Global', items: ['typography', 'colors', 'container', 'buttons'] },
+  { id: 'header', label: 'Header', items: ['h_primary', 'h_strip', 'h_search', 'h_account', 'h_button', 'h_offcanvas', 'h_above'] },
   { id: 'posttypes', label: 'Post Types', items: ['home', 'post', 'alsoread', 'progress'] }, 'homepage', 'sidebar',
   { id: 'footer', label: 'Footer', items: ['footer', 'f_copy'] }, { id: 'general', label: 'General', items: ['f_scroll', 'consent', 'shortcodes'] },
-  'identity', 'menus', 'css'];
+  'menus', 'css'];
+const CZ_STORE = <?= json_encode(is_file(ROOT_PATH . '/account/login.php')) ?>;
+if (CZ_STORE) { const oc = PANELS.find(x => x.id === 'h_offcanvas'); if (oc) oc.fields = oc.fields.filter(f => f[1] !== 'h_drawer_sub').map(f => f[1] === 'h_drawer_login' ? ['toggle', 'h_drawer_login', 'Courses & Student Login buttons'] : f); }
+const CZ_DEP = { h_voice: 'h_search', h_search_placeholder: 'h_search', h_login_text: 'h_login', h_login_url: 'h_login', h_sub_text: 'h_sub', h_sub_icon: 'h_sub', h_sub_url: 'h_sub',
+  h_drawer_title: 'h_drawer_hello', h_drawer_text: 'h_drawer_hello', h_drawer_sub: 'h_sub', h_topbar_text: 'h_topbar', sb_heading: 'sb_post', sb_count: 'sb_post', sb_source: 'sb_post', sb_sticky: 'sb_post',
+  rp_label: 'rp_button', rp_desktop: 'rp_button', f_play_url: 'f_play' };
+if (!CZ_STORE) CZ_DEP.h_drawer_login = 'h_login';
+['cc_region', 'cc_position', 'cc_title', 'cc_message', 'cc_accept', 'cc_reject', 'cc_customize', 'cc_save', 'cc_privacy_text', 'cc_privacy_url', 'cc_sticky', 'cc_reask', 'cc_days', 'cc_footer_link'].forEach(k => CZ_DEP[k] = 'cc_enabled');
+const CZ_PARENTS = new Set(Object.values(CZ_DEP));
 CZ_NAV.forEach(n => { if (typeof n === 'object') n.items.forEach(id => { const p = PANELS.find(x => x.id === id); if (p && !p._group) p._group = n; }); });
 let czFrom, czTab = 'general', eyeOpen = null, typoOpen = null; // where a panel was opened from (group or the first screen), General / Design tab
 const czAllowed = p => !!p && (!CZ_ONLY || CZ_ONLY.includes(p.id));
@@ -502,10 +510,11 @@ function field(f) {
   const w = document.createElement('div');
   if (type === 'hint') { w.className = 'cz-hint'; w.textContent = key; return w; }
   if (type === 'heading') { const h = document.createElement('h3'); h.className = 'cz-heading'; h.textContent = key; return h; }
+  if (CZ_DEP[key] && String(getV(CZ_DEP[key])) !== '1') return document.createComment(key); // its main switch is off
   const v = getV(key);
   if (type === 'toggle') {
     w.innerHTML = '<label class="cz-toggle"><span class="cz-toggle-text">' + esc(label) + (ex.hint ? '<small>' + esc(ex.hint) + '</small>' : '') + '</span><input type="checkbox"' + (String(v) === '1' ? ' checked' : '') + '><span class="cz-switch" aria-hidden="true"></span></label>';
-    w.querySelector('input').onchange = e => setV(key, e.target.checked ? '1' : '0');
+    w.querySelector('input').onchange = e => { setV(key, e.target.checked ? '1' : '0'); if (CZ_PARENTS.has(key)) rerender(); };
   } else if (type === 'text' || type === 'textarea' || type === 'code') {
     w.innerHTML = '<label class="cz-field"><span class="cz-label">' + esc(label) + '</span>' + (type === 'text' ? '<input type="text">' : '<textarea rows="' + (type === 'code' ? 14 : 4) + '"' + (type === 'code' ? ' class="cz-codearea" spellcheck="false"' : '') + '></textarea>') + (ex.hint ? '<small class="cz-hint">' + esc(ex.hint) + '</small>' : '') + '</label>';
     const i = w.querySelector('input,textarea'); i.value = v ?? ''; if (ex.placeholder) i.placeholder = ex.placeholder; i.oninput = e => setV(key, e.target.value);
@@ -582,7 +591,7 @@ function circleBtn(icon, title, onClick, danger) {
 // ("Customizing ▸ Panel" + back arrow). showPanel() swaps the panel for the open section after rendering.
 let subCapture = null, subPrevBack = null;
 function sectionEl(title, build, open, badge) {
-  if (subOpen === title) { const body = html('<div class="cz-sub-body"></div>'); build(body); subCapture = body; return document.createComment('section'); }
+  if (subOpen === title) { const body = html('<div class="cz-sub-body"></div>'); build(body); if (!body.children.length) body.appendChild(hintEl('Switch this on first in the section above.')); subCapture = body; return document.createComment('section'); }
   const r = html('<button type="button" class="cz-subrow"><span></span><span class="cz-subrow-r">' + (badge ? '<em class="cz-badge">' + esc(badge) + '</em>' : '') + '<i class="fas fa-chevron-right" aria-hidden="true"></i></span></button>');
   r.firstChild.textContent = title;
   r.onclick = () => { subOpen = title; showPanel(panel, true); $('cz-body').scrollTop = 0; };

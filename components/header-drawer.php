@@ -36,8 +36,8 @@
           // Customize → Header → Mobile menu: greeting, Log in and Subscribe can each be hidden
           $__dHello = th_on('h_drawer_hello'); $__dLogin = th_on('h_login') && th_on('h_drawer_login'); $__dSub = $__subOn && th_on('h_drawer_sub');
         ?>
-        <?php $__store = is_file(ROOT_PATH . '/account/login.php'); ?>
-        <?php if ($__dHello || $__dLogin || $__dSub || $__store): ?>
+        <?php $__storeOn = is_file(ROOT_PATH . '/account/login.php'); $__store = $__storeOn && th_on('h_drawer_login'); // Customize → Header → Off-Canvas Menu → "Courses & Student Login buttons" ?>
+        <?php if ($__dHello || $__store || (!$__storeOn && ($__dLogin || $__dSub))): ?>
         <div class="mnav-hello">
           <?php if ($__dHello): ?>
           <div class="mnav-hello-row">
@@ -54,7 +54,7 @@
             <a href="/account/" class="mnav-btn outline"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5Z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/></svg> My Courses</a>
             <a href="/account/logout" class="mnav-btn solid"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5M21 12H9"/></svg> Log out</a>
           </div>
-          <?php elseif ($__dLogin || $__dSub): ?>
+          <?php elseif (!$__storeOn && ($__dLogin || $__dSub)): ?>
           <div class="mnav-hello-btns" style="<?= $__dLogin && $__dSub ? '' : 'grid-template-columns:1fr;' ?><?= $__dHello ? '' : 'margin-top:0' ?>">
             <?php if ($__dLogin): ?><a href="<?= htmlspecialchars($__loginUrl) ?>" class="mnav-btn outline"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="m10 17 5-5-5-5"/><path d="M15 12H3"/></svg> <?= htmlspecialchars((string)th('h_login_text')) ?></a><?php endif; ?>
             <?php if ($__dSub): $__si = edu_sub_icon(); ?><a <?= $__subAttr ?> class="mnav-btn solid<?= $__si ? ' has-ic' : '' ?>"<?= $__si ? ' style="--nb-sb:' . htmlspecialchars($__si[2]) . '"' : '' ?>><?= $__si ? $__si[1] : '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.27 21a2 2 0 0 0 3.46 0"/><path d="M3.26 15.33A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.67C19.41 13.96 18 12.5 18 8A6 6 0 0 0 6 8c0 4.5-1.41 5.96-2.74 7.33"/></svg>' ?> <?= htmlspecialchars((string)th('h_sub_text')) ?></a><?php endif; ?>

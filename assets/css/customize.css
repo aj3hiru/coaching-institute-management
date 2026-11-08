@@ -429,7 +429,7 @@
 .cz-nav button > i:last-child, .cz-subrow i { color: var(--ast-text); font-size: 12px; }
 .cz-panel-fields > .cz-subrow { margin: 0 !important; }
 /* every control = a block with a divider */
-.cz-panel-fields > :not(.cz-subrow):not(.cz-subs):not(.cz-tabs):not(.cz-nav):not(.cz-boxrow),
+.cz-panel-fields > :not(.cz-subrow):not(.cz-subs):not(.cz-tabs):not(.cz-nav):not(.cz-boxrow):not(.cz-sub-body):not(.cz-wpbox),
 .cz-sub-body > *, .cz-wpbox > * { padding: 16px 24px; border-bottom: 1px solid var(--ast-line); margin: 0 !important; }
 .cz-panel-fields > .cz-wpbox, .cz-sub-body > .cz-wpbox, .cz-panel-fields > .cz-sub-body { padding: 0; border-bottom: 0; }
 .cz-wpgroup { display: flex; flex-direction: column; gap: 14px; }
@@ -544,3 +544,8 @@ h3.cz-wp-h { padding-top: 2px; }
 .cz-refreshing[hidden] { display: none; }
 .cz-refreshing .cz-spinner { width: 16px; height: 16px; }
 .cz-root .cz-spinner { border-radius: 50% !important; }
+.cz-panel-fields > .cz-sub-body { padding: 0; border: 0; margin: 0; }
+/* buttons and cards inside a section screen keep their own shape, inset from the edge */
+.cz-sub-body > .cz-btn-primary, .cz-sub-body > .cz-btn-outline, .cz-wpbox > .cz-btn-primary, .cz-wpbox > .cz-btn-outline,
+.cz-panel-fields > .cz-btn-primary, .cz-panel-fields > .cz-btn-outline { margin: 16px 24px !important; padding: 0 12px !important; border: 1px solid var(--cz-accent) !important; align-self: flex-start; }
+.cz-sub-body > .cz-colbox { margin: 12px 16px 0 !important; padding: 12px !important; border: 1px solid #dcdcde !important; }
