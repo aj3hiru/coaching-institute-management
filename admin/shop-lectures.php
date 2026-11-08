@@ -216,7 +216,7 @@ table.ls-t{width:100%;border-collapse:collapse;font-size:13.5px}
 </head>
 <body>
 <?php admin_shell_open('Lectures', $P ? ci_e($P['title']) : 'Choose a course — give its YouTube playlist and arrange the lectures in one sheet',
-    $P ? '<a class="ci-btn ci-ghost" href="/admin/shop-products.php?edit=' . $pid . '&type=course"><i class="fas fa-pen"></i> Edit course</a><a class="ci-btn ci-ghost" href="' . ci_e(sh_url($P)) . '?preview=1" target="_blank"><i class="fas fa-eye"></i> View on site</a><a class="ci-btn" data-embed href="/admin/shop-lecture.php?course=' . $pid . '&amp;embed=1"><i class="fas fa-plus"></i> Add lecture by link</a>' : ''); ?>
+    $P ? '<a class="ci-btn ci-ghost" href="' . ci_e(sh_url($P)) . '?preview=1" target="_blank"><i class="fas fa-eye"></i> View on site</a>' : ''); ?>
 <div class="ci">
 <?= admin_flash() ?>
 <form class="ls-pick" method="get"><div class="ci-f"><label>Course</label><select name="course" data-search onchange="this.form.submit()"><option value="">— Choose the course —</option><?php foreach ($courses as $c): ?><option value="<?= (int)$c['id'] ?>"<?= $pid === (int)$c['id'] ? ' selected' : '' ?>><?= ci_e($c['title']) ?> · <?= (int)$c['n'] ?> lectures<?= $c['status'] !== 'published' ? ' (' . $c['status'] . ')' : '' ?></option><?php endforeach; ?></select></div>
@@ -225,7 +225,7 @@ table.ls-t{width:100%;border-collapse:collapse;font-size:13.5px}
 <?php if ($P): ?>
 <?php $stN = count($rows); $stFree = count(array_filter($rows, fn($r) => $r['free'])); $stNotes = array_sum(array_column($rows, 'n')); $stQ = array_sum(array_column($rows, 'q')); $stV = array_sum(array_column($rows, 'v')); ?>
 <div class="ls-top"><div class="ls-main">
-<div class="ls-card" id="lsPl"><h3><span><i class="fab fa-youtube" style="color:#dc2626"></i> YouTube playlist of this course</span><small>every video of it becomes a lecture · new videos come in by themselves</small></h3><div class="ls-body">
+<div class="ls-card" id="lsPl"><h3><span><i class="fab fa-youtube" style="color:#dc2626"></i> YouTube playlist of this course</span></h3><div class="ls-body">
   <?php if ($P['yt_list']): ?>
   <div class="ls-linked"><i class="fab fa-youtube"></i><span class="sp"><b>Linked</b> · <a href="https://www.youtube.com/playlist?list=<?= ci_e($P['yt_list']) ?>" target="_blank" rel="noopener">open on YouTube</a><?= $P['yt_synced'] ? ' · checked ' . ci_e(date('d M, h:i A', strtotime($P['yt_synced']))) : '' ?></span>
     <?php if ($skipN): ?><a href="#" id="lsUnskip" class="ci-muted" style="font-size:12.5px"><?= $skipN ?> removed · bring back</a><?php endif; ?><button type="button" class="ci-btn ci-sm" id="lsScan"><i class="fas fa-rotate"></i> Scan now</button><button type="button" class="ci-btn ci-ghost ci-sm" id="lsUnlink"><i class="fas fa-link-slash"></i> Unlink</button></div>
@@ -234,7 +234,7 @@ table.ls-t{width:100%;border-collapse:collapse;font-size:13.5px}
   <div class="ls-msg" id="lsMsg" hidden></div>
 </div></div>
 
-<div class="ls-card" id="lsChs"><h3><span><i class="fas fa-layer-group"></i> Chapters &amp; units</span><small>select videos in the sheet and press "Make chapter" — or add one here</small></h3><div class="ls-body">
+<div class="ls-card" id="lsChs"><h3><span><i class="fas fa-layer-group"></i> Chapters &amp; units</span></h3><div class="ls-body">
   <div class="ls-chs" id="lsChList"></div>
   <div class="ls-chadd"><input id="lsChName" maxlength="200" placeholder="New chapter name — e.g. Chapter 1 — Numbers"><button type="button" class="ci-btn ci-ghost" id="lsChAdd"><i class="fas fa-plus"></i> Add chapter</button></div>
 </div></div>
