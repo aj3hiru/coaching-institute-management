@@ -52,12 +52,7 @@ $stTitle = ($item['title'] ?? $p['title']) . ' — ' . $p['title'];
 require ROOT_PATH . '/components/store-open.php';
 $ico = fn($n) => sh_icon($n);
 ?>
-<div class="lp-top"><div class="lp-top-in">
-  <a class="lp-back" href="<?= sh_e(sh_url($p) . ($staff ? '&preview=1' : '')) ?>" aria-label="Course page"><?= $ico('back') ?></a>
-  <div class="lp-tt"><b><?= sh_e($p['title']) ?></b><?php if ($isCourse && $all): ?><span><?= $owner ? $nDone . ' of ' . count($all) . ' done' : ($staff ? 'Staff preview' : 'Free preview') ?></span><?php endif; ?></div>
-  <?php if ($isCourse && $all && $owner): ?><div class="lp-ring" style="--p:<?= $pct ?>" title="<?= $pct ?>% done"><span><?= $pct ?>%</span></div><?php endif; ?>
-  <?php if ($u): ?><a class="lp-lib" href="/account/">My Courses</a><?php endif; ?>
-</div></div>
+<?php /* (no course bar above the video — progress shows on the lesson list) */ ?>
 <?php if (isset($_GET['new'])): ?><div class="lp-wrap"><div class="st-msg ok">Payment successful — <b><?= sh_e($p['title']) ?></b> is now in your library. Happy learning!</div></div><?php endif; ?>
 <?php if ($staff && !$owner): ?><div class="lp-wrap"><div class="st-msg info">Staff preview — every video and PDF is open for you. <a href="<?= sh_e(sh_url($p)) ?>">See it as a student</a></div></div><?php endif; ?>
 
