@@ -52,14 +52,47 @@ $social = edu_social();
 <title>General Settings - <?= htmlspecialchars(edu_site_name()) ?></title>
 <?php admin_shell_head(); ?>
 <script src="/assets/js/admin-media.js?v=<?= @filemtime(ROOT_PATH . '/assets/js/admin-media.js') ?>" defer></script>
+<style>
+/* like Reports / Store Settings: a list of sections on the left, one section at a time on the right */
+.gs-wrap{display:grid;grid-template-columns:250px minmax(0,1fr);gap:18px;align-items:start;max-width:none;background:none;border:0;border-radius:0;padding:0}
+.gs-wrap::before,.gs-wrap::after{content:none!important;display:none!important}
+.gs-nav,.gs-main{grid-row:1}.gs-nav{grid-column:1}.gs-main{grid-column:2}
+@media (max-width:820px){.gs-nav,.gs-main{grid-column:1;grid-row:auto}}
+.gs-main{background:#fff;border:1px solid #e5e7eb;padding:.25rem 1.75rem 1.5rem}
+@media (max-width:782px){.gs-main{padding:.25rem 1rem 1.25rem}}
+@media (max-width:820px){.gs-wrap{grid-template-columns:1fr}}
+.gs-nav{display:flex;flex-direction:column;border:1px solid #e5e7eb;background:#fff}
+@media (max-width:820px){.gs-nav{position:static}}
+.gs-nav button{display:flex;align-items:center;gap:12px;padding:12px 14px;border:0;border-bottom:1px solid #e5e7eb;background:#fff;text-align:left;font:600 14px/1.25 inherit;font-family:inherit;color:#374151;cursor:pointer}
+.gs-nav button:last-child{border-bottom:0}
+.gs-nav button i{width:20px;text-align:center;color:#6b7280}
+.gs-nav button span{display:flex;flex-direction:column;line-height:1.25;min-width:0}.gs-nav button small{font-weight:500;font-size:11.5px;color:#9ca3af;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gs-nav button.on{background:var(--ci-acc,#4a3369);color:#fff}.gs-nav button.on i,.gs-nav button.on small{color:rgba(255,255,255,.85)}
+.gs-nav button:not(.on):hover{background:#faf8fd;color:var(--ci-acc,#4a3369)}
+.gs-main{min-width:0}
+.gs-main .wps-section{margin-top:0}
+.gs-main .wps-submit{margin-top:14px}
+</style>
 </head>
 <body>
 <?php admin_shell_open('General Settings', 'Site tagline, logo, site icon, contact details, social links &amp; more'); ?>
 <?= admin_flash() ?>
-<form class="wps-wrap" method="POST">
+<?php $nSoc = count(array_filter($social)); $gsTabs = [
+  'identity' => ['fa-id-card', 'Site Identity', edu_site_name()],
+  'contact' => ['fa-address-book', 'Address & Contact', (string)($g['phone'] ?? '') !== '' ? (string)$g['phone'] : 'Phone, email, address'],
+  'smtp' => ['fa-envelope', 'Email (SMTP)', !empty($g['smtp_host']) && !empty($g['smtp_user']) ? 'Set up' : 'Not set up'],
+  'social' => ['fa-share-nodes', 'Social Profiles', $nSoc ? $nSoc . ' linked' : 'None linked'],
+  'seo' => ['fa-magnifying-glass', 'Search Engines', (string)($g['home_description'] ?? '') !== '' ? 'Own description' : 'Built-in description'],
+  'footer' => ['fa-shoe-prints', 'Footer', (string)($g['footer_tagline'] ?? '') !== '' ? 'Own text' : 'Default text'],
+  'date' => ['fa-calendar-day', 'Date Format', date((string)($g['date_format'] ?? 'j F Y'))],
+]; ?>
+<form class="wps-wrap gs-wrap" method="POST">
+  <nav class="gs-nav" role="tablist" aria-label="Settings sections">
+    <?php foreach ($gsTabs as $k => [$ic, $lb, $sub]): ?><button type="button" role="tab" data-tab="<?= $k ?>"><i class="fas <?= $ic ?>"></i><span><?= htmlspecialchars($lb) ?><small><?= htmlspecialchars($sub) ?></small></span></button><?php endforeach; ?>
+  </nav>
+  <div class="gs-main">
   <?= csrf_field() ?>
-  <nav class="wps-tabs" id="wps-tabs" aria-label="Settings sections"></nav>
-  <section class="wps-section">
+  <section class="wps-section" data-tab="identity">
     <h2>Site Identity</h2>
     <p class="wps-section-desc">How the site is named and recognised — in the header, browser tabs and search results.</p>
     <div class="wps-table">
@@ -80,7 +113,7 @@ $social = edu_social();
     </div>
   </section>
 
-  <section class="wps-section">
+  <section class="wps-section" data-tab="contact">
     <h2>Site Address &amp; Contact</h2>
     <div class="wps-table">
       <div class="wps-row"><div class="wps-th"><span>Site Address (URL)</span></div><div class="wps-td"><input class="wps-input code" value="<?= htmlspecialchars(SITE_URL) ?>" disabled><p class="wps-desc">Set in the site configuration. Used in links, sitemaps and sharing.</p></div></div>
@@ -91,7 +124,7 @@ $social = edu_social();
     </div>
   </section>
 
-  <section class="wps-section">
+  <section class="wps-section" data-tab="smtp">
     <h2>Email (SMTP)</h2>
     <p class="wps-section-desc">Used to email you new contact-form messages. Get these details from your email/hosting provider. Without them, messages are still saved in Contact Messages.</p>
     <div class="wps-table">
@@ -103,7 +136,7 @@ $social = edu_social();
     </div>
   </section>
 
-  <section class="wps-section">
+  <section class="wps-section" data-tab="social">
     <h2>Social Profiles</h2>
     <p class="wps-section-desc">Shown in the header, the mobile menu and the footer, and added to Google's organisation data. Leave empty to hide.</p>
     <div class="wps-table">
@@ -114,7 +147,7 @@ $social = edu_social();
     </div>
   </section>
 
-  <section class="wps-section">
+  <section class="wps-section" data-tab="seo">
     <h2>Search Engines</h2>
     <p class="wps-section-desc">What Google and other search engines show for the home page.</p>
     <div class="wps-table">
@@ -127,7 +160,7 @@ $social = edu_social();
     </div>
   </section>
 
-  <section class="wps-section">
+  <section class="wps-section" data-tab="footer">
     <h2>Footer</h2>
     <p class="wps-section-desc">Homepage sections, menus and colors are set in <a href="/admin/customize.php">Customize</a>.</p>
     <div class="wps-table">
@@ -135,7 +168,7 @@ $social = edu_social();
     </div>
   </section>
 
-  <section class="wps-section">
+  <section class="wps-section" data-tab="date">
     <h2>Date Format</h2>
     <div class="wps-table">
       <div class="wps-row"><div class="wps-th"><span>Date Format</span></div><div class="wps-td">
@@ -148,6 +181,7 @@ $social = edu_social();
   </section>
 
   <p class="wps-submit"><button type="submit" class="wps-primary">Save Changes</button></p>
+  </div>
 </form>
 <?php admin_shell_close(); ?>
 <script>
@@ -164,23 +198,20 @@ document.addEventListener('DOMContentLoaded', function () {
   function count() { var n = d.value.length; var c = document.getElementById('desc-count'); c.textContent = n + ' characters'; c.className = 'wps-count ' + (n === 0 ? '' : n < 120 || n > 160 ? 'warn' : 'good'); document.getElementById('serp-text').textContent = d.value || 'Your meta description will appear here.'; }
   d.addEventListener('input', count); count();
 
-  // In-page tab menu: one section at a time (all of them are still saved together)
-  var nav = document.getElementById('wps-tabs'), secs = [].slice.call(document.querySelectorAll('.wps-wrap > .wps-section'));
-  var slug = function (t) { return t.toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); };
+  // section list on the left: one section at a time (all of them are still saved together)
+  var nav = document.querySelector('.gs-nav'), secs = [].slice.call(document.querySelectorAll('.gs-main > .wps-section'));
   function show(id) {
     secs.forEach(function (s) { s.hidden = s.dataset.tab !== id; });
     [].forEach.call(nav.children, function (b) { b.classList.toggle('on', b.dataset.tab === id); b.setAttribute('aria-selected', b.dataset.tab === id); });
     try { history.replaceState(null, '', '#' + id); } catch (e) {}
   }
-  secs.forEach(function (s) {
-    var h = s.querySelector('h2'); var id = slug(h.textContent); s.dataset.tab = id;
-    var b = document.createElement('button'); b.type = 'button'; b.dataset.tab = id; b.textContent = h.textContent; b.setAttribute('role', 'tab');
-    b.addEventListener('click', function () { show(id); }); nav.appendChild(b);
-  });
-  var start = (location.hash || '').slice(1);
+  nav.addEventListener('click', function (e) { var b = e.target.closest('[data-tab]'); if (b) { show(b.dataset.tab); if (window.innerWidth <= 820) document.querySelector('.gs-main').scrollIntoView({ behavior: 'smooth', block: 'start' }); } });
+  var old = { 'site-identity': 'identity', 'site-address-and-contact': 'contact', 'email-smtp': 'smtp', 'social-profiles': 'social', 'search-engines': 'seo', 'footer': 'footer', 'date-format': 'date' }; // earlier #links
+  var start = (location.hash || '').slice(1); start = old[start] || start;
   show(secs.some(function (s) { return s.dataset.tab === start; }) ? start : secs[0].dataset.tab);
+  window.addEventListener('hashchange', function () { var h = location.hash.slice(1); h = old[h] || h; if (secs.some(function (s) { return s.dataset.tab === h; })) show(h); });
   // a field that fails validation in a hidden tab: open that tab so the browser can point at it
-  document.querySelector('.wps-wrap').addEventListener('invalid', function (e) { var s = e.target.closest('.wps-section'); if (s && s.hidden) show(s.dataset.tab); }, true);
+  document.querySelector('.gs-wrap').addEventListener('invalid', function (e) { var s = e.target.closest('.wps-section'); if (s && s.hidden) show(s.dataset.tab); }, true);
 });
 </script>
 </body>
