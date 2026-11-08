@@ -264,7 +264,7 @@ body{margin:0;overflow:hidden}
 .id-pv.is-plain .id-pv-in{padding-right:12px}.id-pv.is-plain .id-pv-in::before,.id-pv.is-plain .id-pv-in::after{display:none}
 .id-dflt{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px}.id-dflt img{height:54px;width:auto}.id-dflt small{font-size:11.5px;color:#646970}
 /* ===== Homepage screens, WordPress Customizer look: grey panel, slim white widgets, 30px controls ===== */
-#cz-body.hm-bg{background:#f0f0f1;gap:0}
+#cz-body.hm-bg{background:#fff;gap:0}
 .hm-bg .hm-grp{gap:8px;padding:14px 0;border-bottom:1px solid #dcdcde}
 .hm-bg .hm-grp:first-child{padding-top:2px}.hm-bg .hm-grp:last-child{border-bottom:0}
 .hm-bg .hm-grp > h4{font-size:14px;font-weight:600;letter-spacing:0;text-transform:none;color:#1d2327;line-height:1.4}
@@ -345,7 +345,8 @@ body{margin:0;overflow:hidden}
 </style>
 </head>
 <body>
-<div class="cz-root" id="cz-root">
+<?php $czAcc = (function () { foreach ((array)(edu_theme()['global_colors'] ?? []) as $g) if (($g['slug'] ?? '') === 'accent' && preg_match('/^#[0-9a-f]{3,8}$/i', (string)$g['color'])) return $g['color']; return '#0c6878'; })(); ?>
+<div class="cz-root" id="cz-root" style="--cz-accent: <?= htmlspecialchars($czAcc) ?>; --cz-accent-dark: color-mix(in srgb, <?= htmlspecialchars($czAcc) ?> 82%, #000)">
   <aside class="cz-panel">
     <div class="cz-top">
       <a class="cz-close" title="Close" href="/admin/dashboard.php"><i class="fas fa-xmark"></i></a>
@@ -408,27 +409,29 @@ const PANELS = [
   { id: 'identity', icon: 'fa-id-card', label: 'Site Identity', sub: 'Logo, site title and the line under it', render: renderIdentity },
   { id: 'colors', icon: 'fa-palette', label: 'Colors', sub: 'Global colors and every area of the site', render: renderColors },
   { id: 'typography', icon: 'fa-font', label: 'Typography', sub: 'Fonts, sizes, weights', render: renderTypography },
-  { id: 'header', icon: 'fa-window-maximize', label: 'Header', sub: 'Search, bell, social icons, top bar', sections: [
-    ['General', [['toggle', 'h_sticky', 'Sticky header'], ['toggle', 'h_bell', 'Notification bell'], ['toggle', 'h_socials', 'Social icons on the left'], ['toggle', 'h_dark', 'Dark mode switch']]],
-    ['Search', [['toggle', 'h_search', 'Show search'], ['toggle', 'h_voice', 'Voice search'], ['text', 'h_search_placeholder', 'Placeholder']]],
-    ['Log in button', [['toggle', 'h_login', 'Show “Log in”'], ['text', 'h_login_text', 'Log in text'], ['text', 'h_login_url', 'Log in link', { hint: 'Empty = the admin login page.' }]]],
-    ['Subscribe button', [['toggle', 'h_sub', 'Show “Subscribe”'], ['text', 'h_sub_text', 'Subscribe text'], ['select', 'h_sub_icon', 'Icon before the text', { options: [['', 'None (normal button)'], ['whatsapp', 'WhatsApp'], ['youtube', 'YouTube'], ['facebook', 'Facebook'], ['instagram', 'Instagram'], ['x', 'X (Twitter)'], ['telegram', 'Telegram'], ['linkedin', 'LinkedIn']], hint: 'With an icon, the button takes that app’s colour (WhatsApp green, YouTube red …). Tip: put your WhatsApp / YouTube link in “Subscribe link”.' }], ['text', 'h_sub_url', 'Subscribe link', { hint: 'Empty = turns on job alerts (push notifications).' }]]],
-    ['Mobile menu', [['toggle', 'h_drawer_hello', 'Show the greeting (“Hello, Reader”)'], ['text', 'h_drawer_title', 'Greeting (mobile menu)'], ['text', 'h_drawer_text', 'Text under the greeting'], ['toggle', 'h_drawer_login', 'Show “Log in” in the mobile menu', { hint: 'Also needs “Show Log in” above.' }], ['toggle', 'h_drawer_sub', 'Show “Subscribe” in the mobile menu', { hint: 'Also needs “Show Subscribe” above.' }]]],
-    ['Top bar', [['toggle', 'h_topbar', 'Show top bar (above the header)'], ['textarea', 'h_topbar_text', 'Top bar text / HTML']]],
-  ]},
+  { id: 'h_primary', icon: 'fa-window-maximize', label: 'Primary Header', sub: '', design: ['header'], fields: [['toggle', 'h_sticky', 'Sticky header'], ['toggle', 'h_bell', 'Notification bell'], ['toggle', 'h_socials', 'Social icons on the left'], ['toggle', 'h_dark', 'Dark mode switch']] },
+  { id: 'h_strip', icon: 'fa-grip-lines', label: 'Primary Menu', sub: '', design: ['menu_strip'], render: renderStripOpts },
+  { id: 'h_search', icon: 'fa-magnifying-glass', label: 'Search', sub: '', design: ['search_modal'], fields: [['toggle', 'h_search', 'Show search'], ['toggle', 'h_voice', 'Voice search'], ['text', 'h_search_placeholder', 'Placeholder']] },
+  { id: 'h_account', icon: 'fa-user', label: 'Account (Log in)', sub: '', fields: [['toggle', 'h_login', 'Show “Log in”'], ['text', 'h_login_text', 'Log in text'], ['text', 'h_login_url', 'Log in link', { hint: 'Empty = the admin login page.' }]] },
+  { id: 'h_button', icon: 'fa-bell', label: 'Button (Subscribe)', sub: '', fields: [['toggle', 'h_sub', 'Show “Subscribe”'], ['text', 'h_sub_text', 'Subscribe text'], ['select', 'h_sub_icon', 'Icon before the text', { options: [['', 'None (normal button)'], ['whatsapp', 'WhatsApp'], ['youtube', 'YouTube'], ['facebook', 'Facebook'], ['instagram', 'Instagram'], ['x', 'X (Twitter)'], ['telegram', 'Telegram'], ['linkedin', 'LinkedIn']], hint: 'With an icon, the button takes that app’s colour (WhatsApp green, YouTube red …). Tip: put your WhatsApp / YouTube link in “Subscribe link”.' }], ['text', 'h_sub_url', 'Subscribe link', { hint: 'Empty = turns on job alerts (push notifications).' }]] },
+  { id: 'h_offcanvas', icon: 'fa-bars', label: 'Off-Canvas Menu', sub: '', design: ['off_canvas'], fields: [['toggle', 'h_drawer_hello', 'Show the greeting (“Hello, Reader”)'], ['text', 'h_drawer_title', 'Greeting (mobile menu)'], ['text', 'h_drawer_text', 'Text under the greeting'], ['toggle', 'h_drawer_login', 'Show “Log in” in the mobile menu', { hint: 'Also needs “Show Log in” above.' }], ['toggle', 'h_drawer_sub', 'Show “Subscribe” in the mobile menu', { hint: 'Also needs “Show Subscribe” above.' }]] },
+  { id: 'h_above', icon: 'fa-window-minimize', label: 'Above Header (Top bar)', sub: '', design: ['top_bar'], fields: [['toggle', 'h_topbar', 'Show top bar (above the header)'], ['textarea', 'h_topbar_text', 'Top bar text / HTML']] },
   { id: 'container', icon: 'fa-arrows-left-right', label: 'Container', sub: 'Width of the site', fields: [
     ['range', 'h_width', 'Container width', { min: 960, max: 1600, step: 10, unit: 'px' }],
   ]},
   { id: 'menus', icon: 'fa-bars', label: 'Menus', sub: 'Primary menu and the menu strip', render: renderMenus },
-  { id: 'footer', icon: 'fa-shoe-prints', label: 'Footer', sub: 'Columns, follow box, copyright', render: renderFooter },
-  { id: 'sidebar', icon: 'fa-table-columns', label: 'Sidebar', sub: 'Where it shows and what it lists', fields: [
+  { id: 'f_copy', icon: 'fa-copyright', label: 'Copyright', sub: '', design: ['footer_bar'], fields: [['text', 'f_copyright', 'Copyright text', { hint: 'Shortcodes: [year] [site_title] [site_link]' }]] },
+  { id: 'f_scroll', icon: 'fa-arrow-up', label: 'Scroll To Top', sub: '', fields: [['toggle', 'f_totop', 'Enable scroll to top']] },
+  { id: 'buttons', icon: 'fa-square', label: 'Buttons', sub: '', design: ['buttons'], render: renderButtons },
+  { id: 'footer', icon: 'fa-shoe-prints', label: 'Footer Columns', design: ['footer_widgets'], sub: 'Columns, follow box, copyright', render: renderFooter },
+  { id: 'sidebar', icon: 'fa-table-columns', design: ['sidebar'], label: 'Sidebar', sub: 'Where it shows and what it lists', fields: [
     ['toggle', 'sb_post', 'Posts (articles)'],
     ['text', 'sb_heading', 'Heading', { hint: '{category} = the post’s category.' }],
     ['range', 'sb_count', 'Number of posts', { min: 3, max: 10 }],
     ['seg', 'sb_source', 'Posts', { options: [['category', 'Same category'], ['latest', 'Latest']] }],
     ['toggle', 'sb_sticky', 'Sticky while scrolling'],
   ]},
-  { id: 'post', icon: 'fa-file-lines', label: 'Post Template', sub: 'Design and sections of article pages', sections: [
+  { id: 'post', icon: 'fa-file-lines', label: 'Single Post', sub: '', design: ['cards'], render: renderPost, defs: [
     ['Top of the post', [['toggle', 'p_breadcrumb', 'Breadcrumb'], ['toggle', 'p_cat_badge', 'Category label (⚡ CATEGORY)'], ['toggle', 'p_author_date', 'Author & date row'], ['seg', 'p_date_shown', 'Date shown', { options: [['updated', 'Last updated'], ['published', 'Published']] }], ['toggle', 'p_reading_time', 'Reading time'], ['toggle', 'p_pref_source', '“Add as a preferred source on Google”'], ['toggle', 'p_gnews', 'Google News icon (own box)'], ['text', 'p_gnews_url', 'Google News link', { hint: 'Your publication page on news.google.com.' }]]],
     ['Featured image', [['toggle', 'p_featured', 'Featured image'], ['toggle', 'p_caption', 'Caption under the image (alt text)']]],
     ['Summary & Key Points', [['toggle', 'p_summary', 'Summary box'], ['text', 'p_summary_heading', 'Summary heading'], ['seg', 'p_summary_pos', 'Summary position', { options: [['before_featured', 'Before image'], ['after_featured', 'After image'], ['before_content', 'Before content']] }], ['toggle', 'p_keypoints', 'Key Points box'], ['text', 'p_keypoints_heading', 'Key Points heading'], ['seg', 'p_keypoints_style', 'Bullet style', { options: [['dot', 'Dot'], ['check', 'Check'], ['number', 'Number']] }], ['range', 'p_keypoints_after', 'Show after paragraph (0 = above the article)', { min: 0, max: 6 }]]],
@@ -445,7 +448,7 @@ const PANELS = [
     ['toggle', 'rp_bar', 'Thin progress bar at the top of articles'],
     ['hint', 'Switch the preview to Mobile (bottom of this panel) to see the button. The sections list shows the article’s H2 headings.'],
   ]},
-  { id: 'home', icon: 'fa-table-cells-large', label: 'Blog & Archives', sub: 'Latest Update page, post grids and lists', sections: [
+  { id: 'home', icon: 'fa-table-cells-large', label: 'Blog / Archive', sub: 'Latest Update page, post grids and lists', sections: [
     ['Latest Update page (blog)', [['toggle', 'home_hero', 'Search box & category buttons'], ['text', 'home_heading', 'Heading above the posts (optional)'], ['range', 'home_posts', 'Posts on the homepage', { min: 0, max: 30 }], ['toggle', 'home_lead', 'First post as a large card'], ['toggle', 'home_grid_more', '“Read more” button on the 3-per-row cards'], ['toggle', 'home_tables', 'Job tables (Recent Updates, Admit Card, Answer Key, Result)'], ['toggle', 'home_faqs', 'FAQs']]],
     ['Archives (categories, tags, authors, search)', [['range', 'arch_columns', 'Columns', { min: 2, max: 4 }]]],
   ]},
@@ -463,18 +466,22 @@ const PANELS = [
 const $ = id => document.getElementById(id);
 let dirty = false, panel = null, draftTimer = null, subOpen = null;
 // the list on the first screen, ordered and grouped like the WordPress (GeneratePress / Astra) Customizer
-const CZ_NAV = ['identity', { id: 'layout', label: 'Layout', items: ['container', 'header', 'sidebar', 'footer'] }, 'colors', 'typography', 'menus', 'homepage',
-  { id: 'blog', label: 'Blog', items: ['post', 'home', 'alsoread', 'progress'] }, 'consent', 'shortcodes', 'css'];
-CZ_NAV.forEach(n => { if (typeof n === 'object') n.items.forEach(id => { const p = PANELS.find(x => x.id === id); if (p) p._group = n; }); });
+const CZ_NAV = [{ id: 'global', label: 'Global', items: ['typography', 'colors', 'container', 'buttons'] },
+  { id: 'header', label: 'Header', items: ['identity', 'h_primary', 'h_strip', 'h_search', 'h_account', 'h_button', 'h_offcanvas', 'h_above'] },
+  { id: 'posttypes', label: 'Post Types', items: ['home', 'post', 'alsoread', 'progress'] }, 'homepage', 'sidebar',
+  { id: 'footer', label: 'Footer', items: ['footer', 'f_copy'] }, { id: 'general', label: 'General', items: ['f_scroll', 'consent', 'shortcodes'] },
+  'identity', 'menus', 'css'];
+CZ_NAV.forEach(n => { if (typeof n === 'object') n.items.forEach(id => { const p = PANELS.find(x => x.id === id); if (p && !p._group) p._group = n; }); });
+let czFrom, czTab = 'general', eyeOpen = null, typoOpen = null; // where a panel was opened from (group or the first screen), General / Design tab
 const czAllowed = p => !!p && (!CZ_ONLY || CZ_ONLY.includes(p.id));
-function exitPanel() { if (panel && panel._group && panel._group.items.some(id => czAllowed(PANELS.find(x => x.id === id)))) showGroup(panel._group); else showHome(); }
+function exitPanel() { const g = czFrom !== undefined ? czFrom : (panel && panel._group); if (g && g.items.some(id => czAllowed(PANELS.find(x => x.id === id)))) showGroup(g); else showHome(); }
 function czRow(label, onClick) { const r = html('<button type="button" class="cz-subrow"><span></span><span class="cz-subrow-r"><i class="fas fa-chevron-right" aria-hidden="true"></i></span></button>'); r.firstChild.textContent = label; r.onclick = onClick; return r; }
 function showGroup(g) {
   panel = null; subOpen = null; document.querySelectorAll('.cz-additems').forEach(x => x.remove());
   $('cz-back').hidden = false; $('cz-back').onclick = showHome; $('cz-head-small').textContent = 'Customizing'; $('cz-head-title').textContent = g.label;
   const b = $('cz-body'); b.innerHTML = ''; b.classList.remove('hm-bg');
   const list = html('<div class="cz-subs cz-subs-top"></div>');
-  g.items.map(id => PANELS.find(x => x.id === id)).filter(czAllowed).forEach(p => list.appendChild(czRow(p.label, () => showPanel(p))));
+  g.items.map(id => PANELS.find(x => x.id === id)).filter(czAllowed).forEach(p => list.appendChild(czRow(p.id === 'identity' ? 'Site Title & Logo' : p.label, () => { czFrom = g; showPanel(p); })));
   b.appendChild(list);
 }
 const getV = k => k.startsWith('g.') ? state.general[k.slice(2)] : state.theme[k];
@@ -682,7 +689,7 @@ function renderColors(wrap) {
   if (!T.colors || Array.isArray(T.colors)) T.colors = {};
   Object.keys(T.colors).forEach(g => { if (Array.isArray(T.colors[g])) T.colors[g] = {}; });
   if (!Array.isArray(T.global_colors)) T.global_colors = [];
-  const block = html('<div class="cz-block"><div class="cz-block-head"><strong>Global Colors</strong><span class="cz-block-actions"></span></div><div class="cz-gpal"></div><div></div></div>');
+  const block = html('<div class="cz-gpalbox"><span class="cz-block-actions"></span><div class="cz-gpal"></div><div></div></div>');
   const repaintAll = () => wrap.querySelectorAll('.cz-color').forEach(x => x._paint && x._paint());
   const draw = () => {
     const box = block.querySelector('.cz-gpal'), ed = block.children[2]; box.innerHTML = ''; ed.innerHTML = '';
@@ -705,15 +712,30 @@ function renderColors(wrap) {
   };
   block.querySelector('.cz-block-actions').appendChild(circleBtn('fa-plus', 'Add color', () => { T.global_colors.push({ slug: 'custom-' + Date.now().toString(36), name: 'Custom', color: '#888888' }); gpalEditing = T.global_colors.length - 1; touch(); draw(); }));
   draw();
-  block.appendChild(hintEl('Change a global color and every color using it updates.'));
-  wrap.appendChild(sectionEl('Global Colors', b => b.appendChild(block)));
-  Object.entries(COLOR_GROUPS).forEach(([g, [label, fields]], idx) => {
-    wrap.appendChild(sectionEl(label, body => {
-      Object.entries(fields).forEach(([f, fl]) => body.appendChild(colorCtl(fl, () => (T.colors[g] || {})[f] || '', v => {
-        if (!T.colors[g] || Array.isArray(T.colors[g])) T.colors[g] = {};
-        if (v) T.colors[g][f] = v; else delete T.colors[g][f];
-      })));
-    }));
+  // Global Palette: ready-made palettes, then the swatches (click one to edit it, + adds one)
+  const pal = html('<div class="cz-wpgroup"><h3 class="cz-wp-h">Global Palette</h3><div class="cz-presets"></div></div>');
+  PALETTES.forEach(([name, cols]) => {
+    const cur = Object.entries(cols).every(([sl, c]) => ((T.global_colors.find(g => g.slug === sl) || {}).color || '').toLowerCase() === c);
+    const b = html('<button type="button" class="cz-preset' + (cur ? ' active' : '') + '"><span class="cz-preset-bars"></span><b></b></button>');
+    ['accent', 'accent-2', 'contrast', 'contrast-2'].forEach(sl => { const i = document.createElement('i'); i.style.background = cols[sl]; b.firstChild.appendChild(i); });
+    b.querySelector('b').textContent = name;
+    b.onclick = () => { Object.entries(cols).forEach(([sl, c]) => { const g = T.global_colors.find(x => x.slug === sl); if (g) g.color = c; }); gpalEditing = null; touch(); rerender(); };
+    pal.querySelector('.cz-presets').appendChild(b);
+  });
+  pal.appendChild(block); wrap.appendChild(pal);
+  const set = (g, f) => v => { if (!T.colors[g] || Array.isArray(T.colors[g])) T.colors[g] = {}; if (v) T.colors[g][f] = v; else delete T.colors[g][f]; };
+  const get = (g, f) => () => (T.colors[g] || {})[f] || '';
+  const acc = T.global_colors.find(x => x.slug === 'accent');
+  const th = html('<div class="cz-wpgroup"><h3 class="cz-wp-h">Theme Color</h3></div>');
+  if (acc) th.appendChild(colorCtl('Accent', () => acc.color, v => { if (v && !/^var\(/.test(v)) { acc.color = v; draw(); } }));
+  [['body', 'link', 'Links'], ['body', 'link_hover', 'Links hover'], ['content', 'title', 'Heading (H1–H6)'], ['body', 'text', 'Body Text'], ['cards', 'border', 'Borders']].forEach(([g, f, l]) => th.appendChild(colorCtl(l, get(g, f), set(g, f))));
+  wrap.appendChild(th);
+  const sf = html('<div class="cz-wpgroup"><h3 class="cz-wp-h">Surface Color</h3></div>');
+  [['body', 'background', 'Site Background'], ['content', 'background', 'Content Background']].forEach(([g, f, l]) => sf.appendChild(colorCtl(l, get(g, f), set(g, f))));
+  wrap.appendChild(sf);
+  // the rest of the content colours (each part's own colours are in its Design tab)
+  [['content', 'Content'], ['cards', 'Cards & Boxes'], ['forms', 'Forms']].forEach(([g, label]) => {
+    wrap.appendChild(sectionEl(label, body => Object.entries(COLOR_GROUPS[g][1]).forEach(([f, fl]) => body.appendChild(colorCtl(fl, get(g, f), set(g, f))))));
   });
 }
 
@@ -747,7 +769,7 @@ function respCtl(label, obj, unit, slider) {
   reset.onclick = () => { n.value = ''; r.value = fb || slider[0]; put(''); };
   return w;
 }
-function renderTypography(wrap) {
+function renderTypoManager(wrap) {
   const T = state.theme;
   if (!Array.isArray(T.fonts)) T.fonts = [];
   if (!Array.isArray(T.typography)) T.typography = [];
@@ -832,8 +854,121 @@ function renderTypography(wrap) {
     T.typography.push(r); openRule = r.id; touch(); rerender();
   };
   tb.appendChild(addR);
-  wrap.appendChild(sectionEl('Typography Manager', b => b.appendChild(tb), false, String(T.typography.length || '')));
+  wrap.appendChild(sectionEl('All typography rules', b => b.appendChild(tb), false, String(T.typography.length || '')));
 }
+
+/* ===================== Astra-style panels ===================== */
+// Design tab: the colours of that part of the site (same values as before, now next to their part like Astra)
+function czDesign(wrap, groups) {
+  const T = state.theme;
+  if (!T.colors || Array.isArray(T.colors)) T.colors = {};
+  groups.forEach(g => {
+    const def = COLOR_GROUPS[g]; if (!def) return;
+    const box = html('<div class="cz-wpgroup"><h3 class="cz-wp-h"></h3></div>'); box.firstChild.textContent = groups.length > 1 ? def[0] : 'Colors';
+    Object.entries(def[1]).forEach(([f, fl]) => box.appendChild(colorCtl(fl, () => (T.colors[g] || {})[f] || '', v => {
+      if (!T.colors[g] || Array.isArray(T.colors[g])) T.colors[g] = {};
+      if (v) T.colors[g][f] = v; else delete T.colors[g][f];
+    })));
+    wrap.appendChild(box);
+  });
+}
+function czBoxRow(label, onClick) { const b = html('<button type="button" class="cz-boxrow"><span></span><i class="fas fa-chevron-right" aria-hidden="true"></i></button>'); b.firstChild.textContent = label; b.onclick = onClick; return b; }
+function czOpenMenu(view) { const mp = PANELS.find(x => x.id === 'menus'); czFrom = null; showPanel(mp); menuView = view; showPanel(mp, true); $('cz-body').scrollTop = 0; }
+
+// Header ▸ Primary Menu (the menu strip under the logo)
+function renderStripOpts(wrap) {
+  const T = state.theme;
+  wrap.appendChild(czBoxRow('Configure Menu from Here.', () => czOpenMenu('strip')));
+  wrap.appendChild(cSeg('Links', () => T.strip_source || 'custom', v => T.strip_source = v, [['custom', 'My links'], ['categories', 'All categories']]));
+  wrap.appendChild(cSeg('Style', () => T.menu_style, v => T.menu_style = v, [['plain', 'Plain'], ['pills', 'Pills'], ['underline', 'Underline']]));
+  wrap.appendChild(cSeg('Alignment (desktop)', () => T.menu_align, v => T.menu_align = v, [['left', 'Left'], ['center', 'Center']]));
+  wrap.appendChild(cToggle('Dark mode icon at the end', () => T.menu_dark_icon === '1', v => T.menu_dark_icon = v ? '1' : '0'));
+}
+// Global ▸ Buttons
+function renderButtons(wrap) { wrap.appendChild(typoRow('buttons', 'Font')); }
+
+// Post Types ▸ Single Post: the parts of an article as one list — 👁 shows / hides, ⌄ opens its options (like Astra's Structure)
+const POST_EYE = [['p_breadcrumb'], ['p_cat_badge'], ['p_author_date', ['p_date_shown', 'p_reading_time']], ['p_featured', ['p_caption']],
+  ['p_summary', ['p_summary_heading', 'p_summary_pos']], ['p_keypoints', ['p_keypoints_heading', 'p_keypoints_style', 'p_keypoints_after']],
+  ['p_toc', ['p_toc_collapsed']], ['p_faqs'], ['p_tags'], ['p_share'], ['p_author_box'], ['p_comments'], ['p_related', ['p_related_heading', 'p_related_count']],
+  ['p_join', ['p_join_whatsapp', 'p_join_telegram']], ['p_pref_source'], ['p_gnews', ['p_gnews_url']]];
+const EYE_NAMES = { p_cat_badge: 'Category label', p_author_date: 'Author & date', p_summary: 'Summary', p_keypoints: 'Key Points', p_related: 'Related posts', p_join: 'Join WhatsApp / Telegram', p_pref_source: 'Preferred source (Google)', p_gnews: 'Google News' };
+function eyeList(keys, defs) {
+  const box = html('<div class="cz-eyes"></div>');
+  keys.forEach(([k, subs]) => {
+    const d = defs[k]; if (!d) return;
+    const on = String(getV(k)) === '1', open = eyeOpen === k;
+    const r = html('<div class="cz-eye' + (on ? '' : ' is-off') + (open ? ' open' : '') + '"><div class="cz-eye-bar"><span class="cz-eye-t"></span>' + (subs ? '<button type="button" class="cz-eye-more" aria-label="Options" aria-expanded="' + open + '"><i class="fas fa-chevron-down"></i></button>' : '') + '<button type="button" class="cz-eye-btn" aria-pressed="' + on + '" title="' + (on ? 'Hide' : 'Show') + '"><i class="fas ' + (on ? 'fa-eye' : 'fa-eye-slash') + '"></i></button></div></div>');
+    r.querySelector('.cz-eye-t').textContent = EYE_NAMES[k] || d[2];
+    r.querySelector('.cz-eye-btn').onclick = () => { setV(k, on ? '0' : '1'); rerender(); };
+    if (subs) { const t = () => { eyeOpen = open ? null : k; rerender(); }; r.querySelector('.cz-eye-more').onclick = t; r.querySelector('.cz-eye-t').onclick = t; r.querySelector('.cz-eye-t').classList.add('has-more'); }
+    if (open && subs) { const b = html('<div class="cz-eye-in"></div>'); subs.forEach(sk => { if (defs[sk]) b.appendChild(field(defs[sk])); }); r.appendChild(b); }
+    box.appendChild(r);
+  });
+  return box;
+}
+function renderPost(wrap) {
+  const defs = {}; (panel.defs || []).forEach(sec => sec[1].forEach(f => { defs[f[1]] = f; }));
+  const g = html('<div class="cz-wpgroup"><h3 class="cz-wp-h">Structure</h3></div>'); g.appendChild(eyeList(POST_EYE, defs)); wrap.appendChild(g);
+}
+
+// Global ▸ Typography: Astra font rows (family · size / weight ⌄) that open their settings
+const TYPO_ROWS = [['Base Font', [['body', 'Body Font'], ['headings', 'Headings Font']]],
+  ['Heading Font', [['h1', 'H1 Font'], ['h2', 'H2 Font'], ['h3', 'H3 Font'], ['h4', 'H4 Font'], ['h5', 'H5 Font'], ['h6', 'H6 Font']]],
+  ['Site', [['site_title', 'Site Title'], ['tagline', 'Tagline'], ['post_title', 'Post Title'], ['archive_title', 'Archive Title'], ['meta', 'Entry Meta']]],
+  ['Menus', [['menu_strip', 'Primary Menu'], ['primary_menu', 'Off-Canvas Menu'], ['sub_menu', 'Off-Canvas Sub-Menu']]],
+  ['Widgets & Footer', [['widget_title', 'Widget Titles'], ['footer', 'Footer']]]];
+function ensureFont(fam, weight) {
+  const T = state.theme; if (!Array.isArray(T.fonts)) T.fonts = [];
+  if (!fam || SYSTEM_FONTS.includes(fam)) return;
+  let f = T.fonts.find(x => x.family === fam);
+  if (!f && GOOGLE_FONTS.includes(fam)) { f = { family: fam, google: true, variants: ['400', '500', '600', '700'], fallback: 'sans-serif' }; T.fonts.push(f); }
+  if (f && f.google && /^\d00$/.test(weight || '') && !(f.variants || []).includes(weight)) f.variants = [...(f.variants || []), weight];
+}
+function typoRow(target, label) {
+  const T = state.theme; if (!Array.isArray(T.typography)) T.typography = [];
+  const r0 = T.typography.find(r => r.target === target), open = typoOpen === target;
+  const size = r0 && r0.size && r0.size.d ? r0.size.d + (r0.sizeUnit || 'px') : '';
+  const w = html('<div class="cz-font' + (open ? ' open' : '') + '"><span class="cz-label"></span><button type="button" class="cz-font-btn" aria-expanded="' + open + '"><span class="cz-font-fam"></span><span class="cz-font-sum"></span><i class="fas fa-chevron-down" aria-hidden="true"></i></button></div>');
+  w.querySelector('.cz-label').textContent = label;
+  w.querySelector('.cz-font-fam').textContent = (r0 && r0.family) || 'Inherit';
+  w.querySelector('.cz-font-sum').innerHTML = esc(size || 'inherit') + ' <em>/</em> ' + esc((r0 && r0.weight) || 'inherit');
+  w.querySelector('.cz-font-btn').onclick = () => { typoOpen = open ? null : target; rerender(); };
+  if (open) {
+    let r = r0; if (!r) { r = newRule(target); T.typography.push(r); }
+    ['size', 'lineHeight', 'letterSpacing', 'marginBottom'].forEach(k => { if (!r[k] || typeof r[k] !== 'object' || Array.isArray(r[k])) r[k] = { d: '', t: '', m: '' }; });
+    const card = html('<div class="cz-font-card"></div>');
+    const own = (T.fonts || []).filter(f => f.family).map(f => f.family);
+    const fams = [['', 'Inherit'], ...[...new Set([...own, ...GOOGLE_FONTS])].filter(f => !SYSTEM_FONTS.includes(f)).map(f => [f, f]), ...SYSTEM_FONTS.map(f => [f, f + ' (system)'])];
+    card.appendChild(cSelect('Font Family', () => r.family || '', v => { r.family = v; ensureFont(v, r.weight); w.querySelector('.cz-font-fam').textContent = v || 'Inherit'; }, fams));
+    card.appendChild(cSelect('Font Weight', () => r.weight || '', v => { r.weight = v; ensureFont(r.family, v); }, WEIGHTS));
+    card.appendChild(respCtl('Font Size', r.size, r.sizeUnit || 'px', [8, 80, 1]));
+    const units = html('<div class="cz-unit-row">' + ['px', 'em', 'rem'].map(u => '<button type="button" data-u="' + u + '"' + ((r.sizeUnit || 'px') === u ? ' class="active"' : '') + '>' + u + '</button>').join('') + '</div>');
+    units.querySelectorAll('button').forEach(b => b.onclick = () => { r.sizeUnit = b.dataset.u; touch(); rerender(); });
+    card.appendChild(units);
+    card.appendChild(respCtl('Line Height', r.lineHeight, '', [0.8, 3, 0.05]));
+    card.appendChild(respCtl('Letter Spacing', r.letterSpacing, 'em', [-0.1, 0.5, 0.01]));
+    card.appendChild(cSeg('Text Transform', () => r.transform || '', v => r.transform = v, [['', '—'], ['capitalize', 'Aa'], ['uppercase', 'AA'], ['lowercase', 'aa']]));
+    if (target === 'body') card.appendChild(respCtl('Paragraph Margin Bottom', r.marginBottom, 'em', [0, 4, 0.1]));
+    const rs = html('<button type="button" class="cz-link-btn cz-font-reset"><i class="fas fa-rotate-left"></i> Reset to default</button>');
+    rs.onclick = () => { T.typography = T.typography.filter(x => x !== r); typoOpen = null; touch(); rerender(); };
+    card.appendChild(rs);
+    w.appendChild(card);
+  }
+  return w;
+}
+function renderTypography(wrap) {
+  const T = state.theme; if (!Array.isArray(T.fonts)) T.fonts = []; if (!Array.isArray(T.typography)) T.typography = [];
+  TYPO_ROWS.forEach(([h, rows]) => { const g = html('<div class="cz-wpgroup"><h3 class="cz-wp-h"></h3></div>'); g.firstChild.textContent = h; rows.forEach(([t, l]) => g.appendChild(typoRow(t, l))); wrap.appendChild(g); });
+  renderTypoManager(wrap); // Font Manager + every rule incl. custom selectors (rows that open their own screen)
+}
+
+// Global ▸ Colors: Global Palette (presets + swatches), Theme Color, Surface Color
+const PALETTES = [
+  ['Teal', { accent: '#0c6878', 'accent-2': '#1e73be', 'accent-3': '#d50808', contrast: '#222222', 'contrast-2': '#373737' }],
+  ['Royal', { accent: '#046bd2', 'accent-2': '#045cb4', 'accent-3': '#e11d48', contrast: '#1e293b', 'contrast-2': '#334155' }],
+  ['Maroon', { accent: '#9e1b32', 'accent-2': '#c2410c', 'accent-3': '#d50808', contrast: '#1f1f1f', 'contrast-2': '#3b3b3b' }],
+  ['Forest', { accent: '#2f6b3a', 'accent-2': '#5c7c2e', 'accent-3': '#c2410c', contrast: '#1c2420', 'contrast-2': '#36423b' }]];
 
 /* ---------- Menus ---------- */
 let menuView = null, miOpen = null, addingFor = null;
@@ -1010,8 +1145,6 @@ function renderFooter(wrap) {
     [['text', 'f_follow_heading', 'Heading'], ['toggle', 'f_follow', 'Show the box'], ['text', 'f_follow_title', 'Box title'], ['text', 'f_follow_sub', 'Box subtitle'], ['text', 'f_follow_btn', 'Button text (optional)'], ['text', 'f_follow_btn_url', 'Button link']].forEach(f => b.appendChild(field(f)));
     b.appendChild(html('<p class="cz-hint">The social icons come from <a href="/admin/general-settings.php#social" target="_blank">General Settings → Social</a> and are also used in the header and the mobile menu.</p>'));
   }, true));
-  wrap.appendChild(sectionEl('Back to top button', b => b.appendChild(field(['toggle', 'f_totop', 'Show the back to top button']))));
-  wrap.appendChild(sectionEl('Copyright', b => b.appendChild(field(['text', 'f_copyright', 'Copyright text', { hint: 'Shortcodes: [year] [site_title] [site_link]' }])), true));
 }
 
 /* ---------- Also Read ---------- */
@@ -1451,7 +1584,7 @@ function showHome() {
   const nav = document.createElement('nav'); nav.className = 'cz-nav';
   const navItems = [];
   CZ_NAV.forEach(n => {
-    if (typeof n === 'string') { const p = PANELS.find(x => x.id === n); if (czAllowed(p)) navItems.push({ label: p.label, icon: p.icon, sub: p.sub, go: () => showPanel(p) }); }
+    if (typeof n === 'string') { const p = PANELS.find(x => x.id === n); if (czAllowed(p)) navItems.push({ label: p.label, icon: p.icon, sub: p.sub, go: () => { czFrom = null; showPanel(p); } }); }
     else if (n.items.some(id => czAllowed(PANELS.find(x => x.id === id)))) navItems.push({ label: n.label, icon: 'fa-table-columns', sub: '', go: () => showGroup(n) });
   });
   navItems.forEach(p => {
@@ -1471,18 +1604,27 @@ function showHome() {
   if (!CZ_ONLY) b.appendChild(r); // reset is for admins only
 }
 function showPanel(p, keep) {
-  if (!keep) { subOpen = null; subPrevBack = null; menuView = null; miOpen = null; addingFor = null; arOpen = undefined; openFont = null; openRule = null; gpalEditing = null; hmOpen = null; hmEdit = null; $('cz-back').onclick = exitPanel; }
+  if (!keep) { subOpen = null; subPrevBack = null; eyeOpen = null; typoOpen = null; menuView = null; miOpen = null; addingFor = null; arOpen = undefined; openFont = null; openRule = null; gpalEditing = null; hmOpen = null; hmEdit = null; $('cz-back').onclick = exitPanel; }
   if (!addingFor) document.querySelectorAll('.cz-additems').forEach(x => x.remove());
-  panel = p; $('cz-back').hidden = false; $('cz-head-small').textContent = p._group ? 'Customizing ▸ ' + p._group.label : 'Customizing'; $('cz-head-title').textContent = p.label;
+  if (!keep) czTab = 'general';
+  const grp = czFrom !== undefined ? czFrom : p._group;
+  panel = p; $('cz-back').hidden = false; $('cz-head-small').textContent = grp ? 'Customizing ▸ ' + grp.label : 'Customizing'; $('cz-head-title').textContent = p.id === 'identity' && grp ? 'Site Title & Logo' : p.label;
   const b = $('cz-body'); b.innerHTML = ''; b.classList.remove('hm-bg');
   const wrap = document.createElement('div'); wrap.className = 'cz-panel-fields';
-  if (p.fields) p.fields.forEach(f => wrap.appendChild(field(f)));
   subCapture = null;
-  if (p.sections) { // like WordPress: a panel lists its sections; each one opens on its own screen
+  if (p.design) { // Astra: General / Design tabs
+    const tb = html('<div class="cz-tabs" role="tablist"><button type="button" role="tab" data-t="general">General</button><button type="button" role="tab" data-t="design">Design</button></div>');
+    tb.querySelectorAll('button').forEach(x => { const on = x.dataset.t === czTab; x.classList.toggle('active', on); x.setAttribute('aria-selected', on); x.onclick = () => { czTab = x.dataset.t; subOpen = null; showPanel(p, true); }; });
+    wrap.appendChild(tb);
+  }
+  const czDesignTab = p.design && czTab === 'design';
+  if (czDesignTab) czDesign(wrap, p.design);
+  if (p.fields && !czDesignTab) p.fields.forEach(f => wrap.appendChild(field(f)));
+  if (p.sections && !czDesignTab) { // like WordPress: a panel lists its sections; each one opens on its own screen
     if (p.sections.length === 1) p.sections[0][1].forEach(f => wrap.appendChild(field(f)));
     else p.sections.forEach(sc => wrap.appendChild(sectionEl(sc[0], b => sc[1].forEach(f => b.appendChild(field(f))))));
   }
-  if (p.render) p.render(wrap);
+  if (p.render && !czDesignTab) p.render(wrap);
   if (subOpen !== null && subCapture) { // one section on its own screen
     wrap.innerHTML = ''; wrap.appendChild(subCapture); subCapture = null;
     $('cz-head-small').textContent = 'Customizing ▸ ' + ($('cz-head-title').dataset.trail || p.label); $('cz-head-title').textContent = subOpen;

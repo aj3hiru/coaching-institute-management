@@ -407,3 +407,134 @@
 .cz-menu-foot .cz-btn-outline { background: #f6f7f7; }
 .cz-block { margin-left: -12px; margin-right: -12px; }
 .cz-sub-body > .cz-block:first-child { margin-top: -12px; border-top: 0; }
+
+/* =====================================================================================================
+   Astra Customizer look (skylerchin.com): white sections, divider between controls, label left / switch
+   right, GENERAL · DESIGN tabs, full-width segmented buttons, font rows, palette presets, structure list.
+   ===================================================================================================== */
+.cz-root { --ast-line: #e1e1e1; --ast-text: #1e1e1e; --ast-muted: #757575; }
+.cz-top { background: #f0f0f1; }
+.cz-publish:not(:disabled) { background: var(--cz-accent); border-color: var(--cz-accent); font-weight: 600; }
+.cz-publish:not(:disabled):hover { background: var(--cz-accent-dark); border-color: var(--cz-accent-dark); }
+.cz-back { border-left: 4px solid var(--cz-accent); color: #2271b1; }
+.cz-back:hover { background: #f6f7f7; border-left-color: var(--cz-accent); }
+.cz-head h1 { font-weight: 300; }
+.cz-body { background: #fff; padding: 0 0 40px; gap: 0; }
+.cz-panel-fields { gap: 0; }
+/* rows (first screen, groups, sections): bold dark titles like Astra */
+.cz-nav, .cz-subs, .cz-panel-fields > .cz-subrow:first-child { margin: 0 !important; border-top: 0; }
+.cz-nav button, .cz-subrow { padding: 13px 20px 13px 20px; border-left: 4px solid transparent; border-bottom: 1px solid #dcdcde; background: #fff; color: var(--ast-text); font-size: 14px; font-weight: 600; }
+.cz-nav-text strong { font-weight: 600; }
+.cz-nav button:hover, .cz-subrow:hover { color: var(--ast-text); background: #f6f7f7; border-left-color: var(--cz-accent); }
+.cz-nav button > i:last-child, .cz-subrow i { color: var(--ast-text); font-size: 12px; }
+.cz-panel-fields > .cz-subrow { margin: 0 !important; }
+/* every control = a block with a divider */
+.cz-panel-fields > :not(.cz-subrow):not(.cz-subs):not(.cz-tabs):not(.cz-nav):not(.cz-boxrow),
+.cz-sub-body > *, .cz-wpbox > * { padding: 16px 24px; border-bottom: 1px solid var(--ast-line); margin: 0 !important; }
+.cz-panel-fields > .cz-wpbox, .cz-sub-body > .cz-wpbox, .cz-panel-fields > .cz-sub-body { padding: 0; border-bottom: 0; }
+.cz-wpgroup { display: flex; flex-direction: column; gap: 14px; }
+.cz-wp-h { margin: 0 !important; font-size: 14px; font-weight: 600; color: var(--ast-text); }
+h3.cz-wp-h { padding-top: 2px; }
+.cz-label { font-size: 14px; font-weight: 400; color: var(--ast-text); line-height: 1.5; }
+.cz-hint { font-size: 12.5px; font-style: italic; color: var(--ast-muted); }
+.cz-field { gap: 8px; }
+.cz-field input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]), .cz-field select, .cz-social input, .cz-social select, .cz-inline-input, .cz-additems input {
+  height: 36px; min-height: 36px; border: 1px solid #d5d5d5; border-radius: 3px; font-size: 14px; color: var(--ast-text); }
+.cz-field textarea { border: 1px solid #d5d5d5; border-radius: 3px; }
+.cz-root input:focus, .cz-root select:focus, .cz-root textarea:focus { border-color: var(--cz-accent) !important; box-shadow: 0 0 0 1px var(--cz-accent); }
+/* switches on the right (Astra) */
+.cz-toggle { align-items: center; justify-content: space-between; gap: 12px; }
+.cz-toggle input { position: absolute; opacity: 0; pointer-events: none; width: 1px; height: 1px; margin: 0; }
+.cz-switch { display: block !important; order: 2; position: relative; flex: 0 0 36px; height: 18px; border-radius: 18px; background: #fff; border: 2px solid var(--ast-text); box-sizing: border-box; transition: background .15s, border-color .15s; }
+.cz-switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 10px; height: 10px; border-radius: 50%; background: var(--ast-text); transition: transform .15s, background .15s; }
+.cz-toggle input:checked + .cz-switch { background: var(--cz-accent); border-color: var(--cz-accent); }
+.cz-toggle input:checked + .cz-switch::after { transform: translateX(18px); background: #fff; }
+.cz-toggle input:focus-visible + .cz-switch { box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--cz-accent); }
+.cz-toggle-text { font-size: 14px; font-weight: 400; color: var(--ast-text); }
+/* segmented buttons (Unboxed | Boxed) */
+.cz-seg { border: 1px solid #d5d5d5; border-radius: 3px; }
+.cz-seg button { padding: 9px 6px; font-size: 13px; font-weight: 600; color: var(--ast-text); background: #fff; }
+.cz-seg button + button { border-left: 1px solid #d5d5d5; }
+.cz-seg button.active { background: var(--cz-accent); color: #fff; }
+/* sliders: thin track, number box on the right */
+.cz-range input[type="range"] { accent-color: var(--cz-accent); }
+.cz-num { border: 1px solid #d5d5d5; border-radius: 3px; height: 40px; }
+.cz-num input { height: 38px !important; min-height: 38px !important; width: 70px !important; text-align: left; padding-left: 12px !important; }
+/* colour rows: label left, swatch right */
+.cz-color { min-height: 32px; padding: 0; }
+.cz-color-label { font-size: 14px; color: var(--ast-text); }
+.cz-swatch { width: 30px; height: 30px; box-shadow: inset 0 0 0 2px #fff; border: 1px solid #d5d5d5; }
+.cz-wpgroup .cz-color + .cz-color { margin-top: -4px; }
+/* GENERAL · DESIGN tabs */
+.cz-tabs { display: flex; margin: 10px 10px 0 !important; padding: 0 !important; border: 0 !important; background: #f0f0f1; }
+.cz-tabs button { flex: 1; height: 50px; border: 0; background: #f0f0f1; color: #a0a5aa; font: 500 13px/1 inherit; letter-spacing: .18em; text-transform: uppercase; cursor: pointer; }
+.cz-tabs button.active { background: #fff; color: var(--ast-text); }
+.cz-tabs button:hover:not(.active) { color: var(--ast-text); }
+/* boxed link rows inside a section ("Configure Menu from Here ›") */
+.cz-boxrow { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 11px 14px; border: 1px solid #c3c4c7 !important; border-radius: 2px; background: #fff; color: var(--ast-text); font: 600 14px/1.4 inherit; cursor: pointer; text-align: left; }
+.cz-panel-fields > .cz-boxrow { width: calc(100% - 48px); margin: 16px 24px !important; padding: 11px 14px; }
+.cz-boxrow:hover { border-color: var(--cz-accent) !important; }
+.cz-boxrow i { font-size: 12px; }
+/* Typography font rows */
+.cz-font { display: flex; flex-direction: column; gap: 8px; }
+.cz-font-btn { display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 10px; border: 1px solid #d5d5d5; border-radius: 3px; background: #fff; cursor: pointer; font: inherit; color: var(--ast-text); text-align: left; }
+.cz-font-btn:hover, .cz-font.open .cz-font-btn { border-color: var(--cz-accent); }
+.cz-font-fam { flex: 1; min-width: 0; font-size: 13.5px; color: #50575e; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cz-font-sum { font-size: 13px; color: #50575e; white-space: nowrap; }
+.cz-font-sum em { font-style: normal; color: #c3c4c7; margin: 0 2px; }
+.cz-font-btn i { font-size: 11px; color: #50575e; transition: transform .15s; }
+.cz-font.open .cz-font-btn i { transform: rotate(180deg); }
+.cz-font-card { display: flex; flex-direction: column; gap: 14px; padding: 14px; border: 1px solid #d5d5d5; border-radius: 3px; background: #fbfbfb; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+.cz-font-reset { align-self: flex-start; font-size: 12.5px; }
+.cz-unit-row { margin-top: -8px; }
+.cz-unit-row button.active { border-color: var(--cz-accent); color: var(--cz-accent); background: #fff; }
+/* Global Palette presets */
+.cz-presets { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.cz-preset { display: flex; flex-direction: column; padding: 0; border: 1px solid #d5d5d5; border-radius: 2px; background: #fff; cursor: pointer; overflow: hidden; }
+.cz-preset.active { border-color: var(--ast-text); box-shadow: 0 0 0 1px var(--ast-text); }
+.cz-preset-bars { display: flex; height: 26px; }
+.cz-preset-bars i { flex: 1; }
+.cz-preset b { padding: 5px 0; font-size: 12px; font-weight: 600; color: var(--ast-text); text-align: center; }
+.cz-gpalbox { position: relative; display: flex; flex-direction: column; gap: 10px; }
+.cz-gpalbox .cz-block-actions { position: absolute; right: 0; top: -40px; }
+.cz-gpal { gap: 8px; }
+.cz-gpal-item { width: 30px; height: 30px; }
+/* Single Post structure list (👁 show / hide, ⌄ options) */
+.cz-eyes { display: flex; flex-direction: column; gap: 8px; }
+.cz-eye { border: 1px solid #d5d5d5; border-radius: 2px; background: #fff; }
+.cz-eye.open { border-color: #a7aaad; }
+.cz-eye-bar { display: flex; align-items: center; min-height: 34px; padding: 0 4px 0 12px; }
+.cz-eye-t { flex: 1; min-width: 0; font-size: 14px; color: var(--ast-text); }
+.cz-eye-t.has-more { cursor: pointer; }
+.cz-eye.is-off .cz-eye-t { color: #a7aaad; }
+.cz-eye-more, .cz-eye-btn { width: 28px; height: 28px; border: 0; background: none; color: #50575e; cursor: pointer; font-size: 12px; border-radius: 2px; }
+.cz-eye-more:hover, .cz-eye-btn:hover { background: #f0f0f1; color: var(--ast-text); }
+.cz-eye.is-off .cz-eye-btn { color: #a7aaad; }
+.cz-eye.open .cz-eye-more i { transform: rotate(180deg); }
+.cz-eye-in { display: flex; flex-direction: column; gap: 12px; padding: 12px; border-top: 1px solid #f0f0f1; }
+/* in-panel blocks and old section heads on white */
+.cz-block { margin: 0 !important; border-left: 0; border-right: 0; }
+.cz-sub-body > .cz-block:first-child { margin-top: 0 !important; }
+.cz-section { margin: 0 !important; }
+.cz-dreset { margin: 24px 20px 8px !important; }
+/* Homepage panel on white */
+#cz-body.hm-bg { background: #fff; }
+.hm-bg .hm-grp { padding: 16px 20px !important; border-bottom: 1px solid var(--ast-line) !important; }
+.hm-bg .hm-list { margin: 0 !important; }
+.hm-bg .hm-lead { padding: 12px 20px 0; }
+.hm-bg .cz-toggle { justify-content: space-between; }
+/* the admin's flat style squares every corner (* { border-radius: 0 !important }) — Astra's switches and swatches stay round */
+.cz-root .cz-switch { border-radius: 18px !important; }
+.cz-root .cz-switch::after, .cz-root .cz-swatch, .cz-root .cz-gpal-item, .cz-root .cz-pal, .cz-root .cz-picker-palette > * { border-radius: 50% !important; }
+.cz-root .cz-btn-primary, .cz-root .cz-btn-outline, .cz-root .cz-publish, .cz-root .hm-btn { border-radius: 3px !important; }
+.cz-panel-fields > .cz-boxrow { width: auto; margin: 16px 24px !important; padding: 11px 14px !important; border-bottom: 1px solid #c3c4c7 !important; }
+.cz-gpalbox { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 8px; }
+.cz-gpalbox .cz-block-actions { position: static; order: 2; }
+.cz-gpalbox .cz-block-actions .cz-circle { width: 30px; height: 30px; border: 1px dashed #8c8f94 !important; border-radius: 50% !important; }
+.cz-gpalbox > div:last-child { order: 3; flex-basis: 100%; }
+.cz-gpalbox > div:last-child:empty { display: none; }
+.hm-bg .cz-panel-fields > .hm-list { padding: 0 !important; border-bottom: 0 !important; }
+.hm-bg .cz-panel-fields > .hm-lead { margin: 0 !important; padding: 12px 20px !important; border-bottom: 1px solid var(--ast-line) !important; }
+.cz-loc select { width: 100%; height: 36px; padding: 0 8px; border: 1px solid #d5d5d5; border-radius: 3px; font: inherit; font-size: 14px; }
+.cz-locs { padding: 0 !important; }
+.cz-locs > .cz-loc { padding: 16px 24px; border-bottom: 1px solid var(--ast-line); }
