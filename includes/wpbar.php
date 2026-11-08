@@ -89,23 +89,8 @@ function wpbar_html(array $ctx = []): string
     $keep = fn(array $items) => array_values(array_filter($items, fn($i) => !empty($i[3]) && $has($i[2])));
     [, $site] = admin_shell_brand();
 
-    // 1. Menu (the slot of the WordPress logo)
-    $main = $keep([
-        ['dk-dashboard', 'Dashboard', '/admin/dashboard.php', true],
-        ['dk-students', 'Students', '/admin/students.php', $ci],
-        ['dk-fees', 'Fees & Dues', '/admin/ci-fees.php', $ci],
-        ['dk-blog-dash', 'Blog Dashboard', '/admin/blog-dashboard.php', admin_blog_access()],
-        ['dk-analytics', 'Analytics', '/admin/analytics.php', admin_can('analytics.view_basic')],
-        ['dk-seo', 'SEO', '/admin/seo.php', $isAdmin],
-    ]);
-    $main2 = $keep([
-        ['dk-settings', 'Settings', '/admin/general-settings.php', $isAdmin],
-        ['dk-users', 'Users', '/admin/user-manager.php', admin_can('users.create')],
-        ['dk-files', 'File Manager', '/admin/file-manager.php', admin_can('files.access_file_manager')],
-        ['dk-logs', 'Activity Logs', '/admin/activity-logs.php', admin_can('security.view_logs')],
-    ]);
-    $left = wpbar_li('wp-logo', '<span class="ab-icon" aria-hidden="true"></span><span class="screen-reader-text">Admin menu</span>', '/admin/dashboard.php', '',
-        [['wp-logo-default', $main], ['wp-logo-external', $main2, true]]);
+    // 1. (no menu button first: the bar starts with the site name)
+    $left = '';
 
     // 2. Site name: on the site → admin pages; in the admin → a plain link to the site (no "Visit Site" menu)
     if ($inAdmin) {
