@@ -63,11 +63,10 @@ $social = edu_social();
 @media (max-width:820px){.gs-wrap{grid-template-columns:1fr}}
 .gs-nav{display:flex;flex-direction:column;border:1px solid #e5e7eb;background:#fff}
 @media (max-width:820px){.gs-nav{position:static}}
-.gs-nav button{display:flex;align-items:center;gap:12px;padding:12px 14px;border:0;border-bottom:1px solid #e5e7eb;background:#fff;text-align:left;font:600 14px/1.25 inherit;font-family:inherit;color:#374151;cursor:pointer}
+.gs-nav button{display:flex;align-items:center;gap:10px;padding:11px 14px;border:0;border-bottom:1px solid #e5e7eb;background:#fff;text-align:left;font:600 13.5px inherit;font-family:inherit;color:#374151;cursor:pointer}
 .gs-nav button:last-child{border-bottom:0}
-.gs-nav button i{width:20px;text-align:center;color:#6b7280}
-.gs-nav button span{display:flex;flex-direction:column;line-height:1.25;min-width:0}.gs-nav button small{font-weight:500;font-size:11.5px;color:#9ca3af;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.gs-nav button.on{background:var(--ci-acc,#4a3369);color:#fff}.gs-nav button.on i,.gs-nav button.on small{color:rgba(255,255,255,.85)}
+.gs-nav button i{width:18px;text-align:center}
+.gs-nav button.on{background:var(--ci-acc,#4a3369);color:#fff}
 .gs-nav button:not(.on):hover{background:#faf8fd;color:var(--ci-acc,#4a3369)}
 .gs-main{min-width:0}
 .gs-main .wps-section{margin-top:0}
@@ -77,18 +76,11 @@ $social = edu_social();
 <body>
 <?php admin_shell_open('General Settings', 'Site tagline, logo, site icon, contact details, social links &amp; more'); ?>
 <?= admin_flash() ?>
-<?php $nSoc = count(array_filter($social)); $gsTabs = [
-  'identity' => ['fa-id-card', 'Site Identity', edu_site_name()],
-  'contact' => ['fa-address-book', 'Address & Contact', (string)($g['phone'] ?? '') !== '' ? (string)$g['phone'] : 'Phone, email, address'],
-  'smtp' => ['fa-envelope', 'Email (SMTP)', !empty($g['smtp_host']) && !empty($g['smtp_user']) ? 'Set up' : 'Not set up'],
-  'social' => ['fa-share-nodes', 'Social Profiles', $nSoc ? $nSoc . ' linked' : 'None linked'],
-  'seo' => ['fa-magnifying-glass', 'Search Engines', (string)($g['home_description'] ?? '') !== '' ? 'Own description' : 'Built-in description'],
-  'footer' => ['fa-shoe-prints', 'Footer', (string)($g['footer_tagline'] ?? '') !== '' ? 'Own text' : 'Default text'],
-  'date' => ['fa-calendar-day', 'Date Format', date((string)($g['date_format'] ?? 'j F Y'))],
-]; ?>
+<?php $gsTabs = ['identity' => ['fa-id-card', 'Site Identity'], 'contact' => ['fa-address-book', 'Address & Contact'], 'smtp' => ['fa-envelope', 'Email (SMTP)'],
+  'social' => ['fa-share-nodes', 'Social Profiles'], 'seo' => ['fa-magnifying-glass', 'Search Engines'], 'footer' => ['fa-shoe-prints', 'Footer'], 'date' => ['fa-calendar-day', 'Date Format']]; ?>
 <form class="wps-wrap gs-wrap" method="POST">
   <nav class="gs-nav" role="tablist" aria-label="Settings sections">
-    <?php foreach ($gsTabs as $k => [$ic, $lb, $sub]): ?><button type="button" role="tab" data-tab="<?= $k ?>"><i class="fas <?= $ic ?>"></i><span><?= htmlspecialchars($lb) ?><small><?= htmlspecialchars($sub) ?></small></span></button><?php endforeach; ?>
+    <?php foreach ($gsTabs as $k => [$ic, $lb]): ?><button type="button" role="tab" data-tab="<?= $k ?>"><i class="fas <?= $ic ?>"></i> <?= htmlspecialchars($lb) ?></button><?php endforeach; ?>
   </nav>
   <div class="gs-main">
   <?= csrf_field() ?>
