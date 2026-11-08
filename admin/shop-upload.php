@@ -1,7 +1,8 @@
 <?php
 // Chunked upload for store videos / PDFs (the server takes only small requests, so big files come in 4 MB pieces).
 // POST body = raw bytes of one piece. Headers: X-Upload (id), X-Index, X-Total, X-Size, X-Name, X-Kind (v = lesson video,
-// f = PDF), X-Target (lesson id for v; product id for f), X-Title (PDF title), X-Duration (optional), X-CSRF-Token.
+// f = PDF, pm = a PDF for the PDF Media library), X-Target (lesson id for v; product id for f; 0 for pm), X-Title (PDF title),
+// X-Duration (optional), X-CSRF-Token.
 require_once __DIR__ . '/components/guard.php';
 require_once INCLUDES_PATH . '/institute.php';
 require_once INCLUDES_PATH . '/shop.php';
@@ -23,16 +24,19 @@ $okExt = $kind === 'v' ? ['mp4', 'm4v', 'webm', 'mov'] : ['pdf']; // v = lesson 
 $maxSize = ($kind === 'v' ? (int)es('shop', 'max_video_mb', 4096) : 300) * 1024 * 1024; // PDFs up to 300 MB
 if (!preg_match('/^[a-f0-9]{16,40}$/', $upId) || $total < 1 || $idx < 0 || $idx >= $total || $size < 1) $out(['error' => 'Bad upload request'], 400);
 if ($kind === 'v') $out(['error' => 'Videos are not uploaded to the server any more — paste the video link (YouTube or any other source) in the lecture.'], 400);
-if (!in_array($kind, ['v', 'f', 'lp', 'ln'], true) || !$target) $out(['error' => 'Bad upload request'], 400);
+if (!in_array($kind, ['v', 'f', 'lp', 'ln', 'pm'], true) || (!$target && $kind !== 'pm')) $out(['error' => 'Bad upload request'], 400);
 if (!in_array($ext, $okExt, true)) $out(['error' => $kind === 'v' ? 'Please upload an MP4 video (WebM / MOV also accepted).' : 'Please upload a PDF file.'], 400);
 if ($size > $maxSize) $out(['error' => 'The file is too large (max ' . round($maxSize / 1048576) . ' MB).'], 400);
 
 // the lesson / product must exist
 $qual = preg_match('/^(1080|720|480|360|240)$/', $h('X_QUALITY')) ? $h('X_QUALITY') : ''; // '' = the main (original) video
-if ($kind === 'v' || $kind === 'lp' || $kind === 'ln') { $q = $pdo->prepare("SELECT id, product_id, video_file, variants, pdf_file FROM sh_lessons WHERE id = ?"); }
-else { $q = $pdo->prepare("SELECT id, id AS product_id FROM sh_products WHERE id = ?"); }
-$q->execute([$target]);
-$row = $q->fetch(PDO::FETCH_ASSOC);
+if ($kind === 'pm') $row = ['id' => 0, 'product_id' => 'library'];
+else {
+    if ($kind === 'v' || $kind === 'lp' || $kind === 'ln') { $q = $pdo->prepare("SELECT id, product_id, video_file, variants, pdf_file FROM sh_lessons WHERE id = ?"); }
+    else { $q = $pdo->prepare("SELECT id, id AS product_id FROM sh_products WHERE id = ?"); }
+    $q->execute([$target]);
+    $row = $q->fetch(PDO::FETCH_ASSOC);
+}
 if (!$row) $out(['error' => $kind === 'f' ? 'Product not found.' : 'Lecture not found.'], 404);
 
 $dir = sh_media_dir();
@@ -68,9 +72,9 @@ if (filesize($part) !== $size) { @unlink($part); @unlink($meta); $out(['error' =
 $head = (string)file_get_contents($part, false, null, 0, 16);
 $looks = $kind !== 'v' ? str_starts_with($head, '%PDF') : (substr($head, 4, 4) === 'ftyp' || str_starts_with($head, "\x1A\x45\xDF\xA3") || in_array(substr($head, 4, 4), ['moov', 'mdat', 'free', 'wide'], true));
 if (!$looks) { @unlink($part); @unlink($meta); $out(['error' => $kind !== 'v' ? 'This is not a real PDF file.' : 'This does not look like a video file.'], 400); }
-$pid = (int)$row['product_id'];
+$pid = $kind === 'pm' ? 'library' : (int)$row['product_id'];
 @mkdir($dir . '/' . $pid, 0750, true);
-$rel = $pid . '/' . ($kind === 'v' ? 'v' . $target . ($qual !== '' ? '-' . $qual . 'p' : '') : ($kind === 'lp' ? 'p' . $target : ($kind === 'ln' ? 'n' . $target : 'f'))) . '-' . bin2hex(random_bytes(6)) . '.' . $ext;
+$rel = $pid . '/' . ($kind === 'pm' ? 'pm' : ($kind === 'v' ? 'v' . $target . ($qual !== '' ? '-' . $qual . 'p' : '') : ($kind === 'lp' ? 'p' . $target : ($kind === 'ln' ? 'n' . $target : 'f')))) . '-' . bin2hex(random_bytes(6)) . '.' . $ext;
 if (!@rename($part, $dir . '/' . $rel)) { @unlink($part); @unlink($meta); $out(['error' => 'Could not save the file on the server.'], 500); }
 @unlink($meta);
 @chmod($dir . '/' . $rel, 0640);
@@ -105,6 +109,12 @@ if ($kind === 'lp') { // the lecture itself is a PDF
 $title = trim(rawurldecode($h('X_TITLE'))) ?: preg_replace('/\.pdf$/i', '', $name);
 $pages = null;
 if (preg_match_all('#/Type\s*/Page[^s]#', (string)file_get_contents($dir . '/' . $rel, false, null, 0, 20 * 1024 * 1024), $mm)) $pages = count($mm[0]) ?: null;
+if ($kind === 'pm') { // into the PDF Media library
+    $pdo->prepare("INSERT INTO sh_pdf_media (title, file, size, pages, created_by) VALUES (?, ?, ?, ?, ?)")->execute([mb_substr($title, 0, 200), $rel, $size, $pages, (int)$me['id']]);
+    $mid = (int)$pdo->lastInsertId();
+    admin_log('shop_upload', "Uploaded PDF \"$title\" to PDF Media");
+    $out(['ok' => true, 'done' => true, 'id' => $mid, 'title' => mb_substr($title, 0, 200), 'pages' => $pages, 'size' => $size]);
+}
 $sort = (int)$pdo->query("SELECT COALESCE(MAX(sort),0) + 1 FROM sh_files WHERE product_id = $pid")->fetchColumn();
 $pdo->prepare("INSERT INTO sh_files (product_id, title, file, size, pages, free, sort, lesson_id) VALUES (?, ?, ?, ?, ?, 0, ?, ?)")->execute([$pid, mb_substr($title, 0, 200), $rel, $size, $pages, $sort, $kind === 'ln' ? $target : null]); // ln = notes of one lecture
 admin_log('shop_upload', "Uploaded PDF \"$title\" to store product #$pid");

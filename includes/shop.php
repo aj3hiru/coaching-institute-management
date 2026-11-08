@@ -14,7 +14,7 @@
  */
 require_once __DIR__ . '/settings.php';
 
-const SH_SCHEMA = 13;
+const SH_SCHEMA = 14;
 
 function sh_db(): PDO
 {
@@ -151,6 +151,11 @@ function sh_tables(PDO $pdo): void
     $add('hm_slides', 'show_t', 'TINYINT(1) NOT NULL DEFAULT 1');
     $add('hm_slides', 'show_d', 'TINYINT(1) NOT NULL DEFAULT 1');
     $add('hm_free', 'thumb_custom', 'VARCHAR(255) NULL');
+    // v14: PDF Media — a library of PDFs (each with its title) that lectures pick their notes from; a lecture's own picture
+    $pdo->exec("CREATE TABLE IF NOT EXISTS sh_pdf_media (
+        id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, title VARCHAR(200) NOT NULL, file VARCHAR(255) NOT NULL, size BIGINT UNSIGNED NOT NULL DEFAULT 0,
+        pages INT UNSIGNED NULL, created_by INT UNSIGNED NULL, created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP, KEY k_created (created_at))$t");
+    $add('sh_lessons', 'thumb', 'VARCHAR(255) NULL');
     // v13: a free course can name its teacher; a chapter can be linked to a YouTube playlist (new videos are fetched)
     $add('hm_free', 'teacher_id', 'INT UNSIGNED NULL');
     $add('sh_sections', 'yt_list', 'VARCHAR(64) NULL');
@@ -477,6 +482,14 @@ function sh_variants(array $l): array
     return $v;
 }
 
+/** Deletes a private media file — except a PDF of the PDF Media library (library/…), which belongs to the library and
+    may be used by other lectures; the library page deletes those itself. */
+function sh_media_unlink(?string $rel): void
+{
+    $rel = (string)$rel;
+    if ($rel === '' || str_starts_with(ltrim($rel, '/'), 'library/')) return;
+    $p = sh_media_path($rel); if (is_file($p)) @unlink($p);
+}
 /** Sends a file with HTTP range support (video seeking). */
 function sh_send_file(string $path, string $mime, string $downloadName = '', bool $inline = true): void
 {
@@ -486,7 +499,8 @@ function sh_send_file(string $path, string $mime, string $downloadName = '', boo
     header('Accept-Ranges: bytes');
     header('Cache-Control: private, no-store');
     header('X-Content-Type-Options: nosniff');
-    header('Content-Disposition: ' . ($inline ? 'inline' : 'attachment') . '; filename="' . preg_replace('/[^A-Za-z0-9._ -]/', '', $downloadName ?: basename($path)) . '"');
+    $dn = $downloadName ?: basename($path); // the saved file is named after its title (filename* keeps Hindi and other letters)
+    header('Content-Disposition: ' . ($inline ? 'inline' : 'attachment') . '; filename="' . (trim(preg_replace('/[^A-Za-z0-9._ ()-]+/', ' ', $dn)) ?: 'file') . '"; filename*=UTF-8\'\'' . rawurlencode(str_replace(['/', '\\', '"'], '-', $dn)));
     if (!empty($_SERVER['HTTP_RANGE']) && preg_match('/bytes=(\d*)-(\d*)/', $_SERVER['HTTP_RANGE'], $m)) {
         if ($m[1] === '' && $m[2] !== '') { $start = max(0, $size - (int)$m[2]); }
         else { $start = (int)$m[1]; if ($m[2] !== '') $end = min((int)$m[2], $size - 1); }
@@ -967,9 +981,10 @@ function sh_yt_playlist_cached(string $list): array
     if ($new) { if (!is_dir($dir)) @mkdir($dir, 0755, true); @file_put_contents($f, json_encode($new, JSON_UNESCAPED_UNICODE)); return $new; }
     return $old;
 }
-/** A lesson's small picture: YouTube's, '' for a PDF lesson, else the course picture. */
+/** A lesson's small picture: its own featured image, else YouTube's, '' for a PDF lesson, else the course picture. */
 function sh_lesson_thumb(array $l, array $p): string
 {
+    if (!empty($l['thumb'])) return (string)$l['thumb']; // the lecture's own featured image
     if (($l['kind'] ?? 'video') === 'pdf') return '';
     if (!empty($l['video_url']) && ($yid = sh_yt_id((string)$l['video_url']))) return 'https://i.ytimg.com/vi/' . $yid . '/mqdefault.jpg';
     return (string)($p['thumb'] ?? '');

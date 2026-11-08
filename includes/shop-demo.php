@@ -554,7 +554,7 @@ function sh_demo_remove(PDO $pdo): string
     foreach (['sh_lessons', 'sh_sections', 'sh_units', 'sh_files'] as $t) $pdo->exec("DELETE FROM $t WHERE product_id IN (" . $in($pids) . ")");
     $pdo->exec("DELETE FROM sh_products WHERE id IN (" . $in($pids) . ")");
     $pdo->exec("DELETE FROM sh_users WHERE id IN (" . $in($uids) . ")");
-    foreach ($files as $f) { $p = sh_media_path($f); if (is_file($p)) @unlink($p); } // every file of the demo products (also ones uploaded later)
+    foreach ($files as $f) sh_media_unlink($f); // every file of the demo products (also ones uploaded later)
     foreach ($pids as $pid) @rmdir(sh_media_dir() . '/' . $pid);
     // showcase parts: slider, free courses, teacher accounts, category icons, the impact number
     foreach (array_map('intval', $d['slides']) as $sid) {

@@ -28,4 +28,4 @@ if (!is_file($path)) $deny(404);
 $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
 $mime = ['mp4' => 'video/mp4', 'm4v' => 'video/mp4', 'webm' => 'video/webm', 'mov' => 'video/quicktime', 'mkv' => 'video/x-matroska', 'pdf' => 'application/pdf'][$ext] ?? 'application/octet-stream';
 $dl = $k !== 'v' && !empty($_GET['dl']); // PDFs: dl=1 downloads the file (same access checks as reading)
-sh_send_file($path, $mime, (sh_slug((string)$r['title']) ?: 'notes') . '.' . $ext, !$dl);
+sh_send_file($path, $mime, (trim(preg_replace('/\s+/', ' ', (string)$r['title'])) ?: 'notes') . '.' . $ext, !$dl); // downloaded under the title given to it

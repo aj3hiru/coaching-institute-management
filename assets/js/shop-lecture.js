@@ -9,8 +9,9 @@
   var $ = function (s) { return f.querySelector(s); }, $$ = function (s) { return [].slice.call(f.querySelectorAll(s)); };
 
   // --- what is shown -------------------------------------------------------
+  function kindV() { var k = f.querySelector('[name=kind]:checked') || f.querySelector('[name=kind]'); return k ? k.value : 'video'; } // lectures are videos (old PDF lectures keep 'pdf')
   function sync() {
-    var pdf = $('[name=kind]:checked').value === 'pdf';
+    var pdf = kindV() === 'pdf';
     $$('.slc-video').forEach(function (e) { e.hidden = pdf; }); $$('.slc-pdf').forEach(function (e) { e.hidden = !pdf; });
   }
   $$('[name=kind]').forEach(function (r) { r.addEventListener('change', sync); }); sync();
@@ -79,21 +80,23 @@
     if (rm) { var r = rm.closest('.slc-row'), b = r.parentNode; if (b.children.length > 1) r.remove(); else r.querySelectorAll('input:not([type=radio]), textarea').forEach(function (x) { x.value = ''; }); }
   });
 
-  // --- notes PDFs: pick one or many, each with its own name ----------------
-  var notesPick = $('#slcNotes'), notesList = $('#slcNoteList'), newNotes = [];
-  $('#slcNotesAdd').addEventListener('click', function () { notesPick.click(); });
-  notesPick.addEventListener('change', function () {
-    [].forEach.call(notesPick.files, function (file) {
-      if (!/\.pdf$/i.test(file.name)) { msg.textContent = file.name + ' is not a PDF.'; return; }
-      var row = document.createElement('div'); row.className = 'slc-nrow';
-      row.innerHTML = '<span class="slc-nico">PDF</span><input maxlength="200" aria-label="Notes name"><small>' + (file.size / 1048576).toFixed(1) + ' MB · new</small><button type="button" class="slc-nrm" style="border:0;background:none;cursor:pointer">Remove</button>';
-      row.querySelector('input').value = file.name.replace(/\.pdf$/i, '').replace(/[_-]+/g, ' ');
-      var nin = row.querySelector('input'); nin.addEventListener('focus', function once() { nin.removeEventListener('focus', once); setTimeout(function () { nin.select(); }, 0); });
-      var item = { f: file, row: row }; newNotes.push(item);
-      row.querySelector('button').addEventListener('click', function () { newNotes.splice(newNotes.indexOf(item), 1); row.remove(); });
-      notesList.appendChild(row);
-    });
-    notesPick.value = '';
+  // --- notes PDFs: chosen from PDF Media (upload new ones there), each with its own title; "Add more PDFs" adds more -----
+  var notesList = $('#slcNoteList'), notesBtn = $('#slcNotesAdd');
+  function notesLabel() { notesBtn.querySelector('span').textContent = notesList.children.length ? 'Add more PDFs' : 'Add notes PDF'; }
+  notesBtn.addEventListener('click', function () {
+    if (!window.PdfMedia) { msg.textContent = 'PDF Media is still loading — try again in a moment.'; return; }
+    PdfMedia.open({ onPick: function (items) {
+      items.forEach(function (it) {
+        if (notesList.querySelector('[data-mid="' + it.id + '"]')) return; // already added
+        var row = document.createElement('div'); row.className = 'slc-nrow'; row.dataset.mid = it.id;
+        row.innerHTML = '<span class="slc-nico">PDF</span><input name="note_mtitle[' + it.id + ']" maxlength="200" aria-label="PDF title" title="Title — students see it and the downloaded file gets this name"><small>' + (it.pages ? it.pages + (it.pages === 1 ? ' page · ' : ' pages · ') : '') + 'from PDF Media · new</small>'
+          + '<button type="button" class="slc-nrm" style="border:0;background:none;cursor:pointer">Remove</button><input type="hidden" name="note_media[]" value="' + it.id + '">';
+        row.querySelector('input').value = it.title;
+        row.querySelector('button').addEventListener('click', function () { row.remove(); notesLabel(); });
+        notesList.appendChild(row);
+      });
+      notesLabel();
+    } });
   });
 
   // --- save, then upload ---------------------------------------------------
@@ -126,13 +129,121 @@
       v.onerror = function () { fin({}); }; setTimeout(function () { fin({}); }, 8000); v.src = u;
     });
   }
+  // --- bulk add: paste many VVI questions or MCQs at once (the same format as GK Quiz in the post editor) -----------
+  var HI = { 'क': 'A', 'ख': 'B', 'ग': 'C', 'घ': 'D', 'ङ': 'E', 'च': 'F' };
+  var reQ = /^\s*(?:Q(?:ues(?:tion)?)?\s*\.?\s*|प्रश्न\s*|प्र\.\s*)?(\d{1,4})\s*[.)\-:।]\s*(.+)$/i;
+  function mcqParse(text) {
+    var qs = [], errs = [], cur = null, mode = '';
+    var letter = function (x) { return HI[x] || String(x).toUpperCase(); };
+    var reA = /^\s*(?:ans(?:wer)?|correct(?:\s*answer)?|सही\s*उत्तर|उत्तर)\s*[:\-–=.]?\s*(?:[(\[]?\s*([A-Fa-fकखगघङच])\s*[)\]]?(?=$|[\s.)\-:।])\s*[.)\-:।]?\s*)?(.*)$/i;
+    var reE = /^\s*(?:explanation|exp|solution|व्याख्या|हल|स्पष्टीकरण)\s*[:\-–.]\s*(.*)$/i;
+    var reO = /^\s*(?:\(\s*([A-Fa-fकखगघङच])\s*\)|([A-Fa-fकखगघङच])\s*[.)\-:।])\s*(.+)$/;
+    text.replace(/\r/g, '').split('\n').forEach(function (raw, i) {
+      var line = raw.trim(), m;
+      if (!line) { if (mode === 'exp') mode = 'exp-gap'; return; }
+      if (cur && (m = line.match(reA)) && /^(ans|correct|सही|उत्तर)/i.test(line)) {
+        var l = m[1] ? letter(m[1]) : '';
+        if (!l && m[2]) { var t = m[2].trim().toLowerCase(); var hit = cur.opts.filter(function (o) { return o.t.toLowerCase() === t; })[0]; if (hit) l = hit.l; }
+        cur.ans = l; mode = 'ans'; return;
+      }
+      if (cur && (m = line.match(reE))) { cur.exp = m[1].trim(); mode = 'exp'; return; }
+      if ((m = line.match(reQ)) && !(cur && cur.opts.length && cur.opts.length < 2)) { cur = { q: m[2].trim(), opts: [], ans: '', exp: '', line: i + 1 }; qs.push(cur); mode = 'q'; return; }
+      if (cur && (m = line.match(reO))) {
+        var tt = m[3].trim(), ll = letter(m[1] || m[2]);
+        if (/\s*[*✔✓]\s*$/.test(tt) || /^[*✔✓]\s*/.test(tt)) { tt = tt.replace(/^[*✔✓]\s*|\s*[*✔✓]\s*$/g, ''); cur.ans = ll; }
+        cur.opts.push({ l: ll, t: tt }); mode = 'opt'; return;
+      }
+      if (cur && (mode === 'exp' || mode === 'exp-gap')) { cur.exp += (cur.exp ? ' ' : '') + line; mode = 'exp'; return; }
+      if (cur && mode === 'q') { cur.q += ' ' + line; return; }
+      errs.push(cur ? 'Line ' + (i + 1) + ' not understood: ' + line.slice(0, 60) : 'Line ' + (i + 1) + ': write a question number first, e.g. "1. Question"');
+    });
+    qs.forEach(function (q, n) {
+      if (q.opts.length < 2) errs.push('Question ' + (n + 1) + ' (line ' + q.line + '): needs at least 2 options (A. … B. …)');
+      else if (q.opts.length > 4) errs.push('Question ' + (n + 1) + ' (line ' + q.line + '): at most 4 options (A–D)');
+      else if (!q.ans) errs.push('Question ' + (n + 1) + ' (line ' + q.line + '): add the right answer, e.g. "Answer: B" or a * after the right option');
+      else if (!q.opts.some(function (o) { return o.l === q.ans; })) errs.push('Question ' + (n + 1) + ': answer ' + q.ans + ' is not one of its options');
+    });
+    if (!qs.length && !errs.length) errs.push('No questions found.');
+    return { qs: qs, errs: errs };
+  }
+  function vviParse(text) {
+    var qs = [], errs = [], cur = null, mode = '';
+    var reAns = /^\s*(?:ans(?:wer)?|उत्तर|सही\s*उत्तर|हल|solution)\s*[:\-–=.]\s*(.*)$/i;
+    text.replace(/\r/g, '').split('\n').forEach(function (raw, i) {
+      var line = raw.trim(), m;
+      if (!line) return;
+      if (cur && (m = line.match(reAns))) { cur.a = m[1].trim(); mode = 'a'; return; }
+      if ((m = line.match(reQ))) { cur = { q: m[2].trim(), a: '', line: i + 1 }; qs.push(cur); mode = 'q'; return; }
+      if (cur && mode === 'a') { cur.a += '\n' + line; return; }
+      if (cur && mode === 'q') { cur.q += ' ' + line; return; }
+      errs.push('Line ' + (i + 1) + ': write a question number first, e.g. "1. Question"');
+    });
+    qs.forEach(function (q, n) { if (!q.a) errs.push('Question ' + (n + 1) + ' (line ' + q.line + '): add the answer, e.g. "Answer: …"'); });
+    if (!qs.length && !errs.length) errs.push('No questions found.');
+    return { qs: qs, errs: errs };
+  }
+  function rowEmpty(row) { return ![].some.call(row.querySelectorAll('input:not([type=radio]), textarea'), function (x) { return x.value.trim(); }); }
+  function nextRow(box) { // the first empty row, or a new one (the Add button clones the last row)
+    var rows = box.querySelectorAll(':scope > .slc-row'), last = rows[rows.length - 1];
+    if (last && rowEmpty(last)) return last;
+    f.querySelector('[data-add="' + box.id + '"]').click();
+    rows = box.querySelectorAll(':scope > .slc-row'); return rows[rows.length - 1];
+  }
+  var BULK = {
+    vvi: { title: 'Bulk add VVI questions', box: '#slcVqa', parse: vviParse, sample: '1. What is a noun?\nAnswer: A noun is the name of a person, place, animal or thing.\n\n2. भारत की राजधानी क्या है?\nउत्तर: नई दिल्ली', help: 'Question with a number, then <code>Answer:</code> (or <code>उत्तर:</code>). An answer can have more lines.',
+      fill: function (q) { var row = nextRow($('#slcVqa')); row.querySelector('[name="vq[]"]').value = q.q; row.querySelector('[name="va[]"]').value = q.a; } },
+    quiz: { title: 'Bulk add MCQs', box: '#slcQz', parse: mcqParse, sample: '1. भारत की राजधानी क्या है?\nA. मुंबई\nB. नई दिल्ली\nC. कोलकाता\nD. चेन्नई\nAnswer: B\nExplanation: नई दिल्ली 1931 से राजधानी है।', help: 'Also works: <code>Q1.</code> / <code>प्रश्न 1.</code>, options <code>(A)</code> or <code>क.</code> <code>ख.</code>, answer <code>उत्तर: ख</code> / <code>Ans: B</code>, or a <code>*</code> after the right option. Explanation is optional. Up to 4 options (A–D).',
+      fill: function (q) {
+        var row = nextRow($('#slcQz'));
+        row.querySelector('input[name^="qq["]').value = q.q;
+        var ops = row.querySelectorAll('input[name^="qo["]'), rad = row.querySelectorAll('input[type=radio]');
+        [].forEach.call(ops, function (o, k) { o.value = q.opts[k] ? q.opts[k].t : ''; });
+        var ai = q.opts.map(function (o) { return o.l; }).indexOf(q.ans); [].forEach.call(rad, function (r, k) { r.checked = k === ai; });
+        var e = row.querySelector('input[name^="qe["]'); if (e) e.value = q.exp || '';
+      } },
+  };
+  f.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-bulk]'); if (!b) return;
+    var cfg = BULK[b.getAttribute('data-bulk')];
+    var m = document.createElement('div'); m.className = 'pm-modal';
+    m.innerHTML = '<div class="pm-box slc-bulk" role="dialog" aria-modal="true" style="max-width:820px"><div class="pm-head"><h3>' + cfg.title + '</h3><button type="button" class="ci-btn ci-ghost ci-sm" data-x aria-label="Close"><i class="fas fa-times"></i></button></div>'
+      + '<div class="pm-body"><p class="slc-sub" style="margin:0 0 6px"><b>Format</b> — one question after another (paste 100 at once):</p><pre></pre><p class="slc-sub">' + cfg.help + '</p><textarea placeholder="Paste or type the questions here…"></textarea><p class="slc-berr" hidden></p></div>'
+      + '<div class="pm-foot"><span class="ci-muted">They are added below the questions already there — you can still edit each one.</span><span style="display:flex;gap:8px"><button type="button" class="ci-btn ci-ghost" data-x>Cancel</button><button type="button" class="ci-btn" data-go><i class="fas fa-plus"></i> Add questions</button></span></div></div>';
+    m.querySelector('pre').textContent = cfg.sample;
+    document.body.appendChild(m); var ta = m.querySelector('textarea'), er = m.querySelector('.slc-berr'); ta.focus();
+    var close = function () { m.remove(); };
+    m.addEventListener('click', function (ev) { if (ev.target === m || ev.target.closest('[data-x]')) close(); });
+    m.querySelector('[data-go]').addEventListener('click', function () {
+      var r = cfg.parse(ta.value || '');
+      if (r.errs.length) { er.hidden = false; er.textContent = r.errs.slice(0, 8).join('\n') + (r.errs.length > 8 ? '\n… and ' + (r.errs.length - 8) + ' more' : ''); return; }
+      r.qs.forEach(cfg.fill); close(); gate();
+      msg.style.color = '#15803d'; msg.textContent = r.qs.length + ' question' + (r.qs.length === 1 ? '' : 's') + ' added.';
+    });
+  });
+
+  // --- featured image: chosen from the Media Library (or uploaded there); else the video's own picture --------------
+  var thumbIn = $('#slcThumb'), thumbBox = $('#slcThumbBox'), thumbRm = $('#slcThumbRm');
+  function ytId(u) { var m = String(u || '').match(/(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/|v\/))([\w-]{11})/); return m ? m[1] : ''; }
+  function paintThumb() {
+    if (!thumbBox) return;
+    var own = thumbIn.value.trim(), yt = ytId(url && url.value);
+    thumbBox.innerHTML = own ? '<img class="slc-thumb" alt="" src="' + esc(own) + '">' : (yt ? '<img class="slc-thumb" alt="" src="https://i.ytimg.com/vi/' + yt + '/hqdefault.jpg"><small class="slc-sub" style="display:block;margin-top:4px">From the YouTube video</small>' : '<span class="slc-thumb-empty">No picture yet</span>');
+    thumbRm.hidden = !own;
+  }
+  if (thumbBox) {
+    $('#slcThumbPick').addEventListener('click', function () { if (!window.EduMedia) { msg.textContent = 'The Media Library is still loading — try again.'; return; } EduMedia.pick(function (it) { thumbIn.value = it.path; paintThumb(); }); });
+    thumbRm.addEventListener('click', function () { thumbIn.value = ''; paintThumb(); });
+    if (url) { url.addEventListener('input', paintThumb); url.addEventListener('change', paintThumb); }
+    paintThumb();
+  }
+
   // --- one step after another: the whole form stays open, but a part works only when the required part before it is filled
   //     chapter → lecture name → video link (or the PDF) → everything else (notes, VVI, quiz, options, save)
   var pdfIn = $('#slcPdf'), keptVideo = !!f.querySelector('.slc-kept');
   function stepsOk() {
     var chapter = sec.value !== '-1' ? !!sec.value : !!secNew.querySelector('input').value.trim();
     var name = chapter && !!title.value.trim();
-    var pdf = $('[name=kind]:checked').value === 'pdf';
+    var pdf = kindV() === 'pdf';
     var media = name && (pdf ? !!(pdfIn && (pdfIn.files.length || pdfIn.dataset.has)) : (/^https?:\/\/\S+$/i.test(url.value.trim()) || keptVideo));
     return { 2: chapter, 3: name, 4: media, need4: pdf ? 'Choose the lecture PDF first.' : 'Paste the video link first.' };
   }
@@ -152,14 +263,13 @@
   gate();
   $$('[data-next]').forEach(function (b) { if (b.tagName === 'BUTTON') b.addEventListener('click', function () { $('#slcNext').value = '1'; }); });
   f.addEventListener('submit', function (e) {
-    var pdfKind = $('[name=kind]:checked').value === 'pdf';
+    var pdfKind = kindV() === 'pdf';
     if (!pdfKind && !url.value.trim() && !f.querySelector('.slc-kept')) { e.preventDefault(); url.focus(); msg.textContent = 'Paste the video link.'; return; }
     if (sec.value === '-1' && !secNew.querySelector('input').value.trim()) { e.preventDefault(); secNew.querySelector('input').focus(); msg.textContent = 'Write the new chapter name.'; return; }
     if (unit.value === '-1' && !unitNew.querySelector('input').value.trim()) { e.preventDefault(); unitNew.querySelector('input').focus(); msg.textContent = 'Write the new unit name.'; return; }
     var jobs = [];
     var pf = $('#slcPdf'); // videos are links now: only PDFs are uploaded
     if (pdfKind && pf && pf.files[0]) jobs.push({ f: pf.files[0], kind: 'lp', label: 'lecture PDF' });
-    newNotes.forEach(function (n) { jobs.push({ f: n.f, kind: 'ln', label: n.f.name, title: n.row.querySelector('input').value.trim() || n.f.name.replace(/\.pdf$/i, '') }); });
     var bad = jobs.filter(function (j) { return j.kind !== 'v' && !/\.pdf$/i.test(j.f.name); });
     if (bad.length) { e.preventDefault(); msg.textContent = bad[0].f.name + ' is not a PDF.'; return; }
     if (!jobs.length) return; // nothing to upload: a normal save

@@ -159,7 +159,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             case 'delete_lesson':
                 if (!(int)$pdo->query("SELECT COUNT(*) FROM sh_lessons WHERE id = $id AND product_id = $pid")->fetchColumn()) break;
                 shc_drop_media($pdo, $id);
-                foreach ($pdo->query("SELECT file FROM sh_files WHERE lesson_id = $id")->fetchAll(PDO::FETCH_COLUMN) as $nf) { $nf = sh_media_path($nf); if (is_file($nf)) @unlink($nf); }
+                foreach ($pdo->query("SELECT file FROM sh_files WHERE lesson_id = $id")->fetchAll(PDO::FETCH_COLUMN) as $nf) sh_media_unlink($nf);
                 $pdo->exec("DELETE FROM sh_files WHERE lesson_id = $id"); $pdo->exec("DELETE FROM sh_doubts WHERE lesson_id = $id");
                 $pdo->prepare("DELETE FROM sh_lessons WHERE id = ? AND product_id = ?")->execute([$id, $pid]);
                 $pdo->prepare("DELETE FROM sh_progress WHERE lesson_id = ?")->execute([$id]);
@@ -189,7 +189,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             case 'delete_file':
                 $old = $pdo->query("SELECT file FROM sh_files WHERE id = $id AND product_id = $pid")->fetchColumn();
                 $pdo->prepare("DELETE FROM sh_files WHERE id = ? AND product_id = ?")->execute([$id, $pid]);
-                if ($old) { $f = sh_media_path($old); if (is_file($f)) @unlink($f); }
+                if ($old) sh_media_unlink($old);
                 admin_flash('PDF deleted.');
                 break;
             case 'move_file':

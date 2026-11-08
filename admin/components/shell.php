@@ -93,6 +93,7 @@ function admin_shell_nav(): array
                 $link(sh_perm($cu, 'products'), 'Online Courses', '/admin/shop-products.php?type=course', 'fa-photo-film'),
                 $link(sh_perm($cu, 'products'), 'Add Lecture', '/admin/shop-lecture.php', 'fa-film'),
                 $link(sh_perm($cu, 'products'), 'PDF Notes', '/admin/shop-products.php?type=notes', 'fa-file-pdf'),
+                $link(sh_perm($cu, 'products'), 'PDF Media', '/admin/shop-pdfs.php', 'fa-folder-open'), // the library lectures pick their notes from
                 $link(sh_perm($cu, 'products'), 'Categories', '/admin/shop-categories.php', 'fa-shapes'),
                 $link(sh_perm($cu, 'teacher') || sh_perm($cu, 'products') || sh_perm($cu, 'customers'), 'Doubts', '/admin/shop-doubts.php', 'fa-circle-question'),
                 $link(sh_perm($cu, 'orders'), 'Orders', '/admin/shop-orders.php', 'fa-cart-shopping'),

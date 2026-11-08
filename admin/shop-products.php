@@ -63,7 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             foreach ($pdo->query("SELECT file FROM sh_files WHERE product_id = $id")->fetchAll(PDO::FETCH_COLUMN) as $f) $media[] = $f;
             foreach (['sh_lessons', 'sh_sections', 'sh_units', 'sh_files', 'sh_orders', 'sh_reviews', 'sh_doubts'] as $t) $pdo->exec("DELETE FROM $t WHERE product_id = $id");
             $pdo->exec("DELETE FROM sh_products WHERE id = $id");
-            foreach ($media as $f) { $pth = sh_media_path($f); if (is_file($pth)) @unlink($pth); }
+            foreach ($media as $f) sh_media_unlink($f);
             admin_log('shop_product', "Deleted store product #$id");
             admin_flash('Deleted.');
         }
