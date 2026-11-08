@@ -1,7 +1,8 @@
 <?php
 // Online store → Add / edit a lecture, step by step:
 //   type (video / PDF) → course → chapter (+ new) → unit (+ new, optional) → lecture no. (next by default) → name (made for you)
-//   → video: upload to our server OR any link (YouTube, Google Drive, Vimeo, an MP4 on any server) checked at once
+//   → video: a link only (YouTube, Google Drive, Vimeo, an MP4 on any server) — its name, picture and length are fetched
+//     at once; videos are no longer uploaded to our server (lectures uploaded before keep playing)
 //   → notes PDF of the lecture → VVI questions (your own Q&A + website / PDF links) → quiz (MCQs + links) → doubts on / off.
 //   /admin/shop-lecture.php?course=ID (&chapter=ID)   /admin/shop-lecture.php?id=LESSON
 require_once __DIR__ . '/components/guard.php';
@@ -54,10 +55,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $P) {
     $no = max(1, (int)($_POST['lecture_no'] ?? 1));
     $title = trim((string)($_POST['title'] ?? ''));
     if ($title === '') $fail('Write the lecture name.');
-    $src = (string)($_POST['source'] ?? 'upload');
-    $url = $kind === 'video' && $src === 'link' ? trim((string)($_POST['video_url'] ?? '')) : '';
-    if ($kind === 'video' && $src === 'link' && !preg_match('#^https?://#i', $url)) $fail('Paste the video link (it starts with https://).');
+    $url = $kind === 'video' ? trim((string)($_POST['video_url'] ?? '')) : '';
+    $keepUpload = $kind === 'video' && $url === '' && $L && !empty($L['video_file']); // a video uploaded before keeps playing until a link replaces it
+    $src = $url !== '' ? 'link' : 'keep';
+    if ($kind === 'video' && !$keepUpload && !preg_match('#^https?://\S+$#i', $url)) $fail('Paste the video link (YouTube, Google Drive, Vimeo or an MP4 link — it starts with https://).');
     $dur = preg_match('/^\d{1,3}:\d{2}(:\d{2})?$/', trim((string)($_POST['duration'] ?? ''))) ? trim((string)$_POST['duration']) : null;
+    if ($kind === 'video' && $url !== '' && !$dur) { $pr = sh_video_probe($url); if (!empty($pr['duration']) && preg_match('/^\d{1,3}:\d{2}(:\d{2})?$/', $pr['duration'])) $dur = $pr['duration']; } // length fetched from the link
     // VVI: Q&A + links
     $vqa = []; foreach ((array)($_POST['vq'] ?? []) as $i => $qq) { $qq = trim((string)$qq); $aa = trim((string)($_POST['va'][$i] ?? '')); if ($qq !== '') $vqa[] = ['q' => mb_substr($qq, 0, 1000), 'a' => mb_substr($aa, 0, 5000)]; }
     $vl = []; foreach ((array)($_POST['vlu'] ?? []) as $i => $uu) { $uu = trim((string)$uu); if (preg_match('#^https?://\S+$#i', $uu)) $vl[] = ['t' => mb_substr(trim((string)($_POST['vlt'][$i] ?? '')) ?: 'Read more', 0, 150), 'u' => mb_substr($uu, 0, 500)]; }
@@ -148,6 +151,8 @@ $vv = $L ? sh_variants($L) : [];
 .slc-seg{display:flex;border:1px solid #d1d5db;width:max-content;max-width:100%}.slc-seg label{display:flex;align-items:center;gap:8px;padding:10px 16px;cursor:pointer;font-weight:700;font-size:14px;margin:0}
 .slc-seg label:has(input:checked){background:var(--ci-acc,#4a3369);color:#fff}.slc-seg input{accent-color:#fff;margin:0}
 .slc-new{display:flex;gap:8px;margin-top:6px}.slc-new input{flex:1}
+.meta-panel.slc-locked{opacity:.5}.meta-panel.slc-locked .meta-panel-body{pointer-events:none;user-select:none}
+.slc-need{display:block;margin:-2px 0 0;padding:6px 12px;background:#fffbeb;border-bottom:1px solid #fde68a;color:#92400e;font-size:12.5px;font-weight:600}
 .slc-probe{margin-top:10px;border:1px solid #e5e7eb;padding:10px 12px;display:none;gap:12px;align-items:center;font-size:14px}
 .slc-probe.ok{display:flex;border-color:#86efac;background:#f0fdf4}.slc-probe.bad{display:flex;border-color:#fecaca;background:#fef2f2;color:#991b1b}.slc-probe.wait{display:flex;color:#6b7280}
 .slc-probe img{width:96px;height:54px;object-fit:cover;flex:0 0 auto}.slc-probe b{display:block}.slc-probe small{color:#6b7280}
@@ -179,22 +184,20 @@ $vv = $L ? sh_variants($L) : [];
 <div class="editor-layout sx-layout">
 <div class="editor-main">
 <?php if ($P): ?>
-  <div class="meta-panel"><div class="meta-panel-body sx-titlebox"><div class="ci-f slc-titlef"><input name="title" id="slcTitle" class="post-title-input" required maxlength="200" placeholder="Lecture name" value="<?= ci_e($L['title'] ?? '') ?>" data-prefix="<?= ci_e($prefix) ?>" data-auto="<?= $L ? '0' : '1' ?>"><span class="ci-hint">Made for you: class + course – chapter – lecture number – unit. You can change it.</span></div></div></div>
-  <div class="meta-panel slc-video"><div class="meta-panel-header"><span>Video</span><small class="ci-muted">upload or any link</small></div><div class="meta-panel-body">
-    <div class="slc-seg"><label><input type="radio" name="source" value="upload" <?= $isLink ? '' : 'checked' ?>> Upload to our server</label><label><input type="radio" name="source" value="link" <?= $isLink ? 'checked' : '' ?>> Video link</label></div>
-  <div class="slc-up" style="margin-top:12px"><input type="file" id="slcFile" accept="video/mp4,video/webm,video/quicktime,.mp4,.m4v,.webm,.mov"><p class="slc-sub" style="margin-top:6px"><?= !empty($L['video_file']) ? 'A video is uploaded (' . round($L['size'] / 1048576, 1) . ' MB). Choose a file only to replace it.' : 'Any size — sent in small pieces. MP4 (H.264) plays on every phone.' ?></p>
-    <?php if (!empty($L['video_file'])): ?><p class="slc-sub">Smaller qualities for the player's ⚙ menu (optional): <?php foreach (['720', '480', '360'] as $qq): ?><label style="display:inline-flex;gap:6px;align-items:center;margin-right:12px"><?= $qq ?>p <?= isset($vv[$qq]) ? '<span class="ci-badge ci-b-green">added</span>' : '' ?> <input type="file" class="slcQ" data-q="<?= $qq ?>" accept="video/mp4,.mp4,.webm" style="max-width:190px"></label><?php endforeach; ?></p><?php endif; ?>
-  </div>
-  <div class="slc-link" style="margin-top:12px"><div class="ci-f"><input name="video_url" id="slcUrl" maxlength="500" placeholder="YouTube, Google Drive, Vimeo or an MP4 link from any server" value="<?= ci_e($L['video_url'] ?? '') ?>"></div>
-    <button type="button" class="ci-btn ci-ghost ci-sm" id="slcFetch" style="margin-top:8px"><i class="fas fa-magnifying-glass"></i> Check link</button>
+  <div class="meta-panel" data-step="2" data-need="Choose the chapter first (on the right)."><div class="meta-panel-body sx-titlebox"><div class="ci-f slc-titlef"><input name="title" id="slcTitle" class="post-title-input" required maxlength="200" placeholder="Lecture name" value="<?= ci_e($L['title'] ?? '') ?>" data-prefix="<?= ci_e($prefix) ?>" data-auto="<?= $L ? '0' : '1' ?>"><span class="ci-hint">Made for you: class + course – chapter – lecture number – unit. You can change it.</span></div></div></div>
+  <div class="meta-panel slc-video" data-step="3" data-need="Write the lecture name first."><div class="meta-panel-header"><span>Video link</span><small class="ci-muted">YouTube or any other source</small></div><div class="meta-panel-body">
+    <input type="hidden" name="source" value="link">
+    <?php if (!empty($L['video_file'])): ?><p class="slc-sub slc-kept" style="margin:0 0 10px;padding:8px 10px;background:#fffbeb;border:1px solid #fde68a">This lecture plays a video that was uploaded to the server before (<?= round($L['size'] / 1048576, 1) ?> MB). It keeps playing — paste a link below only to replace it.</p><?php endif; ?>
+  <div class="slc-link"><div class="ci-f"><input name="video_url" id="slcUrl" maxlength="500" placeholder="Paste the video link — YouTube, Google Drive, Vimeo or an MP4 link from any server" value="<?= ci_e($L['video_url'] ?? '') ?>"></div>
+    <button type="button" class="ci-btn ci-ghost ci-sm" id="slcFetch" style="margin-top:8px"><i class="fas fa-magnifying-glass"></i> Fetch video details</button>
     <div class="slc-probe" id="slcProbe"></div></div>
   <div class="ci-f" style="margin-top:12px;max-width:220px"><label>Duration</label><input name="duration" id="slcDur" maxlength="9" placeholder="filled in by itself" value="<?= ci_e($L['duration'] ?? '') ?>"></div>
   <div class="slc-bar" id="slcBar"><i></i></div><p class="slc-sub" id="slcSt" style="margin-top:6px"></p>
   </div></div>
-  <div class="meta-panel slc-pdf"><div class="meta-panel-header"><span>Lecture PDF</span></div><div class="meta-panel-body">
-    <input type="file" id="slcPdf" accept="application/pdf,.pdf"><p class="slc-sub" style="margin-top:6px"><?= !empty($L['pdf_file']) ? 'A PDF is uploaded (' . (int)$L['pdf_pages'] . ' pages). Choose a file only to replace it.' : 'Students read it on their phone or computer.' ?></p>
+  <div class="meta-panel slc-pdf" data-step="3" data-need="Write the lecture name first."><div class="meta-panel-header"><span>Lecture PDF</span></div><div class="meta-panel-body">
+    <input type="file" id="slcPdf" accept="application/pdf,.pdf"<?= !empty($L['pdf_file']) ? ' data-has="1"' : '' ?>><p class="slc-sub" style="margin-top:6px"><?= !empty($L['pdf_file']) ? 'A PDF is uploaded (' . (int)$L['pdf_pages'] . ' pages). Choose a file only to replace it.' : 'Students read it on their phone or computer.' ?></p>
   </div></div>
-  <div class="meta-panel"><div class="meta-panel-header"><span>Notes of this lecture</span><small class="ci-muted">PDF · optional · as many as you like</small></div><div class="meta-panel-body">
+  <div class="meta-panel" data-step="4"><div class="meta-panel-header"><span>Notes of this lecture</span><small class="ci-muted">PDF · optional · as many as you like</small></div><div class="meta-panel-body">
   <p class="slc-sub">Shown in the <b>PDF Notes</b> tab under the video. Give each one a clear name, e.g. "Class notes", "Formula sheet", "Practice questions".</p>
   <div class="slc-notes" id="slcNoteList">
     <?php foreach ($notesF as $nf): ?><div class="slc-nrow"><span class="slc-nico">PDF</span><input name="note_title[<?= (int)$nf['id'] ?>]" maxlength="200" value="<?= ci_e($nf['title']) ?>" aria-label="Notes name"><small><?= (int)$nf['pages'] ?> pages · uploaded</small><label class="slc-nrm"><input type="checkbox" name="rm_note[]" value="<?= (int)$nf['id'] ?>"> Remove</label></div><?php endforeach; ?>
@@ -202,14 +205,14 @@ $vv = $L ? sh_variants($L) : [];
   <input type="file" id="slcNotes" accept="application/pdf,.pdf" multiple hidden>
   <button type="button" class="ci-btn ci-ghost ci-sm" id="slcNotesAdd" style="margin-top:8px"><i class="fas fa-plus"></i> Add notes PDF</button>
   </div></div>
-  <div class="meta-panel"><div class="meta-panel-header"><span>VVI questions</span><small class="ci-muted">optional</small></div><div class="meta-panel-body">
+  <div class="meta-panel" data-step="4"><div class="meta-panel-header"><span>VVI questions</span><small class="ci-muted">optional</small></div><div class="meta-panel-body">
   <p class="slc-sub">Write important questions with answers, and / or add links (an article or MCQ post on your website, a PDF…). Students see the questions first, then the links.</p>
   <div class="slc-rep" id="slcVqa"><?php foreach ($vvi['qa'] ?: [['', '']] as [$qq, $aa]): ?><div class="slc-row"><div class="slc-in"><input name="vq[]" maxlength="1000" placeholder="Question" value="<?= ci_e($qq) ?>"><textarea name="va[]" rows="2" maxlength="5000" placeholder="Answer"><?= ci_e($aa) ?></textarea></div><button type="button" class="ci-ico" data-i="trash" aria-label="Remove" data-rm><?= ci_svg('trash') ?></button></div><?php endforeach; ?></div>
   <button type="button" class="ci-btn ci-ghost ci-sm" data-add="slcVqa" style="margin-top:8px"><i class="fas fa-plus"></i> Add question</button>
   <div class="slc-rep" id="slcVl" style="margin-top:12px"><?php foreach ($vvi['links'] ?: [['', '']] as [$tt, $uu]): ?><div class="slc-row"><div class="slc-in" style="flex-direction:row"><input name="vlt[]" maxlength="150" placeholder="Button text, e.g. Important questions (article)" value="<?= ci_e($tt) ?>"><input name="vlu[]" maxlength="500" placeholder="https://…" value="<?= ci_e($uu) ?>"></div><button type="button" class="ci-ico" data-i="trash" aria-label="Remove" data-rm><?= ci_svg('trash') ?></button></div><?php endforeach; ?></div>
   <button type="button" class="ci-btn ci-ghost ci-sm" data-add="slcVl" style="margin-top:8px"><i class="fas fa-link"></i> Add link</button>
   </div></div>
-  <div class="meta-panel"><div class="meta-panel-header"><span>Quiz</span><small class="ci-muted">optional</small></div><div class="meta-panel-body">
+  <div class="meta-panel" data-step="4"><div class="meta-panel-header"><span>Quiz</span><small class="ci-muted">optional</small></div><div class="meta-panel-body">
   <p class="slc-sub">MCQs that students can attempt right under the video (tick the right option), and / or links to a quiz.</p>
   <div class="slc-rep" id="slcQz"><?php $qItems = $quiz['items'] ?: [['', ['', '', '', ''], 0, '']]; foreach ($qItems as $n => [$qq, $oo, $aa, $ee]): $oo = array_pad($oo, 4, ''); ?>
     <div class="slc-row"><div class="slc-in"><input name="qq[<?= $n ?>]" maxlength="1000" placeholder="Question" value="<?= ci_e($qq) ?>">
@@ -225,7 +228,7 @@ $vv = $L ? sh_variants($L) : [];
 <?php endif; ?>
 </div>
 <div class="editor-sidebar-panel">
-  <?php if ($P): ?><div class="meta-panel"><div class="meta-panel-header"><span>Publish</span></div><div class="meta-panel-body">
+  <?php if ($P): ?><div class="meta-panel" data-step="4"><div class="meta-panel-header"><span>Publish</span></div><div class="meta-panel-body">
     <div class="sx-pub slc-pubb"><button class="ci-btn" type="submit"><i class="fas fa-check"></i> Save lecture</button><button class="ci-btn ci-ghost" type="submit" data-next><i class="fas fa-forward"></i> Save &amp; add next</button></div>
     <span class="ci-muted" id="slcMsg"></span>
   </div></div><?php endif; ?>
@@ -236,7 +239,7 @@ $vv = $L ? sh_variants($L) : [];
       <div class="slc-new" id="slcSecNew" hidden><input name="new_chapter" maxlength="200" placeholder="New chapter name, e.g. Real Numbers"></div></div><div class="ci-f"><label>Unit <span class="ci-muted" style="font-weight:400">(optional)</span> <button type="button" class="slc-plus" data-newfor="slcUnit">+ New</button></label><select name="unit_id" id="slcUnit"><option value="0" data-sec="*">— No unit —</option><?php foreach ($units as $un): ?><option value="<?= (int)$un['id'] ?>" data-sec="<?= (int)$un['section_id'] ?>" <?= $selUnit === (int)$un['id'] ? 'selected' : '' ?>><?= ci_e($un['title']) ?></option><?php endforeach; ?><option value="-1" data-sec="*">+ New unit…</option></select>
       <div class="slc-new" id="slcUnitNew" hidden><input name="new_unit" maxlength="200" placeholder="New unit name, e.g. Euclid's Lemma"></div></div><div class="ci-f"><label>Lecture number</label><input name="lecture_no" id="slcNo" type="number" min="1" value="<?= (int)($L['lecture_no'] ?? ($nextNo[$selSec] ?? 1)) ?>"><span class="ci-hint">Next number of the chapter.</span></div><?php endif; ?>
   </div></div>
-  <?php if ($P): ?><div class="meta-panel"><div class="meta-panel-header"><span>Options</span></div><div class="meta-panel-body"><label style="display:flex;gap:8px;align-items:center;font-weight:600;margin:0 0 8px"><input type="checkbox" name="doubts_on" value="1" <?= ($L['doubts_on'] ?? 1) ? 'checked' : '' ?>> Students can ask doubts &amp; problems on this lecture <span class="ci-muted" style="font-weight:400">(the teacher answers in Store → Doubts)</span></label>
+  <?php if ($P): ?><div class="meta-panel" data-step="4"><div class="meta-panel-header"><span>Options</span></div><div class="meta-panel-body"><label style="display:flex;gap:8px;align-items:center;font-weight:600;margin:0 0 8px"><input type="checkbox" name="doubts_on" value="1" <?= ($L['doubts_on'] ?? 1) ? 'checked' : '' ?>> Students can ask doubts &amp; problems on this lecture <span class="ci-muted" style="font-weight:400">(the teacher answers in Store → Doubts)</span></label>
   <label style="display:flex;gap:8px;align-items:center;font-weight:600;margin:0 0 8px"><input type="checkbox" name="free" value="1" <?= !empty($L['free']) ? 'checked' : '' ?>> Free preview — anyone can open this lecture</label>
   <input type="hidden" name="notes" value="<?= ci_e($L['notes'] ?? '') ?>"></div></div><?php endif; ?>
 </div>

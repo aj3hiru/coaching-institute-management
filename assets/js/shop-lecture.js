@@ -1,5 +1,5 @@
-/* Add / edit lecture (admin/shop-lecture.php): type & source switches, chapter → lecture no. + units, auto name,
-   video link check, repeatable rows (VVI, quiz), save then upload the chosen files in pieces. */
+/* Add / edit lecture (admin/shop-lecture.php): video / PDF switch, chapter → lecture no. + units, auto name,
+   video link fetch (name, picture, length), repeatable rows (VVI, quiz), save then upload the chosen PDFs in pieces. */
 (function () {
   'use strict';
   var C = window.SHC || {}, f = document.getElementById('slcForm');
@@ -10,11 +10,10 @@
 
   // --- what is shown -------------------------------------------------------
   function sync() {
-    var pdf = $('[name=kind]:checked').value === 'pdf', link = $('[name=source]:checked').value === 'link';
+    var pdf = $('[name=kind]:checked').value === 'pdf';
     $$('.slc-video').forEach(function (e) { e.hidden = pdf; }); $$('.slc-pdf').forEach(function (e) { e.hidden = !pdf; });
-    $('.slc-up').hidden = link; $('.slc-link').hidden = !link;
   }
-  $$('[name=kind], [name=source]').forEach(function (r) { r.addEventListener('change', sync); }); sync();
+  $$('[name=kind]').forEach(function (r) { r.addEventListener('change', sync); }); sync();
 
   // --- chapter / unit / lecture number / name ------------------------------
   var sec = $('#slcSec'), unit = $('#slcUnit'), no = $('#slcNo'), title = $('#slcTitle'), isNew = !+$('[name=id]').value;
@@ -56,7 +55,9 @@
       var names = { youtube: 'YouTube video', vimeo: 'Vimeo video', drive: 'Google Drive video', file: 'Video file', embed: 'Video page' };
       probe.className = 'slc-probe ok';
       probe.innerHTML = (d.thumb ? '<img src="' + esc(d.thumb) + '" alt="">' : '') + '<div><b>✓ ' + esc(names[d.kind] || 'Video') + ' found — fetched successfully</b><small>' + esc(d.title) + (d.duration ? ' · ' + esc(d.duration) : '') + (d.size ? ' · ' + esc(d.size) : '') + (d.by ? ' · ' + esc(d.by) : '') + '</small>' + (d.note ? '<small style="display:block;color:#92400e">' + esc(d.note) + '</small>' : '') + '</div>';
-      if (d.duration && !dur.value) dur.value = d.duration;
+      if (d.duration) dur.value = d.duration; // the length comes from the video itself
+      if (d.title) { var ut = document.createElement('button'); ut.type = 'button'; ut.className = 'ci-btn ci-ghost ci-sm'; ut.style.marginLeft = 'auto'; ut.textContent = 'Use this title';
+        ut.addEventListener('click', function () { title.value = d.title.slice(0, 200); title.dataset.auto = '0'; ut.textContent = '✓ Title set'; ut.disabled = true; }); probe.appendChild(ut); }
     }).catch(function () { probe.className = 'slc-probe bad'; probe.textContent = '✗ Could not check the link right now.'; });
   }
   $('#slcFetch').addEventListener('click', function () { check(true); });
@@ -125,16 +126,38 @@
       v.onerror = function () { fin({}); }; setTimeout(function () { fin({}); }, 8000); v.src = u;
     });
   }
+  // --- one step after another: the whole form stays open, but a part works only when the required part before it is filled
+  //     chapter → lecture name → video link (or the PDF) → everything else (notes, VVI, quiz, options, save)
+  var pdfIn = $('#slcPdf'), keptVideo = !!f.querySelector('.slc-kept');
+  function stepsOk() {
+    var chapter = sec.value !== '-1' ? !!sec.value : !!secNew.querySelector('input').value.trim();
+    var name = chapter && !!title.value.trim();
+    var pdf = $('[name=kind]:checked').value === 'pdf';
+    var media = name && (pdf ? !!(pdfIn && (pdfIn.files.length || pdfIn.dataset.has)) : (/^https?:\/\/\S+$/i.test(url.value.trim()) || keptVideo));
+    return { 2: chapter, 3: name, 4: media, need4: pdf ? 'Choose the lecture PDF first.' : 'Paste the video link first.' };
+  }
+  function gate() {
+    var ok = stepsOk();
+    $$('[data-step]').forEach(function (p) {
+      var on = !!ok[p.getAttribute('data-step')];
+      p.classList.toggle('slc-locked', !on);
+      if ('inert' in p) p.inert = !on;
+      var n = p.querySelector(':scope > .slc-need'), why = p.getAttribute('data-step') === '4' ? ok.need4 : p.getAttribute('data-need');
+      if (!on && !n) { n = document.createElement('span'); n.className = 'slc-need'; p.insertBefore(n, p.firstChild); }
+      if (n) { n.textContent = '🔒 ' + why; n.hidden = on; }
+    });
+  }
+  ['input', 'change'].forEach(function (ev) { f.addEventListener(ev, gate); });
+  document.addEventListener('admin-select-change', gate);
+  gate();
   $$('[data-next]').forEach(function (b) { if (b.tagName === 'BUTTON') b.addEventListener('click', function () { $('#slcNext').value = '1'; }); });
   f.addEventListener('submit', function (e) {
-    var pdfKind = $('[name=kind]:checked').value === 'pdf', link = $('[name=source]:checked').value === 'link';
-    if (!pdfKind && link && !url.value.trim()) { e.preventDefault(); url.focus(); msg.textContent = 'Paste the video link.'; return; }
+    var pdfKind = $('[name=kind]:checked').value === 'pdf';
+    if (!pdfKind && !url.value.trim() && !f.querySelector('.slc-kept')) { e.preventDefault(); url.focus(); msg.textContent = 'Paste the video link.'; return; }
     if (sec.value === '-1' && !secNew.querySelector('input').value.trim()) { e.preventDefault(); secNew.querySelector('input').focus(); msg.textContent = 'Write the new chapter name.'; return; }
     if (unit.value === '-1' && !unitNew.querySelector('input').value.trim()) { e.preventDefault(); unitNew.querySelector('input').focus(); msg.textContent = 'Write the new unit name.'; return; }
     var jobs = [];
-    var vf = $('#slcFile'), pf = $('#slcPdf');
-    if (!pdfKind && !link && vf && vf.files[0]) jobs.push({ f: vf.files[0], kind: 'v', label: 'video', main: true });
-    if (!pdfKind && !link) $$('.slcQ').forEach(function (q) { if (q.files[0]) jobs.push({ f: q.files[0], kind: 'v', quality: q.getAttribute('data-q'), label: q.getAttribute('data-q') + 'p' }); });
+    var pf = $('#slcPdf'); // videos are links now: only PDFs are uploaded
     if (pdfKind && pf && pf.files[0]) jobs.push({ f: pf.files[0], kind: 'lp', label: 'lecture PDF' });
     newNotes.forEach(function (n) { jobs.push({ f: n.f, kind: 'ln', label: n.f.name, title: n.row.querySelector('input').value.trim() || n.f.name.replace(/\.pdf$/i, '') }); });
     var bad = jobs.filter(function (j) { return j.kind !== 'v' && !/\.pdf$/i.test(j.f.name); });

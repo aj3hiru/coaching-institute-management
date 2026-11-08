@@ -22,6 +22,7 @@ $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
 $okExt = $kind === 'v' ? ['mp4', 'm4v', 'webm', 'mov'] : ['pdf']; // v = lesson video; f = PDF of a product; lp = a PDF lecture; ln = notes PDF of a lecture
 $maxSize = ($kind === 'v' ? (int)es('shop', 'max_video_mb', 4096) : 300) * 1024 * 1024; // PDFs up to 300 MB
 if (!preg_match('/^[a-f0-9]{16,40}$/', $upId) || $total < 1 || $idx < 0 || $idx >= $total || $size < 1) $out(['error' => 'Bad upload request'], 400);
+if ($kind === 'v') $out(['error' => 'Videos are not uploaded to the server any more — paste the video link (YouTube or any other source) in the lecture.'], 400);
 if (!in_array($kind, ['v', 'f', 'lp', 'ln'], true) || !$target) $out(['error' => 'Bad upload request'], 400);
 if (!in_array($ext, $okExt, true)) $out(['error' => $kind === 'v' ? 'Please upload an MP4 video (WebM / MOV also accepted).' : 'Please upload a PDF file.'], 400);
 if ($size > $maxSize) $out(['error' => 'The file is too large (max ' . round($maxSize / 1048576) . ' MB).'], 400);
