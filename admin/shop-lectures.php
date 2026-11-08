@@ -162,7 +162,7 @@ $skipN = $P ? count(json_decode((string)$P['yt_skip'], true) ?: []) : 0;
 #lsDirty2{display:block;margin-top:6px}
 .ls-course img{width:100%;aspect-ratio:16/9;object-fit:cover;display:block;margin:0 0 10px}.ls-course b{display:block;line-height:1.35}.ls-course .ci-muted{font-size:13px}
 .ls-pick{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;padding:14px 16px;border:1px solid #e5e7eb;background:#fff;margin:0 0 14px}
-.ls-pick .ci-f{min-width:min(460px,100%);margin:0}
+.ls-pick .ci-f{min-width:min(460px,100%);flex:1;margin:0}
 .ls-card{border:1px solid #e5e7eb;background:#fff;margin:0 0 14px}
 .ls-card>h3{margin:0;padding:12px 16px;border-bottom:1px solid #eef0f3;font-size:15px;display:flex;align-items:center;gap:8px;justify-content:space-between;flex-wrap:wrap}
 .ls-card>h3 small{font-weight:400;color:#6b7280;font-size:12.5px}
@@ -219,12 +219,13 @@ table.ls-t{width:100%;border-collapse:collapse;font-size:13.5px}
     $P ? '<a class="ci-btn ci-ghost" href="' . ci_e(sh_url($P)) . '?preview=1" target="_blank"><i class="fas fa-eye"></i> View on site</a>' : ''); ?>
 <div class="ci">
 <?= admin_flash() ?>
-<form class="ls-pick" method="get"><div class="ci-f"><label>Course</label><select name="course" data-search onchange="this.form.submit()"><option value="">— Choose the course —</option><?php foreach ($courses as $c): ?><option value="<?= (int)$c['id'] ?>"<?= $pid === (int)$c['id'] ? ' selected' : '' ?>><?= ci_e($c['title']) ?> · <?= (int)$c['n'] ?> lectures<?= $c['status'] !== 'published' ? ' (' . $c['status'] . ')' : '' ?></option><?php endforeach; ?></select></div>
-<?php if (!$courses): ?><p class="ci-muted" style="margin:0">No course yet — <a href="/admin/shop-products.php?new=1&type=course">add a course</a> first.</p><?php endif; ?></form>
+<?php ob_start(); ?><form class="ls-pick" method="get"><div class="ci-f"><label>Course</label><select name="course" data-search onchange="this.form.submit()"><option value="">— Choose the course —</option><?php foreach ($courses as $c): ?><option value="<?= (int)$c['id'] ?>"<?= $pid === (int)$c['id'] ? ' selected' : '' ?>><?= ci_e($c['title']) ?> · <?= (int)$c['n'] ?> lectures<?= $c['status'] !== 'published' ? ' (' . $c['status'] . ')' : '' ?></option><?php endforeach; ?></select></div>
+<?php if (!$courses): ?><p class="ci-muted" style="margin:0">No course yet — <a href="/admin/shop-products.php?new=1&type=course">add a course</a> first.</p><?php endif; ?></form><?php $lsPick = ob_get_clean(); if (!$P) echo $lsPick; ?>
 
 <?php if ($P): ?>
 <?php $stN = count($rows); $stFree = count(array_filter($rows, fn($r) => $r['free'])); $stNotes = array_sum(array_column($rows, 'n')); $stQ = array_sum(array_column($rows, 'q')); $stV = array_sum(array_column($rows, 'v')); ?>
 <div class="ls-top"><div class="ls-main">
+<?= $lsPick ?>
 <div class="ls-card" id="lsPl"><h3><span><i class="fab fa-youtube" style="color:#dc2626"></i> YouTube playlist of this course</span></h3><div class="ls-body">
   <?php if ($P['yt_list']): ?>
   <div class="ls-linked"><i class="fab fa-youtube"></i><span class="sp"><b>Linked</b> · <a href="https://www.youtube.com/playlist?list=<?= ci_e($P['yt_list']) ?>" target="_blank" rel="noopener">open on YouTube</a><?= $P['yt_synced'] ? ' · checked ' . ci_e(date('d M, h:i A', strtotime($P['yt_synced']))) : '' ?></span>
