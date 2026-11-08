@@ -69,40 +69,6 @@ $ico = fn($n) => sh_icon($n);
       <?= $ico('compass') ?><input type="search" name="q" value="<?= sh_e($qq) ?>" placeholder="<?= $lsMode === 'cats' ? 'Search a class…' : 'Search ' . strtolower($H[0]) . '…' ?>" aria-label="Search"><button type="submit">Search</button>
     </form>
   </header>
-  <?php if ($lsMode !== 'cats'): ?>
-  <div class="ls-fbar">
-    <?php if ($cats): ?>
-    <div class="ls-fcls">
-      <span class="ls-flab"><?= $ico('layers') ?> Class</span>
-      <div class="ls-cs" data-cs>
-        <button type="button" class="ls-cs-a prev" aria-label="Scroll classes left" hidden>‹</button>
-        <div class="ls-cs-t" role="list">
-          <a role="listitem" href="<?= sh_e($link(['c' => '', 'page' => ''])) ?>" class="<?= $cat ? '' : 'on' ?>">All classes</a>
-          <?php foreach ($cats as $c): ?><a role="listitem" href="<?= sh_e($link(['c' => $c['slug'], 'page' => ''])) ?>" class="<?= $cat && $cat['slug'] === $c['slug'] ? 'on' : '' ?>"><?= sh_e($c['name']) ?></a><?php endforeach; ?>
-        </div>
-        <button type="button" class="ls-cs-a next" aria-label="Scroll classes right" hidden>›</button>
-      </div>
-    </div>
-    <?php endif; ?>
-    <div class="ls-fprice">
-      <span class="ls-flab"><?= $ico('receipt') ?> Price</span>
-      <div class="ls-pill" role="group" aria-label="Price"><?php foreach (['' => ['All', 'grid'], 'free' => ['Free', 'check'], 'paid' => ['Paid', 'cart']] as $k => [$l, $ic]): ?><a href="<?= sh_e($link(['f' => $k, 'page' => ''])) ?>" class="<?= $fl === $k ? 'on' : '' ?>"<?= $fl === $k ? ' aria-current="true"' : '' ?>><?= $ico($ic) ?> <?= $l ?></a><?php endforeach; ?></div>
-    </div>
-  </div>
-  <script>
-  (function () { // class chips slider: arrows when there is more, the chosen class scrolled into view
-    var w = document.querySelector('[data-cs]'); if (!w) return;
-    var t = w.querySelector('.ls-cs-t'), pv = w.querySelector('.prev'), nx = w.querySelector('.next');
-    function paint() { var max = t.scrollWidth - t.clientWidth; pv.hidden = t.scrollLeft < 4; nx.hidden = t.scrollLeft > max - 4; w.classList.toggle('has-l', !pv.hidden); w.classList.toggle('has-r', !nx.hidden); }
-    pv.onclick = function () { t.scrollBy({ left: -t.clientWidth * 0.7, behavior: 'smooth' }); };
-    nx.onclick = function () { t.scrollBy({ left: t.clientWidth * 0.7, behavior: 'smooth' }); };
-    t.addEventListener('scroll', paint, { passive: true }); window.addEventListener('resize', paint);
-    var on = t.querySelector('a.on'); if (on && on.offsetLeft > t.clientWidth * 0.6) t.scrollLeft = on.offsetLeft - 40;
-    paint();
-  })();
-  </script>
-  <?php endif; ?>
-
   <p class="ls-count"><?= $total ?> <?= $lsMode === 'cats' ? ($total === 1 ? 'category' : 'categories') : ($lsMode === 'notes' ? ($total === 1 ? 'notes pack' : 'notes packs') : ($total === 1 ? 'course' : 'courses')) ?><?= $qq !== '' ? ' for “' . sh_e($qq) . '”' : '' ?><?= $pages > 1 ? ' · page ' . $pg . ' of ' . $pages : '' ?></p>
 
   <?php if (!$rows): ?>
