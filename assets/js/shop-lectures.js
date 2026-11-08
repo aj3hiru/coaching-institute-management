@@ -46,7 +46,7 @@
     trs().forEach(function (tr) {
       var s = +tr.querySelector('.s').value; no[s] = (no[s] || 0) + 1; cnt[s] = (cnt[s] || 0) + 1;
       tr.querySelector('.no').textContent = no[s];
-      tr.querySelector('td.cb').style.borderLeftColor = color(s);
+      tr.querySelector('td.cb').style.borderLeftColor = color(s); tr.style.setProperty('--lc', color(s));
       tr.hidden = (f !== 'all' && +f !== s) || (q && tr.querySelector('.t').value.toLowerCase().indexOf(q) < 0);
     });
     document.querySelectorAll('.ls-ch').forEach(function (c) { var n = cnt[+c.dataset.id] || 0; c.querySelector('.cnt').textContent = n + ' lecture' + (n === 1 ? '' : 's'); });

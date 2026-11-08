@@ -220,6 +220,48 @@ table.ls-t{width:100%;border-collapse:collapse;font-size:13.5px}
 .ls-empty{padding:30px;text-align:center;color:#6b7280}
 .ls-wrap{overflow-x:auto}
 @media (max-width:900px){.ls-tools{position:static}}
+/* phones & tablets: the sheet becomes one card per lecture */
+@media (max-width:1024px){
+  .ls-wrap{overflow:visible}
+  table.ls-t,.ls-t tbody{display:block}.ls-t thead{display:none}
+  .ls-t tr{display:grid;grid-template-columns:28px minmax(0,1fr);gap:8px 10px;padding:12px;border-bottom:1px solid #eef0f3;border-left:5px solid var(--lc,transparent)}
+  .ls-t td{display:block;padding:0;border:0}
+  .ls-t td.cb{grid-row:1;grid-column:1;width:auto;border-left:0!important;padding-top:4px}
+  .ls-t td.no,.ls-t .hd{display:none}
+  .ls-t td:nth-child(3){grid-row:1;grid-column:2}
+  .ls-t .vid{min-width:0}.ls-t .vid img,.ls-t .vid .ph{width:84px}
+  .ls-t td.cs,.ls-t td.us{grid-column:1/-1;width:auto}
+  .ls-t td.cs:before{content:'Chapter';display:block;font-size:11.5px;font-weight:700;color:#6b7280;margin:0 0 3px}
+  .ls-t td.us:before{content:'Unit';display:block;font-size:11.5px;font-weight:700;color:#6b7280;margin:0 0 3px}
+  .ls-t select{max-width:none;width:100%}
+  .ls-t td.fr{grid-column:1/-1;text-align:left}
+  .ls-t td.fr:after{content:' This lecture is free';font-weight:600;font-size:13px;vertical-align:middle}
+  .ls-t td:nth-child(8){grid-column:1/2;grid-row:auto}
+  .ls-t td:nth-child(8),.ls-t td:last-child{display:inline-flex}
+  .ls-t tr>td:nth-child(8){grid-column:1/-1;display:flex;justify-content:space-between;align-items:center}
+  .ls-t tr>td:last-child{grid-column:1/-1;justify-content:flex-end;margin-top:-38px}
+  .ls-x3 a{padding:6px 10px}
+  .ls-t tr{grid-template-columns:28px minmax(0,1fr) minmax(0,1fr)}
+  .ls-t td:nth-child(3){grid-column:2/-1}
+  .ls-t td.cs{grid-column:1/3}.ls-t td.us{grid-column:3/4}
+}
+@media (max-width:600px){.ls-t td.cs,.ls-t td.us{grid-column:1/-1}}
+/* phones */
+@media (max-width:760px){
+  .ls-pick{padding:12px}.ls-pick .ci-f{min-width:0;width:100%}
+  .ls-card>h3{padding:11px 12px}.ls-body{padding:12px}
+  .ls-pl{flex-direction:column}.ls-pl input{min-width:0;width:100%;height:42px;flex:none}.ls-pl .ci-btn{width:100%;justify-content:center}
+  .ls-linked{gap:8px}.ls-linked .sp{flex-basis:100%}.ls-linked .ci-btn{flex:1;justify-content:center}
+  .ls-ch{grid-template-columns:8px minmax(0,1fr) auto;gap:6px 8px}.ls-ch .ci-icos{grid-column:2/-1;justify-content:flex-end}.ls-ch .cnt{text-align:right}
+  .ls-units{grid-column:2/-1}
+  .ls-chadd{flex-direction:column}.ls-chadd input{max-width:none;width:100%}
+  .ls-tools{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 12px}
+  .ls-tools .sel{grid-column:1/-1}.ls-tools .grow{display:none}
+  .ls-tools select,.ls-tools input[type=search],.ls-tools .ci-btn{width:100%;min-width:0;justify-content:center}
+  .ls-tools #lsTo,.ls-tools #lsToU,.ls-tools #lsQ,.ls-tools #lsF{grid-column:1/-1}
+  .ls-tools #lsDirty{grid-column:1/-1;text-align:center}
+}
+}
 </style>
 </head>
 <body>
