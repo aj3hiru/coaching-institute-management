@@ -63,7 +63,7 @@ $ico = fn($n) => sh_icon($n);
 <div class="ls">
   <p class="st-crumb"><a href="/">Home</a> › <?= $cat ? '<a href="' . sh_e($base) . '">' . sh_e($H[0]) . '</a> › ' . sh_e($cat['name']) : sh_e($H[0]) ?></p>
   <header class="ls-hd">
-    <div><h1><?= sh_e($H[0]) ?><?= $cat ? ' <span>· ' . sh_e($cat['name']) . '</span>' : '' ?></h1><p><?= sh_e($H[1]) ?></p></div>
+    <div><h1><?= sh_e($H[0]) ?><?= $cat ? ' <span>· ' . sh_e($cat['name']) . '</span>' : '' ?></h1></div>
     <form class="ls-search" method="get" action="<?= sh_e($base) ?>" role="search">
       <?php if ($cs !== ''): ?><input type="hidden" name="c" value="<?= sh_e($cs) ?>"><?php endif; ?><?php if ($fl !== ''): ?><input type="hidden" name="f" value="<?= sh_e($fl) ?>"><?php endif; ?>
       <?= $ico('compass') ?><input type="search" name="q" value="<?= sh_e($qq) ?>" placeholder="<?= $lsMode === 'cats' ? 'Search a class…' : 'Search ' . strtolower($H[0]) . '…' ?>" aria-label="Search"><button type="submit">Search</button>
