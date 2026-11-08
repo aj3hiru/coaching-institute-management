@@ -165,6 +165,12 @@
       if (e.target.closest && e.target.closest('.plyr__menu, .ytq')) return;
       e.stopPropagation(); e.preventDefault(); closeMenus(box);
     }, true);
+    // Full screen only from the full-screen button in the controls: Plyr also goes full screen (and turns the phone
+    // sideways) on a double click / double tap on the picture — that is stopped here, before it reaches Plyr.
+    if (!box._noDbl) box._noDbl = true, box.addEventListener('dblclick', function (e) {
+      if (e.target.closest && e.target.closest('.plyr__controls')) return;
+      e.stopPropagation(); e.preventDefault();
+    }, true);
     if (!box._tap) box._tap = true, box.addEventListener('click', function (e) { // added once per box (a new lesson reuses it)
       var p = box._p; if (!p || !(p.touch && p.config.hideControls) || !p.ready) return;
       var t = e.target;
