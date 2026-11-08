@@ -923,3 +923,7 @@ a.st-li:hover{background:#f7fbfc}a.st-li:hover svg{color:var(--sa)}
 .ac-ord-t b a{color:#111827!important;text-decoration:none!important}.ac-ord-t b a:hover{color:var(--sa)!important}
 .ac-ord-fp{display:flex;align-items:center;gap:6px}.ac-ord-fp s{color:#9ca3af;font-size:13px}.ac-ord-fp .st-free100{font-size:11.5px;padding:2px 7px}
 @media (max-width:600px){.ac-ord{align-items:flex-start}.ac-ord-th{flex-basis:96px;width:96px}.ac-ord-t{flex-basis:calc(100% - 110px)}.ac-ord-r{flex-direction:row;align-items:center;margin-left:110px}}
+/* Orders: an item whose access has ended — faded, nothing to click */
+.ac-ord-off{opacity:.5;filter:grayscale(.6);background:#fafafa;cursor:default}
+.ac-ord-off .ac-ord-th{pointer-events:none}
+.ac-ord-end{display:inline-flex;align-items:center;gap:5px;margin-top:6px;padding:2px 8px;border-radius:4px;background:#fee2e2;color:#b91c1c;font-size:12px;font-weight:700}.ac-ord-end svg{width:13px;height:13px}
