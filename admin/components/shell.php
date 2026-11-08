@@ -261,7 +261,7 @@ function admin_shell_sidebar(): void
     $br = ci_brand();
     $school = true; // the site has one header brand: logo + site title + line (Customize → Site Identity)
     if ($school): ?>
-    <a class="sb-brand sb-school" href="/admin/dashboard.php" aria-label="Dashboard"><img src="<?= htmlspecialchars($br['emblem']) ?>" alt="" class="sb-emblem" width="40" height="46"><span class="sb-school-t"><b><?= htmlspecialchars($br['title']) ?></b><?php if ($br['line'] !== ''): ?><small><?= htmlspecialchars($br['line']) ?></small><?php endif; ?></span></a>
+    <a class="sb-brand sb-school" href="/admin/dashboard.php" aria-label="Dashboard"><?php if ($br['emblem'] !== ''): ?><img src="<?= htmlspecialchars($br['emblem']) ?>" alt="" class="sb-emblem" width="40" height="46"><?php endif; ?><span class="sb-school-t"><b><?= htmlspecialchars($br['title']) ?></b><?php if ($br['line'] !== ''): ?><small><?= htmlspecialchars($br['line']) ?></small><?php endif; ?></span></a>
     <?php else: ?>
     <a class="sb-brand" title="Dashboard" href="/admin/dashboard.php"><?php if ($logo): ?><img src="<?= htmlspecialchars($logo) ?>" alt="<?= htmlspecialchars($site) ?>" class="sb-logo"><?php else: ?><span class="sb-sitename"><?= htmlspecialchars($site) ?></span><?php endif; ?></a>
     <?php endif; ?>

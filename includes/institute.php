@@ -499,7 +499,7 @@ function ci_csv(string $filename, array $head, array $rows): void
     exit;
 }
 
-/** The site's header brand (Customize → Site Identity → Header Brand): emblem, name and the line under it — used on PDF reports. */
+/** The site's header brand (Customize → Site Identity = Settings → General): logo (may be empty), site title, tagline. */
 function ci_brand(): array
 {
     if (!function_exists('th') && defined('INCLUDES_PATH') && is_file(INCLUDES_PATH . '/theme.php')) require_once INCLUDES_PATH . '/theme.php';
@@ -508,7 +508,7 @@ function ci_brand(): array
     return [
         'title' => function_exists('edu_site_name') ? edu_site_name() : 'Institute',
         'line' => trim((string)($g['tagline'] ?? '')) ?: trim((string)($g['address'] ?? '')),
-        'emblem' => trim((string)($g['logo'] ?? '')) ?: '/assets/images/dk-academy-emblem.svg',
+        'emblem' => trim((string)($g['logo'] ?? '')), // empty = no logo
     ];
 }
 

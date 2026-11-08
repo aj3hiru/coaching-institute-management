@@ -969,7 +969,7 @@ function sh_auth_side(string $mode): string
     $h = $mode === 'login' ? ['Welcome back!', 'Log in to continue your classes, notes and progress.'] : ['Start learning today', 'One free account for all your courses, notes and doubts.'];
     $pts = [['video', 'Recorded classes', 'Watch any time, pause and repeat'], ['pdf', 'PDF notes', 'Chapter-wise notes to read and download'], ['chat', 'Doubt solving', 'Ask the teacher under any lecture']];
     $li = ''; foreach ($pts as [$i, $t, $d]) $li .= '<li><span>' . sh_icon($i) . '</span><div><b>' . sh_e($t) . '</b><small>' . sh_e($d) . '</small></div></li>';
-    return '<aside class="au-side"><a class="au-brand" href="/"><img src="' . sh_e($b['emblem']) . '" alt="" width="44" height="44"><span><b>' . sh_e($b['title']) . '</b>' . ($b['line'] !== '' ? '<small>' . sh_e($b['line']) . '</small>' : '') . '</span></a>'
+    return '<aside class="au-side"><a class="au-brand" href="/">' . ($b['emblem'] !== '' ? '<img src="' . sh_e($b['emblem']) . '" alt="" width="44" height="44">' : '') . '<span><b>' . sh_e($b['title']) . '</b>' . ($b['line'] !== '' ? '<small>' . sh_e($b['line']) . '</small>' : '') . '</span></a>'
         . '<div class="au-hero"><h2>' . sh_e($h[0]) . '</h2><p>' . sh_e($h[1]) . '</p></div><ul class="au-pts">' . $li . '</ul></aside>';
 }
 /** An input with an icon inside (log in / sign up). */

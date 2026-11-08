@@ -70,11 +70,11 @@ $__school = in_array($__bstyle, ['school', 'school_full'], true);
 $__schoolFull = $__bstyle === 'school_full'; // the whole header in the school layout (top bar + menu beside the brand)
 if ($__school) {
     // Site Identity = Settings → General (like WordPress): logo, site title, tagline
-    $__emb = trim((string)es('general', 'logo', '')) ?: '/assets/images/dk-academy-emblem.svg';
+    $__emb = trim((string)es('general', 'logo', '')); // no logo set = no picture, only the title (like WordPress)
     $__bt = edu_site_name();
     $__bl = trim((string)es('general', 'tagline', '')) ?: trim((string)es('general', 'address', ''));
     $__embH = max(36, min(80, (int)th('id_emblem_h', 52) ?: 52));
-    $__logo = '<img src="' . htmlspecialchars($__emb) . '" alt="" class="nb-emblem" width="52" height="60" style="--emb-h:' . $__embH . 'px">';
+    $__logo = $__emb !== '' ? '<img src="' . htmlspecialchars($__emb) . '" alt="" class="nb-emblem" width="52" height="60" style="--emb-h:' . $__embH . 'px">' : '';
     $__brandText = '<span class="nb-site-branding nb-sb-school"><span class="site-title">' . htmlspecialchars($__bt) . '</span>'
         . ($__bl !== '' ? '<span class="site-tagline nb-brand-line">' . htmlspecialchars($__bl) . '</span>' : '') . '</span>';
 }

@@ -256,6 +256,7 @@ body{margin:0;overflow:hidden}
 .id-pv-in{position:relative;isolation:isolate;display:inline-flex;align-items:center;gap:8px;max-width:100%;padding:4px 44px 4px 12px;box-sizing:border-box}
 .id-pv-in::before{content:"";position:absolute;inset:0 8px 0 0;z-index:-1;background:rgba(240,174,113,.43);clip-path:polygon(0 0,100% 0,96% 45%,100% 100%,0 100%)}
 .id-pv-in::after{content:"";position:absolute;bottom:0;right:4px;width:30px;height:55%;z-index:-1;background:#f02801;clip-path:polygon(50% 0,0 100%,25% 100%)}
+.id-pv img[hidden]{display:none}
 .id-pv img{display:block;width:auto;max-width:80px;object-fit:contain;flex:0 0 auto}
 .id-pv-t{display:flex;flex-direction:column;min-width:0;line-height:1.15}
 .id-pv-t b{font:700 17px/1.15 Poppins,Roboto,Arial,sans-serif;color:#9e1b32;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -615,7 +616,7 @@ function renderIdentity(wrap) { // the same values as Settings → General (site
   const T = state.theme, G = state.general;
   const pv = html('<div class="id-pv" aria-hidden="true"><span class="id-pv-in"><img alt=""><span class="id-pv-t"><b></b><small></small></span></span></div>');
   const paint = () => {
-    pv.querySelector('img').src = G.logo || '/assets/images/dk-academy-emblem.svg';
+    const im = pv.querySelector('img'); im.hidden = !G.logo; if (G.logo) im.src = G.logo; else im.removeAttribute('src');
     pv.querySelector('img').style.height = Math.max(36, Math.min(80, +T.id_emblem_h || 52)) * .85 + 'px';
     pv.querySelector('b').textContent = G.site_title || SITE_NAME_DEFAULT;
     pv.querySelector('small').textContent = G.tagline || ID_ADDRESS || '';
