@@ -14,7 +14,7 @@
  */
 require_once __DIR__ . '/settings.php';
 
-const SH_SCHEMA = 11;
+const SH_SCHEMA = 12;
 
 function sh_db(): PDO
 {
@@ -151,6 +151,19 @@ function sh_tables(PDO $pdo): void
     $add('hm_slides', 'show_t', 'TINYINT(1) NOT NULL DEFAULT 1');
     $add('hm_slides', 'show_d', 'TINYINT(1) NOT NULL DEFAULT 1');
     $add('hm_free', 'thumb_custom', 'VARCHAR(255) NULL');
+    // v12: staff roles — Blog Admin, Teacher, Accountant (the column only gets new values; nothing changes for existing users)
+    try { $pdo->exec("ALTER TABLE users MODIFY role ENUM('admin','editor','author','blog_admin','teacher','accountant') NOT NULL DEFAULT 'author'"); } catch (Throwable) {}
+    // staff that were "author" only to hold store / institute permissions (no blog access) get their real role
+    try {
+        foreach ($pdo->query("SELECT id, permissions FROM users WHERE role IN ('author','editor')")->fetchAll(PDO::FETCH_ASSOC) as $u) {
+            $p = json_decode((string)$u['permissions'], true) ?: [];
+            $blog = !empty($p['blogs']['create']) || !empty($p['blogs']['edit_own']) || !empty($p['blogs']['edit_all']);
+            if ($blog) continue;
+            $teach = !empty($p['store']['teacher']);
+            $office = $teach || array_filter((array)($p['institute'] ?? [])) || array_filter((array)($p['store'] ?? []));
+            if ($office) $pdo->prepare("UPDATE users SET role = ? WHERE id = ?")->execute([$teach ? 'teacher' : 'accountant', (int)$u['id']]);
+        }
+    } catch (Throwable) {}
     edu_settings_save('shop', ['schema' => SH_SCHEMA]);
 }
 
@@ -739,6 +752,8 @@ const SH_PERMS = ['products' => 'Courses & notes (add, edit, upload)', 'orders' 
 function sh_perm(array $u, string $key = ''): bool
 {
     if (($u['role'] ?? '') === 'admin') return true;
+    if (!function_exists('edu_role_allows')) require_once INCLUDES_PATH . '/roles.php';
+    if (!edu_role_allows((string)($u['role'] ?? ''), 'store')) return false; // blog people never reach the store
     $p = is_array($u['permissions'] ?? null) ? $u['permissions'] : (json_decode((string)($u['permissions'] ?? '{}'), true) ?: []);
     $legacy = !empty($p['institute']['shop']);
     if ($key === '') { foreach (array_keys(SH_PERMS) as $k) if (!empty($p['store'][$k])) return true; return $legacy; }
@@ -747,7 +762,7 @@ function sh_perm(array $u, string $key = ''): bool
 /** Admin store page guard: needs one of $keys. */
 function sh_page_start(PDO $pdo, array $keys): array
 {
-    $me = admin_guard(['admin', 'editor', 'author']);
+    $me = admin_guard(['admin', 'editor', 'author', 'teacher', 'accountant']);
     if (!array_filter($keys, fn($k) => sh_perm($me, $k))) { http_response_code(403); exit('Access Denied'); }
     sh_tables($pdo);
     return $me;
@@ -837,7 +852,7 @@ function sh_teachers(PDO $pdo): array
     foreach ($pdo->query("SELECT u.id, u.username, u.role, u.permissions, u.status, a.name AS author_name FROM users u LEFT JOIN authors a ON a.user_id = u.id ORDER BY u.username")->fetchAll(PDO::FETCH_ASSOC) as $u) {
         if ($u['status'] !== 'active') continue;
         $p = json_decode((string)$u['permissions'], true) ?: [];
-        if (!empty($p['store']['teacher']) || $u['role'] === 'teacher') $out[(int)$u['id']] = trim((string)$u['author_name']) ?: $u['username'];
+        if ($u['role'] === 'teacher' || ($u['role'] === 'admin' && !empty($p['store']['teacher']))) $out[(int)$u['id']] = trim((string)$u['author_name']) ?: $u['username'];
     }
     return $out;
 }

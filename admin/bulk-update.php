@@ -9,6 +9,7 @@ $result = null;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_check();
     $mode = $_POST['mode'] ?? 'single';
+    if ($mode === 'pages' && $me['role'] !== 'admin') $mode = 'single'; // site pages: admins only (blog roles get posts)
     $ids = [];
     $isPages = $mode === 'pages';
     if ($mode === 'single') $ids = array_map('intval', (array)($_POST['posts'] ?? []));
@@ -76,7 +77,7 @@ $pages = $pdo->query("SELECT id, title, updated_at FROM site_pages ORDER BY titl
     <div class="bu-step on" data-step="1">
       <h3 style="margin:0 0 12px">What do you want to update?</h3>
       <div class="bu-modes">
-        <?php foreach (['single' => ['Single posts', 'Pick one or more posts'], 'category' => ['By category', 'Every post in the chosen categories'], 'tag' => ['By tag', 'Every post with the chosen tags'], 'all' => ['All posts', 'Every published post'], 'pages' => ['Pages', 'Pages made in Admin → Pages']] as $k => [$l, $s]): ?>
+        <?php foreach (['single' => ['Single posts', 'Pick one or more posts'], 'category' => ['By category', 'Every post in the chosen categories'], 'tag' => ['By tag', 'Every post with the chosen tags'], 'all' => ['All posts', 'Every published post']] + ($me['role'] === 'admin' ? ['pages' => ['Pages', 'Pages made in Admin → Pages']] : []) as $k => [$l, $s]): ?>
         <label class="bu-mode"><input type="radio" name="mode" value="<?= $k ?>" <?= $k === 'single' ? 'checked' : '' ?>><strong><?= $l ?></strong><small><?= $s ?></small></label>
         <?php endforeach; ?>
       </div>

@@ -3,7 +3,7 @@
 // The blog's dashboard (traffic, posts) is now Blog → Blog Dashboard (/admin/blog-dashboard.php).
 require_once __DIR__ . '/components/guard.php';
 require_once INCLUDES_PATH . '/institute.php';
-$me = admin_guard(['admin', 'editor', 'author']);
+$me = admin_guard(['admin', 'editor', 'author', 'teacher', 'accountant']);
 if (!ci_can($me)) {
     if (admin_blog_access()) { header('Location: /admin/blog-dashboard.php'); exit; }
     require_once INCLUDES_PATH . '/shop.php';

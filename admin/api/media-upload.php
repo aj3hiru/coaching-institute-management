@@ -17,7 +17,7 @@ function mu_fail(int $code, string $msg): void
     exit;
 }
 
-if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'] ?? '', ['admin', 'editor', 'author'], true)) mu_fail(403, 'Access denied');
+if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'] ?? '', ['admin', 'blog_admin', 'editor', 'author', 'teacher', 'accountant'], true)) mu_fail(403, 'Access denied');
 if ($_SERVER['REQUEST_METHOD'] !== 'POST' || empty($_FILES['file'])) mu_fail(400, 'No file received');
 $err = (int)$_FILES['file']['error'];
 if ($err === UPLOAD_ERR_INI_SIZE || $err === UPLOAD_ERR_FORM_SIZE) mu_fail(413, 'The file is larger than the server allows (' . ini_get('upload_max_filesize') . ').');

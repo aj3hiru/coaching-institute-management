@@ -3,7 +3,7 @@
 // the right, search, bulk actions, and replying straight from here (through the SMTP details in Settings → General).
 require_once __DIR__ . '/components/guard.php';
 require_once INCLUDES_PATH . '/mailer.php';
-$me = admin_guard(['admin', 'editor']);
+$me = admin_guard(['admin']) /* site pages / messages: not part of the blog roles */;
 edu_contact_table($pdo);
 // Replies sent from here are kept with the message (added columns; old rows simply have none).
 try {

@@ -4,7 +4,7 @@
 require_once __DIR__ . '/components/guard.php';
 require_once INCLUDES_PATH . '/institute.php';
 require_once INCLUDES_PATH . '/shop.php';
-$me = admin_guard(['admin', 'editor', 'author']);
+$me = admin_guard(['admin', 'editor', 'author', 'teacher', 'accountant']);
 $ciOK = ci_can($me);                 // institute reports
 $storeOK = sh_perm($me, 'orders');   // online sales report
 if (!$ciOK && !$storeOK) { http_response_code(403); exit('Access Denied'); }

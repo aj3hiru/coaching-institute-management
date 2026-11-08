@@ -1,7 +1,7 @@
 <?php
 require_once __DIR__ . '/components/guard.php';
 require_once INCLUDES_PATH . '/perf.php';
-admin_guard(['admin']);
+admin_guard(['admin', 'blog_admin']);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_check();

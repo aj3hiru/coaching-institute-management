@@ -65,7 +65,7 @@ function wpbar_user(): ?array
     $st = $pdo->prepare('SELECT id, username, role, status, permissions FROM users WHERE id = ?');
     $st->execute([$_SESSION['user_id']]);
     $u = $st->fetch(PDO::FETCH_ASSOC);
-    if (!$u || $u['status'] !== 'active' || !in_array($u['role'], ['admin', 'editor', 'author'], true)) return null;
+    if (!$u || $u['status'] !== 'active' || !in_array($u['role'], ['admin', 'blog_admin', 'editor', 'author', 'teacher', 'accountant'], true)) return null;
     $a = $pdo->prepare('SELECT id, name, profile_image FROM authors WHERE user_id = ? LIMIT 1');
     $a->execute([$u['id']]);
     $author = $a->fetch(PDO::FETCH_ASSOC) ?: [];
@@ -94,7 +94,7 @@ function wpbar_html(array $ctx = []): string
         ['dk-dashboard', 'Dashboard', '/admin/dashboard.php', true],
         ['dk-students', 'Students', '/admin/students.php', $ci],
         ['dk-fees', 'Fees & Dues', '/admin/ci-fees.php', $ci],
-        ['dk-blog-dash', 'Blog Dashboard', '/admin/blog-dashboard.php', true],
+        ['dk-blog-dash', 'Blog Dashboard', '/admin/blog-dashboard.php', admin_blog_access()],
         ['dk-analytics', 'Analytics', '/admin/analytics.php', admin_can('analytics.view_basic')],
         ['dk-seo', 'SEO', '/admin/seo.php', $isAdmin],
     ]);
@@ -114,9 +114,9 @@ function wpbar_html(array $ctx = []): string
         $sitePrimary = $keep([
             ['dashboard', 'Dashboard', '/admin/dashboard.php', true],
             ['dk-students', 'Students', '/admin/students.php', $ci],
-            ['dk-blog-dash', 'Blog Dashboard', '/admin/blog-dashboard.php', true],
-            ['dk-posts', 'Posts', '/admin/blogs-manager.php', true],
-            ['dk-pages', 'Pages', '/admin/pages-list.php', $isAdmin || $isEditor],
+            ['dk-blog-dash', 'Blog Dashboard', '/admin/blog-dashboard.php', admin_blog_access()],
+            ['dk-posts', 'Posts', '/admin/blogs-manager.php', admin_blog_access()],
+            ['dk-pages', 'Pages', '/admin/pages-list.php', $isAdmin],
             ['dk-categories', 'Categories', '/admin/categories-manager.php', admin_can('blogs.manage_categories')],
         ]);
         $siteAppearance = $keep([
@@ -147,7 +147,7 @@ function wpbar_html(array $ctx = []): string
         ['new-student', 'Student', '/admin/student-edit.php', $ci],
         ['new-post', 'Post', '/admin/post-manager.php', admin_can('blogs.create')],
         ['new-media', 'Media', '/admin/file-manager.php', admin_can('files.access_file_manager')],
-        ['new-page', 'Page', '/admin/page-editor.php', $isAdmin || $isEditor],
+        ['new-page', 'Page', '/admin/page-editor.php', $isAdmin],
         ['new-user', 'User', '/admin/user-manager.php', admin_can('users.create')],
     ]);
     if ($new) $left .= wpbar_li('new-content', '<span class="ab-icon" aria-hidden="true"></span><span class="ab-label">New</span>', $new[0][2], '', [['new-content-default', $new]]);
@@ -162,7 +162,7 @@ function wpbar_html(array $ctx = []): string
             $own = (int)($row['user_id'] ?? 0) === (int)$u['id'];
             if ($isAdmin || admin_can('blogs.edit_all') || ($own && admin_can('blogs.edit_own'))) $edit = ['Edit Post', '/admin/post-manager.php?id=' . (int)$row['id']];
         }
-    } elseif ($kind === 'page' && ($slug = preg_replace('/[^a-z0-9-]/', '', strtolower((string)($ctx['slug'] ?? '')))) !== '' && ($isAdmin || $isEditor)) {
+    } elseif ($kind === 'page' && ($slug = preg_replace('/[^a-z0-9-]/', '', strtolower((string)($ctx['slug'] ?? '')))) !== '' && $isAdmin) {
         $p = $pdo->prepare('SELECT id FROM site_pages WHERE slug = ? LIMIT 1');
         $p->execute([$slug]);
         if ($pg = $p->fetchColumn()) $edit = ['Edit Page', '/admin/page-editor.php?id=' . (int)$pg];

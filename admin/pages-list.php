@@ -1,7 +1,7 @@
 <?php
 require_once __DIR__ . '/components/guard.php';
 require_once INCLUDES_PATH . '/pages.php';
-$me = admin_guard(['admin', 'editor']);
+$me = admin_guard(['admin']) /* site pages / messages: not part of the blog roles */;
 edu_pages_table($pdo);
 // The site's built-in pages (About Us, Contact Us, policies) become normal Pages the first time this list opens.
 $__made = edu_builtin_convert($pdo, (int)$me['id']);

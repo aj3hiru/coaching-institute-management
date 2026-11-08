@@ -2,7 +2,7 @@
 // Add / Edit Page — same editor look as posts (title + permalink, content with toolbar and HTML tab, publish box, SEO box).
 require_once __DIR__ . '/components/guard.php';
 require_once INCLUDES_PATH . '/pages.php';
-$me = admin_guard(['admin', 'editor']);
+$me = admin_guard(['admin']) /* site pages / messages: not part of the blog roles */;
 edu_pages_table($pdo);
 
 $id = (int)($_GET['id'] ?? 0);

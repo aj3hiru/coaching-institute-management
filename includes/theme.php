@@ -151,7 +151,7 @@ const EDU_TYPO_TARGETS = [
 
 function edu_theme_is_preview(): bool
 {
-    return isset($_GET['czp']) && ($_SESSION['role'] ?? '') === 'admin';
+    return isset($_GET['czp']) && in_array($_SESSION['role'] ?? '', ['admin', 'blog_admin'], true);
 }
 
 function edu_theme(): array

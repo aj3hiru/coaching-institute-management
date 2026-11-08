@@ -5,7 +5,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/includes/config.php';
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
 
-if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'] ?? '', ['admin', 'editor', 'author'], true)) {
+if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'] ?? '', ['admin', 'blog_admin', 'editor', 'author', 'teacher', 'accountant'], true)) {
     http_response_code(403);
     echo json_encode(['error' => 'Access denied']);
     exit;

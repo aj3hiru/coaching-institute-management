@@ -4,7 +4,10 @@
 require_once __DIR__ . '/components/guard.php';
 require_once INCLUDES_PATH . '/theme.php';
 require_once INCLUDES_PATH . '/shop.php';
-admin_guard(['admin']);
+$czMe = admin_guard(['admin', 'blog_admin']);
+$czBlog = $czMe['role'] === 'blog_admin'; // Blog Admin: only Sidebar, Post Template, Also Read, Reading Progress, Blog & Archives
+const CZ_BLOG_PANELS = ['sidebar', 'post', 'alsoread', 'progress', 'home'];
+const CZ_BLOG_KEYS = '/^(sb_|p_|ar_|rp_|home_|arch_)/';
 
 $identityKeys = ['site_title', 'tagline', 'logo', 'logo_w', 'header_logo', 'favicon'];
 
@@ -71,6 +74,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($general['logo_w'])) $general['logo_w'] = max(20, min(600, (int)$general['logo_w']));
 
     $home = isset($data['home']) && is_array($data['home']) ? sh_home_sanitize($data['home']) : null; // Homepage panel
+    if ($czBlog) { // keep everything outside the blog exactly as it is
+        if (!in_array($action, ['draft', 'publish'], true)) { echo json_encode(['ok' => false, 'message' => 'Only admins can do this.']); exit; }
+        $live = edu_theme();
+        foreach ($theme as $k => $v) if (!preg_match(CZ_BLOG_KEYS, $k)) $theme[$k] = $live[$k] ?? $defaults[$k];
+        $general = []; $home = null;
+    }
     if ($action === 'draft') {
         $_SESSION['edu_draft'] = ['theme' => $theme, 'general' => $general] + ($home ? ['home' => $home] : []);
         echo json_encode(['ok' => true]);
@@ -291,6 +300,7 @@ const HOME_SECTIONS = <?= json_encode(SH_HOME_SECTIONS, JSON_UNESCAPED_UNICODE) 
 const PICK_ICONS = <?= json_encode(array_combine(SH_PICK_ICONS, array_map('sh_icon', SH_PICK_ICONS)), JSON_UNESCAPED_SLASHES) ?>;
 const HOME_BRAND = <?php require_once INCLUDES_PATH . '/institute.php'; $hb = ci_institute()['brand']['title'] ?? ''; echo json_encode($hb !== '' ? $hb : edu_site_name(), JSON_UNESCAPED_UNICODE); ?>; // same name as the homepage heading
 const START_PANEL = <?= json_encode((string)($_GET['panel'] ?? '')) ?>;
+const CZ_ONLY = <?= json_encode($czBlog ? CZ_BLOG_PANELS : null) ?>; // Blog Admin: blog panels only
 const HAS_BACKUP = <?= !empty($backup['theme']) ? 'true' : 'false' ?>;
 const BACKUP_AT = <?= json_encode($backup['at'] ?? '') ?>;
 const FONTS = [['system', 'System font (fastest)'], ['Inter', 'Inter'], ['Roboto', 'Roboto'], ['Poppins', 'Poppins'], ['Noto Sans', 'Noto Sans (Hindi too)'], ['Mukta', 'Mukta (Hindi)'], ['Hind', 'Hind (Hindi)'], ['Open Sans', 'Open Sans'], ['Lato', 'Lato'], ['Merriweather', 'Merriweather (serif)'], ['Georgia', 'Georgia (serif)']];
@@ -1292,7 +1302,7 @@ function showHome() {
   panel = null; addingFor = null; document.querySelectorAll('.cz-additems').forEach(x => x.remove()); $('cz-back').hidden = true; $('cz-head-small').textContent = 'You are customizing'; $('cz-head-title').textContent = <?= json_encode(edu_site_name()) ?>;
   const b = $('cz-body'); b.innerHTML = '';
   const nav = document.createElement('nav'); nav.className = 'cz-nav';
-  PANELS.forEach(p => {
+  PANELS.filter(p => !CZ_ONLY || CZ_ONLY.includes(p.id)).forEach(p => {
     const btn = document.createElement('button'); btn.type = 'button';
     btn.innerHTML = '<span class="cz-nav-ico"><i class="fas ' + p.icon + '"></i></span><span class="cz-nav-text"><strong>' + esc(p.label) + '</strong><small>' + esc(p.sub) + '</small></span><i class="fas fa-chevron-right"></i>';
     btn.onclick = () => showPanel(p); nav.appendChild(btn);
@@ -1306,7 +1316,7 @@ function showHome() {
   };
   const u = r.querySelector('.cz-dreset-undo');
   if (u) u.onclick = () => { if (confirm('Restore the design from before the last reset?')) post('undo_reset').then(() => location.reload()); };
-  b.appendChild(r);
+  if (!CZ_ONLY) b.appendChild(r); // reset is for admins only
 }
 function showPanel(p, keep) {
   if (!keep) { menuView = null; miOpen = null; addingFor = null; arOpen = undefined; openFont = null; openRule = null; gpalEditing = null; hmOpen = null; hmEdit = null; $('cz-back').onclick = showHome; }
@@ -1336,7 +1346,7 @@ $('cz-show').onclick = () => { $('cz-root').classList.remove('cz-collapsed'); $(
 document.querySelectorAll('#cz-devices button').forEach(b => b.onclick = () => setDevice(b.dataset.dev));
 window.addEventListener('beforeunload', e => { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
 showHome();
-if (START_PANEL) { const sp = PANELS.find(x => x.id === START_PANEL); if (sp) showPanel(sp); }
+if (START_PANEL) { const sp = PANELS.find(x => x.id === START_PANEL && (!CZ_ONLY || CZ_ONLY.includes(x.id))); if (sp) showPanel(sp); }
 </script>
 </body>
 </html>

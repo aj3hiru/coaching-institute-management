@@ -94,6 +94,8 @@ define('CI_PERMS', ['add_student' => 'Add student', 'edit_student' => 'Edit stud
 function ci_perm(array $u, string $key): bool
 {
     if (($u['role'] ?? '') === 'admin') return true;
+    if (!function_exists('edu_role_allows')) require_once INCLUDES_PATH . '/roles.php';
+    if (!edu_role_allows((string)($u['role'] ?? ''), 'institute')) return false; // blog people never reach the institute
     $p = is_array($u['permissions'] ?? null) ? $u['permissions'] : (json_decode((string)($u['permissions'] ?? '{}'), true) ?: []);
     return !empty($p['institute'][$key]);
 }
@@ -535,7 +537,7 @@ function ci_head(): void
 /** Opens an institute admin page: guard + tables. $need = permissions of which the user needs at least one (none = any). */
 function ci_page_start(PDO $pdo, array $need = []): array
 {
-    $me = admin_guard(['admin', 'editor', 'author']);
+    $me = admin_guard(['admin', 'editor', 'author', 'teacher', 'accountant']);
     $ok = $need ? (bool)array_filter($need, fn($k) => ci_perm($me, $k)) : ci_can($me);
     if (!$ok) { http_response_code(403); exit('Access Denied'); }
     ci_tables($pdo);

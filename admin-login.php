@@ -23,7 +23,7 @@ function edu_login_target(string $to): string
 $redirect_to = edu_login_target((string)($_GET['redirect_to'] ?? $_POST['redirect_to'] ?? ''));
 
 // Already signed in
-if (isset($_SESSION['user_id'], $_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'editor', 'author'], true)) {
+if (isset($_SESSION['user_id'], $_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'blog_admin', 'editor', 'author', 'teacher', 'accountant'], true)) {
     header('Location: ' . $redirect_to);
     exit;
 }
@@ -49,7 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$locked) {
         } else {
             try {
                 $stmt = $pdo->prepare("SELECT id, username, email, password_hash, role, status, permissions FROM users
-                    WHERE (username = ? OR email = ?) AND role IN ('admin','editor','author') LIMIT 1");
+                    WHERE (username = ? OR email = ?) AND role IN ('admin','blog_admin','editor','author','teacher','accountant') LIMIT 1");
                 $stmt->execute([$login_value, $login_value]);
                 $user = $stmt->fetch(PDO::FETCH_ASSOC);
                 // always verify — no timing difference between unknown users and wrong passwords

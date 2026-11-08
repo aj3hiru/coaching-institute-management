@@ -6,9 +6,11 @@ require_once INCLUDES_PATH . '/functions.php';
 require_once INCLUDES_PATH . '/settings.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/admin/components/shell.php';
 
+require_once dirname(__DIR__, 2) . '/includes/roles.php';
 function admin_guard(array $roles = ['admin']): array
 {
     global $pdo;
+    if (in_array('editor', $roles, true) && !in_array('blog_admin', $roles, true)) $roles[] = 'blog_admin'; // a blog admin may go wherever an editor may
     if (empty($_SESSION['user_id'])) {
         header('Location: /admin-login?redirect_to=' . rawurlencode((string)($_SERVER['REQUEST_URI'] ?? '/admin/dashboard.php')));
         exit;

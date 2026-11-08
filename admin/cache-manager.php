@@ -23,7 +23,7 @@ $permissions = json_decode($user['permissions'] ?? '{}', true);
 if (
     !$user ||
     $user['status'] !== 'active' ||
-    (($_SESSION['role'] ?? '') !== 'admin' && empty($permissions['settings']['maintenance_mode'])) // admins always; others need the permission
+    ($_SESSION['role'] ?? '') !== 'admin' // admins only: the staff roles (blog / teacher / accountant) never reach site tools
 ) {
     exit('Access Denied');
 }

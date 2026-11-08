@@ -1,7 +1,7 @@
 <?php
 // My Profile — the signed-in user's account (email, password) and their author profile shown on posts.
 require_once __DIR__ . '/components/guard.php';
-$me = admin_guard(['admin', 'editor', 'author']);
+$me = admin_guard(['admin', 'editor', 'author', 'teacher', 'accountant']);
 $st = $pdo->prepare("SELECT * FROM authors WHERE user_id = ? ORDER BY id LIMIT 1");
 $st->execute([$me['id']]);
 $author = $st->fetch(PDO::FETCH_ASSOC) ?: null;

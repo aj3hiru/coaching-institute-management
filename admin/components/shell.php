@@ -35,6 +35,10 @@ function admin_can(string $path): bool
 {
     $u = admin_shell_user();
     if ($u['role'] === 'admin') return true;
+    if (!function_exists('edu_role_allows')) require_once dirname(__DIR__, 2) . '/includes/roles.php';
+    $group = explode('.', $path)[0];
+    if (!edu_role_allows($u['role'], $group)) return false; // a role never reaches outside its part (blog / office)
+    if ($u['role'] === 'blog_admin') return $group !== 'users' || in_array($path, ['users.create', 'users.edit', 'users.delete', 'users.suspend'], true); // the whole blog
     $v = $u['permissions'];
     foreach (explode('.', $path) as $k) {
         if (!is_array($v) || !array_key_exists($k, $v)) return false;
@@ -55,6 +59,7 @@ function admin_shell_nav(): array
     $has = fn(string $href) => is_file($root . parse_url($href, PHP_URL_PATH));
     $isAdmin = admin_shell_user()['role'] === 'admin';
     $isEditor = admin_shell_user()['role'] === 'editor';
+    $isBlogAdmin = admin_shell_user()['role'] === 'blog_admin';
     // A link is shown when the user may use it and the page exists.
     $link = function (bool $allowed, string $label, string $href, string $icon) use ($has) {
         return ($allowed && $has($href)) ? ['label' => $label, 'href' => $href, 'icon' => $icon] : null;
@@ -110,8 +115,8 @@ function admin_shell_nav(): array
                 $link(admin_can('blogs.manage_comments'), 'Comments', '/admin/comments-manager.php', 'fa-comments'),
             ])] : null,
             ['label' => 'Pages', 'href' => '/admin/pages-list.php', 'icon' => 'fa-file', 'items' => $sub([
-                $link($isAdmin || $isEditor, 'All Pages', '/admin/pages-list.php', 'fa-list'),
-                $link($isAdmin || $isEditor, 'Add Page', '/admin/page-editor.php', 'fa-plus'),
+                $link($isAdmin, 'All Pages', '/admin/pages-list.php', 'fa-list'),
+                $link($isAdmin, 'Add Page', '/admin/page-editor.php', 'fa-plus'),
             ])],
             $link(admin_can('files.access_file_manager'), 'File Manager', '/admin/file-manager.php', 'fa-images'),
             $link(admin_can('analytics.view_basic'), 'Analytics', '/admin/analytics.php', 'fa-chart-line'),
@@ -126,7 +131,8 @@ function admin_shell_nav(): array
                 ['label' => 'Status & Tools', 'href' => '/admin/seo.php?view=status', 'icon' => 'fa-toolbox'],
             ]] : null,
             $link($isAdmin || admin_can('ads.manage_ads'), 'Ad Inserter', '/admin/ad-inserter.php', 'fa-ad'),
-            $link($isAdmin, 'Code Snippets', '/admin/code-snippets.php', 'fa-code'),
+            $link($isAdmin || $isBlogAdmin, 'Code Snippets', '/admin/code-snippets.php', 'fa-code'),
+            $link($isBlogAdmin, 'Blog Customize', '/admin/customize.php', 'fa-palette'), // post template, also read, sidebar …
         ]],
         ['label' => 'Site', 'items' => [
             $link($isAdmin, 'Customize', '/admin/customize.php', 'fa-palette'),
@@ -135,12 +141,12 @@ function admin_shell_nav(): array
                 $link($isAdmin, 'Performance', '/admin/performance-settings.php', 'fa-tachometer-alt'),
             ])],
             admin_can('push_notifications.send') ? ['label' => 'Push Notifications', 'href' => '/push_notifications/push-manager.php', 'icon' => 'fa-bell'] : null, // delivery logs are inside the page (History)
-            ($isAdmin || $isEditor) && $has('/admin/contact-messages.php') ? ['label' => 'Contact Messages', 'href' => '/admin/contact-messages.php', 'icon' => 'fa-envelope', 'badge' => admin_shell_unread()] : null,
+            $isAdmin && $has('/admin/contact-messages.php') ? ['label' => 'Contact Messages', 'href' => '/admin/contact-messages.php', 'icon' => 'fa-envelope', 'badge' => admin_shell_unread()] : null,
         ]],
         ['label' => 'Admin', 'items' => [
             $link(admin_can('users.create'), 'Users', '/admin/user-manager.php', 'fa-user'),
             ['label' => 'Tools', 'href' => '#', 'icon' => 'fa-toolbox', 'items' => $sub([
-                $link($isAdmin || $isEditor, 'Bulk Update', '/admin/bulk-update.php', 'fa-clock-rotate-left'),
+                $link($isAdmin || $isEditor || $isBlogAdmin, 'Bulk Update', '/admin/bulk-update.php', 'fa-clock-rotate-left'),
                 $link($isAdmin, 'Import & Export', '/admin/import-export.php', 'fa-exchange-alt'),
                 $link($isAdmin, 'Backup & Restore', '/admin/backup-restore.php', 'fa-database'),
                 $link(admin_can('settings.maintenance_mode'), 'Cache Manager', '/admin/cache-manager.php', 'fa-bolt'),

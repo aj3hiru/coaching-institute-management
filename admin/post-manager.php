@@ -44,7 +44,7 @@ if (isset($_GET['kwcheck'])) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($_POST['tpl_action'] ?? '', ['save', 'delete'], true)) {
     csrf_check();
     header('Content-Type: application/json');
-    if (!in_array($me['role'], ['admin', 'editor'], true)) exit(json_encode(['ok' => false, 'error' => 'Only admins and editors can manage templates.']));
+    if (!in_array($me['role'], ['admin', 'blog_admin', 'editor'], true)) exit(json_encode(['ok' => false, 'error' => 'Only admins and editors can manage templates.']));
     if ($_POST['tpl_action'] === 'save') {
         $name = mb_substr(trim((string)($_POST['name'] ?? '')), 0, 100);
         $html = (string)($_POST['html'] ?? '');
@@ -550,7 +550,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['title'])) {
 // SECTION 10: FETCH FORM DATA (authors, categories, states, templates)
 // ============================================================
 // Admins can credit any author; others their own author profile(s). The post's current author is always listed so saving never changes it silently.
-if (($_SESSION['role'] ?? '') === 'admin') {
+if (in_array($_SESSION['role'] ?? '', ['admin', 'blog_admin'], true)) { // a blog admin credits any author too
     $authors = $pdo->query("SELECT * FROM authors ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
 } else {
     $stmt = $pdo->prepare("SELECT * FROM authors WHERE user_id = ? OR id = ? ORDER BY name");

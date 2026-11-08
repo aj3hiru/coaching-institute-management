@@ -82,7 +82,7 @@ try {
     // Drafts and archived posts: a preview for signed-in staff only — never cached, never indexed
     $__isDraft = $post['status'] !== 'published';
     if ($__isDraft) {
-        if (empty($_SESSION['user_id']) || !in_array($_SESSION['role'] ?? '', ['admin', 'editor', 'author'], true)) {
+        if (empty($_SESSION['user_id']) || !in_array($_SESSION['role'] ?? '', ['admin', 'blog_admin', 'editor', 'author'], true)) {
             http_response_code(404);
             header('Cache-Control: no-store, private');
             include 'templates/post_not_found.php';

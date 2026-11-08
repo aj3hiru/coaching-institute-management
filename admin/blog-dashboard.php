@@ -8,7 +8,7 @@ $perm = json_decode($me['permissions'] ?? '{}', true) ?: [];
 if ($me['role'] !== 'admin' && empty($perm['dashboard_access'])) { http_response_code(403); exit('Access Denied'); }
 edu_stats_tables($pdo);
 
-$isAdmin = $me['role'] === 'admin';
+$isAdmin = in_array($me['role'], ['admin', 'blog_admin'], true); // blog admin sees everyone's blog figures
 $users = $isAdmin ? $pdo->query("SELECT id, username, role FROM users WHERE status = 'active' ORDER BY username")->fetchAll(PDO::FETCH_ASSOC) : [];
 $who = $isAdmin ? (int)($_GET['user'] ?? 0) : (int)$me['id'];
 $authorIds = [];

@@ -7,7 +7,7 @@ require_once INCLUDES_PATH . '/institute.php';
 require_once INCLUDES_PATH . '/shop.php';
 $type = (string)($_GET['type'] ?? '');
 // online sales need the store "Orders" permission; every other report needs institute access
-if ($type === 'store') { $me = admin_guard(['admin', 'editor', 'author']); if (!sh_perm($me, 'orders')) { http_response_code(403); exit('{"error":"Access denied"}'); } ci_tables($pdo); sh_tables($pdo); }
+if ($type === 'store') { $me = admin_guard(['admin', 'editor', 'author', 'teacher', 'accountant']); if (!sh_perm($me, 'orders')) { http_response_code(403); exit('{"error":"Access denied"}'); } ci_tables($pdo); sh_tables($pdo); }
 else $me = ci_page_start($pdo);
 header('Content-Type: application/json; charset=utf-8');
 $id = (int)($_GET['id'] ?? 0);

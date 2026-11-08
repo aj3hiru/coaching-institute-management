@@ -28,7 +28,7 @@ if (!function_exists('edu_settings')) {
             $raw = $st->fetchColumn();
             $cache[$group] = $raw ? (json_decode($raw, true) ?: []) : [];
             // Customizer preview (?czp=1): an admin sees their unsaved changes on top.
-            if (isset($_GET['czp']) && ($_SESSION['role'] ?? '') === 'admin' && !empty($_SESSION['edu_draft'][$group]) && is_array($_SESSION['edu_draft'][$group])) {
+            if (isset($_GET['czp']) && in_array($_SESSION['role'] ?? '', ['admin', 'blog_admin'], true) && !empty($_SESSION['edu_draft'][$group]) && is_array($_SESSION['edu_draft'][$group])) {
                 $cache[$group] = array_merge($cache[$group], $_SESSION['edu_draft'][$group]);
             }
         } catch (Throwable $e) {

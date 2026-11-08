@@ -5,6 +5,8 @@ require_once __DIR__ . '/components/guard.php';
 $me = admin_guard(['admin', 'editor']);
 $isAdmin = $me['role'] === 'admin';
 if (!$isAdmin && !admin_can('users.create')) { http_response_code(403); exit('Access Denied'); }
+$canGive = edu_roles_assignable($me['role']); // admin: every role · blog admin: author, editor · editor: author
+if (!$canGive) { http_response_code(403); exit('Access Denied'); }
 
 // ─── Permissions: the same groups as before, with defaults per role ───────────────────────────────────────────
 const UM_PERMS = [
@@ -31,19 +33,27 @@ function um_role_perms(string $role): array
     foreach (UM_PERMS as $k => $v) $p[$k] = is_array($v) ? array_fill_keys(array_keys($v), $role === 'admin') : $role === 'admin';
     if ($role === 'admin') return $p;
     $p['dashboard_access'] = true;
-    if ($role === 'editor') {
+    if ($role === 'blog_admin' || $role === 'editor') { // the whole blog; a blog admin also ads, authors and blog users
         foreach ($p['blogs'] as $k => $_) $p['blogs'][$k] = true;
         $p['media'] = ['upload' => true, 'delete' => true, 'manage_all' => true];
         $p['analytics'] = ['view_basic' => true, 'view_advanced' => true];
-        $p['pages'] = ['create' => true, 'edit' => true, 'delete' => true];
         $p['files']['access_file_manager'] = true;
-        $p['push_notifications']['send'] = true;
-        return $p;
+        if ($role === 'blog_admin') {
+            $p['ads'] = ['manage_ads' => true, 'view_revenue' => true];
+            foreach ($p['authors'] as $k => $_) $p['authors'][$k] = true;
+            foreach (['create', 'edit', 'delete', 'suspend'] as $k) $p['users'][$k] = true;
+        }
+    } elseif ($role === 'teacher') {
+        $p['store']['teacher'] = true;
+    } elseif ($role === 'accountant') {
+        $p['institute']['fees'] = true;
+        $p['store']['orders'] = $p['store']['customers'] = true;
+    } else { // author: own posts
+        foreach (['create', 'edit_own', 'delete_own', 'view_drafts'] as $k) $p['blogs'][$k] = true;
+        $p['media']['upload'] = true;
+        $p['analytics']['view_basic'] = true;
     }
-    foreach (['create', 'edit_own', 'delete_own', 'view_drafts'] as $k) $p['blogs'][$k] = true;
-    $p['media']['upload'] = true;
-    $p['analytics']['view_basic'] = true;
-    return $p;
+    return edu_role_clamp($role, $p);
 }
 
 /**
@@ -97,8 +107,8 @@ function um_unique_slug(PDO $pdo, string $slug, int $exceptId): string
 }
 
 $roleOptions = $isAdmin
-    ? ['author' => 'Author', 'editor' => 'Editor', 'admin' => 'Admin']
-    : ['author' => 'Author'];
+    ? ['author' => 'Author', 'editor' => 'Editor', 'blog_admin' => 'Blog Admin', 'teacher' => 'Teacher', 'accountant' => 'Accountant', 'admin' => 'Admin']
+    : array_intersect_key(['author' => 'Author', 'editor' => 'Editor'], array_flip($canGive));
 
 // ─── Save / delete ────────────────────────────────────────────────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -119,7 +129,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $st->execute([$id]);
                 $old = $st->fetch(PDO::FETCH_ASSOC);
                 if (!$old) throw new RuntimeException('This user no longer exists.');
-                if (!$isAdmin && $old['role'] !== 'author' && $id !== (int)$me['id']) throw new RuntimeException('Editors can only change authors.');
+                if (!$isAdmin && !in_array($old['role'], $canGive, true) && $id !== (int)$me['id']) throw new RuntimeException('You can only change ' . implode(' and ', array_map(fn($r) => strtolower(EDU_ROLES[$r]) . 's', $canGive)) . '.');
             }
             if (!preg_match('/^[A-Za-z0-9_.-]{3,50}$/', $username)) throw new RuntimeException('Username: 3–50 letters, numbers, dot, dash or underscore.');
             if (!$email) throw new RuntimeException('Please enter a valid email address.');
@@ -131,8 +141,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $dupe->execute([$username, $email, $id]);
             if ($d = $dupe->fetch(PDO::FETCH_ASSOC)) throw new RuntimeException(strcasecmp($d['username'], $username) === 0 ? 'This username is already taken.' : 'Another user already uses this email.');
             // Admins set permissions freely; an editor's users always get the author defaults; your own stay as they are.
+            // a role never holds permissions outside its part (blog / teacher & accountant); a Blog Admin always has the whole blog
             if ($self && $old) $perms = $old['permissions'];
-            else $perms = json_encode($isAdmin ? um_perms_from_post() : um_role_perms('author'));
+            elseif ($isAdmin && !in_array($role, ['admin', 'blog_admin'], true)) $perms = json_encode(edu_role_clamp($role, um_perms_from_post()));
+            else $perms = json_encode(um_role_perms($role));
 
             // Author profile (every user gets one, like WordPress — it is what shows on their posts)
             $t = fn($k, $max = 255) => mb_substr(trim((string)($_POST[$k] ?? '')), 0, $max);
@@ -190,7 +202,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             admin_flash($id ? "User \"$username\" saved." : "User \"$username\" created" . ($status === 'active' ? ' and can sign in now.' : " ($status)."));
         } elseif ($act === 'role' && $isAdmin) {
             $id = (int)($_POST['id'] ?? 0);
-            $role = in_array($_POST['role'] ?? '', ['admin', 'editor', 'author'], true) ? $_POST['role'] : null;
+            $role = array_key_exists($_POST['role'] ?? '', EDU_ROLES) ? $_POST['role'] : null;
             if (!$role || $id === (int)$me['id']) throw new RuntimeException('You cannot change your own role.');
             $pdo->prepare("UPDATE users SET role = ?, permissions = ? WHERE id = ?")->execute([$role, json_encode(um_role_perms($role)), $id]);
             admin_log('user_role', "Changed user #$id role to $role");
@@ -203,7 +215,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $st->execute([$id]);
             $u = $st->fetch(PDO::FETCH_ASSOC);
             if (!$u) throw new RuntimeException('This user no longer exists.');
-            if (!$isAdmin && ($u['role'] !== 'author' || !admin_can('users.delete'))) throw new RuntimeException('You may not delete this user.');
+            if (!$isAdmin && (!in_array($u['role'], $canGive, true) || !admin_can('users.delete'))) throw new RuntimeException('You may not delete this user.');
             $aids = array_filter(array_map('intval', explode(',', (string)$u['aids'])));
             $pdo->beginTransaction();
             $moved = 0;
@@ -235,11 +247,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // ─── Data ──────────────────────────────────────────────────────────────────────────────────────────────────────
 $view = ($_GET['view'] ?? '') === 'authors' ? 'authors' : 'users';
 $q = trim((string)($_GET['search'] ?? ''));
-$fRole = in_array($_GET['role'] ?? '', ['admin', 'editor', 'author'], true) ? $_GET['role'] : '';
+$fRole = array_key_exists($_GET['role'] ?? '', EDU_ROLES) ? $_GET['role'] : '';
 $fStatus = in_array($_GET['status'] ?? '', ['active', 'pending', 'suspended'], true) ? $_GET['status'] : '';
 $where = [];
 $args = [];
-if (!$isAdmin) $where[] = "(u.role = 'author' OR u.id = " . (int)$me['id'] . ")";
+if (!$isAdmin) $where[] = "(u.role IN ('" . implode("','", $canGive) . "') OR u.id = " . (int)$me['id'] . ")"; // blog admin: authors + editors · editor: authors
 if ($q !== '') { $where[] = "(u.username LIKE ? OR u.email LIKE ? OR a.name LIKE ? OR a.full_name LIKE ?)"; array_push($args, "%$q%", "%$q%", "%$q%", "%$q%"); }
 if ($fRole) { $where[] = "u.role = ?"; $args[] = $fRole; }
 if ($fStatus) { $where[] = "u.status = ?"; $args[] = $fStatus; }
@@ -248,7 +260,7 @@ $st = $pdo->prepare("SELECT u.id, u.username, u.email, u.role, u.status, u.permi
         a.instagram, a.threads, a.linkedin, a.facebook, a.twitter, a.is_featured, a.status author_status,
         (SELECT COUNT(*) FROM posts p WHERE p.author_id = a.id) posts
     FROM users u LEFT JOIN authors a ON a.id = (SELECT MIN(id) FROM authors WHERE user_id = u.id)
-    " . ($where ? 'WHERE ' . implode(' AND ', $where) : '') . " ORDER BY u.role = 'admin' DESC, u.role = 'editor' DESC, u.username");
+    " . ($where ? 'WHERE ' . implode(' AND ', $where) : '') . " ORDER BY FIELD(u.role, 'admin', 'blog_admin', 'editor', 'author', 'teacher', 'accountant'), u.username");
 $st->execute($args);
 $rows = $st->fetchAll(PDO::FETCH_ASSOC);
 $all = $pdo->query("SELECT u.id, u.username, u.role, u.status, (SELECT COUNT(*) FROM authors WHERE user_id = u.id) has_author FROM users u ORDER BY u.username")->fetchAll(PDO::FETCH_ASSOC);
@@ -309,7 +321,7 @@ foreach ($rows as $r) {
 <div class="filter-section"><form method="GET"><?php if ($view === 'authors'): ?><input type="hidden" name="view" value="authors"><?php endif; ?>
   <div class="filter-row">
     <div class="filter-group"><label>Search</label><input type="text" name="search" class="filter-control" placeholder="Name, username or email…" value="<?= $esc($q) ?>"></div>
-    <?php if ($isAdmin): ?><div class="filter-group"><label>Role</label><select name="role" class="filter-control"><option value="">All Roles</option><?php foreach (['admin' => 'Admin', 'editor' => 'Editor', 'author' => 'Author'] as $k => $l): ?><option value="<?= $k ?>"<?= $fRole === $k ? ' selected' : '' ?>><?= $l ?></option><?php endforeach; ?></select></div><?php endif; ?>
+    <?php if ($isAdmin): ?><div class="filter-group"><label>Role</label><select name="role" class="filter-control"><option value="">All Roles</option><?php foreach (EDU_ROLES as $k => $l): ?><option value="<?= $k ?>"<?= $fRole === $k ? ' selected' : '' ?>><?= $l ?></option><?php endforeach; ?></select></div><?php endif; ?>
     <div class="filter-group"><label>Status</label><select name="status" class="filter-control"><option value="">All Status</option><?php foreach (['active' => 'Active', 'pending' => 'Pending', 'suspended' => 'Suspended'] as $k => $l): ?><option value="<?= $k ?>"<?= $fStatus === $k ? ' selected' : '' ?>><?= $l ?></option><?php endforeach; ?></select></div>
     <div class="filter-group" style="justify-content:flex-end"><label>&nbsp;</label><div style="display:flex;gap:.5rem"><button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Filter</button><a href="/admin/user-manager.php<?= $view === 'authors' ? '?view=authors' : '' ?>" class="btn btn-secondary" title="Clear filters"><i class="fas fa-times"></i></a></div></div>
   </div>
@@ -325,8 +337,8 @@ foreach ($rows as $r) {
     <td><div class="u-identity"><?php if ($r['profile_image']): ?><img class="um-img" src="<?= $esc($img($r['profile_image'])) ?>" alt=""><?php else: ?><div class="u-avatar"><?= $esc(mb_strtoupper(mb_substr($r['name'] ?: $r['username'], 0, 1))) ?></div><?php endif; ?>
       <div style="min-width:0"><div class="u-name"><?= $esc($r['name'] ?: $r['username']) ?><?= $self ? '<span class="um-you">You</span>' : '' ?></div><div class="u-email">@<?= $esc($r['username']) ?> · <?= $esc($r['email']) ?></div></div></div></td>
     <td><?php if ($isAdmin && !$self): ?><form method="POST" style="margin:0"><?= csrf_field() ?><input type="hidden" name="action" value="role"><input type="hidden" name="id" value="<?= (int)$r['id'] ?>">
-      <select name="role" class="um-role" aria-label="Role" onchange="var s=this;adminConfirm('Their permissions are reset to the defaults of the new role.',{title:'Change role?',confirmText:'Change role',danger:false}).then(function(ok){if(ok)s.form.submit();else s.value='<?= $r['role'] ?>';})"><?php foreach (['admin' => 'Admin', 'editor' => 'Editor', 'author' => 'Author'] as $k => $l): ?><option value="<?= $k ?>"<?= $r['role'] === $k ? ' selected' : '' ?>><?= $l ?></option><?php endforeach; ?></select></form>
-      <?php else: ?><span class="badge badge-default" style="text-transform:capitalize"><?= $esc($r['role']) ?></span><?php endif; ?></td>
+      <select name="role" class="um-role" aria-label="Role" onchange="var s=this;adminConfirm('Their permissions are reset to the defaults of the new role.',{title:'Change role?',confirmText:'Change role',danger:false}).then(function(ok){if(ok)s.form.submit();else s.value='<?= $r['role'] ?>';})"><?php foreach (EDU_ROLES as $k => $l): ?><option value="<?= $k ?>"<?= $r['role'] === $k ? ' selected' : '' ?>><?= $l ?></option><?php endforeach; ?></select></form>
+      <?php else: ?><span class="badge badge-default"><?= $esc(EDU_ROLES[$r['role']] ?? $r['role']) ?></span><?php endif; ?></td>
     <td><span class="badge <?= $r['status'] === 'active' ? 'badge-active' : ($r['status'] === 'suspended' ? 'badge-inactive' : 'badge-pending') ?>"><?= ucfirst($r['status']) ?></span></td>
     <td class="hide-mobile"><?= (int)$r['posts'] ?></td>
     <td class="hide-mobile" style="color:var(--gray-500);font-size:.8125rem;white-space:nowrap"><?= $r['created_at'] ? date('d M Y', strtotime($r['created_at'])) : '—' ?></td>
@@ -408,22 +420,23 @@ foreach ($rows as $r) {
         <?php if ($isAdmin): ?>
         <div id="umPermBox">
         <div class="form-section-title"><i class="fas fa-shield-alt"></i> Permissions</div>
+        <p class="um-hint" id="umScopeNote" style="margin:0 0 .6rem"></p>
         <div class="adv-toggle" role="button" tabindex="0" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')"><span><i class="fas fa-shield-alt"></i> Advance Access</span><i class="fas fa-chevron-down chev"></i></div>
         <div class="adv-panel"><div class="perm-panel">
-          <div class="perm-group"><div class="perm-group-title"><i class="fas fa-blog"></i> Blogs</div><div class="perm-grid">
+          <div class="perm-group" data-scope="blog"><div class="perm-group-title"><i class="fas fa-blog"></i> Blogs</div><div class="perm-grid">
             <label class="perm-item"><input type="radio" name="p_blog" value="none" data-simple="blog"> No access</label>
             <label class="perm-item"><input type="radio" name="p_blog" value="own" data-simple="blog"> Add / edit own posts <small>(own media &amp; own analytics)</small></label>
             <label class="perm-item"><input type="radio" name="p_blog" value="all" data-simple="blog"> All posts <small>(all media, pages, SEO &amp; site analytics)</small></label>
             <label class="perm-item"><input type="checkbox" name="p_ads" value="1" data-simple="ads"> Ads (Ad Inserter)</label>
           </div></div>
-          <div class="perm-group"><div class="perm-group-title"><i class="fas fa-bell"></i> Push Notifications</div><div class="perm-grid">
+          <div class="perm-group" data-scope="all"><div class="perm-group-title"><i class="fas fa-bell"></i> Push Notifications</div><div class="perm-grid">
             <label class="perm-item"><input type="checkbox" name="p_push" value="1" data-simple="push"> Send push</label>
             <label class="perm-item"><input type="checkbox" name="p_push_adv" value="1" data-simple="push_adv"> Advanced <small>(change keys, import / export)</small></label>
           </div></div>
-          <div class="perm-group"><div class="perm-group-title"><i class="fas fa-user-graduate"></i> Institute Management</div><div class="perm-grid">
+          <div class="perm-group" data-scope="office"><div class="perm-group-title"><i class="fas fa-user-graduate"></i> Institute Management</div><div class="perm-grid">
             <?php foreach (UM_PERMS['institute'] as $k => $l): ?><label class="perm-item"><input type="checkbox" name="p_inst[<?= $k ?>]" value="1" data-simple="inst.<?= $k ?>"> <?= $esc($l) ?></label><?php endforeach; ?>
           </div></div>
-          <div class="perm-group"><div class="perm-group-title"><i class="fas fa-store"></i> Online Store</div><div class="perm-grid" id="umStorePerms">
+          <div class="perm-group" data-scope="office"><div class="perm-group-title"><i class="fas fa-store"></i> Online Store</div><div class="perm-grid" id="umStorePerms">
             <?php foreach (UM_PERMS['store'] as $k => $l): ?><label class="perm-item"><input type="checkbox" name="p_store[<?= $k ?>]" value="1" data-simple="store.<?= $k ?>"> <?= $esc($l) ?></label><?php endforeach; ?>
           </div></div>
         </div></div>
@@ -463,7 +476,9 @@ foreach ($rows as $r) {
 <script>
 window.UM = (function () {
   var rows = <?= json_encode($jsRows, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE) ?>;
-  var roleDefaults = <?= json_encode(['admin' => um_role_perms('admin'), 'editor' => um_role_perms('editor'), 'author' => um_role_perms('author')]) ?>;
+  var roleDefaults = <?= json_encode(array_combine(array_keys(EDU_ROLES), array_map('um_role_perms', array_keys(EDU_ROLES)))) ?>;
+  // which permission boxes belong to which role: blog roles → Blogs; teacher / accountant → Institute + Online Store; admin → everything
+  var ROLE_SCOPE = <?= json_encode(array_combine(array_keys(EDU_ROLES), array_map('edu_role_scope', array_keys(EDU_ROLES)))) ?>;
   var m = document.getElementById('umModal'), f = document.getElementById('umForm'), permBox = document.getElementById('umPermBox');
   document.body.appendChild(m); document.body.appendChild(document.getElementById('umDel'));
   function setPerms(p) {
@@ -483,6 +498,15 @@ window.UM = (function () {
     f.querySelectorAll('[data-simple]').forEach(function (c) { c.closest('.perm-item').classList.toggle('checked', c.checked); });
   }
   f.addEventListener('change', function (e) { if (e.target.matches('[data-simple]')) { f.querySelectorAll('[data-simple]').forEach(function (c) { c.closest('.perm-item').classList.toggle('checked', c.checked); }); teachBox(); } });
+  function scopeBox(role) { // show only the permission groups the role can hold
+    var sc = ROLE_SCOPE[role] || 'blog', box = document.getElementById('umPermBox');
+    if (!box) return;
+    box.querySelectorAll('[data-scope]').forEach(function (g) { g.hidden = !(sc === 'all' || g.dataset.scope === sc); });
+    var note = document.getElementById('umScopeNote');
+    if (note) note.textContent = sc === 'all' ? 'Admins can do everything.' : role === 'blog_admin' ? 'Blog Admin: the whole blog — all posts, categories, tags, comments, media, analytics, ads, code snippets, blog Customize, and blog authors / editors. Nothing outside the blog.' : sc === 'blog' ? 'Blog only — nothing outside the blog (institute, store, settings).' : 'Institute and online store only — no blog.';
+    var adv = box.querySelector('.adv-panel'), tog = box.querySelector('.adv-toggle');
+    if (role === 'admin' || role === 'blog_admin') { adv.hidden = true; tog.hidden = true; } else { adv.hidden = false; tog.hidden = false; }
+  }
   function teachBox() { var b = document.getElementById('umTeach'), c = f.querySelector('[name="p_store[teacher]"]'); if (b) b.hidden = !(c && c.checked); }
   function slugify(s) { return (s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''); }
   function slugPrev() { document.getElementById('umSlugPrev').textContent = slugify(f.slug.value) || slugify(f.name.value) || slugify(f.username.value) || '…'; }
@@ -512,12 +536,12 @@ window.UM = (function () {
       var self = !!(r && r.self);
       f.role.disabled = self; f.status.disabled = self; document.getElementById('umSelfHint').hidden = !self;
       if (permBox) permBox.hidden = self;
-      photo(r ? r.profile_image : ''); slugPrev(); teachBox();
+      photo(r ? r.profile_image : ''); slugPrev(); teachBox(); scopeBox(f.role.value);
       m.classList.add('open'); document.body.style.overflow = 'hidden';
       setTimeout(function () { (r ? f.name : f.username).focus(); }, 50);
     },
     close: function () { m.classList.remove('open'); document.body.style.overflow = ''; },
-    applyRole: function (role) { setPerms(roleDefaults[role] || roleDefaults.author); },
+    applyRole: function (role) { setPerms(roleDefaults[role] || roleDefaults.author); scopeBox(role); },
     eye: function (b) { var i = b.previousElementSibling; i.type = i.type === 'password' ? 'text' : 'password'; b.firstElementChild.className = 'fas ' + (i.type === 'password' ? 'fa-eye' : 'fa-eye-slash'); },
     pick: function () { EduMedia.pick(function (it) { photo(it.path); }); },
     photo: photo,

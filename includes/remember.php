@@ -64,7 +64,7 @@ function edu_rm_restore(PDO $pdo): void
         $perm = $r ? (json_decode((string)($r['permissions'] ?? '{}'), true) ?: []) : [];
         $ok = $r && hash_equals($r['validator_hash'], hash('sha256', $val)) && strtotime($r['expires_at']) > time()
             && hash_equals($r['pw_sig'], substr(hash('sha256', (string)$r['password_hash']), 0, 16))
-            && $r['status'] === 'active' && in_array($r['role'], ['admin', 'editor', 'author'], true)
+            && $r['status'] === 'active' && in_array($r['role'], ['admin', 'blog_admin', 'editor', 'author', 'teacher', 'accountant'], true)
             && ($r['role'] === 'admin' || !empty($perm['dashboard_access']));
         if (!$ok) {
             if ($r) $pdo->prepare("DELETE FROM edu_login_tokens WHERE id = ?")->execute([$r['id']]);
