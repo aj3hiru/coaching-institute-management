@@ -17,6 +17,7 @@ $cats = sh_categories($pdo);
 $catBy = []; foreach ($cats as $c) $catBy[$c['slug']] = $c;
 $cs = (string)($_GET['c'] ?? ''); $cat = $catBy[$cs] ?? null;
 $catName = fn(array $p) => $cats[(int)($p['category_id'] ?? 0)]['name'] ?? '';
+$tNames = [];
 
 // ---- what this page lists ----
 $rows = []; $total = 0;
@@ -68,13 +69,6 @@ $ico = fn($n) => sh_icon($n);
       <?= $ico('compass') ?><input type="search" name="q" value="<?= sh_e($qq) ?>" placeholder="<?= $lsMode === 'cats' ? 'Search a class…' : 'Search ' . strtolower($H[0]) . '…' ?>" aria-label="Search"><button type="submit">Search</button>
     </form>
   </header>
-
-  <nav class="ls-tabs" aria-label="Pages">
-    <?php foreach (['courses' => ['All Courses', 'video'], 'upcoming' => ['Upcoming', 'calendar'], 'notes' => ['PDF Notes', 'pdf'], 'cats' => ['Categories', 'grid']] as $k => [$l, $ic]): ?>
-      <a href="<?= ['courses' => '/courses/', 'upcoming' => '/upcoming-courses/', 'notes' => '/notes/', 'cats' => '/all-categories/'][$k] ?>" class="<?= $lsMode === $k ? 'on' : '' ?>"<?= $lsMode === $k ? ' aria-current="page"' : '' ?>><?= $ico($ic) ?> <?= $l ?></a>
-    <?php endforeach; ?>
-  </nav>
-
   <?php if ($lsMode !== 'cats'): ?>
   <div class="ls-filters">
     <?php if ($cats): ?><div class="ls-chips" aria-label="Class"><a href="<?= sh_e($link(['c' => '', 'page' => ''])) ?>" class="<?= $cat ? '' : 'on' ?>">All classes</a><?php foreach ($cats as $c): ?><a href="<?= sh_e($link(['c' => $c['slug'], 'page' => ''])) ?>" class="<?= $cat && $cat['slug'] === $c['slug'] ? 'on' : '' ?>"><?= sh_e($c['name']) ?></a><?php endforeach; ?></div><?php endif; ?>
@@ -92,7 +86,20 @@ $ico = fn($n) => sh_icon($n);
         <span class="hm-cat-n"><?= sh_e($c['name']) ?></span><?= $nc || $nn ? '<small>' . ($nc ? $nc . ' course' . ($nc === 1 ? '' : 's') : '') . ($nc && $nn ? ' · ' : '') . ($nn ? $nn . ' notes' : '') . '</small>' : '<small class="soon">Coming soon</small>' ?></a>
     <?php endforeach; ?></div>
   <?php else: ?>
-    <div class="hm-grid ls-grid"><?php foreach ($rows as $p) echo sh_mini_card($p, $catName($p)); ?></div>
+    <div class="ls-list"><?php foreach ($rows as $p): [$bt, $isUp] = sh_batch($p); $isNotes = $p['type'] === 'notes'; $free = (float)$p['price'] <= 0;
+      $tn = !empty($p['teacher_id']) ? ($tNames[(int)$p['teacher_id']] ??= sh_teacher_name($pdo, (int)$p['teacher_id'])) : ''; ?>
+      <div class="hm-btc ls-card">
+        <a class="hm-btc-i" href="<?= sh_e(sh_url($p)) ?>" tabindex="-1" aria-hidden="true"><?= sh_thumb_html($p) ?></a>
+        <div class="hm-btc-b">
+          <div class="hm-btc-tags"><?= $isUp ? '<span class="t-up">Upcoming batch</span>' : ($isNotes ? '<span class="t-new">PDF notes</span>' : '<span class="t-new">Video course</span>') ?><?= $catName($p) !== '' ? '<span>' . sh_e($catName($p)) . '</span>' : '' ?><?= $free ? '<span class="t-free hm-splash">Free</span>' : '' ?></div>
+          <h3><a href="<?= sh_e(sh_url($p)) ?>"><?= sh_e($p['title']) ?></a></h3>
+          <?php if ($p['subtitle']): ?><p><?= sh_e($p['subtitle']) ?></p><?php endif; ?>
+          <ul class="hm-btc-m"><?php if ($bt !== ''): ?><li><?= $ico('calendar') ?> <?= sh_e($bt) ?></li><?php endif; ?><?php if ($tn !== ''): ?><li><?= $ico('user') ?> <?= sh_e($tn) ?></li><?php endif; ?>
+            <?php if ($isNotes): ?><li><?= $ico('pdf') ?> <?= (int)$p['files'] ?> PDF<?= (int)$p['files'] === 1 ? '' : 's' ?></li><?php else: ?><li><?= $ico('video') ?> <?= (int)$p['lessons'] ?> lecture<?= (int)$p['lessons'] === 1 ? '' : 's' ?></li><?php endif; ?>
+            <?php if ((int)$p['validity_days']): ?><li><?= $ico('clock') ?> <?= (int)$p['validity_days'] ?> days access</li><?php endif; ?></ul>
+          <div class="hm-btc-f"><span class="hm-btc-p"><?= sh_price_html($p) ?></span><a class="hm-btn hm-splash" href="<?= sh_e(sh_url($p)) ?>"><?= $isUp ? 'Join this batch' : ($isNotes ? 'View notes' : 'View course') ?> <?= $ico('arrow') ?></a></div>
+        </div></div>
+    <?php endforeach; ?></div>
   <?php endif; ?>
 
   <?php if ($pages > 1): // pagination: ‹ 1 … 4 5 6 … 12 › ?>
@@ -106,4 +113,5 @@ $ico = fn($n) => sh_icon($n);
   </nav>
   <?php endif; ?>
 </div>
+<script src="/assets/js/home.js?v=<?= @filemtime(ROOT_PATH . '/assets/js/home.js') ?: 1 ?>" defer></script>
 <?php require ROOT_PATH . '/components/store-close.php'; ?>
