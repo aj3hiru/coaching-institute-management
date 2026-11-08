@@ -45,13 +45,10 @@ $pre = ['type' => in_array((string)($_GET['type'] ?? ''), $types, true) ? (strin
 .rp-types button.on{background:var(--ci-acc);color:#fff}
 .rp-types button:not(.on):hover{background:#faf8fd;color:var(--ci-acc)}
 .rp-pane[hidden]{display:none}
-/* the report lists in two boxes, each with its name on the border; the filters stay on the right, outside the boxes */
-.rp-side{display:flex;flex-direction:column;gap:24px;padding-top:12px}
-.rp-group{position:relative;border:2px solid var(--rg,#4a3369);padding:20px 10px 10px;background:#fff}
-.rp-group > .rp-glabel{position:absolute;top:-13px;left:10px;display:inline-flex;align-items:center;gap:7px;padding:3px 12px;background:var(--rg,#4a3369);color:#fff;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;line-height:1.4}
-.rp-group.rp-online{--rg:#0c6878}
-.rp-group .rp-types button.on{background:var(--rg,#4a3369)}
-.rp-group .rp-types button:not(.on):hover{color:var(--rg,#4a3369)}
+/* the report lists in two boxes, each with its name on the border (light, in the page's own colours); the filters stay on the right */
+.rp-side{display:flex;flex-direction:column;gap:22px;padding-top:10px}
+.rp-group{position:relative;border:1px solid var(--ci-b,#e5e7eb);padding:18px 10px 10px;background:#fff}
+.rp-group > .rp-glabel{position:absolute;top:-10px;left:10px;display:inline-flex;align-items:center;gap:6px;padding:0 8px;background:#fff;color:var(--ci-acc,#4a3369);font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;line-height:1.6}
 .rp-two{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:12px}
 @media (max-width:700px){.rp-two{grid-template-columns:1fr}}
 .rp-go{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
