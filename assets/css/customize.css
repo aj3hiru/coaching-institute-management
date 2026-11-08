@@ -371,3 +371,39 @@
 .cz-dreset strong { color: #1d2327; font-weight: 600; font-size: 14px; }
 .cz-dreset small { font-style: italic; color: #646970; }
 .cz-dreset-btn { padding: 0 10px; height: 30px; border-radius: 3px; border-color: #b32d2e; color: #b32d2e; font-weight: 400; }
+/* WordPress sub-screens, Menus and repeating items */
+.cz-sub-body, .cz-wpbox { display: flex; flex-direction: column; gap: 12px; }
+.cz-subrow-r { display: inline-flex; align-items: center; gap: 8px; }
+.cz-subrow .cz-badge { margin: 0; background: #f0f0f1; color: #646970; font-size: 11.5px; }
+.cz-subs + .cz-subrow, .cz-panel-fields > .cz-subrow:first-child { border-top: 1px solid #dcdcde; }
+.cz-panel-fields > .cz-subrow { margin: 0 -12px; }
+.cz-panel-fields > .cz-subrow + .cz-subrow { margin-top: -12px; }
+.cz-panel-fields > .cz-subrow:first-child { margin-top: 3px; }
+.cz-wp-h { margin: 6px 0 -4px; font-size: 14px; font-weight: 600; color: #1d2327; }
+.cz-subs { margin-top: 0; }
+.cz-label:empty { display: none; }
+.cz-locs { gap: 16px; }
+.cz-loc { display: flex; flex-direction: column; gap: 4px; }
+.cz-loc .cz-field { gap: 0; }
+.cz-loc .cz-link-btn { align-self: flex-start; font-size: 13px; text-decoration: underline; }
+.cz-root select:disabled { background-color: #f6f7f7; color: #50575e; cursor: default; }
+/* fonts / typography rules / menu items: slim WordPress bars */
+.cz-wpbox .cz-item { background: #fff; border: 1px solid #dcdcde; }
+.cz-wpbox .cz-item + .cz-item { margin-top: -6px; }
+.cz-wpbox .cz-item.open { border-color: #8c8f94; }
+.cz-wpbox .cz-item-row { min-height: 40px; padding: 0 4px 0 10px; }
+.cz-wpbox .cz-item-title { font-size: 13px; }
+.cz-wpbox .cz-item-card { margin: 0; border: 0; border-top: 1px solid #f0f0f1; border-radius: 0; box-shadow: none; padding: 12px 10px; background: #fff; }
+.cz-circle { width: 28px; height: 28px; border: 0; border-radius: 3px; background: transparent; color: #646970; font-size: 12px; }
+.cz-circle:hover { background: #f0f0f1; color: #1d2327; }
+.cz-circle.danger:hover { background: #fcf0f1; color: #b32d2e; }
+.cz-typo-group h4 { font-size: 13px; letter-spacing: 0; text-transform: none; color: #646970; font-weight: 600; margin: 4px 0 6px; }
+.cz-typo-group { display: flex; flex-direction: column; gap: 6px; }
+.cz-typo-group .cz-item + .cz-item { margin-top: 0; }
+.cz-mi { border-radius: 0; }
+.cz-mi-head { min-height: 40px; }
+.cz-mi-title { font-size: 13px; }
+.cz-menu-foot { justify-content: space-between; flex-direction: row-reverse; }
+.cz-menu-foot .cz-btn-outline { background: #f6f7f7; }
+.cz-block { margin-left: -12px; margin-right: -12px; }
+.cz-sub-body > .cz-block:first-child { margin-top: -12px; border-top: 0; }

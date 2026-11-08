@@ -32,7 +32,7 @@ function edu_theme_defaults(): array
         ],
         'menu_align' => 'center', 'menu_style' => 'underline', 'menu_dark_icon' => '1',
         // Footer
-        'f_cats' => '1', 'f_cats_heading' => 'Job Categories', 'f_cats_count' => 6,
+        'f_totop' => '1', 'f_cats' => '1', 'f_cats_heading' => 'Job Categories', 'f_cats_count' => 6,
         'f_links_heading' => 'Quick Links',
         'f_links' => [
             ['label' => 'About Us', 'url' => '/about-us'], ['label' => 'Contact Us', 'url' => '/contact-us'],

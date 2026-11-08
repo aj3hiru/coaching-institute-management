@@ -409,12 +409,15 @@ const PANELS = [
   { id: 'colors', icon: 'fa-palette', label: 'Colors', sub: 'Global colors and every area of the site', render: renderColors },
   { id: 'typography', icon: 'fa-font', label: 'Typography', sub: 'Fonts, sizes, weights', render: renderTypography },
   { id: 'header', icon: 'fa-window-maximize', label: 'Header', sub: 'Search, bell, social icons, top bar', sections: [
-    ['General', [['toggle', 'h_sticky', 'Sticky header'], ['range', 'h_width', 'Content width', { min: 960, max: 1600, step: 10, unit: 'px' }], ['toggle', 'h_bell', 'Notification bell'], ['toggle', 'h_socials', 'Social icons on the left'], ['toggle', 'h_dark', 'Dark mode switch']]],
+    ['General', [['toggle', 'h_sticky', 'Sticky header'], ['toggle', 'h_bell', 'Notification bell'], ['toggle', 'h_socials', 'Social icons on the left'], ['toggle', 'h_dark', 'Dark mode switch']]],
     ['Search', [['toggle', 'h_search', 'Show search'], ['toggle', 'h_voice', 'Voice search'], ['text', 'h_search_placeholder', 'Placeholder']]],
     ['Log in button', [['toggle', 'h_login', 'Show “Log in”'], ['text', 'h_login_text', 'Log in text'], ['text', 'h_login_url', 'Log in link', { hint: 'Empty = the admin login page.' }]]],
     ['Subscribe button', [['toggle', 'h_sub', 'Show “Subscribe”'], ['text', 'h_sub_text', 'Subscribe text'], ['select', 'h_sub_icon', 'Icon before the text', { options: [['', 'None (normal button)'], ['whatsapp', 'WhatsApp'], ['youtube', 'YouTube'], ['facebook', 'Facebook'], ['instagram', 'Instagram'], ['x', 'X (Twitter)'], ['telegram', 'Telegram'], ['linkedin', 'LinkedIn']], hint: 'With an icon, the button takes that app’s colour (WhatsApp green, YouTube red …). Tip: put your WhatsApp / YouTube link in “Subscribe link”.' }], ['text', 'h_sub_url', 'Subscribe link', { hint: 'Empty = turns on job alerts (push notifications).' }]]],
     ['Mobile menu', [['toggle', 'h_drawer_hello', 'Show the greeting (“Hello, Reader”)'], ['text', 'h_drawer_title', 'Greeting (mobile menu)'], ['text', 'h_drawer_text', 'Text under the greeting'], ['toggle', 'h_drawer_login', 'Show “Log in” in the mobile menu', { hint: 'Also needs “Show Log in” above.' }], ['toggle', 'h_drawer_sub', 'Show “Subscribe” in the mobile menu', { hint: 'Also needs “Show Subscribe” above.' }]]],
     ['Top bar', [['toggle', 'h_topbar', 'Show top bar (above the header)'], ['textarea', 'h_topbar_text', 'Top bar text / HTML']]],
+  ]},
+  { id: 'container', icon: 'fa-arrows-left-right', label: 'Container', sub: 'Width of the site', fields: [
+    ['range', 'h_width', 'Container width', { min: 960, max: 1600, step: 10, unit: 'px' }],
   ]},
   { id: 'menus', icon: 'fa-bars', label: 'Menus', sub: 'Primary menu and the menu strip', render: renderMenus },
   { id: 'footer', icon: 'fa-shoe-prints', label: 'Footer', sub: 'Columns, follow box, copyright', render: renderFooter },
@@ -459,6 +462,21 @@ const PANELS = [
 
 const $ = id => document.getElementById(id);
 let dirty = false, panel = null, draftTimer = null, subOpen = null;
+// the list on the first screen, ordered and grouped like the WordPress (GeneratePress / Astra) Customizer
+const CZ_NAV = ['identity', { id: 'layout', label: 'Layout', items: ['container', 'header', 'sidebar', 'footer'] }, 'colors', 'typography', 'menus', 'homepage',
+  { id: 'blog', label: 'Blog', items: ['post', 'home', 'alsoread', 'progress'] }, 'consent', 'shortcodes', 'css'];
+CZ_NAV.forEach(n => { if (typeof n === 'object') n.items.forEach(id => { const p = PANELS.find(x => x.id === id); if (p) p._group = n; }); });
+const czAllowed = p => !!p && (!CZ_ONLY || CZ_ONLY.includes(p.id));
+function exitPanel() { if (panel && panel._group && panel._group.items.some(id => czAllowed(PANELS.find(x => x.id === id)))) showGroup(panel._group); else showHome(); }
+function czRow(label, onClick) { const r = html('<button type="button" class="cz-subrow"><span></span><span class="cz-subrow-r"><i class="fas fa-chevron-right" aria-hidden="true"></i></span></button>'); r.firstChild.textContent = label; r.onclick = onClick; return r; }
+function showGroup(g) {
+  panel = null; subOpen = null; document.querySelectorAll('.cz-additems').forEach(x => x.remove());
+  $('cz-back').hidden = false; $('cz-back').onclick = showHome; $('cz-head-small').textContent = 'Customizing'; $('cz-head-title').textContent = g.label;
+  const b = $('cz-body'); b.innerHTML = ''; b.classList.remove('hm-bg');
+  const list = html('<div class="cz-subs cz-subs-top"></div>');
+  g.items.map(id => PANELS.find(x => x.id === id)).filter(czAllowed).forEach(p => list.appendChild(czRow(p.label, () => showPanel(p))));
+  b.appendChild(list);
+}
 const getV = k => k.startsWith('g.') ? state.general[k.slice(2)] : state.theme[k];
 function setV(k, v) {
   if (k.startsWith('g.')) state.general[k.slice(2)] = v; else state.theme[k] = v;
@@ -561,11 +579,15 @@ function circleBtn(icon, title, onClick, danger) {
   const b = html('<button type="button" class="cz-circle' + (danger ? ' danger' : '') + '" title="' + esc(title) + '" aria-label="' + esc(title) + '"><i class="fas ' + icon + '"></i></button>');
   b.onclick = onClick; return b;
 }
+// Like WordPress: a section is a row with a chevron; clicking it opens the section on its own screen
+// ("Customizing ▸ Panel" + back arrow). showPanel() swaps the panel for the open section after rendering.
+let subCapture = null, subPrevBack = null;
 function sectionEl(title, build, open, badge) {
-  const s = html('<div class="cz-section' + (open ? ' open' : '') + '"><button type="button" class="cz-section-head"><span>' + esc(title) + (badge ? '<em class="cz-badge">' + esc(badge) + '</em>' : '') + '</span><i class="fas fa-chevron-' + (open ? 'up' : 'down') + '"></i></button><div class="cz-section-body"' + (open ? '' : ' hidden') + '></div></div>');
-  const body = s.querySelector('.cz-section-body'); build(body);
-  s.querySelector('.cz-section-head').onclick = () => { const o = body.hidden; body.hidden = !o; s.classList.toggle('open', o); s.querySelector('.cz-section-head i').className = 'fas fa-chevron-' + (o ? 'up' : 'down'); };
-  return s;
+  if (subOpen === title) { const body = html('<div class="cz-sub-body"></div>'); build(body); subCapture = body; return document.createComment('section'); }
+  const r = html('<button type="button" class="cz-subrow"><span></span><span class="cz-subrow-r">' + (badge ? '<em class="cz-badge">' + esc(badge) + '</em>' : '') + '<i class="fas fa-chevron-right" aria-hidden="true"></i></span></button>');
+  r.firstChild.textContent = title;
+  r.onclick = () => { subOpen = title; showPanel(panel, true); $('cz-body').scrollTop = 0; };
+  return r;
 }
 // controls bound to a getter / setter (for values inside lists)
 function cText(label, get, set, o = {}) {
@@ -617,6 +639,7 @@ function renderIdentity(wrap) { // the same values as Settings → General (site
   const li = ln.querySelector('input'); li.value = G.tagline || ''; li.placeholder = ID_ADDRESS || '';
   li.oninput = () => { G.tagline = li.value; touch(); paint(); };
   g3.append(tt, ln); wrap.appendChild(g3);
+  const g4 = html('<div class="id-grp"></div>'); g4.appendChild(field(['media', 'g.favicon', 'Site Icon'])); wrap.appendChild(g4);
   [lg, sz, bg].forEach(el => { el.addEventListener('input', () => setTimeout(paint)); el.addEventListener('change', () => setTimeout(paint)); });
   new MutationObserver(paint).observe(lg, { subtree: true, childList: true });
   paint();
@@ -682,15 +705,15 @@ function renderColors(wrap) {
   };
   block.querySelector('.cz-block-actions').appendChild(circleBtn('fa-plus', 'Add color', () => { T.global_colors.push({ slug: 'custom-' + Date.now().toString(36), name: 'Custom', color: '#888888' }); gpalEditing = T.global_colors.length - 1; touch(); draw(); }));
   draw();
-  block.appendChild(hintEl('Colors below can use a global color — change the global color and everything using it updates.'));
-  wrap.appendChild(block);
+  block.appendChild(hintEl('Change a global color and every color using it updates.'));
+  wrap.appendChild(sectionEl('Global Colors', b => b.appendChild(block)));
   Object.entries(COLOR_GROUPS).forEach(([g, [label, fields]], idx) => {
     wrap.appendChild(sectionEl(label, body => {
       Object.entries(fields).forEach(([f, fl]) => body.appendChild(colorCtl(fl, () => (T.colors[g] || {})[f] || '', v => {
         if (!T.colors[g] || Array.isArray(T.colors[g])) T.colors[g] = {};
         if (v) T.colors[g][f] = v; else delete T.colors[g][f];
       })));
-    }, idx === 0));
+    }));
   });
 }
 
@@ -729,7 +752,7 @@ function renderTypography(wrap) {
   if (!Array.isArray(T.fonts)) T.fonts = [];
   if (!Array.isArray(T.typography)) T.typography = [];
   // Font Manager
-  const fb = html('<div class="cz-block"><div class="cz-block-head"><strong>Font Manager</strong></div></div>');
+  const fb = html('<div class="cz-wpbox"></div>');
   T.fonts.forEach((f, i) => {
     const it = html('<div class="cz-item' + (openFont === i ? ' open' : '') + '"><div class="cz-item-row"><span class="cz-item-title"></span></div></div>');
     const ttl = it.querySelector('.cz-item-title'); ttl.textContent = f.family || 'New font'; if (f.family) ttl.style.fontFamily = '"' + f.family + '", ' + (f.fallback || 'sans-serif');
@@ -763,9 +786,9 @@ function renderTypography(wrap) {
   addF.onclick = () => { T.fonts.push({ family: '', google: true, variants: ['400', '700'], fallback: 'sans-serif' }); openFont = T.fonts.length - 1; touch(); rerender(); };
   fb.appendChild(addF);
   fb.appendChild(cSelect('Google font-display', () => T.font_display || 'swap', v => T.font_display = v, [['auto', 'Auto'], ['block', 'Block'], ['swap', 'Swap'], ['fallback', 'Fallback'], ['optional', 'Optional']]));
-  wrap.appendChild(fb);
+  wrap.appendChild(sectionEl('Font Manager', b => b.appendChild(fb), false, String(T.fonts.length || '')));
   // Typography Manager
-  const tb = html('<div class="cz-block"><div class="cz-block-head"><strong>Typography Manager</strong></div></div>');
+  const tb = html('<div class="cz-wpbox"></div>');
   const fams = [['', 'Default'], ...T.fonts.filter(f => f.family).map(f => [f.family, f.family]), ...SYSTEM_FONTS.map(f => [f, f])];
   TYPO_GROUPS.forEach(([gl, targets]) => {
     const rules = T.typography.filter(r => targets.includes(r.target)); if (!rules.length) return;
@@ -809,7 +832,7 @@ function renderTypography(wrap) {
     T.typography.push(r); openRule = r.id; touch(); rerender();
   };
   tb.appendChild(addR);
-  wrap.appendChild(tb);
+  wrap.appendChild(sectionEl('Typography Manager', b => b.appendChild(tb), false, String(T.typography.length || '')));
 }
 
 /* ---------- Menus ---------- */
@@ -915,33 +938,45 @@ function renderMenus(wrap) {
   const T = state.theme;
   if (!Array.isArray(T.menu)) T.menu = [];
   if (!Array.isArray(T.strip_items)) T.strip_items = [];
+  const NAMES = { primary: 'Primary Menu', strip: 'Menu Strip' };
   if (!menuView) {
-    wrap.appendChild(hintEl('Menus are lists of links shown in the header. Pick a menu to add, remove or reorder its links.'));
-    const cards = html('<div class="cz-menu-cards"></div>');
-    [['primary', 'fa-bars', 'Primary Menu', T.menu.length + ' items · The mobile menu (slide-out)'], ['strip', 'fa-grip-lines', 'Menu Strip', (T.strip_source === 'categories' ? 'All categories (automatic)' : T.strip_items.length + ' items') + ' · Row below the header']].forEach(([id, ic, t, s]) => {
-      const b = html('<button type="button"><i class="fas ' + ic + '"></i><span><strong>' + esc(t) + '</strong><small>' + esc(s) + '</small></span><i class="fas fa-chevron-right"></i></button>');
-      b.onclick = () => { menuView = id; miOpen = null; addingFor = null; rerender(); }; cards.appendChild(b);
+    $('cz-back').onclick = exitPanel;
+    const list = html('<div class="cz-subs"></div>');
+    [['primary', T.menu.length + ' items'], ['strip', T.strip_source === 'categories' ? 'All categories' : T.strip_items.length + ' items']].forEach(([id, n]) => {
+      const r = html('<button type="button" class="cz-subrow"><span></span><span class="cz-subrow-r"><em class="cz-badge"></em><i class="fas fa-chevron-right" aria-hidden="true"></i></span></button>');
+      r.firstChild.textContent = NAMES[id]; r.querySelector('em').textContent = n;
+      r.onclick = () => { menuView = id; miOpen = null; addingFor = null; showPanel(panel, true); $('cz-body').scrollTop = 0; };
+      list.appendChild(r);
     });
-    wrap.appendChild(cards);
-    const loc = html('<div class="cz-block"><div class="cz-block-head"><strong>Menu Locations</strong></div></div>');
-    loc.appendChild(hintEl('Primary Menu → the mobile slide-out menu (items can have sub-menus). Menu Strip → the row under the header on every screen size.'));
-    wrap.appendChild(loc);
+    wrap.appendChild(html('<h3 class="cz-wp-h">Menus</h3>')); wrap.appendChild(list);
+    wrap.appendChild(html('<h3 class="cz-wp-h">Menu Locations</h3>'));
+    const loc = html('<div class="cz-wpbox cz-locs"></div>');
+    const l1 = html('<div class="cz-loc"><span class="cz-label">Header row (below the logo)</span></div>');
+    l1.appendChild(cSelect('', () => T.strip_source || 'custom', v => { T.strip_source = v; rerender(); }, [['custom', 'Menu Strip'], ['categories', 'All categories (automatic)']]));
+    const e1 = html('<button type="button" class="cz-link-btn">Edit Menu</button>'); e1.onclick = () => { menuView = 'strip'; showPanel(panel, true); }; l1.appendChild(e1);
+    const l2 = html('<div class="cz-loc"><span class="cz-label">Mobile slide-out menu</span><select disabled><option>Primary Menu</option></select></div>');
+    const e2 = html('<button type="button" class="cz-link-btn">Edit Menu</button>'); e2.onclick = () => { menuView = 'primary'; showPanel(panel, true); }; l2.appendChild(e2);
+    loc.append(l1, l2); wrap.appendChild(loc);
     return;
   }
-  const head = html('<div class="cz-subhead"><button type="button" class="cz-link-btn"><i class="fas fa-arrow-left"></i> All menus</button><strong>' + (menuView === 'strip' ? 'Menu Strip' : 'Primary Menu') + '</strong></div>');
-  head.querySelector('button').onclick = () => { menuView = null; addingFor = null; document.querySelectorAll('.cz-additems').forEach(x => x.remove()); rerender(); };
-  wrap.appendChild(head);
-  if (menuView === 'strip') {
-    const blk = html('<div class="cz-block"></div>');
-    blk.appendChild(cSeg('Links in the strip', () => T.strip_source || 'custom', v => T.strip_source = v, [['categories', 'All categories', 'fa-folder-tree'], ['custom', 'Custom menu', 'fa-list']], rerender));
-    blk.appendChild(cSeg('Style', () => T.menu_style, v => T.menu_style = v, [['plain', 'Plain'], ['pills', 'Pills'], ['underline', 'Underline']]));
-    blk.appendChild(cSeg('Alignment (desktop)', () => T.menu_align, v => T.menu_align = v, [['left', 'Left', 'fa-align-left'], ['center', 'Center', 'fa-align-center']]));
-    blk.appendChild(cToggle('Dark mode icon at the end of the strip', () => T.menu_dark_icon === '1', v => T.menu_dark_icon = v ? '1' : '0'));
-    wrap.appendChild(blk);
-    if (T.strip_source === 'categories') { wrap.appendChild(hintEl('Every category is listed automatically, newest categories included. Switch to “Custom menu” to choose the links yourself.')); return; }
-    menuEditor(wrap, () => T.strip_items, v => T.strip_items = v, true, 'strip'); // nested: a link with links under it = a drop-down
+  // one menu on its own screen (Customizing ▸ Menus)
+  $('cz-head-small').textContent = 'Customizing ▸ Menus'; $('cz-head-title').textContent = NAMES[menuView];
+  const back = () => { menuView = null; addingFor = null; miOpen = null; document.querySelectorAll('.cz-additems').forEach(x => x.remove()); showPanel(panel, true); $('cz-body').scrollTop = 0; };
+  $('cz-back').onclick = back;
+  if (menuView === 'strip' && T.strip_source === 'categories') {
+    wrap.appendChild(hintEl('This location lists every category automatically.'));
+    const sw = html('<button type="button" class="cz-btn-outline">Use my own links instead</button>'); sw.onclick = () => { T.strip_source = 'custom'; touch(); rerender(); }; wrap.appendChild(sw);
   } else {
-    menuEditor(wrap, () => T.menu, v => T.menu = v, true, 'primary');
+    menuEditor(wrap, () => menuView === 'strip' ? T.strip_items : T.menu, v => { if (menuView === 'strip') T.strip_items = v; else T.menu = v; }, true, menuView); // nested: a link with links under it = a drop-down
+  }
+  if (menuView === 'strip') {
+    wrap.appendChild(html('<h3 class="cz-wp-h">Menu Options</h3>'));
+    const blk = html('<div class="cz-wpbox"></div>');
+    blk.appendChild(cSeg('Links', () => T.strip_source || 'custom', v => T.strip_source = v, [['custom', 'My links'], ['categories', 'All categories']], rerender));
+    blk.appendChild(cSeg('Style', () => T.menu_style, v => T.menu_style = v, [['plain', 'Plain'], ['pills', 'Pills'], ['underline', 'Underline']]));
+    blk.appendChild(cSeg('Alignment (desktop)', () => T.menu_align, v => T.menu_align = v, [['left', 'Left'], ['center', 'Center']]));
+    blk.appendChild(cToggle('Dark mode icon at the end', () => T.menu_dark_icon === '1', v => T.menu_dark_icon = v ? '1' : '0'));
+    wrap.appendChild(blk);
   }
 }
 
@@ -975,6 +1010,7 @@ function renderFooter(wrap) {
     [['text', 'f_follow_heading', 'Heading'], ['toggle', 'f_follow', 'Show the box'], ['text', 'f_follow_title', 'Box title'], ['text', 'f_follow_sub', 'Box subtitle'], ['text', 'f_follow_btn', 'Button text (optional)'], ['text', 'f_follow_btn_url', 'Button link']].forEach(f => b.appendChild(field(f)));
     b.appendChild(html('<p class="cz-hint">The social icons come from <a href="/admin/general-settings.php#social" target="_blank">General Settings → Social</a> and are also used in the header and the mobile menu.</p>'));
   }, true));
+  wrap.appendChild(sectionEl('Back to top button', b => b.appendChild(field(['toggle', 'f_totop', 'Show the back to top button']))));
   wrap.appendChild(sectionEl('Copyright', b => b.appendChild(field(['text', 'f_copyright', 'Copyright text', { hint: 'Shortcodes: [year] [site_title] [site_link]' }])), true));
 }
 
@@ -1102,7 +1138,7 @@ function renderHomepage(wrap) {
   if (!HMDB) hmLoad(rerender);
   const back = $('cz-back');
   if (!hmOpen) {
-    $('cz-head-small').textContent = 'Customizing'; $('cz-head-title').textContent = 'Homepage'; back.onclick = showHome;
+    $('cz-head-small').textContent = 'Customizing'; $('cz-head-title').textContent = 'Homepage'; back.onclick = exitPanel;
     wrap.appendChild(html('<p class="hm-lead">Drag <i class="fas fa-grip-vertical"></i> to change the order. Click a section to edit it.</p>'));
     const list = html('<ul class="hm-list"></ul>');
     H.sections.forEach((x, i) => {
@@ -1413,10 +1449,15 @@ function showHome() {
   panel = null; addingFor = null; document.querySelectorAll('.cz-additems').forEach(x => x.remove()); $('cz-back').hidden = true; $('cz-head-small').textContent = 'You are customizing'; $('cz-head-title').textContent = <?= json_encode(edu_site_name()) ?>;
   const b = $('cz-body'); b.innerHTML = ''; b.classList.remove('hm-bg');
   const nav = document.createElement('nav'); nav.className = 'cz-nav';
-  PANELS.filter(p => !CZ_ONLY || CZ_ONLY.includes(p.id)).forEach(p => {
+  const navItems = [];
+  CZ_NAV.forEach(n => {
+    if (typeof n === 'string') { const p = PANELS.find(x => x.id === n); if (czAllowed(p)) navItems.push({ label: p.label, icon: p.icon, sub: p.sub, go: () => showPanel(p) }); }
+    else if (n.items.some(id => czAllowed(PANELS.find(x => x.id === id)))) navItems.push({ label: n.label, icon: 'fa-table-columns', sub: '', go: () => showGroup(n) });
+  });
+  navItems.forEach(p => {
     const btn = document.createElement('button'); btn.type = 'button';
     btn.innerHTML = '<span class="cz-nav-ico"><i class="fas ' + p.icon + '"></i></span><span class="cz-nav-text"><strong>' + esc(p.label) + '</strong><small>' + esc(p.sub) + '</small></span><i class="fas fa-chevron-right"></i>';
-    btn.onclick = () => showPanel(p); nav.appendChild(btn);
+    btn.onclick = p.go; nav.appendChild(btn);
   });
   b.appendChild(nav);
   const r = document.createElement('div'); r.className = 'cz-dreset';
@@ -1430,27 +1471,28 @@ function showHome() {
   if (!CZ_ONLY) b.appendChild(r); // reset is for admins only
 }
 function showPanel(p, keep) {
-  if (!keep) { subOpen = null; menuView = null; miOpen = null; addingFor = null; arOpen = undefined; openFont = null; openRule = null; gpalEditing = null; hmOpen = null; hmEdit = null; $('cz-back').onclick = showHome; }
+  if (!keep) { subOpen = null; subPrevBack = null; menuView = null; miOpen = null; addingFor = null; arOpen = undefined; openFont = null; openRule = null; gpalEditing = null; hmOpen = null; hmEdit = null; $('cz-back').onclick = exitPanel; }
   if (!addingFor) document.querySelectorAll('.cz-additems').forEach(x => x.remove());
-  panel = p; $('cz-back').hidden = false; $('cz-head-small').textContent = 'Customizing'; $('cz-head-title').textContent = p.label;
+  panel = p; $('cz-back').hidden = false; $('cz-head-small').textContent = p._group ? 'Customizing ▸ ' + p._group.label : 'Customizing'; $('cz-head-title').textContent = p.label;
   const b = $('cz-body'); b.innerHTML = ''; b.classList.remove('hm-bg');
   const wrap = document.createElement('div'); wrap.className = 'cz-panel-fields';
   if (p.fields) p.fields.forEach(f => wrap.appendChild(field(f)));
+  subCapture = null;
   if (p.sections) { // like WordPress: a panel lists its sections; each one opens on its own screen
     if (p.sections.length === 1) p.sections[0][1].forEach(f => wrap.appendChild(field(f)));
-    else if (subOpen === null || !p.sections[subOpen]) {
-      $('cz-back').onclick = showHome;
-      const list = html('<div class="cz-subs"></div>');
-      p.sections.forEach((s, i) => { const r = html('<button type="button" class="cz-subrow"><span></span><i class="fas fa-chevron-right" aria-hidden="true"></i></button>'); r.firstChild.textContent = s[0]; r.onclick = () => { subOpen = i; showPanel(p, true); $('cz-body').scrollTop = 0; }; list.appendChild(r); });
-      wrap.appendChild(list);
-    } else {
-      const s = p.sections[subOpen];
-      $('cz-head-small').textContent = 'Customizing ▸ ' + p.label; $('cz-head-title').textContent = s[0];
-      $('cz-back').onclick = () => { subOpen = null; showPanel(p, true); $('cz-body').scrollTop = 0; };
-      s[1].forEach(f => wrap.appendChild(field(f)));
-    }
+    else p.sections.forEach(sc => wrap.appendChild(sectionEl(sc[0], b => sc[1].forEach(f => b.appendChild(field(f))))));
   }
   if (p.render) p.render(wrap);
+  if (subOpen !== null && subCapture) { // one section on its own screen
+    wrap.innerHTML = ''; wrap.appendChild(subCapture); subCapture = null;
+    $('cz-head-small').textContent = 'Customizing ▸ ' + ($('cz-head-title').dataset.trail || p.label); $('cz-head-title').textContent = subOpen;
+    const cur = $('cz-back').onclick; if (!cur || !cur._sub) subPrevBack = cur;
+    const back = () => { subOpen = null; showPanel(p, true); $('cz-body').scrollTop = 0; }; back._sub = true; $('cz-back').onclick = back;
+  } else {
+    if (subOpen !== null) subOpen = null;
+    if ($('cz-back').onclick && $('cz-back').onclick._sub) { $('cz-back').onclick = subPrevBack || exitPanel; subPrevBack = null; }
+  }
+  $('cz-head-title').dataset.trail = '';
   b.appendChild(wrap);
   if (keep) return;
   if (p.id === 'post' || p.id === 'alsoread' || p.id === 'progress' || p.id === 'sidebar' || p.id === 'typography') goTo(<?= json_encode($latestUrl) ?>);
