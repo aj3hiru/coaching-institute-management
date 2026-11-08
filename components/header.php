@@ -69,9 +69,10 @@ $__bstyle = 'school'; // one header brand for the site: logo + site title + line
 $__school = in_array($__bstyle, ['school', 'school_full'], true);
 $__schoolFull = $__bstyle === 'school_full'; // the whole header in the school layout (top bar + menu beside the brand)
 if ($__school) {
-    $__emb = trim((string)th('id_brand_emblem')) ?: '/assets/images/dk-academy-emblem.svg';
-    $__bt = trim((string)th('id_header_title')) ?: edu_site_name();
-    $__bl = trim((string)th('id_header_line')) ?: trim((string)es('general', 'address', ''));
+    // Site Identity = Settings → General (like WordPress): logo, site title, tagline
+    $__emb = trim((string)es('general', 'logo', '')) ?: '/assets/images/dk-academy-emblem.svg';
+    $__bt = edu_site_name();
+    $__bl = trim((string)es('general', 'tagline', '')) ?: trim((string)es('general', 'address', ''));
     $__embH = max(36, min(80, (int)th('id_emblem_h', 52) ?: 52));
     $__logo = '<img src="' . htmlspecialchars($__emb) . '" alt="" class="nb-emblem" width="52" height="60" style="--emb-h:' . $__embH . 'px">';
     $__brandText = '<span class="nb-site-branding nb-sb-school"><span class="site-title">' . htmlspecialchars($__bt) . '</span>'
@@ -154,6 +155,9 @@ if ($__school) {
 .nb-hr-sub .nb-sub-ic{flex:0 0 auto}
 .mnav-btn.solid.has-ic{background:var(--nb-sb)!important;border-color:transparent!important;color:#fff!important}
 html[data-theme="dark"] .nb-dd-b{color:#e5e7eb}html[data-theme="dark"] .nb-dd-p{background:#151b23;border-color:#263040}html[data-theme="dark"] .nb-dd-p a{color:#e5e7eb!important}html[data-theme="dark"] .nb-dd-p a:hover{background:#1f2937}
+/* Site Identity → background design off: logo + title only */
+.nb-brand-school.nb-brand-plain::before,.nb-brand-school.nb-brand-plain::after{display:none}
+.nb-hr-brand .nb-brand-link.nb-brand-school.nb-brand-plain{padding-right:16px}
 </style>
 <script>
 (function () { // menu strip drop-downs: click / tap (hover too with a mouse); the card sits under its button (the strip scrolls sideways)
@@ -188,7 +192,7 @@ html[data-theme="dark"] .nb-dd-b{color:#e5e7eb}html[data-theme="dark"] .nb-dd-p{
       <a href="/feed/" target="_blank" rel="noopener" aria-label="RSS Feed"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="<?= $__rss ?>"/></svg></a>
     </nav>
     <div class="nb-hr-brand">
-      <a href="/" title="<?= htmlspecialchars(edu_site_name()) ?> Home" rel="home" aria-label="Go to <?= htmlspecialchars(edu_site_name()) ?> homepage" class="nb-brand-link<?= $__school ? ' nb-brand-school' : '' ?>"><?= $__logo . $__brandText ?></a>
+      <a href="/" title="<?= htmlspecialchars(edu_site_name()) ?> Home" rel="home" aria-label="Go to <?= htmlspecialchars(edu_site_name()) ?> homepage" class="nb-brand-link<?= $__school ? ' nb-brand-school' . (th_on('id_brand_bg') ? '' : ' nb-brand-plain') : '' ?>"><?= $__logo . $__brandText ?></a>
     </div>
     <div class="nb-hr-act">
       <?php if (th_on('h_bell') && $__pushOn): ?><span class="nb-bell-wrap nb-hr-bell">

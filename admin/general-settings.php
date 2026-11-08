@@ -8,6 +8,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $str = fn($k, $max = 300) => mb_substr(trim((string)($_POST[$k] ?? '')), 0, $max);
     $url = fn($k) => ($v = trim((string)($_POST[$k] ?? ''))) !== '' && filter_var($v, FILTER_VALIDATE_URL) ? $v : '';
     $save = [
+        'site_title'       => $str('site_title', 100),
         'tagline'          => $str('tagline', 200),
         'logo'             => $str('logo', 300),
         'logo_w'           => max(20, min(600, (int)($_POST['logo_w'] ?? 0))) ?: edu_logo_size()[0],
@@ -62,7 +63,7 @@ $social = edu_social();
     <h2>Site Identity</h2>
     <p class="wps-section-desc">How the site is named and recognised — in the header, browser tabs and search results.</p>
     <div class="wps-table">
-      <div class="wps-row"><div class="wps-th"><span>Site Title</span></div><div class="wps-td"><input class="wps-input" value="<?= htmlspecialchars(edu_site_name()) ?>" disabled><p class="wps-desc">Set in the site configuration (used in every page title and in Google's structured data).</p></div></div>
+      <div class="wps-row"><div class="wps-th"><label for="site_title">Site Title</label></div><div class="wps-td"><input id="site_title" name="site_title" class="wps-input" maxlength="100" placeholder="<?= htmlspecialchars(SITE_NAME) ?>" value="<?= htmlspecialchars((string)($g['site_title'] ?? '') !== '' ? (string)$g['site_title'] : edu_site_name()) ?>"><p class="wps-desc">Shown in the header and every page title. Also in Customize → Site Identity.</p></div></div>
       <div class="wps-row"><div class="wps-th"><label for="tagline">Tagline</label></div><div class="wps-td"><input id="tagline" name="tagline" class="wps-input" placeholder="Latest government jobs, results and admit cards" value="<?= $v('tagline') ?>"><p class="wps-desc">In a few words, explain what this site is about. Example: “Latest government jobs, results and admit cards.”</p></div></div>
       <div class="wps-row"><div class="wps-th"><span>Site Logo</span></div><div class="wps-td">
         <div class="wps-media<?= empty($g['logo']) ? ' empty' : '' ?>" id="logo-prev"><?= !empty($g['logo']) ? '<img src="' . $v('logo') . '" alt="">' : '<span>No logo selected — the built-in EduMint logo is used</span>' ?></div>

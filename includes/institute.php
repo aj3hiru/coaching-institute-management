@@ -506,9 +506,9 @@ function ci_brand(): array
     $th = function_exists('th') ? fn($k) => trim((string)th($k)) : fn($k) => '';
     $g = function_exists('edu_settings') ? (array)edu_settings('general') : [];
     return [
-        'title' => $th('id_header_title') ?: (function_exists('edu_site_name') ? edu_site_name() : 'Institute'),
-        'line' => $th('id_header_line') ?: trim((string)($g['address'] ?? '')),
-        'emblem' => $th('id_brand_emblem') ?: '/assets/images/dk-academy-emblem.svg',
+        'title' => function_exists('edu_site_name') ? edu_site_name() : 'Institute',
+        'line' => trim((string)($g['tagline'] ?? '')) ?: trim((string)($g['address'] ?? '')),
+        'emblem' => trim((string)($g['logo'] ?? '')) ?: '/assets/images/dk-academy-emblem.svg',
     ];
 }
 

@@ -260,7 +260,7 @@ body{margin:0;overflow:hidden}
 .id-pv-t{display:flex;flex-direction:column;min-width:0;line-height:1.15}
 .id-pv-t b{font:700 17px/1.15 Poppins,Roboto,Arial,sans-serif;color:#9e1b32;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .id-pv-t small{margin-top:2px;font:500 12px/1.3 Roboto,Arial,sans-serif;color:#1a1a1a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.id-note{margin-top:4px}
+.id-pv.is-plain .id-pv-in{padding-right:12px}.id-pv.is-plain .id-pv-in::before,.id-pv.is-plain .id-pv-in::after{display:none}
 .id-dflt{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px}.id-dflt img{height:54px;width:auto}.id-dflt small{font-size:11.5px;color:#646970}
 /* ===== Homepage screens, WordPress Customizer look: grey panel, slim white widgets, 30px controls ===== */
 #cz-body.hm-bg{background:#f0f0f1;gap:0}
@@ -611,36 +611,31 @@ function cSeg(label, get, set, options, after) {
 }
 
 /* ---------- Site Identity: the one header brand — logo, site title, line under it ---------- */
-function renderIdentity(wrap) {
+function renderIdentity(wrap) { // the same values as Settings → General (site title, tagline, logo), like WordPress
   const T = state.theme, G = state.general;
-  const title = () => (T.id_header_title || G.site_title || SITE_NAME_DEFAULT);
   const pv = html('<div class="id-pv" aria-hidden="true"><span class="id-pv-in"><img alt=""><span class="id-pv-t"><b></b><small></small></span></span></div>');
   const paint = () => {
-    pv.querySelector('img').src = T.id_brand_emblem || '/assets/images/dk-academy-emblem.svg';
+    pv.querySelector('img').src = G.logo || '/assets/images/dk-academy-emblem.svg';
     pv.querySelector('img').style.height = Math.max(36, Math.min(80, +T.id_emblem_h || 52)) * .85 + 'px';
-    pv.querySelector('b').textContent = title();
-    pv.querySelector('small').textContent = T.id_header_line || ID_ADDRESS || '';
+    pv.querySelector('b').textContent = G.site_title || SITE_NAME_DEFAULT;
+    pv.querySelector('small').textContent = G.tagline || ID_ADDRESS || '';
+    pv.classList.toggle('is-plain', String(T.id_brand_bg) === '0');
   };
-  const g1 = html('<div class="id-grp"><h4>Header brand</h4><p class="cz-hint">How the name of the institute shows at the top of every page.</p></div>');
-  g1.appendChild(pv); wrap.appendChild(g1);
+  const g1 = html('<div class="id-grp"></div>'); g1.appendChild(pv); wrap.appendChild(g1);
   const g2 = html('<div class="id-grp"></div>');
-  const lg = field(['media', 'id_brand_emblem', 'Logo', { hint: 'Round or square logo (PNG, SVG or WebP with a clear background). Empty = the DK Academy emblem.' }]);
-  g2.appendChild(lg);
-  const dflt = () => { const box = lg.querySelector('.cz-media-box'); if (box && !T.id_brand_emblem && !box.querySelector('.id-dflt')) box.innerHTML = '<span class="id-dflt"><img src="/assets/images/dk-academy-emblem.svg" alt=""><small>Default: DK Academy emblem</small></span>'; };
-  dflt(); new MutationObserver(dflt).observe(lg, { subtree: true, childList: true });
-  const sz = field(['range', 'id_emblem_h', 'Logo size', { min: 36, max: 80, unit: 'px' }]); g2.appendChild(sz); wrap.appendChild(g2);
+  const lg = field(['media', 'g.logo', 'Logo']), sz = field(['range', 'id_emblem_h', 'Logo size', { min: 36, max: 80, unit: 'px' }]);
+  const bg = field(['toggle', 'id_brand_bg', 'Background design behind the logo and title']);
+  g2.append(lg, sz, bg); wrap.appendChild(g2);
   const g3 = html('<div class="id-grp"></div>');
-  const tt = html('<label class="cz-field"><span class="cz-label">Site title</span><input type="text" maxlength="100"><small class="cz-hint">Shown next to the logo, and used in page titles, the footer and feeds.</small></label>');
-  const ti = tt.querySelector('input'); ti.value = title(); ti.placeholder = SITE_NAME_DEFAULT;
-  ti.oninput = () => { T.id_header_title = ti.value; G.site_title = ti.value; touch(); paint(); };
-  const ln = html('<label class="cz-field"><span class="cz-label">Line under the title</span><input type="text" maxlength="160"><small class="cz-hint">e.g. the address or a short tagline. Empty = the address from General Settings.</small></label>');
-  const li = ln.querySelector('input'); li.value = T.id_header_line || ''; li.placeholder = ID_ADDRESS || 'Town, District, State - PIN';
-  li.oninput = () => { T.id_header_line = li.value; touch(); paint(); };
+  const tt = html('<label class="cz-field"><span class="cz-label">Site Title</span><input type="text" maxlength="100"></label>');
+  const ti = tt.querySelector('input'); ti.value = G.site_title || SITE_NAME_DEFAULT; ti.placeholder = SITE_NAME_DEFAULT;
+  ti.oninput = () => { G.site_title = ti.value; touch(); paint(); };
+  const ln = html('<label class="cz-field"><span class="cz-label">Tagline</span><input type="text" maxlength="200"></label>');
+  const li = ln.querySelector('input'); li.value = G.tagline || ''; li.placeholder = ID_ADDRESS || '';
+  li.oninput = () => { G.tagline = li.value; touch(); paint(); };
   g3.append(tt, ln); wrap.appendChild(g3);
-  // keep the preview in step with the logo picker and the size slider
-  [lg, sz].forEach(el => { el.addEventListener('input', () => setTimeout(paint)); el.addEventListener('click', () => setTimeout(paint, 50)); });
-  const mo = new MutationObserver(() => paint()); mo.observe(lg, { subtree: true, childList: true });
-  wrap.appendChild(html('<p class="cz-hint id-note">The browser-tab icon and the old site logo are in <a href="/admin/general-settings.php" target="_blank">Settings → General</a>.</p>'));
+  [lg, sz, bg].forEach(el => { el.addEventListener('input', () => setTimeout(paint)); el.addEventListener('change', () => setTimeout(paint)); });
+  new MutationObserver(paint).observe(lg, { subtree: true, childList: true });
   paint();
 }
 
