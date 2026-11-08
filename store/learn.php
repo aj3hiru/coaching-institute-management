@@ -195,6 +195,26 @@ $ico = fn($n) => sh_icon($n);
     </div>
     <script>(function () { var l = document.getElementById('lpList'), c = l && l.querySelector('.lp-li.on'); if (c) l.scrollTop = c.offsetTop - l.offsetTop - 60; })();</script>
     <?php if (!empty($moreHtml) && trim($moreHtml) !== ''): ?><section class="lp-more" aria-label="About this lesson"><?= $moreHtml ?></section><?php endif; // right under the lesson list ?>
+    <?php if ($owner && $isCourse && $all):
+      // the student's progress card: course picture + name, classes done, % complete, continue with the next class not done yet
+      $left = count($all) - $nDone;
+      $nextUp = null; foreach ($all as $l) if (!isset($done[$l['id']]) && (!$lesson || (int)$l['id'] !== (int)$lesson['id'])) { $nextUp = $l; break; }
+      $R = 26; $C = round(2 * M_PI * $R, 2); $off = round($C * (1 - $pct / 100), 2); ?>
+    <section class="lp-prog" aria-label="Your progress in this course">
+      <a class="lp-prog-img" href="<?= sh_e(sh_url($p)) ?>"><?= sh_thumb_html($p) ?></a>
+      <div class="lp-prog-b">
+        <small class="lp-prog-k">Your progress</small>
+        <b class="lp-prog-t"><?= sh_e($p['title']) ?></b>
+        <div class="lp-prog-row">
+          <span class="lp-prog-ring" role="img" aria-label="<?= $pct ?>% complete"><svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="<?= $R ?>" class="bg"/><circle cx="32" cy="32" r="<?= $R ?>" class="fg" stroke-dasharray="<?= $C ?>" stroke-dashoffset="<?= $off ?>"/></svg><em><?= $pct ?><small>%</small></em></span>
+          <div class="lp-prog-s"><span><b><?= $nDone ?></b> / <?= count($all) ?> classes done</span><small><?= $left ? $left . ' class' . ($left === 1 ? '' : 'es') . ' left' : 'All classes done' ?></small>
+            <span class="lp-prog-bar"><i style="width:<?= $pct ?>%"></i></span></div>
+        </div>
+        <?php if ($left && $nextUp): ?><a class="lp-btn lp-prog-go" href="<?= sh_e($lu('l=' . (int)$nextUp['id'])) ?>"><?= $ico('playsolid') ?><span>Continue: <?= sh_e($nextUp['title']) ?></span></a>
+        <?php elseif (!$left): ?><span class="lp-prog-done"><?= $ico('check') ?> Course completed</span><?php endif; ?>
+      </div>
+    </section>
+    <?php endif; ?>
   </aside>
 </div>
 <?php if ($file || ($lesson && ($lesson['kind'] ?? '') === 'pdf')): ?><script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script><?php endif; ?>

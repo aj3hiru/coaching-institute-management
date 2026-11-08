@@ -707,3 +707,27 @@ a.st-li:hover{background:#f7fbfc}a.st-li:hover svg{color:var(--sa)}
 /* phones / tablets: when the lesson list (or a tab) reaches its end, the page carries on scrolling */
 @media (max-width:1000px){.lp-fr-l,.lp-side .lt-pane,.lp-side .lt-strip{overscroll-behavior:auto!important}}
 .lp-fr-l,.lp-side .lt-pane{overscroll-behavior:auto!important} /* computers too: the page carries on at the end of the list */
+
+/* progress card under the notes / quiz box */
+.lp-prog{margin-top:14px;border:1px solid #e5e7eb;border-radius:8px;background:#fff;overflow:hidden}
+.lp-prog-img{display:block;position:relative;aspect-ratio:16/9;background:#0f172a}
+.lp-prog-img .st-thumb,.lp-prog-img img{width:100%;height:100%;object-fit:cover;display:block}
+.lp-prog-img .st-type{display:none}
+.lp-prog-b{padding:14px 16px 16px;display:flex;flex-direction:column;gap:10px}
+.lp-prog-k{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--sa,#0c6878)}
+.lp-prog-t{font-size:15.5px;line-height:1.35;color:#111827;margin-top:-6px}
+.lp-prog-row{display:flex;align-items:center;gap:14px}
+.lp-prog-ring{position:relative;flex:0 0 auto;width:68px;height:68px}
+.lp-prog-ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.lp-prog-ring circle{fill:none;stroke-width:7}.lp-prog-ring .bg{stroke:#e5e7eb}.lp-prog-ring .fg{stroke:var(--sa,#0c6878);stroke-linecap:round;transition:stroke-dashoffset .6s ease}
+.lp-prog-ring em{position:absolute;inset:0;display:grid;place-items:center;font-style:normal;font-size:17px;font-weight:800;color:#0f172a;line-height:1}
+.lp-prog-ring em small{font-size:10px;font-weight:700;margin-left:1px}
+.lp-prog-ring em{grid-auto-flow:column;align-content:center;justify-content:center}
+.lp-prog-s{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.lp-prog-s > span:first-child{font-size:14px;color:#374151}.lp-prog-s > span:first-child b{font-size:18px;color:#0f172a}
+.lp-prog-s small{font-size:12px;color:#6b7280}
+.lp-prog-bar{display:block;height:6px;border-radius:999px;background:#e5e7eb;overflow:hidden;margin-top:4px}.lp-prog-bar i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--sa,#0c6878),#14b8a6)}
+.lp-prog-go{display:flex!important;align-items:center;gap:8px;justify-content:center;min-height:40px;border-radius:6px;font-size:13.5px;padding:0 12px}
+.lp-prog-go svg{width:15px;height:15px;flex:0 0 auto}.lp-prog-go span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lp-prog-done{display:flex;align-items:center;justify-content:center;gap:6px;min-height:40px;border-radius:6px;background:#f0fdf4;color:#15803d;font-weight:700;font-size:13.5px}.lp-prog-done svg{width:16px;height:16px}
+[data-theme="dark"] .lp-prog{background:#151b23;border-color:#263040}[data-theme="dark"] .lp-prog-t,[data-theme="dark"] .lp-prog-ring em,[data-theme="dark"] .lp-prog-s b{color:#e5e7eb}
