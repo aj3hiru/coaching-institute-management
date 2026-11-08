@@ -114,40 +114,33 @@ $tabs = array_filter(['about' => $desc !== '' ? 'About' : '', 'content' => $isCo
 
     <?php if ($isCourse || $files): ?>
     <section class="sp-sec" id="content">
-      <div class="sp-h2"><h2><?= $isCourse ? 'Course content' : 'What is inside' ?></h2><?php if (count($cur) > 1): ?><button type="button" class="sp-link" data-expand>Expand all</button><?php endif; ?></div>
+      <div class="sp-h2"><h2><?= $isCourse ? 'Course content' : 'What is inside' ?></h2></div>
       <?php if ($isCourse): ?><p class="sp-cmeta"><?= $nSecs ? $nSecs . ' chapter' . ($nSecs === 1 ? '' : 's') . ' · ' : '' ?><?= $nLessons ?> video<?= $nLessons === 1 ? '' : 's' ?><?= $total ? ' · ' . sh_dur_text($total) . ' total length' : '' ?><?= $files ? ' · ' . count($files) . ' PDF' . (count($files) === 1 ? '' : 's') : '' ?></p><?php endif; ?>
       <?php if ($isCourse && !$cur): ?><div class="sp-empty">Videos are being added — they will appear here soon.</div><?php endif; ?>
-      <div class="sp-acc">
-      <?php foreach ($cur as $i => $s): $sd = array_sum(array_map(fn($l) => sh_dur_sec($l['duration']), $s['lessons'])); $nf = count(array_filter($s['lessons'], fn($l) => $l['free'])); ?>
-        <div class="sp-ch<?= $i === 0 ? ' open' : '' ?>">
-          <button type="button" class="sp-ch-h" aria-expanded="<?= $i === 0 ? 'true' : 'false' ?>"><span class="sp-num"><?= str_pad((string)($i + 1), 2, '0', STR_PAD_LEFT) ?></span>
-            <span class="sp-ch-t"><b><?= sh_e($s['title'] !== '' ? $s['title'] : 'Lessons') ?></b><small><?= count($s['lessons']) ?> video<?= count($s['lessons']) === 1 ? '' : 's' ?><?= $sd ? ' · ' . sh_dur_text($sd) : '' ?><?= $nf && !$own ? ' · <em>' . $nf . ' free</em>' : '' ?></small></span>
-            <span class="sp-chev" aria-hidden="true"></span></button>
-          <div class="sp-ch-b lp-fr"><div class="lp-fr-l sp-fr-l">
-          <?php $lastUnit = null; foreach ($s['lessons'] as $l): $open = $own || $l['free'] || $pv; $cNum = ($cNum ?? 0) + 1; $isPdf = ($l['kind'] ?? 'video') === 'pdf'; $th = sh_lesson_thumb($l, $p); ?>
-            <?php if (($l['unit_title'] ?? '') !== '' && $l['unit_title'] !== $lastUnit): $lastUnit = $l['unit_title']; ?><div class="lp-ch-h"><?= sh_e($l['unit_title']) ?></div><?php endif; ?>
-            <<?= $open ? 'a href="' . sh_e($lu('l=' . (int)$l['id'])) . '"' : 'a href="#buy" title="Buy the course to open this lesson"' ?> class="lp-li<?= $open ? '' : ' locked' ?>">
+      <?php $cNum = 0; $multi = count($cur) > 1; ?>
+      <div class="lp-list lp-fr sp-lessons">
+        <div class="lp-list-h"><b><?= $isCourse ? 'Lessons' : 'PDF files' ?></b><span><?= $isCourse ? $nLessons . ' ' . ($nLessons === 1 ? 'lesson' : 'lessons') : count($files) . ' PDF' . (count($files) === 1 ? '' : 's') ?></span></div>
+        <div class="lp-fr-l">
+        <?php foreach ($cur as $s): ?>
+          <?php if ($multi && $s['lessons']): ?><div class="lp-ch-h"><?= sh_e($s['title'] !== '' ? $s['title'] : 'Lessons') ?><small><?= count($s['lessons']) ?></small></div><?php endif; ?>
+          <?php $lastUnit = null; foreach ($s['lessons'] as $l): $open = $own || $l['free'] || $pv; $cNum++; $isPdf = ($l['kind'] ?? 'video') === 'pdf'; $th = sh_lesson_thumb($l, $p); ?>
+            <?php if (($l['unit_title'] ?? '') !== '' && $l['unit_title'] !== $lastUnit): $lastUnit = $l['unit_title']; ?><div class="lp-unit-h"><?= sh_e($l['unit_title']) ?></div><?php endif; ?>
+            <a href="<?= $open ? sh_e($lu('l=' . (int)$l['id'])) : '#buy' ?>" class="lp-li<?= $open ? '' : ' locked' ?>"<?= $open ? '' : ' title="Buy the course to open this lesson"' ?>>
               <span class="lp-n"><?= $cNum ?></span>
               <span class="lp-th<?= $isPdf || $th === '' ? ' ph' : '' ?>"><?php if (!$isPdf && $th !== ''): ?><img src="<?= sh_e($th) ?>" alt="" loading="lazy"><?php else: ?><?= $ico($isPdf ? 'pdf' : 'play') ?><?php endif; ?><?php if (!$open): ?><i class="lp-tag lock"><?= $ico('lock') ?></i><?php endif; ?></span>
               <span class="lp-lt"><span class="lp-t2"><?= sh_e($l['title']) ?></span><small><?= $isPdf ? 'PDF' : ($l['duration'] ? sh_e($l['duration']) : 'Video') ?><?= $l['free'] && !$own ? sh_free_badge() : '' ?></small></span></a>
           <?php endforeach; ?>
-          </div></div>
-        </div>
-      <?php endforeach; ?>
-      <?php if ($files): ?>
-        <div class="sp-ch<?= !$cur ? ' open' : '' ?>">
-          <button type="button" class="sp-ch-h" aria-expanded="<?= !$cur ? 'true' : 'false' ?>"><span class="sp-num"><?= $ico('file') ?></span>
-            <span class="sp-ch-t"><b><?= $isCourse ? 'PDF notes' : 'PDF files' ?></b><small><?= count($files) ?> file<?= count($files) === 1 ? '' : 's' ?><?= $freeF && !$own ? ' · <em>' . count($freeF) . ' free</em>' : '' ?></small></span><span class="sp-chev" aria-hidden="true"></span></button>
-          <div class="sp-ch-b lp-fr"><div class="lp-fr-l sp-fr-l">
+        <?php endforeach; ?>
+        <?php if ($files): ?>
+          <?php if ($cur): ?><div class="lp-ch-h"><?= $isCourse ? 'PDF notes' : 'Files' ?><small><?= count($files) ?></small></div><?php endif; ?>
           <?php foreach ($files as $k => $f): $open = $own || $f['free'] || $pv; ?>
-            <<?= $open ? 'a href="' . sh_e($lu('f=' . (int)$f['id'])) . '"' : 'a href="#buy" title="Buy to open this PDF"' ?> class="lp-li<?= $open ? '' : ' locked' ?>">
+            <a href="<?= $open ? sh_e($lu('f=' . (int)$f['id'])) : '#buy' ?>" class="lp-li<?= $open ? '' : ' locked' ?>"<?= $open ? '' : ' title="Buy to open this PDF"' ?>>
               <span class="lp-n"><?= $k + 1 ?></span>
               <span class="lp-th ph"><?= $ico('pdf') ?><?php if (!$open): ?><i class="lp-tag lock"><?= $ico('lock') ?></i><?php endif; ?></span>
               <span class="lp-lt"><span class="lp-t2"><?= sh_e($f['title']) ?></span><small><?= $f['pages'] ? (int)$f['pages'] . ' pages' : 'PDF' ?><?= $f['free'] && !$own ? sh_free_badge() : '' ?></small></span></a>
           <?php endforeach; ?>
-          </div></div>
+        <?php endif; ?>
         </div>
-      <?php endif; ?>
       </div>
     </section>
     <?php endif; ?>
