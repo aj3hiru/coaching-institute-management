@@ -68,25 +68,45 @@ $mask = fn($s) => $s === '' ? '' : str_repeat('•', 8) . substr($s, -4);
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="robots" content="noindex, nofollow">
 <title>Store Settings - <?= ci_e(edu_site_name()) ?></title>
 <?php admin_shell_head(); ci_head(); ?>
+<style>
+.ss-pick{display:grid;grid-template-columns:250px minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:820px){.ss-pick{grid-template-columns:1fr}}
+.ss-nav{display:flex;flex-direction:column;border:1px solid var(--ci-b,#e5e7eb);background:#fff;position:sticky;top:calc(var(--wp-admin--admin-bar--height,32px) + 12px)}
+.ss-nav button{display:flex;align-items:center;gap:12px;padding:12px 14px;border:0;border-bottom:1px solid var(--ci-b,#e5e7eb);background:#fff;text-align:left;font:600 14px inherit;font-family:inherit;color:#374151;cursor:pointer}
+.ss-nav button:last-child{border-bottom:0}
+.ss-nav button i{width:20px;text-align:center;color:#6b7280}
+.ss-nav button span{display:flex;flex-direction:column;line-height:1.25}.ss-nav button small{font-weight:500;font-size:11.5px;color:#9ca3af}
+.ss-nav button.on{background:var(--ci-acc,#4a3369);color:#fff}.ss-nav button.on i,.ss-nav button.on small{color:rgba(255,255,255,.85)}
+.ss-nav button:not(.on):hover{background:#faf8fd;color:var(--ci-acc,#4a3369)}
+.ss-main .ci-card{margin-bottom:14px}
+.ss-main .ci-savebar{margin-top:0}
+</style>
 </head>
 <body>
 <?php admin_shell_open('Store Settings', 'Online payments, uploads and the private media folder'); ?>
 <div class="ci">
 <?= admin_flash() ?>
-<form method="post"><?= csrf_field() ?><input type="hidden" name="action" value="save">
-<div class="ci-card"><div class="ci-card-h"><h3>Store</h3></div><div class="ci-card-b">
+<?php $nDemoPay = (int)$pdo->query("SELECT COUNT(*) FROM sh_orders WHERE rzp_order LIKE 'demo\\_%'")->fetchColumn(); ?><?php $ssDemo = (function () { require_once INCLUDES_PATH . '/shop-demo.php'; return sh_demo_info(); })(); ?>
+<div class="ss-pick">
+  <nav class="ss-nav" role="tablist" aria-label="Store settings">
+    <button type="button" data-pane="store"><i class="fas fa-store"></i><span>Store<small><?= sh_on() ? 'Open' : 'Closed' ?></small></span></button>
+    <button type="button" data-pane="pay"><i class="fas fa-credit-card"></i><span>Payment mode<small><?= sh_pay_demo() ? 'Demo payment' : 'Razorpay' ?></small></span></button>
+    <button type="button" data-pane="rzp"><i class="fas fa-key"></i><span>Razorpay keys<small><?= sh_rzp_ready() ? (str_starts_with($k['id'], 'rzp_test_') ? 'Test mode' : 'Live') : 'Not set up' ?></small></span></button>
+    <button type="button" data-pane="storage"><i class="fas fa-hard-drive"></i><span>Uploads &amp; storage<small><?= $writable ? 'Ready' : 'Not writable' ?></small></span></button>
+    <button type="button" data-pane="demo"><i class="fas fa-wand-magic-sparkles"></i><span>Demo data<small><?= $ssDemo['products'] ? 'Demo is on' : 'Off' ?></small></span></button>
+  </nav>
+  <div class="ss-main">
+<form method="post" id="ssForm"><?= csrf_field() ?><input type="hidden" name="action" value="save">
+<div class="ss-pane" data-pane="store" hidden><div class="ci-card"><div class="ci-card-h"><h3>Store</h3></div><div class="ci-card-b">
   <label style="display:flex;gap:8px;align-items:center;font-weight:600"><input type="checkbox" name="enabled" value="1" <?= sh_on() ? 'checked' : '' ?>> Store is open (<a href="/store" target="_blank">/store</a>, <a href="/account/" target="_blank">/account</a>)</label>
   <p class="ci-muted" style="margin:6px 0 0">Closing it hides the store pages; buyers' access is kept for when it opens again. Add "/store" to your site menu in Customize → Menus.</p>
-</div></div>
-
-<?php $nDemoPay = (int)$pdo->query("SELECT COUNT(*) FROM sh_orders WHERE rzp_order LIKE 'demo\\_%'")->fetchColumn(); ?>
-<div class="ci-card" id="paymode"><div class="ci-card-h"><h3>Payment mode</h3><?= sh_pay_demo() ? '<span class="ci-badge ci-b-amber">Demo — no real money</span>' : '' ?></div><div class="ci-card-b">
+</div></div></div>
+<div class="ss-pane" data-pane="pay" hidden><div class="ci-card" id="paymode"><div class="ci-card-h"><h3>Payment mode</h3><?= sh_pay_demo() ? '<span class="ci-badge ci-b-amber">Demo — no real money</span>' : '' ?></div><div class="ci-card-b">
   <label style="display:flex;gap:10px;align-items:flex-start;margin-bottom:10px"><input type="radio" name="pay_mode" value="demo" <?= sh_pay_demo() ? 'checked' : '' ?> style="margin-top:3px"><span><b>Demo payment</b> — for showing the store before launch. Buyers see a practice payment window marked "DEMO"; pressing Pay gives the course at once. No Razorpay keys needed and no money moves.</span></label>
   <label style="display:flex;gap:10px;align-items:flex-start"><input type="radio" name="pay_mode" value="razorpay" <?= sh_pay_demo() ? '' : 'checked' ?> style="margin-top:3px"><span><b>Razorpay</b> — the real checkout. With <b>rzp_test_</b> keys it is Razorpay's own test mode (test cards / UPI, no real money); with <b>rzp_live_</b> keys it takes real payments.</span></label>
   <?php if ($nDemoPay): ?><p class="ci-muted" style="margin:12px 0 0"><?= $nDemoPay ?> demo payment order<?= $nDemoPay === 1 ? '' : 's' ?> so far (marked "demo" in Orders). Remove them before launch with the button below.</p><?php endif; ?>
-</div></div>
-
-<div class="ci-card"><div class="ci-card-h"><h3>Razorpay</h3><?= sh_rzp_ready() ? (str_starts_with($k['id'], 'rzp_test_') ? '<span class="ci-badge ci-b-amber">Test mode</span>' : '<span class="ci-badge ci-b-green">Live</span>') : '<span class="ci-badge ci-b-red">Not set up</span>' ?></div><div class="ci-card-b">
+</div></div></div>
+<div class="ss-pane" data-pane="rzp" hidden><div class="ci-card"><div class="ci-card-h"><h3>Razorpay</h3><?= sh_rzp_ready() ? (str_starts_with($k['id'], 'rzp_test_') ? '<span class="ci-badge ci-b-amber">Test mode</span>' : '<span class="ci-badge ci-b-green">Live</span>') : '<span class="ci-badge ci-b-red">Not set up</span>' ?></div><div class="ci-card-b">
   <p class="ci-muted" style="margin:0 0 12px">Razorpay Dashboard → Account &amp; Settings → API Keys. Use <b>Test</b> keys first (no real money), then the <b>Live</b> keys after your account is activated.</p>
   <div class="ci-grid3">
     <div class="ci-f"><label>Key Id</label><input name="rzp_key_id" value="<?= ci_e($k['id']) ?>" placeholder="rzp_test_… or rzp_live_…" autocomplete="off"></div>
@@ -97,18 +117,20 @@ $mask = fn($s) => $s === '' ? '' : str_repeat('•', 8) . substr($s, -4);
   <div style="margin-top:12px"><button class="ci-btn ci-ghost ci-sm" type="submit" form="rzpTest"><i class="fas fa-plug"></i> Test Razorpay connection</button></div>
 </div></div>
 
-<div class="ci-card"><div class="ci-card-h"><h3>Uploads &amp; storage</h3></div><div class="ci-card-b">
+</div>
+<div class="ss-pane" data-pane="storage" hidden><div class="ci-card"><div class="ci-card-h"><h3>Uploads &amp; storage</h3></div><div class="ci-card-b">
   <div class="ci-grid3">
     <div class="ci-f"><label>Largest video (MB)</label><input name="max_video_mb" type="number" min="50" max="20480" value="<?= (int)es('shop', 'max_video_mb', 4096) ?>"></div>
-    <div class="ci-f" style="grid-column:span 2"><label>Private media folder</label><input value="<?= ci_e($dir) ?>" readonly><span class="ci-hint"><?= $writable ? '✓ Ready' : '✗ Not writable — uploads will fail' ?><?= $free !== false ? ' · ' . round($free / 1073741824, 1) . ' GB free on the server' : '' ?>. Outside the website folder, so files can only be opened through the store.</span></div>
+    <div class="ci-f" style="grid-column:1/-1"><label>Private media folder (lecture PDFs and notes)</label><input value="<?= ci_e($dir) ?>" readonly><span class="ci-hint"><?= $writable ? '✓ Ready' : '✗ Not writable — uploads will fail' ?><?= $free !== false ? ' · ' . round($free / 1073741824, 1) . ' GB free on the server' : '' ?>. Outside the website folder, so files can only be opened through the store.</span></div>
   </div>
 </div></div>
-<div class="ci-savebar"><span class="ci-muted">Changes apply as soon as you save.</span><button class="ci-btn" type="submit"><i class="fas fa-check"></i> Save settings</button></div>
+</div>
+<div class="ss-save" hidden><div class="ci-savebar"><span class="ci-muted">Changes apply as soon as you save.</span><button class="ci-btn" type="submit"><i class="fas fa-check"></i> Save settings</button></div></div>
 </form>
 <form method="post" id="rzpTest" hidden><?= csrf_field() ?><input type="hidden" name="action" value="test"></form>
-<?php if ($nDemoPay): ?><form method="post" style="margin-top:12px" onsubmit="return confirm('Remove all <?= $nDemoPay ?> demo payment orders and the course access they gave? Real orders are not touched.')"><?= csrf_field() ?><input type="hidden" name="action" value="demo_pay_clear"><button class="ci-btn ci-ghost" type="submit"><i class="fas fa-broom"></i> Remove demo payment orders (<?= $nDemoPay ?>)</button></form><?php endif; ?>
-<?php require_once INCLUDES_PATH . '/shop-demo.php'; $demo = sh_demo_info(); ?>
-<div class="ci-card" id="demo" style="margin-top:16px"><div class="ci-card-h"><h3>Demo data</h3><?= $demo['products'] ? '<span class="ci-badge ci-b-amber">Demo is on</span>' : '' ?></div><div class="ci-card-b">
+<div class="ss-extra" data-for="pay" hidden><?php if ($nDemoPay): ?><form method="post" style="margin-top:12px" onsubmit="return confirm('Remove all <?= $nDemoPay ?> demo payment orders and the course access they gave? Real orders are not touched.')"><?= csrf_field() ?><input type="hidden" name="action" value="demo_pay_clear"><button class="ci-btn ci-ghost" type="submit"><i class="fas fa-broom"></i> Remove demo payment orders (<?= $nDemoPay ?>)</button></form><?php endif; ?></div>
+<div class="ss-pane" data-pane="demo" hidden><?php require_once INCLUDES_PATH . '/shop-demo.php'; $demo = sh_demo_info(); ?>
+<div class="ci-card" id="demo"><div class="ci-card-h"><h3>Demo data</h3><?= $demo['products'] ? '<span class="ci-badge ci-b-amber">Demo is on</span>' : '' ?></div><div class="ci-card-b">
   <?php if ($demo['products']): ?>
     <p style="margin:0 0 10px">The store has demo content: <?= count($demo['products']) ?> courses / notes, <?= count($demo['users']) ?> demo students, <?= count($demo['orders']) ?> paid demo orders. Demo student login: <b>9000000001</b> (or 9000000002, 9000000003), password <b><?= SH_DEMO_PASS ?></b> at <a href="/account/login" target="_blank">/account/login</a>.</p>
     <?php if (empty($demo['showcase'])): ?><form method="post" style="margin:0 0 10px"><?= csrf_field() ?><input type="hidden" name="action" value="demo_showcase"><button class="ci-btn" type="submit"><i class="fas fa-wand-magic-sparkles"></i> Fill the whole site for a client demo</button><span class="ci-hint" style="display:block;margin-top:4px">Adds 10 more courses with teachers, 5 notes packs, 12 more demo students with orders, reviews and doubts, the homepage slider, free YouTube courses and category icons.</span></form>
@@ -119,6 +141,24 @@ $mask = fn($s) => $s === '' ? '' : str_repeat('•', 8) . substr($s, -4);
     <form method="post"><?= csrf_field() ?><input type="hidden" name="action" value="demo_add"><button class="ci-btn" type="submit"><i class="fas fa-wand-magic-sparkles"></i> Add demo data</button></form>
   <?php endif; ?>
 </div></div>
+</div>
+  </div>
+</div>
+<script>
+(function () { // one section at a time, like Reports; the chosen one is kept in the address (#pay, #rzp …)
+  var nav = document.querySelector('.ss-nav'), keys = [].map.call(nav.querySelectorAll('[data-pane]'), function (b) { return b.dataset.pane; });
+  function show(k) {
+    if (keys.indexOf(k) < 0) k = keys[0];
+    nav.querySelectorAll('[data-pane]').forEach(function (b) { b.classList.toggle('on', b.dataset.pane === k); b.setAttribute('aria-selected', b.dataset.pane === k ? 'true' : 'false'); });
+    document.querySelectorAll('.ss-pane').forEach(function (p) { p.hidden = p.dataset.pane !== k; });
+    document.querySelectorAll('.ss-extra').forEach(function (x) { x.hidden = x.dataset.for !== k; });
+    document.querySelector('.ss-save').hidden = k === 'demo';
+  }
+  nav.addEventListener('click', function (e) { var b = e.target.closest('[data-pane]'); if (!b) return; show(b.dataset.pane); try { history.replaceState(null, '', '#' + b.dataset.pane); } catch (x) {} });
+  function fromHash() { var h = location.hash.replace('#', ''); show(h === 'paymode' ? 'pay' : h); }
+  fromHash(); window.addEventListener('hashchange', fromHash);
+})();
+</script>
 </div>
 <?php admin_shell_close(); ?>
 </body>

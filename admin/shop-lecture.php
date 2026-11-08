@@ -181,6 +181,16 @@ $vv = $L ? sh_variants($L) : [];
 .slc-thumb{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;background:#f3f4f6;border:1px solid #e5e7eb}
 .slc-thumb-empty{display:grid;place-items:center;width:100%;aspect-ratio:16/9;background:#f3f4f6;border:1px dashed #d1d5db;color:#9ca3af;font-size:13px}
 .slc-tbtns{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+/* like the post editor: the form and the sidebar scroll separately on a computer */
+@media (min-width:1024px){
+  html.slc-split,html.slc-split body{overflow:hidden!important}
+  html.slc-split .top-nav{position:relative!important;top:0!important}
+  html.slc-split .admin-container>.sidebar,html.slc-split body:has(#wpadminbar) .admin-container>.sidebar{position:relative;top:0!important}
+  html.slc-split .slc .editor-layout{grid-template-rows:minmax(0,1fr);align-items:stretch;overflow:hidden}
+  html.slc-split .slc .editor-main,html.slc-split .slc .editor-sidebar-panel{min-height:0;height:100%;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-width:thin;padding-bottom:48px}
+  html.slc-split .slc .editor-main{padding-right:8px}html.slc-split .slc .editor-sidebar-panel{padding-right:4px}
+  html.slc-split .slc .editor-main>*,html.slc-split .slc .editor-sidebar-panel>*{flex:0 0 auto!important}
+}
 .slc-opt1{display:flex;gap:8px;align-items:center;font-weight:600;margin:0 0 10px;cursor:pointer}
 .slc-err-f{outline:2px solid #dc2626!important;outline-offset:2px}
 .slc-req{display:block;margin-top:6px;color:#b91c1c;font-size:12.5px;font-weight:600}
@@ -294,6 +304,18 @@ $vv = $L ? sh_variants($L) : [];
 <?php endif; ?>
 </div>
 <?php admin_shell_close(); ?>
+<script>
+(function () { // the form and the sidebar scroll separately (computers), like the post editor
+  function fit() {
+    var lay = document.querySelector('.slc .editor-layout'); if (!lay) return;
+    var on = window.innerWidth >= 1024; document.documentElement.classList.toggle('slc-split', on);
+    if (!on) { lay.style.height = ''; return; }
+    window.scrollTo(0, 0); lay.style.height = 'auto';
+    lay.style.height = Math.max(380, window.innerHeight - lay.getBoundingClientRect().top - 12) + 'px';
+  }
+  fit(); window.addEventListener('resize', fit); window.addEventListener('load', function () { fit(); setTimeout(fit, 400); });
+})();
+</script>
 <script>window.SHC = { pid: <?= (int)($P['id'] ?? 0) ?>, csrf: <?= json_encode(csrf_token()) ?>, self: '' };</script>
 <script src="/assets/js/admin-media.js?v=<?= @filemtime(ROOT_PATH . '/assets/js/admin-media.js') ?: 1 ?>" defer></script>
 <script src="/assets/js/pdf-media.js?v=<?= @filemtime(ROOT_PATH . '/assets/js/pdf-media.js') ?: 1 ?>" defer></script>
