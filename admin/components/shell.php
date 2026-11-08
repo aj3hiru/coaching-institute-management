@@ -81,11 +81,10 @@ function admin_shell_nav(): array
             ])],
             $link($cp('batches'), 'Batches', '/admin/ci-batches.php', 'fa-layer-group'),
             $link($cp('courses'), 'Courses', '/admin/ci-courses.php', 'fa-book-open'),
-            $cp('fees') ? ['label' => 'Fees & Dues', 'href' => '/admin/ci-fees.php', 'icon' => 'fa-indian-rupee-sign', 'items' => $sub([
-                $link(true, 'Fee Payments', '/admin/ci-fees.php', 'fa-receipt'),
-                $link(true, 'Dues', '/admin/ci-fees.php?tab=dues', 'fa-hourglass-half'),
-            ])] : null,
-            $link($cp('sessions') || $cp('classes'), 'Sessions & Classes', '/admin/ci-setup.php', 'fa-calendar-alt'),
+            $link($cp('fees'), 'Fees', '/admin/ci-fees.php', 'fa-indian-rupee-sign'),
+            $link($cp('fees'), 'Dues', '/admin/ci-fees.php?tab=dues', 'fa-hourglass-half'),
+            $link($cp('sessions'), 'Sessions', '/admin/ci-setup.php', 'fa-calendar-alt'),
+            $link($cp('classes'), 'Classes', '/admin/ci-setup.php?tab=classes', 'fa-chalkboard'),
             $link(true, 'Reports', '/admin/ci-reports.php', 'fa-file-pdf'),
         ] : []],
         ['label' => 'Online Store', 'items' => (function () use ($cu, $link, $ci) {
@@ -99,7 +98,7 @@ function admin_shell_nav(): array
                 $link(sh_perm($cu, 'orders'), 'Orders', '/admin/shop-orders.php', 'fa-cart-shopping'),
                 $link(sh_perm($cu, 'customers'), 'Customers', '/admin/shop-customers.php', 'fa-users'),
                 $link(sh_perm($cu, 'products'), 'Reviews', '/admin/shop-reviews.php', 'fa-star'),
-                $link(sh_perm($cu, 'customers'), 'Student Reports', '/admin/shop-reports.php', 'fa-flag'),
+                $link(sh_perm($cu, 'customers'), 'Report', '/admin/shop-reports.php', 'fa-flag'),
                 $link(sh_perm($cu, 'orders') && !$ci, 'Reports', '/admin/ci-reports.php?type=store', 'fa-file-pdf'), // one Reports page (Institute → Reports has Online sales too)
                 $link(sh_perm($cu, 'settings'), 'Homepage', ($cu['role'] ?? '') === 'admin' ? '/admin/customize.php?panel=homepage' : '/admin/home-page.php', 'fa-house'), // admins: Customize → Homepage
                 $link(sh_perm($cu, 'settings'), 'Store Settings', '/admin/shop-settings.php', 'fa-sliders'),
@@ -133,6 +132,7 @@ function admin_shell_nav(): array
             $link($isAdmin || admin_can('ads.manage_ads'), 'Ad Inserter', '/admin/ad-inserter.php', 'fa-ad'),
             $link($isAdmin || $isBlogAdmin, 'Code Snippets', '/admin/code-snippets.php', 'fa-code'),
             $link($isBlogAdmin, 'Blog Customize', '/admin/customize.php', 'fa-palette'), // post template, also read, sidebar …
+            admin_can('push_notifications.send') ? ['label' => 'Notification', 'href' => '/push_notifications/push-manager.php', 'icon' => 'fa-bell'] : null, // push notifications; delivery logs are inside the page (History)
         ]],
         ['label' => 'Site', 'items' => [
             $link($isAdmin, 'Customize', '/admin/customize.php', 'fa-palette'),
@@ -140,8 +140,7 @@ function admin_shell_nav(): array
                 $link($isAdmin, 'General', '/admin/general-settings.php', 'fa-sliders-h'),
                 $link($isAdmin, 'Performance', '/admin/performance-settings.php', 'fa-tachometer-alt'),
             ])],
-            admin_can('push_notifications.send') ? ['label' => 'Push Notifications', 'href' => '/push_notifications/push-manager.php', 'icon' => 'fa-bell'] : null, // delivery logs are inside the page (History)
-            $isAdmin && $has('/admin/contact-messages.php') ? ['label' => 'Contact Messages', 'href' => '/admin/contact-messages.php', 'icon' => 'fa-envelope', 'badge' => admin_shell_unread()] : null,
+            $isAdmin && $has('/admin/contact-messages.php') ? ['label' => 'Contact', 'href' => '/admin/contact-messages.php', 'icon' => 'fa-envelope', 'badge' => admin_shell_unread()] : null,
         ]],
         ['label' => 'Admin', 'items' => [
             $link(admin_can('users.create'), 'Users', '/admin/user-manager.php', 'fa-user'),
@@ -201,6 +200,8 @@ function admin_shell_is_active(string $href): bool
     $view = $_GET['view'] ?? '';
     if ($path === '/admin/seo.php') return ($want['view'] ?? '') === ($view === 'dashboard' ? '' : $view);
     foreach ($want as $k => $v) if ((string)($_GET[$k] ?? '') !== (string)$v) return false;
+    // Fees / Dues and Sessions / Classes are tabs of one page: the plain link is the first tab only
+    if (in_array($path, ['/admin/ci-fees.php', '/admin/ci-setup.php'], true) && !isset($want['tab']) && in_array((string)($_GET['tab'] ?? ''), ['dues', 'classes'], true)) return false;
     return true;
 }
 
