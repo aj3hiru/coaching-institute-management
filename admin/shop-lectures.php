@@ -171,7 +171,6 @@ $skipN = $P ? count(json_decode((string)$P['yt_skip'], true) ?: []) : 0;
 .ls-pl .ci-btn{height:40px}
 .ls-linked{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 12px;background:#fef2f2;border:1px solid #fecaca;margin:0 0 10px;font-size:13.5px}
 .ls-linked i.fa-youtube{color:#dc2626;font-size:18px}.ls-linked .sp{flex:1}
-.ls-opts{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;align-items:center;font-size:13px}.ls-opts label{display:flex;gap:6px;align-items:center}
 .ls-msg{margin-top:10px;font-size:13.5px}.ls-msg.ok{color:#15803d}.ls-msg.err{color:#b91c1c}
 /* chapters */
 .ls-chs{display:flex;flex-direction:column;gap:6px}
@@ -229,16 +228,10 @@ table.ls-t{width:100%;border-collapse:collapse;font-size:13.5px}
 <div class="ls-card" id="lsPl"><h3><span><i class="fab fa-youtube" style="color:#dc2626"></i> YouTube playlist of this course</span><small>every video of it becomes a lecture · new videos come in by themselves</small></h3><div class="ls-body">
   <?php if ($P['yt_list']): ?>
   <div class="ls-linked"><i class="fab fa-youtube"></i><span class="sp"><b>Linked</b> · <a href="https://www.youtube.com/playlist?list=<?= ci_e($P['yt_list']) ?>" target="_blank" rel="noopener">open on YouTube</a><?= $P['yt_synced'] ? ' · checked ' . ci_e(date('d M, h:i A', strtotime($P['yt_synced']))) : '' ?></span>
-    <button type="button" class="ci-btn ci-sm" id="lsScan"><i class="fas fa-rotate"></i> Scan now</button><button type="button" class="ci-btn ci-ghost ci-sm" id="lsUnlink"><i class="fas fa-link-slash"></i> Unlink</button></div>
+    <?php if ($skipN): ?><a href="#" id="lsUnskip" class="ci-muted" style="font-size:12.5px"><?= $skipN ?> removed · bring back</a><?php endif; ?><button type="button" class="ci-btn ci-sm" id="lsScan"><i class="fas fa-rotate"></i> Scan now</button><button type="button" class="ci-btn ci-ghost ci-sm" id="lsUnlink"><i class="fas fa-link-slash"></i> Unlink</button></div>
   <?php endif; ?>
   <div class="ls-pl"><input id="lsUrl" maxlength="500" placeholder="<?= $P['yt_list'] ? 'Change the playlist — ' : '' ?>https://www.youtube.com/playlist?list=…"><button type="button" class="ci-btn" id="lsLink"><i class="fas fa-magnifying-glass"></i> <?= $P['yt_list'] ? 'Use this playlist' : 'Scan playlist' ?></button></div>
-  <div class="ls-opts">
-    <label>Free preview <select id="lsFree"><option value="0">None</option><option value="1" selected>First video</option><option value="2">First 2</option><option value="3">First 3</option></select></label>
-    <label>New videos go to <select id="lsNew"><option value="0">— No chapter —</option><?php foreach ($secs as $k => $t): ?><option value="<?= (int)$k ?>"<?= (int)$P['yt_section'] === (int)$k ? ' selected' : '' ?>><?= ci_e($t) ?></option><?php endforeach; ?></select></label>
-    <?php if ($skipN): ?><span class="ci-muted"><?= $skipN ?> removed video<?= $skipN === 1 ? '' : 's' ?> stay out · <a href="#" id="lsUnskip">let them come back</a></span><?php endif; ?>
-  </div>
   <div class="ls-msg" id="lsMsg" hidden></div>
-  <small class="ci-muted" style="display:block;margin-top:8px">Keep your videos <b>Unlisted</b> on YouTube, inside a Public or Unlisted playlist. Only students of the course can watch them here.</small>
 </div></div>
 
 <div class="ls-card" id="lsChs"><h3><span><i class="fas fa-layer-group"></i> Chapters &amp; units</span><small>select videos in the sheet and press "Make chapter" — or add one here</small></h3><div class="ls-body">

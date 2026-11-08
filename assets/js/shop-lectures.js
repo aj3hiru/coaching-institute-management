@@ -174,7 +174,7 @@
   $('lsLink').addEventListener('click', function () {
     var u = $('lsUrl').value.trim(), b = this; if (!u) { $('lsUrl').focus(); return; }
     busy(b, 'Scanning the playlist…'); say('Reading the playlist from YouTube — big playlists take a minute…', true);
-    (dirty ? save(true) : Promise.resolve()).then(function () { return post({ action: 'link', url: u, free_first: $('lsFree').value }); })
+    (dirty ? save(true) : Promise.resolve()).then(function () { return post({ action: 'link', url: u }); })
       .then(function (d) { d.added = d.added || 0; if (!d.added) { setDirty(false); setTimeout(function () { location.reload(); }, 600); } done(d); })
       .catch(function (e) { say('✗ ' + esc(e.message), false); }).then(function () { b.disabled = false; b.innerHTML = b.dataset.h; });
   });
@@ -182,7 +182,7 @@
   if ($('lsScan')) $('lsScan').addEventListener('click', function () { var b = this; busy(b, 'Scanning…'); (dirty ? save(true) : Promise.resolve()).then(function () { return post({ action: 'scan' }); }).then(done).catch(function (e) { say('✗ ' + esc(e.message), false); }).then(function () { b.disabled = false; b.innerHTML = b.dataset.h; }); });
   if ($('lsUnlink')) $('lsUnlink').addEventListener('click', function () { if (!confirm('Unlink the playlist? The lectures stay; new videos will not come in any more.')) return; post({ action: 'unlink' }).then(function () { setDirty(false); location.reload(); }).catch(fail); });
   if ($('lsUnskip')) $('lsUnskip').addEventListener('click', function (e) { e.preventDefault(); post({ action: 'unskip' }).then(function () { return post({ action: 'scan' }); }).then(done).catch(fail); });
-  $('lsNew').addEventListener('change', function () { post({ action: 'newvids', section_id: this.value }).catch(fail); });
+  if ($('lsNew')) $('lsNew').addEventListener('change', function () { post({ action: 'newvids', section_id: this.value }).catch(fail); });
 
   draw(); refreshSelects(); setDirty(false);
 })();
