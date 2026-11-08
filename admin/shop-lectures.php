@@ -156,11 +156,10 @@ $skipN = $P ? count(json_decode((string)$P['yt_skip'], true) ?: []) : 0;
 .ls-top{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:16px;align-items:start}
 @media (max-width:1100px){.ls-top{grid-template-columns:1fr}}
 .ls-side{min-width:0}
-/* like the post editor: the left column and the sidebar scroll on their own (wide screens); the sheet stays below, full width */
+/* like the post editor: the page scrolls normally; the sidebar stays in view (sticky) and scrolls on its own when it is taller than the screen */
 @media (min-width:1101px){
-  html.ls-split .ls-top{height:calc(100vh - var(--wp-admin--admin-bar--height,32px) - 28px);grid-template-rows:minmax(0,1fr);align-items:stretch;overflow:hidden;margin-bottom:16px}
-  html.ls-split .ls-main,html.ls-split .ls-side{min-height:0;height:100%;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-width:thin;padding-bottom:24px}
-  html.ls-split .ls-main{padding-right:8px}html.ls-split .ls-side{padding-right:4px}
+  .ls-side{position:sticky;top:var(--ls-stick,32px);max-height:calc(100vh - var(--ls-stick,32px) - 16px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+}
 }
 }
 .ls-sf label{display:block;font-weight:600;font-size:13px;margin:0 0 6px}.ls-sf select{width:100%;height:38px}
@@ -302,11 +301,11 @@ table.ls-t{width:100%;border-collapse:collapse;font-size:13.5px}
 <?php if ($P): ?>
 <script>
 (function () { // split scrolling: the two columns fill the screen below the header
-  function fit() {
-    document.documentElement.classList.toggle('ls-split', !!document.querySelector('.ls-top') && window.innerWidth >= 1101);
-    var tn = document.querySelector('.top-nav'), tb = document.querySelector('.ls-tools'); if (!tb) return; // the sheet toolbar sticks just under the page header
-    var stuck = tn && /sticky|fixed/.test(getComputedStyle(tn).position);
-    tb.style.top = (stuck ? Math.round(parseFloat(getComputedStyle(tn).top) || 0) + tn.offsetHeight : (parseInt(getComputedStyle(document.documentElement).getPropertyValue('--wp-admin--admin-bar--height')) || 32)) + 'px';
+  function fit() { // the sidebar and the sheet toolbar stick just under the page header
+    var tn = document.querySelector('.top-nav'), stuck = tn && /sticky|fixed/.test(getComputedStyle(tn).position);
+    var top = stuck ? Math.round(parseFloat(getComputedStyle(tn).top) || 0) + tn.offsetHeight : (parseInt(getComputedStyle(document.documentElement).getPropertyValue('--wp-admin--admin-bar--height')) || 32);
+    document.documentElement.style.setProperty('--ls-stick', top + 'px');
+    var tb = document.querySelector('.ls-tools'); if (tb) tb.style.top = top + 'px';
   }
   fit(); window.addEventListener('resize', fit); window.addEventListener('load', function () { fit(); setTimeout(fit, 400); });
 })();
