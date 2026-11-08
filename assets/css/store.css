@@ -731,3 +731,17 @@ a.st-li:hover{background:#f7fbfc}a.st-li:hover svg{color:var(--sa)}
 .lp-prog-go svg{width:15px;height:15px;flex:0 0 auto}.lp-prog-go span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .lp-prog-done{display:flex;align-items:center;justify-content:center;gap:6px;min-height:40px;border-radius:6px;background:#f0fdf4;color:#15803d;font-weight:700;font-size:13.5px}.lp-prog-done svg{width:16px;height:16px}
 [data-theme="dark"] .lp-prog{background:#151b23;border-color:#263040}[data-theme="dark"] .lp-prog-t,[data-theme="dark"] .lp-prog-ring em,[data-theme="dark"] .lp-prog-s b{color:#e5e7eb}
+
+/* FREE badge with a light sweep (free lessons / PDFs) */
+.st-freeb{position:relative;overflow:hidden;display:inline-flex;align-items:center;margin-left:8px;padding:2px 7px;border-radius:4px;background:#16a34a;color:#fff!important;
+  font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;line-height:1.3;vertical-align:1px;isolation:isolate}
+.st-freeb::after{content:"";position:absolute;top:-30%;bottom:-30%;left:-70%;width:45%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.75),transparent);transform:skewX(-20deg);animation:stFreeSweep 2.8s ease-in-out infinite;pointer-events:none}
+@keyframes stFreeSweep{0%,55%{left:-70%}100%{left:140%}}
+@media (prefers-reduced-motion:reduce){.st-freeb::after{animation:none;display:none}}
+.lp-fr .lp-lt small{display:flex;align-items:center;flex-wrap:wrap}
+/* course page: the content list uses the lesson-list rows */
+.sp-ch-b.lp-fr{border:0;max-height:none;overflow:hidden;display:block;border-radius:0} /* height animates open / shut */
+.sp-fr-l{padding:4px 6px 8px;overflow:visible}
+.sp-ch-b.lp-fr .lp-li{grid-template-columns:24px 112px minmax(0,1fr)}
+.sp-ch-b.lp-fr .lp-th{width:112px}
+@media (max-width:560px){.sp-ch-b.lp-fr .lp-li{grid-template-columns:18px 92px minmax(0,1fr);gap:8px}.sp-ch-b.lp-fr .lp-th{width:92px}}

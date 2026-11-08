@@ -161,11 +161,7 @@ $ico = fn($n) => sh_icon($n);
     <?php endif; ?>
     <?php
     // lesson list like the free courses: number · picture · title (YouTube's picture, a PDF tile, or the course picture)
-    $thumbOf = function (array $l) use ($p) {
-        if (($l['kind'] ?? 'video') === 'pdf') return '';
-        if ($l['video_url'] && ($yid = sh_yt_id((string)$l['video_url']))) return 'https://i.ytimg.com/vi/' . $yid . '/mqdefault.jpg';
-        return (string)($p['thumb'] ?? '');
-    };
+    $thumbOf = fn(array $l) => sh_lesson_thumb($l, $p);
     $nVid = count($all); $num = 0; $multi = count($cur) > 1;
     ?>
     <div class="lp-list lp-fr">
@@ -179,7 +175,7 @@ $ico = fn($n) => sh_icon($n);
             <span class="lp-n"><?= $num ?></span>
             <span class="lp-th<?= $isPdf || $th === '' ? ' ph' : '' ?>"><?php if (!$isPdf && $th !== ''): ?><img src="<?= sh_e($th) ?>" alt="" loading="lazy"><?php else: ?><?= $ico($isPdf ? 'pdf' : 'play') ?><?php endif; ?>
               <?php if (!$ok): ?><i class="lp-tag lock"><?= $ico('lock') ?></i><?php elseif ($on): ?><i class="lp-tag now">Playing</i><?php elseif ($isDone): ?><i class="lp-tag ok"><?= $ico('check') ?></i><?php endif; ?></span>
-            <span class="lp-lt"><span class="lp-t2"><?= sh_e($l['title']) ?></span><small><?= $isPdf ? 'PDF' : ($l['duration'] ? sh_e($l['duration']) : 'Video') ?><?= $l['free'] && !$owner ? ' · <em>Free</em>' : '' ?></small></span></a>
+            <span class="lp-lt"><span class="lp-t2"><?= sh_e($l['title']) ?></span><small><?= $isPdf ? 'PDF' : ($l['duration'] ? sh_e($l['duration']) : 'Video') ?><?= $l['free'] && !$owner ? sh_free_badge() : '' ?></small></span></a>
         <?php endforeach; ?>
       <?php endforeach; ?>
       <?php if ($files): ?>
@@ -188,7 +184,7 @@ $ico = fn($n) => sh_icon($n);
           <a class="lp-li<?= $on ? ' on' : '' ?><?= $ok ? '' : ' locked' ?>" href="<?= sh_e($ok ? $lu('f=' . (int)$f['id']) : sh_url($p) . '#buy') ?>"<?= $on ? ' aria-current="true"' : '' ?>>
             <span class="lp-n"><?= $k + 1 ?></span>
             <span class="lp-th ph"><?= $ico('pdf') ?><?php if (!$ok): ?><i class="lp-tag lock"><?= $ico('lock') ?></i><?php elseif ($on): ?><i class="lp-tag now">Open</i><?php endif; ?></span>
-            <span class="lp-lt"><span class="lp-t2"><?= sh_e($f['title']) ?></span><small><?= $f['pages'] ? (int)$f['pages'] . ' pages' : 'PDF' ?><?= $f['free'] && !$owner ? ' · <em>Free</em>' : '' ?></small></span></a>
+            <span class="lp-lt"><span class="lp-t2"><?= sh_e($f['title']) ?></span><small><?= $f['pages'] ? (int)$f['pages'] . ' pages' : 'PDF' ?><?= $f['free'] && !$owner ? sh_free_badge() : '' ?></small></span></a>
         <?php endforeach; ?>
       <?php endif; ?>
       </div>

@@ -891,6 +891,15 @@ function sh_yt_playlist_cached(string $list): array
     if ($new) { if (!is_dir($dir)) @mkdir($dir, 0755, true); @file_put_contents($f, json_encode($new, JSON_UNESCAPED_UNICODE)); return $new; }
     return $old;
 }
+/** A lesson's small picture: YouTube's, '' for a PDF lesson, else the course picture. */
+function sh_lesson_thumb(array $l, array $p): string
+{
+    if (($l['kind'] ?? 'video') === 'pdf') return '';
+    if (!empty($l['video_url']) && ($yid = sh_yt_id((string)$l['video_url']))) return 'https://i.ytimg.com/vi/' . $yid . '/mqdefault.jpg';
+    return (string)($p['thumb'] ?? '');
+}
+/** The FREE badge (with the light sweep) for free lessons / PDFs. */
+function sh_free_badge(): string { return '<span class="st-freeb">Free</span>'; }
 function sh_is_direct_video(string $url): bool { return (bool)preg_match('#\.(mp4|m4v|webm|mov)(\?|$)#i', $url); }
 
 /** Notes PDFs of one lecture. */
