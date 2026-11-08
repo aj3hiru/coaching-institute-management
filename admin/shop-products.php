@@ -175,21 +175,20 @@ $badge = fn($s) => '<span class="ci-badge ' . ['published' => 'ci-b-green', 'dra
 <?php if (!$isC): ?>      <div class="sx-link"><span>Web address:</span> <span class="ci-muted"><?= ci_e($base) ?></span><input name="slug" id="sxSlug" maxlength="150" placeholder="made-from-the-name" value="<?= ci_e($ep['slug'] ?? '') ?>"></div><?php endif; ?>
     </div></div>
     <?php if ($isC): ?>
-    <div class="meta-panel" id="introPanel"><div class="meta-panel-header"><span><i class="fab fa-youtube" style="color:#dc2626"></i> Intro video</span><small class="ci-muted">shown on the course page — anyone can watch it</small></div><div class="meta-panel-body">
+    <div class="meta-panel" id="introPanel"><div class="meta-panel-header"><span><i class="fab fa-youtube" style="color:#dc2626"></i> Intro video</span></div><div class="meta-panel-body">
       <div class="shp-yrow"><input name="intro_url" id="introUrl" maxlength="500" placeholder="https://www.youtube.com/watch?v=… or https://youtu.be/…" value="<?= ci_e($ep['intro_url'] ?? '') ?>"><button type="button" class="ci-btn ci-ghost" id="introFetch"><i class="fas fa-magnifying-glass"></i> Fetch</button></div>
       <div class="shp-intro" id="introPrev" hidden></div>
-      <small class="ci-muted" style="display:block;margin-top:6px">The course's YouTube playlist (its videos become the lectures), chapters, units and each lecture's notes PDF, MCQ and VVI are added on the <b>Lectures</b> page — press <b>Save &amp; add lectures</b>.</small>
     </div></div>
     <div class="meta-panel"><div class="meta-panel-header"><span>Web address</span></div><div class="meta-panel-body"><div class="sx-link"><span>Web address:</span> <span class="ci-muted"><?= ci_e($base) ?></span><input name="slug" id="sxSlug" maxlength="150" placeholder="made-from-the-name" value="<?= ci_e($ep['slug'] ?? '') ?>"></div></div></div>
     <?php endif; ?>
-    <div class="meta-panel"><div class="meta-panel-header"><span><?= $isC ? 'About this course' : 'About these notes' ?></span><small class="ci-muted">what students will learn</small></div><div class="meta-panel-body">
+    <div class="meta-panel"><div class="meta-panel-header"><span><?= $isC ? 'About this course' : 'About these notes' ?></span></div><div class="meta-panel-body">
       <textarea name="description" rows="9" maxlength="20000" placeholder="Describe the <?= $isC ? 'course' : 'notes' ?> — chapters, who it is for, how it helps."><?= ci_e($ep['description'] ?? '') ?></textarea>
     </div></div>
-    <div class="meta-panel"><div class="meta-panel-header"><span>What students get</span><small class="ci-muted">shown in "What's included"</small></div><div class="meta-panel-body">
+    <div class="meta-panel"><div class="meta-panel-header"><span>What students get</span></div><div class="meta-panel-body">
       <div class="shp-rep" id="shpInc"><?php foreach ($epInc ?: [''] as $v): ?><div class="shp-row"><input name="inc[]" maxlength="200" placeholder="e.g. Doubt solving by the teacher" value="<?= ci_e($v) ?>"><button type="button" class="ci-ico" data-i="trash" aria-label="Remove" data-rm><?= ci_svg('trash') ?></button></div><?php endforeach; ?></div>
       <div><button type="button" class="ci-btn ci-ghost ci-sm" data-add="shpInc"><i class="fas fa-plus"></i> Add point</button></div>
     </div></div>
-    <div class="meta-panel"><div class="meta-panel-header"><span>FAQ</span><small class="ci-muted">shown first in "Frequently asked questions"</small></div><div class="meta-panel-body">
+    <div class="meta-panel"><div class="meta-panel-header"><span>FAQ</span></div><div class="meta-panel-body">
       <div class="shp-rep" id="shpFaq"><?php foreach ($epFaq ?: [['q' => '', 'a' => '']] as $f): ?><div class="shp-row"><div class="shp-qa"><input name="faq_q[]" maxlength="300" placeholder="Question — e.g. Is this course in Hindi?" value="<?= ci_e($f['q'] ?? '') ?>"><textarea name="faq_a[]" rows="2" maxlength="3000" placeholder="Answer"><?= ci_e($f['a'] ?? '') ?></textarea></div><button type="button" class="ci-ico" data-i="trash" aria-label="Remove" data-rm><?= ci_svg('trash') ?></button></div><?php endforeach; ?></div>
       <div><button type="button" class="ci-btn ci-ghost ci-sm" data-add="shpFaq"><i class="fas fa-plus"></i> Add question</button></div>
     </div></div>
