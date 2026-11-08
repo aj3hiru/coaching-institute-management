@@ -245,7 +245,7 @@ $vv = $L ? sh_variants($L) : [];
     <?php foreach ($notesF as $nf): ?><div class="slc-nrow"><span class="slc-nico">PDF</span><input name="note_title[<?= (int)$nf['id'] ?>]" maxlength="200" value="<?= ci_e($nf['title']) ?>" aria-label="Notes name"><small><?= (int)$nf['pages'] ?> page<?= (int)$nf['pages'] === 1 ? '' : 's' ?></small><label class="slc-nrm"><input type="checkbox" name="rm_note[]" value="<?= (int)$nf['id'] ?>"> Remove</label></div><?php endforeach; ?>
   </div>
   <button type="button" class="ci-btn ci-ghost ci-sm" id="slcNotesAdd" style="margin-top:8px"><i class="fas fa-plus"></i> <span><?= $notesF ? 'Add more PDFs' : 'Add notes PDF' ?></span></button>
-  <span class="slc-sub" style="display:block;margin-top:6px">Opens <a href="/admin/shop-pdfs.php" target="_blank">PDF Media</a> — choose PDFs there or upload new ones from your device. The title you give is the name students see and the name of the downloaded file.</span>
+  <span class="slc-sub" style="display:block;margin-top:6px">Opens <a href="/admin/file-manager.php?tab=notes" target="_blank">PDF Media</a> — choose PDFs there or upload new ones from your device. The title you give is the name students see and the name of the downloaded file.</span>
   </div></div>
   <div class="meta-panel"><div class="meta-panel-header"><span>VVI questions</span><small class="ci-muted">optional</small></div><div class="meta-panel-body">
   <p class="slc-sub">Write important questions with answers, and / or add links (an article or MCQ post on your website, a PDF…). Students see the questions first, then the links.</p>

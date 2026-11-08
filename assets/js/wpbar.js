@@ -39,6 +39,10 @@
   document.addEventListener('click', function (e) {
     var a = e.target.closest('#wpadminbar [data-wpbar-clear]'); if (!a) return;
     e.preventDefault();
+    // a second click closes the question that is already open (it never stacks a new one)
+    var openOv = document.querySelector('.acm-overlay[data-wpbar-clear-q]');
+    if (openOv) { var c = openOv.querySelector('.acm-btn-cancel'); if (c) c.click(); else openOv.remove(); return; }
+    if (a.getAttribute('aria-busy') === 'true') return;
     var go = function () {
       a.setAttribute('aria-busy', 'true');
       var fd = new FormData(); fd.append('action', 'clear_all'); fd.append('_csrf', a.getAttribute('data-csrf'));
@@ -48,7 +52,10 @@
         .catch(function () { toast('Could not clear the cache.', false); })
         .then(function () { a.removeAttribute('aria-busy'); });
     };
-    if (window.adminConfirm) window.adminConfirm('Clear all cached pages? Visitors get fresh pages right away.', { title: 'Clear cache', confirmText: 'Clear cache' }).then(function (ok) { if (ok) go(); });
+    if (window.adminConfirm) {
+      window.adminConfirm('Clear all cached pages? Visitors get fresh pages right away.', { title: 'Clear cache', confirmText: 'Clear cache' }).then(function (ok) { if (ok) go(); });
+      var ovs = document.querySelectorAll('.acm-overlay'); if (ovs.length) ovs[ovs.length - 1].setAttribute('data-wpbar-clear-q', '1');
+    }
     else if (confirm('Clear all cached pages?')) go();
   });
 })();

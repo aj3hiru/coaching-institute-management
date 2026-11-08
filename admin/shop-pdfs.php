@@ -1,7 +1,7 @@
 <?php
 // Online Store → PDF Media: a library of PDFs only. Each PDF has a title (the name students see and the name of the
 // file when they download it). Lectures pick their notes from here (Add notes PDF opens this library).
-//   page:  /admin/shop-pdfs.php            upload (from the device), rename, open, delete (only when no lecture uses it)
+//   page:  shown in File Manager → "Course notes (PDF)" (this address moves there)
 //   JSON:  ?json=1[&q=]                     list for the picker      POST action=rename|delete (ajax=1)
 //   view:  ?view=ID                         opens the PDF (admins only)
 require_once __DIR__ . '/components/guard.php';
@@ -26,6 +26,7 @@ if (isset($_GET['json'])) {
     exit(json_encode(['items' => array_map(fn($r) => ['id' => (int)$r['id'], 'title' => $r['title'], 'pages' => $r['pages'] === null ? null : (int)$r['pages'], 'size' => (int)$r['size'],
         'date' => date('d M Y', strtotime((string)$r['created_at'])), 'used' => (int)$r['used'], 'view' => '/admin/shop-pdfs.php?view=' . (int)$r['id']], $st->fetchAll(PDO::FETCH_ASSOC))], JSON_UNESCAPED_UNICODE));
 }
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') { header('Location: /admin/file-manager.php?tab=notes'); exit; } // the library is shown in File Manager → Course notes (PDF)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_check();
     $ajax = !empty($_POST['ajax']); $id = (int)($_POST['id'] ?? 0); $a = (string)($_POST['action'] ?? '');

@@ -8,6 +8,9 @@ require_once INCLUDES_PATH . '/media.php';
 $me = admin_guard(['admin', 'editor', 'author']);
 if (!admin_can('files.access_file_manager') && !admin_can('media.upload')) { http_response_code(403); exit('Access Denied'); }
 $canDelete = admin_can('media.delete') || $me['role'] === 'admin';
+// course notes PDFs (PDF Media of the online store) are a filter here too — for staff who manage courses
+if (!function_exists('sh_perm')) require_once INCLUDES_PATH . '/shop.php';
+$canNotes = sh_perm($me, 'products');
 // without "Manage All" a user sees and deletes only the files they uploaded
 $ownMedia = $me['role'] !== 'admin' && !admin_can('media.manage_all');
 edu_media_columns($pdo);
@@ -212,6 +215,10 @@ $esc = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 <div class="fx-bulk" id="fxBulk"><b id="fxBulkN">0 selected</b><button type="button" class="btn btn-secondary btn-sm" id="fxSelAll">Select all on page</button><button type="button" class="btn btn-danger btn-sm" id="fxDel"><i class="fas fa-trash"></i> Delete</button></div>
 <div class="fx-grid" id="fxGrid"></div>
 <div class="fx-pager" id="fxPager"></div>
+<?php if ($canNotes): ?><div id="fxNotes" hidden></div>
+<link rel="stylesheet" href="/assets/css/pdf-media.css?v=<?= @filemtime(ROOT_PATH . '/assets/css/pdf-media.css') ?: 1 ?>">
+<script>window.FX_NOTES = true; window.PM_CFG = { csrf: <?= json_encode(csrf_token()) ?> };</script>
+<script src="/assets/js/pdf-media.js?v=<?= @filemtime(ROOT_PATH . '/assets/js/pdf-media.js') ?: 1 ?>"></script><?php endif; ?>
 
 <div class="modal-overlay fx-modal" id="fxModal"><div class="modal">
   <div class="modal-header"><div class="modal-title" id="fxMTitle" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div><button type="button" class="modal-close" data-close><i class="fas fa-times"></i></button></div>
@@ -233,19 +240,33 @@ $esc = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 <script>
 (function () {
   var token = <?= json_encode(csrf_token()) ?>, site = <?= json_encode(rtrim(SITE_URL, '/')) ?>;
-  var st = { type: '', page: 1, items: [], selecting: false, sel: new Set(), cur: null };
+  var st = { type: /[?&]tab=notes\b/.test(location.search) && window.FX_NOTES ? 'notes' : '', page: 1, items: [], selecting: false, sel: new Set(), cur: null };
   var $ = function (id) { return document.getElementById(id); };
   var ICON = { pdf: '<i class="fas fa-file-pdf ic" style="color:#dc2626"></i>', video: '<i class="fas fa-file-video ic" style="color:#7c3aed"></i>', audio: '<i class="fas fa-file-audio ic" style="color:#0891b2"></i>', document: '<i class="fas fa-file-lines ic" style="color:#2563eb"></i>' };
   function esc(t) { var d = document.createElement('div'); d.textContent = t == null ? '' : t; return d.innerHTML; }
   function post(d) { var fd = new FormData(); fd.append('_csrf', token); Object.keys(d).forEach(function (k) { [].concat(d[k]).forEach(function (v) { fd.append(Array.isArray(d[k]) ? k + '[]' : k, v); }); }); return fetch('/admin/file-manager.php', { method: 'POST', body: fd, credentials: 'same-origin' }).then(function (r) { return r.json(); }); }
+  function tabs(c) {
+    var list = [['', 'All Files', c.total], ['image', 'Images', c.images], ['pdf', 'PDFs', c.pdfs], ['document', 'Documents', c.documents], ['media', 'Audio & Video', c.media]].filter(function (t) { return t[0] === '' || t[0] === st.type || t[2]; });
+    if (window.FX_NOTES) list.push(['notes', 'Course notes (PDF)', '']);
+    $('fxTabs').innerHTML = list.map(function (t) { return '<button type="button" data-type="' + t[0] + '" class="' + (st.type === t[0] ? 'on' : '') + '">' + (t[0] === 'notes' ? '<i class="fas fa-file-pdf"></i> ' : '') + esc(t[1]) + (t[2] !== '' ? ' <em>' + t[2] + '</em>' : '') + '</button>'; }).join('');
+  }
+  var notesLib = null;
+  function showNotes(on) { // the PDF Media library of the online store: notes PDFs that lectures use (private, each with a title)
+    ['fxDrop', 'fxGrid', 'fxPager', 'fxBulk', 'fxQueue'].forEach(function (id) { var el = $(id); if (el) el.hidden = on; });
+    var tl = document.querySelector('.fx-tools'); if (tl) tl.hidden = on;
+    $('fxNotes').hidden = !on;
+    if (on && !notesLib && window.PdfMedia) notesLib = PdfMedia.mount($('fxNotes'), { ownUpload: true });
+  }
   function load(page) {
+    if (st.type === 'notes') { tabs(st.c || { total: 0 }); showNotes(true); return; }
+    if (window.FX_NOTES) showNotes(false);
     st.page = page || 1;
     var qs = new URLSearchParams({ ajax: 'list', type: st.type, q: $('fxQ').value.trim(), per: $('fxPer').value, page: st.page, by: $('fxBy') ? $('fxBy').value : '' });
     $('fxGrid').innerHTML = '<div class="fx-empty"><i class="fas fa-spinner fa-spin"></i>Loading…</div>';
     fetch('/admin/file-manager.php?' + qs, { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (d) {
       st.items = d.items; var c = d.counts;
       $('fxStats').innerHTML = '<span class="fx-stat">Total Files:<b>' + c.total + '</b></span><span class="fx-stat">Images:<b>' + c.images + '</b></span><span class="fx-stat">PDFs:<b>' + c.pdfs + '</b></span>' + (c.documents ? '<span class="fx-stat">Documents:<b>' + c.documents + '</b></span>' : '') + (c.media ? '<span class="fx-stat">Audio &amp; Video:<b>' + c.media + '</b></span>' : '');
-      $('fxTabs').innerHTML = [['', 'All Files', c.total], ['image', 'Images', c.images], ['pdf', 'PDFs', c.pdfs], ['document', 'Documents', c.documents], ['media', 'Audio & Video', c.media]].filter(function (t) { return t[0] === '' || t[0] === st.type || t[2]; }).map(function (t) { return '<button type="button" data-type="' + t[0] + '" class="' + (st.type === t[0] ? 'on' : '') + '">' + t[1] + ' <em>' + t[2] + '</em></button>'; }).join('');
+      st.c = c; tabs(c);
       $('fxGrid').innerHTML = d.items.length ? d.items.map(function (it, i) {
         return '<button type="button" class="fx-item' + (st.sel.has(it.id) ? ' sel' : '') + '" data-i="' + i + '"><span class="fx-chk"><i class="fas fa-check"></i></span><div class="fx-thumb">' + (it.kind === 'image' ? '<img loading="lazy" src="' + esc(it.thumb) + '" alt="" onerror="this.outerHTML=\'<i class=&quot;fas fa-file-image ic&quot; style=&quot;color:#cbd5e1&quot; title=&quot;File missing&quot;></i>\'">' : ICON[it.kind] || ICON.document) + '</div><div class="fx-info"><b title="' + esc(it.name) + '">' + esc(it.title || it.name) + '</b><small>' + esc(it.ext) + ' · ' + esc(it.kind) + '</small></div></button>';
       }).join('') : '<div class="fx-empty"><i class="fas fa-folder-open"></i>' + ($('fxQ').value.trim() ? 'No files match your search.' : 'No files here yet — drop some above.') + '</div>';
