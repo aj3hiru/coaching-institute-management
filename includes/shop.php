@@ -14,7 +14,7 @@
  */
 require_once __DIR__ . '/settings.php';
 
-const SH_SCHEMA = 17;
+const SH_SCHEMA = 18;
 
 function sh_db(): PDO
 {
@@ -151,6 +151,12 @@ function sh_tables(PDO $pdo): void
     $add('hm_slides', 'show_t', 'TINYINT(1) NOT NULL DEFAULT 1');
     $add('hm_slides', 'show_d', 'TINYINT(1) NOT NULL DEFAULT 1');
     $add('hm_free', 'thumb_custom', 'VARCHAR(255) NULL');
+    // v18: free content = courses ticked "Show in Free Courses" (ticked by default when the price is 0); the old YouTube
+    //      playlist free courses (hm_free) became courses — moved_to keeps their old /free-courses/ID address working
+    $hadFree = $col('sh_products', 'free_list');
+    $add('sh_products', 'free_list', 'TINYINT(1) NOT NULL DEFAULT 0');
+    if (!$hadFree) $pdo->exec("UPDATE sh_products SET free_list = 1 WHERE type = 'course' AND price <= 0");
+    $add('hm_free', 'moved_to', 'INT UNSIGNED NULL');
     // v17: a batch can have an end date (Online Courses filter: upcoming / running / completed)
     $add('sh_products', 'ends_at', 'DATE NULL');
     // v16: a course has an intro video and ONE YouTube playlist of its own (Lectures page): its videos are the lectures,
@@ -1116,11 +1122,27 @@ function sh_mini_card(array $p, string $cat = ''): string
         . '<small class="hc-m' . ($bt === '' && $p['type'] === 'notes' ? ' hc-pdf' : '') . '">' . $mi . sh_e($bt !== '' ? $bt : $meta) . '</small>' . '<span class="hc-p">' . sh_price_html($p) . '</span>'
         . '<span class="hc-f"><span class="hc-go' . ($free ? ' hc-join' : '') . '">' . ($up ? sh_cta($p, 'Join batch') : sh_cta($p, 'View details')) . ' ' . sh_icon('arrow') . '</span></span></span></a>';
 }
+/** Free content: published courses ticked "Show in Free Courses", in the shape sh_free_card() wants
+    (title, thumb, videos = lectures, teacher, href = the course page). $cat = 0: every category. */
+function sh_free_courses(PDO $pdo, int $limit = 0, int $cat = 0): array
+{
+    try {
+        $rows = $pdo->query("SELECT p.*, (SELECT COUNT(*) FROM sh_lessons l WHERE l.product_id = p.id) AS videos FROM sh_products p
+            WHERE p.type = 'course' AND p.status = 'published' AND p.free_list = 1" . ($cat ? ' AND p.category_id = ' . $cat : '') . " ORDER BY p.sort, p.id DESC" . ($limit ? ' LIMIT ' . $limit : ''))->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Throwable) { return []; }
+    foreach ($rows as &$r) {
+        $r['href'] = sh_url($r);
+        if (!$r['thumb'] && ($iy = sh_yt_id((string)($r['intro_url'] ?? '')))) $r['thumb'] = 'https://i.ytimg.com/vi/' . $iy . '/hqdefault.jpg';
+        if (!$r['thumb'] && ($v = $pdo->query("SELECT video_url FROM sh_lessons WHERE product_id = " . (int)$r['id'] . " AND video_url IS NOT NULL ORDER BY sort, id LIMIT 1")->fetchColumn()) && ($y = sh_yt_id((string)$v))) $r['thumb'] = 'https://i.ytimg.com/vi/' . $y . '/hqdefault.jpg';
+    }
+    unset($r);
+    return sh_free_teachers($pdo, $rows);
+}
 /** Free YouTube course card (homepage, category pages): FREE tag + category, title, lectures, teacher ($f['teacher'] — from sh_free_teachers()). */
 function sh_free_card(array $f, string $cat = ''): string
 {
     $n = (int)($f['videos'] ?? 0);
-    return '<a class="hm-fc" href="' . sh_e(sh_free_url($f)) . '"><span class="hm-fc-i"><img src="' . sh_e((string)($f['thumb'] ?? '')) . '" alt="" loading="lazy" onerror="this.remove()"><span class="hm-fc-pl">' . sh_icon('playsolid') . '</span></span>'
+    return '<a class="hm-fc" href="' . sh_e($f['href'] ?? sh_free_url($f)) . '"><span class="hm-fc-i"><img src="' . sh_e((string)($f['thumb'] ?? '')) . '" alt="" loading="lazy" onerror="this.remove()"><span class="hm-fc-pl">' . sh_icon('playsolid') . '</span></span>'
         . '<span class="hm-fc-b"><span class="hm-fc-top"><em class="st-free100">FREE</em>' . ($cat !== '' ? '<small class="hc-cat">' . sh_e($cat) . '</small>' : '') . '</span>'
         . '<b>' . sh_e($f['title']) . '</b>'
         . ($n ? '<small class="hm-fc-m">' . sh_icon('video') . ($n >= 100 ? '100+' : $n) . ' lecture' . ($n === 1 ? '' : 's') . '</small>' : '')

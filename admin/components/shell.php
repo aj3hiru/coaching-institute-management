@@ -93,7 +93,7 @@ function admin_shell_nav(): array
                 sh_perm($cu, 'products') ? ['label' => 'Online Courses', 'href' => '/admin/shop-products.php?type=course', 'icon' => 'fa-photo-film', 'items' => $sub([
                     $link(true, 'All Courses', '/admin/shop-products.php?type=course', 'fa-list'),
                     $link(true, 'Add Courses', '/admin/shop-products.php?new=1&type=course', 'fa-plus'),
-                    $link(true, 'Add Playlist', '/admin/shop-playlist.php', 'fa-circle-play'),
+                    $link(true, 'Add Playlist', '/admin/shop-lectures.php', 'fa-circle-play'),
                 ])] : null,
                 $link(sh_perm($cu, 'products'), 'Lectures', '/admin/shop-lectures.php', 'fa-film'),
                 $link(sh_perm($cu, 'products'), 'PDF Notes', '/admin/shop-products.php?type=notes', 'fa-file-pdf'),

@@ -40,9 +40,7 @@ else {
     if ($cfg['batches_filter'] === 'all') foreach (sh_latest($pdo, 'course', 8) as $p) { if (count($batches) >= 6) break; if (!in_array($p['id'], $seen)) $batches[] = $p; }
 }
 $notes = sh_latest($pdo, 'notes', 12, 0, 0, '', $cfg['notes_sort']);
-$free = $pdo->query("SELECT * FROM hm_free WHERE active = 1 ORDER BY sort, id DESC LIMIT 12")->fetchAll(PDO::FETCH_ASSOC);
-foreach ($free as &$__f) if (!empty($__f['thumb_custom'])) $__f['thumb'] = sh_upload_url($__f['thumb_custom']); unset($__f); // own picture (Customize → Homepage)
-$free = sh_free_teachers($pdo, $free);
+$free = sh_free_courses($pdo, 12); // courses ticked "Show in Free Courses"
 $posts = $pdo->query("SELECT p.id, p.title, p.slug, p.date, m.file_path AS img, c.name AS cat FROM posts p LEFT JOIN media m ON m.id = p.featured_image_id
     LEFT JOIN categories c ON c.id = p.category_id WHERE p.status = 'published' ORDER BY p.date DESC LIMIT " . (int)$cfg['posts_count'])->fetchAll(PDO::FETCH_ASSOC);
 $teacherNames = [];

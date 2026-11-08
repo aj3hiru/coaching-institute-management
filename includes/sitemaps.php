@@ -212,7 +212,7 @@ function edu_sm_store_rows(PDO $pdo, string $b): array
     $rows = [[$b . '/courses/', $last], [$b . '/notes/', $last]];
     foreach ($pdo->query("SELECT slug, type, COALESCE(updated_at, created_at) m FROM sh_products WHERE status = 'published' ORDER BY id DESC") as $p) $rows[] = [$b . sh_url($p), $p['m']];
     try { foreach ($pdo->query("SELECT c.slug, MAX(COALESCE(p.updated_at, p.created_at)) m FROM sh_categories c JOIN sh_products p ON p.category_id = c.id AND p.status = 'published' WHERE c.status = 'active' GROUP BY c.id") as $c) $rows[] = [$b . sh_cat_url($c['slug']), $c['m']]; } catch (Throwable) {}
-    try { $fr = $pdo->query("SELECT id, title, created_at FROM hm_free WHERE active = 1 ORDER BY sort, id DESC")->fetchAll(PDO::FETCH_ASSOC);
-        if ($fr) { $rows[] = [$b . '/free-courses/', max(array_column($fr, 'created_at'))]; foreach ($fr as $f) $rows[] = [$b . sh_free_url($f), $f['created_at']]; } } catch (Throwable) {}
+    try { $fr = $pdo->query("SELECT MAX(COALESCE(updated_at, created_at)) FROM sh_products WHERE type = 'course' AND status = 'published' AND free_list = 1")->fetchColumn(); // the free courses themselves are listed with the courses
+        if ($fr) $rows[] = [$b . '/free-courses/', $fr]; } catch (Throwable) {}
     return $rows;
 }

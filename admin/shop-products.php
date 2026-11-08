@@ -68,6 +68,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($id) { $vals[] = $id; $pdo->prepare("UPDATE sh_products SET type=?, title=?, slug=?, subtitle=?, description=?, thumb=?, price=?, mrp=?, validity_days=?, status=?, sort=?, category_id=?, starts_at=?, teacher_id=?, faq=?, includes=?, updated_at=NOW() WHERE id=?")->execute($vals); }
             else { $pdo->prepare("INSERT INTO sh_products (type, title, slug, subtitle, description, thumb, price, mrp, validity_days, status, sort, category_id, starts_at, teacher_id, faq, includes) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")->execute($vals); $id = (int)$pdo->lastInsertId(); }
             admin_log('shop_product', "Saved store product #$id $title");
+            if ($type === 'course') { // Free Courses list (the box is ticked by itself when the price is 0)
+                $pdo->prepare("UPDATE sh_products SET free_list = ? WHERE id = ?")->execute([!empty($_POST['free_list']) ? 1 : 0, $id]);
+            }
             if ($type === 'course') { // batch end date
                 $ends = preg_match('/^\d{4}-\d{2}-\d{2}$/', (string)($_POST['ends_at'] ?? '')) ? (string)$_POST['ends_at'] : null;
                 $pdo->prepare("UPDATE sh_products SET ends_at = ? WHERE id = ?")->execute([$ends, $id]);
@@ -171,6 +174,7 @@ $badge = fn($s) => '<span class="ci-badge ' . ['published' => 'ci-b-green', 'dra
 .shp-lect-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:26px 0 12px;padding-top:18px;border-top:2px solid #e5e7eb}.shp-lect-h h2{margin:0;font-size:19px}
 .shp-filt{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px 12px;align-items:end}.shp-filt .ci-f{min-width:0;margin:0}.shp-filt .shp-fq{grid-column:span 2}.shp-filt select,.shp-filt input{width:100%}
 @media (max-width:600px){.shp-filt{grid-template-columns:1fr 1fr}.shp-filt .shp-fq,.shp-filt .shp-fbtn{grid-column:1/-1}}
+.sx-fl{display:flex;gap:8px;align-items:center;font-weight:600;cursor:pointer}
 .shp-fcount{margin:0 0 10px;font-size:13.5px;color:#6b7280}
 .shp-ytb{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;color:#b91c1c;background:#fef2f2;border:1px solid #fecaca;padding:1px 6px;vertical-align:middle}
 .shp-yrow{display:flex;gap:8px}.shp-yrow input{flex:1}
@@ -228,6 +232,11 @@ $badge = fn($s) => '<span class="ci-badge ' . ['published' => 'ci-b-green', 'dra
       <div><label>Sale price (₹) <span class="req-star">*</span></label><input name="price" id="sxPrice" type="number" min="0" step="1" required value="<?= $ep ? ci_e($pv) : '' ?>" placeholder="0 = free"></div></div>
       <div class="sx-price" id="sxPriceView"></div>
     </div></div>
+    <?php if ($isC): $flOn = $ep ? (int)($ep['free_list'] ?? 0) === 1 : true; ?>
+    <div class="meta-panel"><div class="meta-panel-header"><span>Free content</span></div><div class="meta-panel-body">
+      <label class="sx-fl"><input type="checkbox" name="free_list" value="1" id="sxFree"<?= $flOn ? ' checked' : '' ?> data-touched="0" data-new="<?= $ep ? '0' : '1' ?>"> Add to Free Courses</label>
+    </div></div>
+    <?php endif; ?>
     <div class="meta-panel"><div class="meta-panel-header"><span>Picture</span></div><div class="meta-panel-body">
       <label class="sx-thumb" id="sxThumb"><?php if (!empty($ep['thumb'])): ?><img src="<?= ci_e($ep['thumb']) ?>" alt=""><?php else: ?><span><i class="fas fa-image"></i> Choose a picture<small>16:9 · JPG, PNG or WebP · up to 3 MB</small></span><?php endif; ?><input type="file" name="thumb" accept="image/jpeg,image/png,image/webp" hidden></label>
       <?php if (!empty($ep['thumb'])): ?><label style="font-weight:400;display:flex;gap:6px;align-items:center;margin:0"><input type="checkbox" name="thumb_remove" value="1"> Remove picture</label><?php endif; ?>
@@ -274,6 +283,9 @@ $badge = fn($s) => '<span class="ci-badge ' . ['published' => 'ci-b-green', 'dra
   var mrp = document.getElementById('sxMrp'), pr = document.getElementById('sxPrice'), pv = document.getElementById('sxPriceView');
   function price() { var a = +pr.value, m = +mrp.value; if (pr.value === '') { pv.innerHTML = ''; return; } pv.innerHTML = a <= 0 ? '<b>Free</b>' : '<b>₹' + a.toLocaleString('en-IN') + '</b>' + (m > a ? ' <s>₹' + m.toLocaleString('en-IN') + '</s> <em>' + Math.round(100 - a * 100 / m) + '% off</em>' : ''); }
   pr.addEventListener('input', price); mrp.addEventListener('input', price); price();
+  var fl = document.getElementById('sxFree'); // ticked by itself when the sale price is 0 (until it is changed by hand)
+  if (fl) { var auto = function () { if (fl.dataset.touched === '1' || pr.value === '') return; fl.checked = +pr.value <= 0; };
+    fl.addEventListener('change', function () { fl.dataset.touched = '1'; }); pr.addEventListener('input', auto); if (fl.dataset.new === '1') auto(); }
   var box = document.getElementById('sxThumb'), fi = box.querySelector('input[type=file]');
   fi.addEventListener('change', function () { var f = fi.files[0]; if (!f) return; [].forEach.call(box.querySelectorAll('img, span'), function (x) { x.remove(); }); var i = new Image(); i.src = URL.createObjectURL(f); box.insertBefore(i, fi); });
 })();
@@ -303,7 +315,7 @@ $tchF = ['0' => 'All teachers', '-1' => 'No teacher']; foreach ($teachers as $k 
 <thead><tr><th><?= $isC ? 'Course' : 'Notes' ?></th><th><?= $isC ? 'Teacher' : 'Category' ?></th><th>Inside</th><th class="ci-num">Price</th><th>Access</th><th class="ci-num">Buyers</th><th class="ci-num">Sales</th><th>Status</th><th>Action</th></tr></thead><tbody>
 <?php if (!$rows): ?><tr><td colspan="9" class="ci-empty"><?= $fOn ? 'Nothing matches these filters. <a href="?type=' . $fType . '">Clear filters</a>' : 'No products yet. Add your first course or notes.' ?></td></tr><?php endif; ?>
 <?php foreach ($rows as $p): ?>
-<tr><td><div style="display:flex;gap:10px;align-items:center"><?= $p['thumb'] ? '<img class="shp-th" src="' . ci_e($p['thumb']) . '" alt="">' : '<span class="shp-thp">' . ($p['type'] === 'notes' ? 'PDF' : 'VIDEO') . '</span>' ?><div><b><?= ci_e($p['title']) ?></b><?= (int)$p['ytl'] ? ' <span class="shp-ytb" title="Its lectures follow a YouTube playlist"><i class="fab fa-youtube"></i> Playlist</span>' : '' ?><?= $p['subtitle'] ? '<small class="ci-muted" style="display:block">' . ci_e(mb_strimwidth($p['subtitle'], 0, 70, '…')) . '</small>' : '' ?></div></div></td>
+<tr><td><div style="display:flex;gap:10px;align-items:center"><?= $p['thumb'] ? '<img class="shp-th" src="' . ci_e($p['thumb']) . '" alt="">' : '<span class="shp-thp">' . ($p['type'] === 'notes' ? 'PDF' : 'VIDEO') . '</span>' ?><div><b><?= ci_e($p['title']) ?></b><?= (int)$p['ytl'] ? ' <span class="shp-ytb" title="Its lectures follow a YouTube playlist"><i class="fab fa-youtube"></i> Playlist</span>' : '' ?><?= !empty($p['free_list']) ? ' <span class="shp-ytb" style="color:#15803d;background:#f0fdf4;border-color:#bbf7d0" title="Shown in Free Courses">Free content</span>' : '' ?><?= $p['subtitle'] ? '<small class="ci-muted" style="display:block">' . ci_e(mb_strimwidth($p['subtitle'], 0, 70, '…')) . '</small>' : '' ?></div></div></td>
 <td><?= $p['type'] === 'notes' ? ci_e(sh_category_name($pdo, (int)$p['category_id']) ?: '—') : '' ?><?= $p['type'] === 'course' ? ($p['teacher_id'] ? '' : '<span class="ci-muted">—</span>') : '' ?><?= $p['type'] === 'course' && $p['teacher_id'] ? ci_e($teachers[(int)$p['teacher_id']] ?? '—') : '' ?></td>
 <td class="ci-nw"><a href="<?= $p['type'] === 'course' ? '/admin/shop-lectures.php?course=' . (int)$p['id'] : '/admin/shop-products.php?edit=' . (int)$p['id'] . '&amp;type=notes#lectures' ?>"><?= $p['type'] === 'course' ? (int)$p['lessons'] . ' videos' . ((int)$p['files'] ? ' · ' . (int)$p['files'] . ' PDFs' : '') : (int)$p['files'] . ' PDFs' ?></a></td>
 <td class="ci-num"><?= (float)$p['price'] > 0 ? ci_money0($p['price']) : 'Free' ?><?= $p['mrp'] !== null ? '<small class="ci-muted" style="display:block;text-decoration:line-through">' . ci_money0($p['mrp']) . '</small>' : '' ?></td>
@@ -313,24 +325,6 @@ $tchF = ['0' => 'All teachers', '-1' => 'No teacher']; foreach ($teachers as $k 
 <?php if (!(int)$p['buyers']): ?><?= ci_post_ico('trash', 'Delete', ['action' => 'delete', 'id' => $p['id']], 'Delete ' . $p['title'] . ' with all its videos and PDFs?') ?><?php endif; ?></div></td></tr>
 <?php endforeach; ?>
 </tbody></table></div></div>
-<?php $plHide = in_array($F['price'], ['paid', 'offer'], true) || $F['batch'] !== '' || $F['content'] !== '' || $F['access'] !== '' || $F['sales'] !== '' || in_array($fStatus, ['draft', 'hidden'], true);
-if ($isC && !$plHide):
-    $pw = []; if ($F['q'] !== '') $pw[] = "title LIKE " . $pdo->quote('%' . $F['q'] . '%'); if ($F['cat'] === -1) $pw[] = 'category_id IS NULL'; elseif ($F['cat'] > 0) $pw[] = 'category_id = ' . $F['cat'];
-    if ($F['teacher'] === -1) $pw[] = 'teacher_id IS NULL'; elseif ($F['teacher'] > 0) $pw[] = 'teacher_id = ' . $F['teacher'];
-    $pls = $pdo->query("SELECT * FROM hm_free" . ($pw ? ' WHERE ' . implode(' AND ', $pw) : '') . " ORDER BY sort, id DESC")->fetchAll(PDO::FETCH_ASSOC); $plCats = sh_categories($pdo, true); ?>
-<div class="ci-card" id="playlists"><div class="ci-card-h"><h3><i class="fab fa-youtube" style="color:#dc2626"></i> YouTube playlist courses (free) <span class="ci-muted" style="font-weight:400;font-size:13px">· <?= count($pls) ?> — shown on <a href="/free-courses/" target="_blank">Free Courses</a></span></h3><a class="ci-btn ci-sm" href="/admin/shop-playlist.php"><i class="fas fa-plus"></i> Add Playlist</a></div>
-<div class="ci-card-b ci-p0 ci-table-wrap"><table class="ci-table"><thead><tr><th>Playlist course</th><th>Teacher</th><th>Category</th><th class="ci-num">Videos</th><th>Order</th><th>Status</th><th>Action</th></tr></thead><tbody>
-<?php if (!$pls): ?><tr><td colspan="7" class="ci-empty">No playlist course yet. Press <b>Add Playlist</b> and paste a YouTube playlist link.</td></tr><?php endif; ?>
-<?php foreach ($pls as $f): $fthumb = !empty($f['thumb_custom']) ? sh_upload_url($f['thumb_custom']) : (string)$f['thumb']; ?>
-<tr><td><div style="display:flex;gap:10px;align-items:center"><?= $fthumb !== '' ? '<img class="shp-th" src="' . ci_e($fthumb) . '" alt="" loading="lazy">' : '<span class="shp-thp">YOUTUBE</span>' ?><div><a href="/admin/shop-playlist.php?id=<?= (int)$f['id'] ?>" style="font-weight:700;color:inherit;text-decoration:none"><?= ci_e($f['title']) ?></a> <span class="shp-ytb"><i class="fab fa-youtube"></i> Playlist</span><small class="ci-muted" style="display:block"><?= ci_e($f['channel'] ?: 'YouTube') ?></small></div></div></td>
-<td><?= $f['teacher_id'] ? ci_e($teachers[(int)$f['teacher_id']] ?? '—') : '<span class="ci-muted">—</span>' ?></td>
-<td><?= $f['category_id'] && isset($plCats[(int)$f['category_id']]) ? ci_e($plCats[(int)$f['category_id']]['name']) : '<span class="ci-muted">—</span>' ?></td>
-<td class="ci-num"><?= $f['videos'] ? ((int)$f['videos'] >= 100 ? '100+' : (int)$f['videos']) : '—' ?></td><td><?= (int)$f['sort'] ?></td>
-<td><?= $f['active'] ? '<span class="ci-badge ci-b-green">Shown</span>' : '<span class="ci-badge ci-b-grey">Hidden</span>' ?></td>
-<td><div class="ci-icos"><?= ci_ico('edit', '/admin/shop-playlist.php?id=' . (int)$f['id'], 'Edit') ?><?= ci_ico('eye', sh_free_url($f), 'View on site', 'link', ' target="_blank"') ?><?= ci_post_ico('refresh', 'Fetch again from YouTube', ['action' => 'pl_refresh', 'id' => $f['id']]) ?><?= ci_post_ico('trash', 'Delete', ['action' => 'pl_delete', 'id' => $f['id']], 'Remove this playlist course?') ?></div></td></tr>
-<?php endforeach; ?>
-</tbody></table></div></div>
-<?php endif; ?>
 <?php endif; ?>
 </div>
 <?php admin_shell_close(); ?>

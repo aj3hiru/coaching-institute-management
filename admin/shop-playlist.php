@@ -10,6 +10,8 @@ sh_tables($pdo);
 $id = (int)($_GET['id'] ?? $_POST['id'] ?? 0);
 $F = $id ? ($pdo->query("SELECT * FROM hm_free WHERE id = $id")->fetch(PDO::FETCH_ASSOC) ?: null) : null;
 if ($id && !$F) { header('Location: /admin/shop-products.php?type=course#playlists'); exit; }
+if ($F && !empty($F['moved_to'])) { header('Location: /admin/shop-products.php?edit=' . (int)$F['moved_to'] . '&type=course'); exit; } // it is a course now
+if (!$F) { header('Location: /admin/shop-products.php?new=1&type=course'); exit; } // free playlists are added as courses (price 0) + Lectures
 $teachers = sh_teachers($pdo);
 $cats = sh_categories($pdo, true);
 $list = '/admin/shop-products.php?type=course#playlists';

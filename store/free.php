@@ -1,15 +1,18 @@
 <?php
-// A free course: a YouTube playlist (or video) played on our site.  /free-courses/ID-name  (/free-courses/: all)  — old /store/free?id=N redirects
+// Free Courses: every course ticked "Show in Free Courses" (course form sidebar).  /free-courses/
+// Old /free-courses/ID-name addresses (free YouTube playlists, now courses) go to their course.
 require_once dirname(__DIR__) . '/includes/config.php';
 require_once INCLUDES_PATH . '/shop.php';
 $pdo = sh_db();
 $id = (int)($_GET['id'] ?? 0);
-$all = $pdo->query("SELECT * FROM hm_free WHERE active = 1 ORDER BY sort, id DESC")->fetchAll(PDO::FETCH_ASSOC);
-foreach ($all as &$__f) if (!empty($__f['thumb_custom'])) $__f['thumb'] = sh_upload_url($__f['thumb_custom']); unset($__f); // own picture
-$f = null; foreach ($all as $x) if ((int)$x['id'] === $id) $f = $x;
-if ($id && !$f) { http_response_code(404); require ROOT_PATH . '/templates/page_not_found.php'; exit; }
-sh_redirect_clean($f ? sh_free_url($f) : '/free-courses/');
-if ($f) $seo_canonical = rtrim(SITE_URL, '/') . sh_free_url($f);
+if ($id) { // an old free playlist course: it is a course now
+    $to = 0; try { $to = (int)$pdo->query("SELECT moved_to FROM hm_free WHERE id = $id")->fetchColumn(); } catch (Throwable) {}
+    $tp = $to ? $pdo->query("SELECT * FROM sh_products WHERE id = $to")->fetch(PDO::FETCH_ASSOC) : null;
+    header('Location: ' . ($tp ? sh_url($tp) : '/free-courses/'), true, 301); exit;
+}
+sh_redirect_clean('/free-courses/');
+$all = sh_free_courses($pdo);
+$f = null;
 $stIndex = true;
 $stTitle = $f ? $f['title'] : 'Free Courses';
 $stDesc = $f ? 'Free course: ' . $f['title'] . ($f['videos'] ? ' — ' . ((int)$f['videos'] >= 100 ? '100+' : (int)$f['videos']) . ' video lessons' : '') . '. Watch free on ' . edu_site_name() . '.' : 'Free video courses from ' . edu_site_name() . ' — full playlists, free to watch.';
@@ -53,7 +56,7 @@ $ico = fn($n) => sh_icon($n);
   <h1>Free Courses</h1><p class="st-lead">Complete free courses — watch any time.</p>
   <?php $more = $all; if (!$more): ?><div class="st-empty">Free courses are coming soon.</div><?php endif; ?>
 <?php endif; ?>
-<?php $fcCats = sh_categories($pdo); $more = sh_free_teachers($pdo, $more); ?>
+<?php $fcCats = sh_categories($pdo); ?>
 <link rel="stylesheet" href="/assets/css/home.css?v=<?= @filemtime(ROOT_PATH . '/assets/css/home.css') ?: 1 ?>">
 <div class="hm-grid fr-grid"><?php foreach ($more as $x) echo sh_free_card($x, $x['category_id'] && isset($fcCats[(int)$x['category_id']]) ? $fcCats[(int)$x['category_id']]['name'] : ''); ?></div>
 <?php require ROOT_PATH . '/components/store-close.php'; ?>
