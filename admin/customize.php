@@ -1475,6 +1475,7 @@ function hmTeachers(wrap) {
 
 /* ---- Free courses ---- */
 function hmCatSelect(cur) { return html('<label class="cz-field"><span class="cz-label">Category</span><select><option value="0">— No category —</option>' + (HMDB.cats || []).map(c => '<option value="' + c.id + '"' + (+cur === c.id ? ' selected' : '') + '>' + esc(c.name) + '</option>').join('') + '</select></label>'); }
+function hmTchSelect(cur) { return html('<label class="cz-field"><span class="cz-label">Teacher (shown on the card)</span><select><option value="0">— No teacher —</option>' + (HMDB.teachers || []).map(t => '<option value="' + t.id + '"' + (+cur === t.id ? ' selected' : '') + '>' + esc(t.name) + '</option>').join('') + '</select></label>'); }
 function hmInput(label, type, val, attrs) { return html('<label class="cz-field"><span class="cz-label">' + esc(label) + '</span><input type="' + type + '" ' + (attrs || '') + ' value="' + esc(val ?? '') + '"></label>'); }
 function hmCheck(label, on) { return html('<label class="hm-chk"><input type="checkbox"' + (on ? ' checked' : '') + '> ' + esc(label) + '</label>'); }
 function hmItem(img, title, sub, off, tall) {
@@ -1487,25 +1488,25 @@ function hmFree(wrap) {
   if (!HMDB) { g.appendChild(hintEl('Loading…')); return; }
   
   HMDB.free.forEach(r => {
-    const it = hmItem(r.thumb_custom_url || r.thumb, r.title, (r.videos ? (+r.videos >= 100 ? '100+' : r.videos) + ' videos' : 'YouTube') + (r.thumb_custom_url ? ' · own picture' : '') + (+r.active ? '' : ' · hidden'), !+r.active);
+    const it = hmItem(r.thumb_custom_url || r.thumb, r.title, (r.videos ? (+r.videos >= 100 ? '100+' : r.videos) + ' videos' : 'YouTube') + ((HMDB.teachers || []).find(x => x.id === +r.teacher_id) ? ' · ' + HMDB.teachers.find(x => x.id === +r.teacher_id).name : '') + (r.thumb_custom_url ? ' · own picture' : '') + (+r.active ? '' : ' · hidden'), !+r.active);
     it.querySelector('.hm-acts').append(hmGhost('fa-image', 'Own picture (Media Library)', () => EduMedia.pick(m => hmSend({ action: 'free_thumb', id: r.id, photo_path: m.path }))),
       ...(r.thumb_custom_url ? [hmGhost('fa-rotate-left', 'Use the YouTube picture again', () => hmSend({ action: 'free_thumb', id: r.id, photo_path: '' }))] : []),hmGhost('fa-pen', 'Edit', () => { hmEdit = hmEdit === 'f' + r.id ? null : 'f' + r.id; rerender(); }), hmGhost('fa-rotate', 'Fetch again from YouTube', () => hmSend({ action: 'free_refresh', id: r.id })),
       hmGhost('fa-trash-can', 'Remove', () => { if (confirm('Remove this free course?')) hmSend({ action: 'free_delete', id: r.id }); }, 'danger'));
     g.appendChild(it);
     if (hmEdit === 'f' + r.id) {
       const f = html('<div class="hm-form"></div>');
-      const t = hmInput('Title', 'text', r.title, 'maxlength="250"'), c = hmCatSelect(r.category_id), o = hmInput('Order', 'number', r.sort), a = hmCheck('Show on the homepage', +r.active);
+      const t = hmInput('Title', 'text', r.title, 'maxlength="250"'), c = hmCatSelect(r.category_id), tc = hmTchSelect(r.teacher_id), o = hmInput('Order', 'number', r.sort), a = hmCheck('Show on the homepage', +r.active);
       const row = html('<div class="cz-btn-row"><button type="button" class="cz-btn-primary">Save</button><button type="button" class="cz-btn-outline">Cancel</button><a class="hm-a" target="_blank">Open on YouTube</a></div>'); row.children[2].href = r.url;
-      row.children[0].onclick = () => { const v = { action: 'free_save', id: r.id, title: t.querySelector('input').value, category_id: c.querySelector('select').value, sort: o.querySelector('input').value }; if (a.querySelector('input').checked) v.active = 1; hmSend(v, { done: () => { hmEdit = null; } }); };
+      row.children[0].onclick = () => { const v = { action: 'free_save', id: r.id, title: t.querySelector('input').value, category_id: c.querySelector('select').value, teacher_id: tc.querySelector('select').value, sort: o.querySelector('input').value }; if (a.querySelector('input').checked) v.active = 1; hmSend(v, { done: () => { hmEdit = null; } }); };
       row.children[1].onclick = () => { hmEdit = null; rerender(); };
-      f.append(t, c, o, a, row); g.appendChild(f);
+      f.append(t, c, tc, o, a, row); g.appendChild(f);
     }
   });
   const g2 = hmGroup('Add a YouTube playlist'); wrap.appendChild(g2);
-  const u = hmInput('Playlist link', 'url', '', 'placeholder="https://www.youtube.com/playlist?list=…"'), t = hmInput('Title (optional)', 'text', '', 'maxlength="250" placeholder="Empty = YouTube’s title"'), c = hmCatSelect(0);
+  const u = hmInput('Playlist link', 'url', '', 'placeholder="https://www.youtube.com/playlist?list=…"'), t = hmInput('Title (optional)', 'text', '', 'maxlength="250" placeholder="Empty = YouTube’s title"'), c = hmCatSelect(0), tc = hmTchSelect(0);
   const b = html('<button type="button" class="hm-btn hm-btn-p"><i class="fab fa-youtube"></i> Fetch &amp; add</button>');
-  b.onclick = () => { const url = u.querySelector('input').value.trim(); if (!url) { alert('Paste the playlist link first.'); return; } b.disabled = true; b.textContent = 'Fetching…'; hmSend({ action: 'free_add', url, title: t.querySelector('input').value, category_id: c.querySelector('select').value, sort: 0 }).then(() => { b.disabled = false; }); };
-  g2.append(u, t, c, b);
+  b.onclick = () => { const url = u.querySelector('input').value.trim(); if (!url) { alert('Paste the playlist link first.'); return; } b.disabled = true; b.textContent = 'Fetching…'; hmSend({ action: 'free_add', url, title: t.querySelector('input').value, category_id: c.querySelector('select').value, teacher_id: tc.querySelector('select').value, sort: 0 }).then(() => { b.disabled = false; }); };
+  g2.append(u, t, c, tc, b);
 }
 
 /* ---- Toppers ---- */

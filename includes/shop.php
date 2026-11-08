@@ -14,7 +14,7 @@
  */
 require_once __DIR__ . '/settings.php';
 
-const SH_SCHEMA = 12;
+const SH_SCHEMA = 13;
 
 function sh_db(): PDO
 {
@@ -151,6 +151,10 @@ function sh_tables(PDO $pdo): void
     $add('hm_slides', 'show_t', 'TINYINT(1) NOT NULL DEFAULT 1');
     $add('hm_slides', 'show_d', 'TINYINT(1) NOT NULL DEFAULT 1');
     $add('hm_free', 'thumb_custom', 'VARCHAR(255) NULL');
+    // v13: a free course can name its teacher; a chapter can be linked to a YouTube playlist (new videos are fetched)
+    $add('hm_free', 'teacher_id', 'INT UNSIGNED NULL');
+    $add('sh_sections', 'yt_list', 'VARCHAR(64) NULL');
+    $add('sh_sections', 'yt_synced', 'DATETIME NULL');
     // v12: staff roles — Blog Admin, Teacher, Accountant (the column only gets new values; nothing changes for existing users)
     try { $pdo->exec("ALTER TABLE users MODIFY role ENUM('admin','editor','author','blog_admin','teacher','accountant') NOT NULL DEFAULT 'author'"); } catch (Throwable) {}
     // staff that were "author" only to hold store / institute permissions (no blog access) get their real role
@@ -1058,7 +1062,7 @@ function sh_mini_card(array $p, string $cat = ''): string
         . '<small class="hc-m' . ($bt === '' && $p['type'] === 'notes' ? ' hc-pdf' : '') . '">' . $mi . sh_e($bt !== '' ? $bt : $meta) . '</small>' . '<span class="hc-p">' . sh_price_html($p) . '</span>'
         . '<span class="hc-f"><span class="hc-go' . ($free ? ' hc-join' : '') . '">' . ($up ? sh_cta($p, 'Join batch') : sh_cta($p, 'View details')) . ' ' . sh_icon('arrow') . '</span></span></span></a>';
 }
-/** Free YouTube course card (homepage, category pages): FREE tag + category, title, lectures, teacher (channel). */
+/** Free YouTube course card (homepage, category pages): FREE tag + category, title, lectures, teacher ($f['teacher'] — from sh_free_teachers()). */
 function sh_free_card(array $f, string $cat = ''): string
 {
     $n = (int)($f['videos'] ?? 0);
@@ -1066,7 +1070,46 @@ function sh_free_card(array $f, string $cat = ''): string
         . '<span class="hm-fc-b"><span class="hm-fc-top"><em class="st-free100">FREE</em>' . ($cat !== '' ? '<small class="hc-cat">' . sh_e($cat) . '</small>' : '') . '</span>'
         . '<b>' . sh_e($f['title']) . '</b>'
         . ($n ? '<small class="hm-fc-m">' . sh_icon('video') . ($n >= 100 ? '100+' : $n) . ' lecture' . ($n === 1 ? '' : 's') . '</small>' : '')
-        . (trim((string)($f['channel'] ?? '')) !== '' ? '<small class="hm-fc-t">' . sh_icon('user') . sh_e($f['channel']) . '</small>' : '') . '</span></a>';
+        . (($t = (string)($f['teacher'] ?? '')) !== '' ? '<small class="hm-fc-t">' . sh_icon('user') . sh_e($t) . '</small>' : '') . '</span></a>';
+}
+/** Adds 'teacher' (the teacher chosen for each free course, '' if none) to free course rows. */
+function sh_free_teachers(PDO $pdo, array $rows): array
+{
+    $n = [];
+    foreach ($rows as &$f) { $id = (int)($f['teacher_id'] ?? 0); $f['teacher'] = $id ? ($n[$id] ??= sh_teacher_name($pdo, $id)) : ''; }
+    return $rows;
+}
+/** A chapter linked to a YouTube playlist: adds the playlist's videos that are not in the course yet, at the end of
+    that chapter (in playlist order). Videos are never removed here. Returns how many were added (-1: playlist not readable). */
+function sh_yt_sync_section(PDO $pdo, int $sid, int $freeFirst = 0): int
+{
+    $s = $pdo->query("SELECT id, product_id, yt_list FROM sh_sections WHERE id = $sid")->fetch(PDO::FETCH_ASSOC);
+    if (!$s || !$s['yt_list']) return 0;
+    $pid = (int)$s['product_id'];
+    $pl = sh_yt_playlist((string)$s['yt_list']);
+    $pdo->prepare("UPDATE sh_sections SET yt_synced = NOW() WHERE id = ?")->execute([$sid]);
+    if (!$pl) return -1;
+    $have = array_flip(array_filter(array_map(fn($u) => sh_yt_id((string)$u), $pdo->query("SELECT video_url FROM sh_lessons WHERE product_id = $pid AND video_url IS NOT NULL")->fetchAll(PDO::FETCH_COLUMN))));
+    $sort = (int)$pdo->query("SELECT COALESCE(MAX(sort),0) FROM sh_lessons WHERE product_id = $pid")->fetchColumn();
+    $no = (int)$pdo->query("SELECT COALESCE(MAX(lecture_no),0) FROM sh_lessons WHERE section_id = $sid")->fetchColumn();
+    $first = !(int)$pdo->query("SELECT COUNT(*) FROM sh_lessons WHERE section_id = $sid")->fetchColumn();
+    $ins = $pdo->prepare("INSERT INTO sh_lessons (product_id, section_id, title, video_url, duration, free, sort, lecture_no, doubts_on) VALUES (?,?,?,?,?,?,?,?,1)");
+    $added = 0;
+    foreach ($pl as [$v, $t]) {
+        if (isset($have[$v])) continue;
+        if ($t === '') $t = sh_yt_title($v) ?: 'Lecture ' . ($no + 1);
+        $ins->execute([$pid, $sid, mb_substr($t, 0, 200), 'https://www.youtube.com/watch?v=' . $v, $added < 40 ? (sh_yt_duration($v) ?: null) : null, $first && $added < $freeFirst ? 1 : 0, ++$sort, ++$no]);
+        $have[$v] = 1; $added++;
+    }
+    return $added;
+}
+/** Course pages call this: chapters linked to a playlist look for new videos at most every 6 hours. */
+function sh_yt_autosync(PDO $pdo, int $pid): void
+{
+    try {
+        foreach ($pdo->query("SELECT id FROM sh_sections WHERE product_id = $pid AND yt_list IS NOT NULL AND (yt_synced IS NULL OR yt_synced < NOW() - INTERVAL 6 HOUR) LIMIT 3")->fetchAll(PDO::FETCH_COLUMN) as $sid)
+            sh_yt_sync_section($pdo, (int)$sid);
+    } catch (Throwable $e) { error_log('yt autosync: ' . $e->getMessage()); }
 }
 /** Published courses / notes for the homepage lists and "View more".
     $when: '' all · 'launched' already started (or no start date) · 'upcoming' batch starts today or later (soonest first).

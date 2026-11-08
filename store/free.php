@@ -53,7 +53,7 @@ $ico = fn($n) => sh_icon($n);
   <h1>Free Courses</h1><p class="st-lead">Complete free courses — watch any time.</p>
   <?php $more = $all; if (!$more): ?><div class="st-empty">Free courses are coming soon.</div><?php endif; ?>
 <?php endif; ?>
-<?php $fcCats = sh_categories($pdo); ?>
+<?php $fcCats = sh_categories($pdo); $more = sh_free_teachers($pdo, $more); ?>
 <link rel="stylesheet" href="/assets/css/home.css?v=<?= @filemtime(ROOT_PATH . '/assets/css/home.css') ?: 1 ?>">
 <div class="hm-grid fr-grid"><?php foreach ($more as $x) echo sh_free_card($x, $x['category_id'] && isset($fcCats[(int)$x['category_id']]) ? $fcCats[(int)$x['category_id']]['name'] : ''); ?></div>
 <?php require ROOT_PATH . '/components/store-close.php'; ?>

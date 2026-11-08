@@ -512,6 +512,27 @@ function sh_demo_class5(PDO $pdo): string
     return 'Class 5 demo: ' . count($new) . ' courses / notes packs and ' . count($free) . ' free YouTube courses added.';
 }
 
+/** Demo free courses get a demo teacher (maths → the maths teacher, science / EVS / Hindi → the science teacher,
+    the rest → the third one) where none is chosen. Safe to run again. */
+function sh_demo_free_teachers(PDO $pdo): int
+{
+    sh_tables($pdo);
+    $info = sh_demo_info();
+    if (!$info['free']) return 0;
+    $SC = json_decode((string)@file_get_contents(__DIR__ . '/demo/showcase/showcase.json'), true) ?: [];
+    $T = [];
+    foreach (array_keys($SC['teachers'] ?? []) as $i => $k) { $id = (int)$pdo->query("SELECT id FROM users WHERE email = " . $pdo->quote('demo.teacher' . ($i + 1) . '@example.com'))->fetchColumn(); if ($id) $T[$k] = $id; }
+    if (!$T) return 0;
+    $n = 0;
+    foreach ($pdo->query("SELECT id, title FROM hm_free WHERE teacher_id IS NULL AND id IN (" . implode(',', array_map('intval', $info['free'])) . ")")->fetchAll(PDO::FETCH_ASSOC) as $f) {
+        $k = preg_match('/math|ganit/i', $f['title']) ? 'rk' : (preg_match('/science|evs|hindi|bio|chem|physics/i', $f['title']) ? 'ns' : 'av');
+        $tid = $T[$k] ?? reset($T);
+        $pdo->prepare("UPDATE hm_free SET teacher_id = ? WHERE id = ?")->execute([$tid, $f['id']]); $n++;
+    }
+    sh_home_refresh();
+    return $n;
+}
+
 /** Removes exactly what sh_demo_add made (products with their videos / PDFs, demo accounts, demo orders). */
 function sh_demo_remove(PDO $pdo): string
 {

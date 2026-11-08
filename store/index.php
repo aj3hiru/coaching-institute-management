@@ -37,7 +37,7 @@ $crs = $wantC ? sh_latest($pdo, 'course', 9, 0, $cid, 'launched') : []; $moreC =
 $nts = $wantN ? sh_latest($pdo, 'notes', 9, 0, $cid) : []; $moreN = count($nts) > 8; $nts = array_slice($nts, 0, 8);
 $frees = [];
 if ($t === '') { try { $frees = $pdo->query("SELECT * FROM hm_free WHERE active = 1" . ($cid ? " AND category_id = $cid" : '') . " ORDER BY sort, id DESC LIMIT 12")->fetchAll(PDO::FETCH_ASSOC);
-    foreach ($frees as &$__f) if (!empty($__f['thumb_custom'])) $__f['thumb'] = sh_upload_url($__f['thumb_custom']); unset($__f); } catch (Throwable) {} }
+    foreach ($frees as &$__f) if (!empty($__f['thumb_custom'])) $__f['thumb'] = sh_upload_url($__f['thumb_custom']); unset($__f); $frees = sh_free_teachers($pdo, $frees); } catch (Throwable) {} }
 $tNames = [];
 $catName = fn(array $p) => $cats[(int)($p['category_id'] ?? 0)]['name'] ?? '';
 $others = array_values(array_filter($cats, fn($c) => !$cat || (int)$c['id'] !== $cid));

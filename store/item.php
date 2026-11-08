@@ -17,6 +17,7 @@ $pid = (int)$p['id'];
 $u = sh_user();
 $own = $u && sh_has_access($pdo, (int)$u['id'], $pid);
 $isCourse = $p['type'] === 'course';
+if ($isCourse) sh_yt_autosync($pdo, $pid); // chapters linked to a YouTube playlist pick up new videos
 $cur = $isCourse ? sh_curriculum($pdo, $pid) : [];
 $files = sh_files($pdo, $pid);
 $all = []; foreach ($cur as $s) foreach ($s['lessons'] as $l) $all[] = $l;

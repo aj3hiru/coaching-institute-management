@@ -1,6 +1,8 @@
 <?php
 // Online store → what is inside one product: chapters, video lessons (uploaded to our server OR a YouTube / video link —
-// your choice per lesson), many YouTube videos at once (links or a playlist), and PDF files.
+// your choice per lesson), many YouTube videos at once (links or a playlist), a chapter linked to a YouTube playlist
+// (its videos become lectures; videos added to the playlist later are fetched by themselves, every 6 hours or with
+// "Sync now"), and PDF files.
 require_once __DIR__ . '/components/guard.php';
 require_once INCLUDES_PATH . '/institute.php';
 require_once INCLUDES_PATH . '/shop.php';
@@ -92,6 +94,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($ajax) { header('Content-Type: application/json'); exit(json_encode(['ok' => true, 'id' => $id])); }
                 admin_flash($src === 'link' ? 'Video saved (YouTube / link).' : 'Video saved.');
                 break;
+            case 'link_playlist': // a chapter that follows a YouTube playlist
+                $list = sh_yt_list(trim((string)($_POST['url'] ?? '')));
+                if (!$list) throw new RuntimeException('Paste the YouTube playlist link — it has "list=" in it.');
+                $pl = sh_yt_playlist($list);
+                if (!$pl) throw new RuntimeException('Could not read this playlist. On YouTube set the playlist to Public or Unlisted (videos inside can be Unlisted), then try again.');
+                $sec = (int)($_POST['section_id'] ?? 0);
+                if ($sec && !(int)$pdo->query("SELECT COUNT(*) FROM sh_sections WHERE id = $sec AND product_id = $pid")->fetchColumn()) $sec = 0;
+                if (!$sec) {
+                    $t = trim((string)($_POST['title'] ?? ''));
+                    if ($t === '') { $o = json_decode(sh_http_get('https://www.youtube.com/oembed?format=json&url=' . rawurlencode('https://www.youtube.com/playlist?list=' . $list), 12), true) ?: []; $t = (string)($o['title'] ?? '') ?: 'Chapter'; }
+                    $sort = (int)$pdo->query("SELECT COALESCE(MAX(sort),0) + 1 FROM sh_sections WHERE product_id = $pid")->fetchColumn();
+                    $pdo->prepare("INSERT INTO sh_sections (product_id, title, sort) VALUES (?, ?, ?)")->execute([$pid, mb_substr($t, 0, 200), $sort]);
+                    $sec = (int)$pdo->lastInsertId();
+                }
+                $pdo->prepare("UPDATE sh_sections SET yt_list = ?, yt_synced = NULL WHERE id = ?")->execute([$list, $sec]);
+                @set_time_limit(300);
+                $n = sh_yt_sync_section($pdo, $sec, max(0, (int)($_POST['free_first'] ?? 0)));
+                admin_log('shop_content', "Linked YouTube playlist $list to chapter #$sec of store product #$pid ($n added)");
+                admin_flash('Playlist linked. ' . max(0, $n) . ' video' . ($n === 1 ? '' : 's') . ' added as lectures. New videos you add to this playlist on YouTube come in by themselves (checked every 6 hours, or press Sync now).');
+                $_POST['anchor'] = 'list';
+                break;
+            case 'sync_section':
+                @set_time_limit(300);
+                $n = sh_yt_sync_section($pdo, $id);
+                admin_flash($n < 0 ? 'Could not read the playlist right now — check that it is still Public or Unlisted.' : ($n ? $n . ' new video' . ($n === 1 ? '' : 's') . ' added from the playlist.' : 'Up to date — no new videos in the playlist.'), $n < 0 ? 'error' : 'success');
+                break;
+            case 'unlink_playlist':
+                $pdo->prepare("UPDATE sh_sections SET yt_list = NULL, yt_synced = NULL WHERE id = ? AND product_id = ?")->execute([$id, $pid]);
+                admin_flash('Playlist unlinked. The lectures already added stay in the chapter.');
+                break;
             case 'bulk_youtube':
                 $sec = (int)($_POST['section_id'] ?? 0);
                 if ($sec && !(int)$pdo->query("SELECT COUNT(*) FROM sh_sections WHERE id = $sec AND product_id = $pid")->fetchColumn()) $sec = 0;
@@ -175,6 +207,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $isCourse = $p['type'] === 'course';
 $cur = $isCourse ? sh_curriculum($pdo, $pid) : [];
 $secs = $pdo->query("SELECT id, title FROM sh_sections WHERE product_id = $pid ORDER BY sort, id")->fetchAll(PDO::FETCH_KEY_PAIR);
+$ytl = $pdo->query("SELECT id, yt_list, yt_synced FROM sh_sections WHERE product_id = $pid AND yt_list IS NOT NULL")->fetchAll(PDO::FETCH_UNIQUE | PDO::FETCH_ASSOC);
 $files = array_values(array_filter(sh_files($pdo, $pid), fn($f) => empty($f['lesson_id']))); // lecture notes are managed on the lecture
 $editL = (int)($_GET['lesson'] ?? 0);
 $el = $editL ? ($pdo->query("SELECT * FROM sh_lessons WHERE id = $editL AND product_id = $pid")->fetch(PDO::FETCH_ASSOC) ?: null) : null;
@@ -227,6 +260,17 @@ $btn = function (string $action, int $id, string $icon, string $label, array $mo
   <div><b style="font-size:15px">Add a lecture</b><div class="shc-small">Video (upload or any link) or PDF, with notes, VVI questions and a quiz.</div></div>
   <a class="ci-btn" href="/admin/shop-lecture.php?course=<?= $pid ?>"><i class="fas fa-plus"></i> Add lecture</a></div></div>
 
+<!-- a chapter that follows a YouTube playlist -->
+<details class="ci-card"<?= $ytl ? '' : ' open' ?>><summary class="ci-card-h" style="cursor:pointer"><h3><i class="fab fa-youtube" style="color:#dc2626"></i> Link a YouTube playlist</h3><span class="shc-small">its videos become lectures — new ones come in by themselves</span></summary><div class="ci-card-b">
+<form method="post"><?= csrf_field() ?><input type="hidden" name="action" value="link_playlist"><input type="hidden" name="pid" value="<?= $pid ?>">
+  <div class="ci-f"><label>YouTube playlist link</label><input name="url" required maxlength="500" placeholder="https://www.youtube.com/playlist?list=PL…">
+  <span class="ci-hint">Make one playlist on YouTube for this course (or chapter) and keep your videos <b>Unlisted</b> in it; set the playlist itself to Public or Unlisted. Every video in it is added here, and videos you add to the playlist later are fetched by themselves (every 6 hours, or press <b>Sync now</b>). A lecture you add by hand with a YouTube link can go in the same chapter — it is never added twice.</span></div>
+  <div class="ci-grid3"><div class="ci-f"><label>Chapter</label><select name="section_id"><option value="0">New chapter (named after the playlist)</option><?php foreach ($secs as $k => $t): ?><option value="<?= $k ?>"><?= ci_e($t) ?><?= isset($ytl[$k]) ? ' — already linked' : '' ?></option><?php endforeach; ?></select></div>
+  <div class="ci-f"><label>New chapter name <span class="ci-muted" style="font-weight:400">(optional)</span></label><input name="title" maxlength="200" placeholder="empty = the playlist's name"></div>
+  <div class="ci-f"><label>Free preview</label><select name="free_first"><option value="0">None</option><option value="1" selected>First video</option><option value="2">First 2 videos</option><option value="3">First 3 videos</option></select></div></div>
+  <div style="margin-top:10px"><button class="ci-btn" type="submit"><i class="fas fa-link"></i> Link playlist &amp; add its videos</button></div>
+</form></div></details>
+
 <!-- many YouTube videos at once -->
 <details class="ci-card"><summary class="ci-card-h" style="cursor:pointer"><h3>Add many YouTube videos at once</h3><span class="shc-small">links or a playlist</span></summary><div class="ci-card-b">
 <form method="post"><?= csrf_field() ?><input type="hidden" name="action" value="bulk_youtube"><input type="hidden" name="pid" value="<?= $pid ?>">
@@ -255,6 +299,9 @@ foreach ($blocks as $s): ?>
   <?php if ($s['id']): $si++; ?><div class="shc-sec-h">
     <form method="post" class="rn"><?= csrf_field() ?><input type="hidden" name="action" value="rename_section"><input type="hidden" name="id" value="<?= $s['id'] ?>"><input type="hidden" name="anchor" value="list"><input name="title" value="<?= ci_e($s['title']) ?>" maxlength="200" aria-label="Chapter name" onchange="this.form.submit()"></form>
     <span class="shc-small"><?= count($s['lessons']) ?> videos</span>
+    <?php if (isset($ytl[$s['id']])): $yl = $ytl[$s['id']]; ?><span class="shc-tag yt" title="Videos added to this playlist on YouTube are fetched by themselves"><i class="fab fa-youtube"></i> Playlist linked<?= $yl['yt_synced'] ? ' · checked ' . ci_e(date('d M, h:i A', strtotime($yl['yt_synced']))) : '' ?></span>
+      <a class="shc-small" href="https://www.youtube.com/playlist?list=<?= ci_e($yl['yt_list']) ?>" target="_blank" rel="noopener">open</a>
+      <?= $btn('sync_section', $s['id'], 'refresh', 'Sync now — fetch new videos from the playlist', ['anchor' => 'list']) ?><?= $btn('unlink_playlist', $s['id'], 'unlink', 'Unlink playlist (lectures stay)', ['anchor' => 'list'], 'Unlink the playlist from this chapter? The lectures already added stay.') ?><?php endif; ?>
     <a class="ci-btn ci-ghost ci-sm" href="/admin/shop-lecture.php?course=<?= $pid ?>&chapter=<?= $s['id'] ?>"><i class="fas fa-plus"></i> Lecture</a>
     <div class="ci-icos"><?= $btn('move_section', $s['id'], 'up', 'Move chapter up', ['dir' => -1, 'anchor' => 'list']) ?><?= $btn('move_section', $s['id'], 'down', 'Move chapter down', ['dir' => 1, 'anchor' => 'list']) ?><?= $btn('delete_section', $s['id'], 'trash', 'Remove chapter', ['anchor' => 'list'], 'Remove the chapter "' . $s['title'] . '"? Its videos are kept.') ?></div>
   </div><?php elseif ($loose): ?><div class="shc-sec-h"><b>Without a chapter</b></div><?php endif; ?>

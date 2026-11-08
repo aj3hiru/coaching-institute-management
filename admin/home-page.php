@@ -75,6 +75,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($a === 'free_add') {
                 $pdo->prepare("INSERT INTO hm_free (url, list_id, video_id, title, thumb, channel, videos, category_id, sort) VALUES (?,?,?,?,?,?,?,?,?)")->execute([mb_substr($url, 0, 500), $i['list'] ?: null, $i['video'] ?: null,
                     mb_substr(trim((string)($_POST['title'] ?? '')) ?: $i['title'], 0, 250), $i['thumb'] ?: null, mb_substr($i['channel'], 0, 150) ?: null, $i['videos'], (int)($_POST['category_id'] ?? 0) ?: null, (int)($_POST['sort'] ?? 0)]);
+                if (($tid = (int)($_POST['teacher_id'] ?? 0)) && isset(sh_teachers($pdo)[$tid])) $pdo->prepare("UPDATE hm_free SET teacher_id = ? WHERE id = ?")->execute([$tid, (int)$pdo->lastInsertId()]);
                 admin_flash('Fetched successfully: "' . $i['title'] . '"' . ($i['videos'] ? ' — ' . ($i['videos'] >= 100 ? '100+' : $i['videos']) . ' videos' : '') . '.');
             } else {
                 $pdo->prepare("UPDATE hm_free SET list_id=?, video_id=?, thumb=?, channel=?, videos=? WHERE id=?")->execute([$i['list'] ?: null, $i['video'] ?: null, $i['thumb'] ?: null, mb_substr($i['channel'], 0, 150) ?: null, $i['videos'], $id]);
@@ -83,6 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($a === 'free_save') {
             $go = 'free';
             $pdo->prepare("UPDATE hm_free SET title=?, category_id=?, sort=?, active=? WHERE id=?")->execute([mb_substr(trim((string)($_POST['title'] ?? '')), 0, 250) ?: 'Free course', (int)($_POST['category_id'] ?? 0) ?: null, (int)($_POST['sort'] ?? 0), !empty($_POST['active']) ? 1 : 0, $id]);
+            if (isset($_POST['teacher_id'])) { $tid = (int)$_POST['teacher_id']; $pdo->prepare("UPDATE hm_free SET teacher_id = ? WHERE id = ?")->execute([$tid && isset(sh_teachers($pdo)[$tid]) ? $tid : null, $id]); }
             admin_flash('Saved.');
         } elseif ($a === 'top_save') {
             $go = 'toppers';
@@ -129,6 +131,7 @@ $cats = sh_categories($pdo, true);
 $cfg = sh_home_cfg();
 $eS = isset($_GET['slide']) ? ($pdo->query("SELECT * FROM hm_slides WHERE id = " . (int)$_GET['slide'])->fetch(PDO::FETCH_ASSOC) ?: null) : null;
 $catSel = function (int $cur) use ($cats) { $h = '<select name="category_id"><option value="0">— No category —</option>'; foreach ($cats as $k => $c) $h .= '<option value="' . $k . '"' . ($cur === (int)$k ? ' selected' : '') . '>' . ci_e($c['name']) . '</option>'; return $h . '</select>'; };
+$tchSel = function (int $cur) use ($pdo) { static $tl = null; $tl ??= sh_teachers($pdo); $h = '<select name="teacher_id"><option value="0">— No teacher —</option>'; foreach ($tl as $k => $l) $h .= '<option value="' . $k . '"' . ($cur === (int)$k ? ' selected' : '') . '>' . ci_e($l) . '</option>'; return $h . '</select>'; };
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -184,7 +187,8 @@ $catSel = function (int $cur) use ($cats) { $h = '<select name="category_id"><op
   <form method="post" class="ci-grid3" style="margin-bottom:14px"><?= csrf_field() ?><input type="hidden" name="action" value="free_add">
     <div class="ci-f" style="grid-column:span 2"><label>YouTube playlist link</label><input name="url" required maxlength="500" placeholder="https://www.youtube.com/playlist?list=…"><span class="ci-hint">Title, picture and number of videos are fetched from YouTube. The playlist must be Public or Unlisted.</span></div>
     <div class="ci-f"><label>Category</label><?= $catSel(0) ?></div>
-    <div class="ci-f" style="grid-column:span 2"><label>Title <span class="ci-muted" style="font-weight:400">(optional — empty = YouTube's title)</span></label><input name="title" maxlength="250"></div>
+    <div class="ci-f"><label>Teacher <span class="ci-muted" style="font-weight:400">(shown on the card)</span></label><?= $tchSel(0) ?></div>
+    <div class="ci-f"><label>Title <span class="ci-muted" style="font-weight:400">(optional — empty = YouTube's title)</span></label><input name="title" maxlength="250"></div>
     <div class="ci-f"><label>&nbsp;</label><button class="ci-btn" type="submit"><i class="fab fa-youtube"></i> Fetch &amp; add</button></div>
   </form>
   <?php if (!$free): ?><p class="ci-muted" style="margin:0">No free courses yet.</p><?php endif; ?>
@@ -194,6 +198,7 @@ $catSel = function (int $cur) use ($cats) { $h = '<select name="category_id"><op
         <form method="post" class="hp-fe"><?= csrf_field() ?><input type="hidden" name="action" value="free_save"><input type="hidden" name="id" value="<?= (int)$f['id'] ?>">
           <div class="ci-f"><label>Title</label><input name="title" maxlength="250" value="<?= ci_e($f['title']) ?>"></div>
           <div class="ci-f"><label>Category</label><?= $catSel((int)$f['category_id']) ?></div>
+          <div class="ci-f"><label>Teacher</label><?= $tchSel((int)($f['teacher_id'] ?? 0)) ?></div>
           <div class="ci-f"><label>Order</label><input type="number" name="sort" value="<?= (int)$f['sort'] ?>"></div>
           <div style="display:flex;gap:8px;align-items:center;padding-bottom:4px"><label style="display:flex;gap:5px;margin:0;font-size:13px"><input type="checkbox" name="active" value="1" <?= $f['active'] ? 'checked' : '' ?>> Show</label><button class="ci-btn ci-sm" type="submit">Save</button></div>
         </form>

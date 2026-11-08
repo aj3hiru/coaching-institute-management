@@ -120,6 +120,7 @@ $units = $P ? $pdo->query("SELECT id, section_id, title FROM sh_units WHERE prod
 $cnt = $P ? $pdo->query("SELECT section_id, COUNT(*) n, COALESCE(MAX(lecture_no),0) mx FROM sh_lessons WHERE product_id = " . (int)$P['id'] . ($L ? " AND id <> " . (int)$L['id'] : '') . " GROUP BY section_id")->fetchAll(PDO::FETCH_ASSOC) : [];
 $nextNo = []; foreach ($cnt as $c) $nextNo[(int)$c['section_id']] = max((int)$c['n'], (int)$c['mx']) + 1;
 $selSec = $L ? (int)$L['section_id'] : (int)($_GET['chapter'] ?? 0);
+if (!$selSec && $P) $selSec = (int)$pdo->query("SELECT id FROM sh_sections WHERE product_id = " . (int)$P['id'] . " AND yt_list IS NOT NULL ORDER BY sort, id LIMIT 1")->fetchColumn(); // a chapter linked to a YouTube playlist first
 if (!$selSec && $secs) $selSec = (int)array_key_last($secs);
 $selUnit = $L ? (int)$L['unit_id'] : (int)($_GET['unit'] ?? 0);
 $vvi = $L ? sh_vvi($L) : ['qa' => [], 'links' => []];

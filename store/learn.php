@@ -16,6 +16,7 @@ $uid = $u ? (int)$u['id'] : 0;
 $owner = sh_has_access($pdo, $uid, (int)$p['id']);
 $own = $owner || $staff;
 $isCourse = $p['type'] === 'course';
+if ($isCourse) sh_yt_autosync($pdo, (int)$p['id']);
 $cur = $isCourse ? sh_curriculum($pdo, (int)$p['id']) : [];
 $files = sh_files($pdo, (int)$p['id']);
 $all = []; $secOf = [];
