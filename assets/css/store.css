@@ -796,3 +796,4 @@ a.st-li:hover{background:#f7fbfc}a.st-li:hover svg{color:var(--sa)}
 .ls-card .hm-btc-tags .t-free{background:#16a34a;color:#fff;border-radius:3px}
 .ls-card .hm-btc-i .st-type{display:none}
 @media (max-width:760px){.ls-card .hm-btc-i .st-thumb,.ls-card .hm-btc-i img{min-height:0}.ls-card .hm-btc-b{padding:14px 14px 16px}.ls-card h3{font-size:18px}}
+.ls-card .hm-btc-i .st-thumb,.ls-card .hm-btc-i img{min-height:0!important;aspect-ratio:16/9!important;height:auto!important}
