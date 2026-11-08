@@ -85,7 +85,7 @@ function edu_theme_defaults(): array
         // Site Identity extras
         'id_hide_title' => '1', 'id_hide_tagline' => '1', 'id_retina_logo' => '',
         // header brand: 'logo' (logo + optional title/tagline) or 'school' (round emblem + big name + a line such as the address)
-        'id_brand_style' => 'logo', 'id_brand_emblem' => '', 'id_header_title' => '', 'id_header_line' => '',
+        'id_brand_style' => 'school', 'id_emblem_h' => 52, 'id_brand_emblem' => '', 'id_header_title' => '', 'id_header_line' => '',
         'id_school_phone' => '', 'id_school_wa' => '', 'id_school_bar_text' => '', 'id_school_login_text' => 'Student Login',
         // Colors: global palette + every area (empty = theme default)
         'global_colors' => [

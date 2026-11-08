@@ -65,14 +65,15 @@ $__brandText = (!th_on('id_hide_title') || (!th_on('id_hide_tagline') && $__tagl
         . (!th_on('id_hide_tagline') && $__tagline !== '' ? '<span class="site-tagline">' . htmlspecialchars($__tagline) . '</span>' : '') . '</span>'
     : '';
 // School-style brand (Customize → Site Identity → Header Brand): round emblem, the name in big letters, the address under it
-$__bstyle = (string)th('id_brand_style', 'logo');
+$__bstyle = 'school'; // one header brand for the site: logo + site title + line under it (Customize → Site Identity)
 $__school = in_array($__bstyle, ['school', 'school_full'], true);
 $__schoolFull = $__bstyle === 'school_full'; // the whole header in the school layout (top bar + menu beside the brand)
 if ($__school) {
     $__emb = trim((string)th('id_brand_emblem')) ?: '/assets/images/dk-academy-emblem.svg';
     $__bt = trim((string)th('id_header_title')) ?: edu_site_name();
     $__bl = trim((string)th('id_header_line')) ?: trim((string)es('general', 'address', ''));
-    $__logo = '<img src="' . htmlspecialchars($__emb) . '" alt="" class="nb-emblem" width="52" height="60">';
+    $__embH = max(36, min(80, (int)th('id_emblem_h', 52) ?: 52));
+    $__logo = '<img src="' . htmlspecialchars($__emb) . '" alt="" class="nb-emblem" width="52" height="60" style="--emb-h:' . $__embH . 'px">';
     $__brandText = '<span class="nb-site-branding nb-sb-school"><span class="site-title">' . htmlspecialchars($__bt) . '</span>'
         . ($__bl !== '' ? '<span class="site-tagline nb-brand-line">' . htmlspecialchars($__bl) . '</span>' : '') . '</span>';
 }
@@ -95,7 +96,7 @@ if ($__school) {
 .nb-hr-brand .nb-brand-link.nb-brand-school{position:relative;isolation:isolate;align-self:stretch;margin:-8px 0;padding:3px 60px 3px 20px;gap:9px;text-decoration:none;color:inherit}
 .nb-brand-school::before{content:"";position:absolute;inset:0 12px 0 0;z-index:-1;background:rgba(240,174,113,.43);clip-path:polygon(0 0,100% 0,97% 45%,100% 100%,0 100%)}
 .nb-brand-school::after{content:"";position:absolute;bottom:0;right:7px;width:40px;height:55%;z-index:-1;background:#f02801;clip-path:polygon(50% 0,0 100%,25% 100%)}
-.nb-brand-school .nb-emblem{display:block;width:45px;height:52px;flex:0 0 auto}
+.nb-brand-school .nb-emblem{display:block;width:auto;height:var(--emb-h,52px);max-width:96px;object-fit:contain;flex:0 0 auto}
 .nb-hr-brand .nb-sb-school{display:flex;flex-direction:column;align-items:flex-start;text-align:left;line-height:1.1;min-width:0}
 .nb-sb-school .site-title{font-family:Poppins,Roboto,Arial,sans-serif;font-weight:700;font-size:23px;letter-spacing:-.005em;color:#9e1b32!important;white-space:nowrap}
 .nb-sb-school .nb-brand-line{margin-top:3px;font-family:Roboto,Arial,sans-serif;font-size:14.5px;font-weight:500;letter-spacing:0;text-transform:none;color:#1a1a1a!important;white-space:nowrap}
@@ -110,7 +111,7 @@ if ($__school) {
   .nb-hr-act{gap:8px!important}
   .nb-hr-sub{padding:7px 11px!important;font-size:13px!important}
   .nb-hr-brand .nb-brand-link.nb-brand-school{margin:-4px 0;padding:5px 46px 5px 14px;gap:8px}
-  .nb-brand-school .nb-emblem{width:38px;height:44px}
+  .nb-brand-school .nb-emblem{width:auto;height:min(var(--emb-h,52px),44px)}
   .nb-sb-school .site-title{font-size:18px}
   .nb-sb-school .nb-brand-line{font-size:11px;margin-top:2px}
   .nb-brand-school::after{right:6px;width:32px}
@@ -119,7 +120,7 @@ if ($__school) {
 @media (max-width:767px){
   .nb-hr-brand .nb-brand-link.nb-brand-school{margin:-5px 0 -5px -14px;padding:3px 44px 3px 14px;gap:8px;height:52px;box-sizing:border-box;align-self:center}
   .nb-brand-school::after{right:4px;width:30px;clip-path:polygon(35% 0,0 100%,20% 100%)}
-  .nb-brand-school .nb-emblem{width:40px;height:46px}
+  .nb-brand-school .nb-emblem{width:auto;height:min(var(--emb-h,52px),46px)}
   .nb-sb-school .site-title{font-size:18px}
   .nb-sb-school .nb-brand-line{font-size:11.5px;margin-top:3px;white-space:normal}
   /* phones: room for the brand — no search icon and no Subscribe button in the bar (both stay in the menu) */
@@ -127,7 +128,7 @@ if ($__school) {
   .nb-hr-nav .nb-strip-search{display:inline-flex!important}
 }
 .nb-hr-nav .nb-strip-search{display:none;align-items:center;justify-content:center;flex:0 0 auto;padding-left:14px;padding-right:14px}
-@media (max-width:400px){.nb-hr-brand .nb-brand-link.nb-brand-school{height:48px}.nb-brand-school .nb-emblem{width:36px;height:42px}.nb-sb-school .site-title{font-size:16.5px}.nb-sb-school .nb-brand-line{font-size:10.5px}}
+@media (max-width:400px){.nb-hr-brand .nb-brand-link.nb-brand-school{height:48px}.nb-brand-school .nb-emblem{width:auto;height:min(var(--emb-h,52px),42px)}.nb-sb-school .site-title{font-size:16.5px}.nb-sb-school .nb-brand-line{font-size:10.5px}}
 /* menu strip drop-downs (a group of links under one name) */
 .nb-dd{position:relative;display:inline-flex;flex:0 0 auto}
 .nb-dd-b{position:relative;display:inline-flex;align-items:center;gap:5px;padding:14px 2px;border:0;background:none;color:#1d2327;font:inherit;font-size:15px;font-weight:600;cursor:pointer;white-space:nowrap}

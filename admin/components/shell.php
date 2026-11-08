@@ -259,7 +259,7 @@ function admin_shell_sidebar(): void
     // the site uses the school-style header brand (Customize → Header): show the same brand here
     require_once ($_SERVER['DOCUMENT_ROOT'] ?? '') . '/includes/institute.php';
     $br = ci_brand();
-    $school = function_exists('th') && in_array((string)th('id_brand_style', 'logo'), ['school', 'school_full'], true);
+    $school = true; // the site has one header brand: logo + site title + line (Customize → Site Identity)
     if ($school): ?>
     <a class="sb-brand sb-school" href="/admin/dashboard.php" aria-label="Dashboard"><img src="<?= htmlspecialchars($br['emblem']) ?>" alt="" class="sb-emblem" width="40" height="46"><span class="sb-school-t"><b><?= htmlspecialchars($br['title']) ?></b><?php if ($br['line'] !== ''): ?><small><?= htmlspecialchars($br['line']) ?></small><?php endif; ?></span></a>
     <?php else: ?>

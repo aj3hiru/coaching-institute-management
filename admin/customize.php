@@ -248,6 +248,20 @@ body{margin:0;overflow:hidden}
 .hm-photo-i{width:54px;height:70px;border-radius:4px;overflow:hidden;background:#fff;border:1px solid #dcdcde;display:grid;place-items:center;color:#a7aaad}.hm-photo-i img{width:100%;height:100%;object-fit:cover}
 .hm-pair{display:grid;grid-template-columns:1fr 84px auto;gap:6px;align-items:center}
 .hm-pair-1{grid-template-columns:1fr auto auto}
+/* Site Identity */
+.id-grp{display:flex;flex-direction:column;gap:10px;padding:0 0 16px;border-bottom:1px solid #f0f0f1}
+.id-grp:last-of-type{border-bottom:0}
+.id-grp > h4{margin:0;font-size:14px;font-weight:600;color:#1d2327}
+.id-pv{padding:14px 10px;border:1px solid #dcdcde;border-radius:4px;background:#fff;overflow:hidden}
+.id-pv-in{position:relative;isolation:isolate;display:inline-flex;align-items:center;gap:8px;max-width:100%;padding:4px 44px 4px 12px;box-sizing:border-box}
+.id-pv-in::before{content:"";position:absolute;inset:0 8px 0 0;z-index:-1;background:rgba(240,174,113,.43);clip-path:polygon(0 0,100% 0,96% 45%,100% 100%,0 100%)}
+.id-pv-in::after{content:"";position:absolute;bottom:0;right:4px;width:30px;height:55%;z-index:-1;background:#f02801;clip-path:polygon(50% 0,0 100%,25% 100%)}
+.id-pv img{display:block;width:auto;max-width:80px;object-fit:contain;flex:0 0 auto}
+.id-pv-t{display:flex;flex-direction:column;min-width:0;line-height:1.15}
+.id-pv-t b{font:700 17px/1.15 Poppins,Roboto,Arial,sans-serif;color:#9e1b32;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.id-pv-t small{margin-top:2px;font:500 12px/1.3 Roboto,Arial,sans-serif;color:#1a1a1a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.id-note{margin-top:4px}
+.id-dflt{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px}.id-dflt img{height:54px;width:auto}.id-dflt small{font-size:11.5px;color:#646970}
 /* ===== Homepage screens, WordPress Customizer look: grey panel, slim white widgets, 30px controls ===== */
 #cz-body.hm-bg{background:#f0f0f1;gap:0}
 .hm-bg .hm-grp{gap:8px;padding:14px 0;border-bottom:1px solid #dcdcde}
@@ -382,6 +396,7 @@ const HAS_BACKUP = <?= !empty($backup['theme']) ? 'true' : 'false' ?>;
 const BACKUP_AT = <?= json_encode($backup['at'] ?? '') ?>;
 const FONTS = [['system', 'System font (fastest)'], ['Inter', 'Inter'], ['Roboto', 'Roboto'], ['Poppins', 'Poppins'], ['Noto Sans', 'Noto Sans (Hindi too)'], ['Mukta', 'Mukta (Hindi)'], ['Hind', 'Hind (Hindi)'], ['Open Sans', 'Open Sans'], ['Lato', 'Lato'], ['Merriweather', 'Merriweather (serif)'], ['Georgia', 'Georgia (serif)']];
 const SITE_NAME_DEFAULT = <?= json_encode(SITE_NAME) ?>;
+const ID_ADDRESS = <?= json_encode(trim((string)es('general', 'address', ''))) ?>;
 const COLOR_GROUPS = <?= json_encode(EDU_COLOR_GROUPS, JSON_UNESCAPED_UNICODE) ?>;
 const TYPO_TARGETS = <?= json_encode(array_map(fn($x) => $x[0], EDU_TYPO_TARGETS), JSON_UNESCAPED_UNICODE) ?>;
 const SHORTCODES = <?= json_encode(edu_shortcode_help(), JSON_UNESCAPED_UNICODE) ?>;
@@ -389,33 +404,7 @@ const SHORTCODES = <?= json_encode(edu_shortcode_help(), JSON_UNESCAPED_UNICODE)
 // --- panel definitions: [type, key, label, extra] ; keys starting with "g." edit General Settings (identity) ---
 const PANELS = [
   { id: 'homepage', icon: 'fa-house', label: 'Homepage', sub: 'Sections, slider, free courses, toppers, numbers', render: renderHomepage },
-  { id: 'identity', icon: 'fa-id-card', label: 'Site Identity', sub: 'Title, tagline, logo, site icon', sections: [
-    ['Site Title & Tagline', [
-      ['text', 'g.site_title', 'Site Title', { placeholder: SITE_NAME_DEFAULT, hint: 'Empty = ' + SITE_NAME_DEFAULT + '. Used in the header, footer, page titles, feeds and [site_title].' }],
-      ['toggle', 'id_hide_title', 'Hide site title', { hint: 'The logo is always shown; the title can show next to it.' }],
-      ['text', 'g.tagline', 'Tagline', { hint: 'In a few words, explain what this site is about.' }],
-      ['toggle', 'id_hide_tagline', 'Hide site tagline'],
-    ]],
-    ['Logo', [
-      ['media', 'g.logo', 'Logo', { hint: 'Empty = the built-in EduMint logo.' }],
-      ['toggle', 'g.header_logo', 'Show this logo in the header'],
-      ['media', 'id_retina_logo', 'Retina Logo', { hint: 'Twice the size of the logo, for sharp display on high-resolution screens.' }],
-      ['range', 'g.logo_w', 'Logo width', { min: 40, max: 400, unit: 'px', hint: 'The height follows the logo’s own shape.' }],
-    ]],
-    ['Header Brand', [
-      ['select', 'id_brand_style', 'Header brand style', { options: [['logo', 'Logo (with title / tagline as set above)'], ['school', 'School style brand in this header: emblem + name + address on a tinted panel'], ['school_full', 'Full school layout: top bar + brand panel + menu beside it']] }],
-      ['media', 'id_brand_emblem', 'Emblem (round logo)', { hint: 'School style only. Empty = the built-in DK Academy emblem. Square image works best.' }],
-      ['text', 'id_header_title', 'Name in the header', { hint: 'School style only. Empty = the Site Title.' }],
-      ['text', 'id_header_line', 'Line under the name', { hint: 'School style only, e.g. the address. Empty = the address in General Settings.' }],
-      ['text', 'id_school_phone', 'Top bar: phone', { hint: 'School style only. Empty = the phone in General Settings.' }],
-      ['text', 'id_school_wa', 'Top bar: WhatsApp number', { hint: 'Empty = the same phone.' }],
-      ['text', 'id_school_bar_text', 'Top bar: text on the right', { hint: 'e.g. Admission Open 2026-27. Empty = none.' }],
-      ['text', 'id_school_login_text', 'Top bar: login button text', { hint: 'Uses Header → Log in (on/off and its address).' }],
-    ]],
-    ['Site Icon', [
-      ['media', 'g.favicon', 'Site Icon', { hint: 'The Site Icon is what you see in browser tabs, bookmark bars, and within mobile apps. It should be square and at least 512 × 512 pixels.' }],
-    ]],
-  ]},
+  { id: 'identity', icon: 'fa-id-card', label: 'Site Identity', sub: 'Logo, site title and the line under it', render: renderIdentity },
   { id: 'colors', icon: 'fa-palette', label: 'Colors', sub: 'Global colors and every area of the site', render: renderColors },
   { id: 'typography', icon: 'fa-font', label: 'Typography', sub: 'Fonts, sizes, weights', render: renderTypography },
   { id: 'header', icon: 'fa-window-maximize', label: 'Header', sub: 'Search, bell, social icons, top bar', fields: [
@@ -619,6 +608,40 @@ function cSeg(label, get, set, options, after) {
   const w = html('<div class="cz-field">' + (label ? '<span class="cz-label">' + esc(label) + '</span>' : '') + '<div class="cz-seg">' + options.map(o => '<button type="button" data-v="' + esc(o[0]) + '"' + (o[0] === get() ? ' class="active"' : '') + '>' + (o[2] ? '<i class="fas ' + o[2] + '"></i> ' : '') + esc(o[1]) + '</button>').join('') + '</div></div>');
   w.querySelectorAll('button').forEach(b => b.onclick = () => { w.querySelectorAll('button').forEach(x => x.classList.toggle('active', x === b)); set(b.dataset.v); touch(); if (after) after(); });
   return w;
+}
+
+/* ---------- Site Identity: the one header brand — logo, site title, line under it ---------- */
+function renderIdentity(wrap) {
+  const T = state.theme, G = state.general;
+  const title = () => (T.id_header_title || G.site_title || SITE_NAME_DEFAULT);
+  const pv = html('<div class="id-pv" aria-hidden="true"><span class="id-pv-in"><img alt=""><span class="id-pv-t"><b></b><small></small></span></span></div>');
+  const paint = () => {
+    pv.querySelector('img').src = T.id_brand_emblem || '/assets/images/dk-academy-emblem.svg';
+    pv.querySelector('img').style.height = Math.max(36, Math.min(80, +T.id_emblem_h || 52)) * .85 + 'px';
+    pv.querySelector('b').textContent = title();
+    pv.querySelector('small').textContent = T.id_header_line || ID_ADDRESS || '';
+  };
+  const g1 = html('<div class="id-grp"><h4>Header brand</h4><p class="cz-hint">How the name of the institute shows at the top of every page.</p></div>');
+  g1.appendChild(pv); wrap.appendChild(g1);
+  const g2 = html('<div class="id-grp"></div>');
+  const lg = field(['media', 'id_brand_emblem', 'Logo', { hint: 'Round or square logo (PNG, SVG or WebP with a clear background). Empty = the DK Academy emblem.' }]);
+  g2.appendChild(lg);
+  const dflt = () => { const box = lg.querySelector('.cz-media-box'); if (box && !T.id_brand_emblem && !box.querySelector('.id-dflt')) box.innerHTML = '<span class="id-dflt"><img src="/assets/images/dk-academy-emblem.svg" alt=""><small>Default: DK Academy emblem</small></span>'; };
+  dflt(); new MutationObserver(dflt).observe(lg, { subtree: true, childList: true });
+  const sz = field(['range', 'id_emblem_h', 'Logo size', { min: 36, max: 80, unit: 'px' }]); g2.appendChild(sz); wrap.appendChild(g2);
+  const g3 = html('<div class="id-grp"></div>');
+  const tt = html('<label class="cz-field"><span class="cz-label">Site title</span><input type="text" maxlength="100"><small class="cz-hint">Shown next to the logo, and used in page titles, the footer and feeds.</small></label>');
+  const ti = tt.querySelector('input'); ti.value = title(); ti.placeholder = SITE_NAME_DEFAULT;
+  ti.oninput = () => { T.id_header_title = ti.value; G.site_title = ti.value; touch(); paint(); };
+  const ln = html('<label class="cz-field"><span class="cz-label">Line under the title</span><input type="text" maxlength="160"><small class="cz-hint">e.g. the address or a short tagline. Empty = the address from General Settings.</small></label>');
+  const li = ln.querySelector('input'); li.value = T.id_header_line || ''; li.placeholder = ID_ADDRESS || 'Town, District, State - PIN';
+  li.oninput = () => { T.id_header_line = li.value; touch(); paint(); };
+  g3.append(tt, ln); wrap.appendChild(g3);
+  // keep the preview in step with the logo picker and the size slider
+  [lg, sz].forEach(el => { el.addEventListener('input', () => setTimeout(paint)); el.addEventListener('click', () => setTimeout(paint, 50)); });
+  const mo = new MutationObserver(() => paint()); mo.observe(lg, { subtree: true, childList: true });
+  wrap.appendChild(html('<p class="cz-hint id-note">The browser-tab icon and the old site logo are in <a href="/admin/general-settings.php" target="_blank">Settings → General</a>.</p>'));
+  paint();
 }
 
 /* ---------- Colors ---------- */
