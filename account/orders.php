@@ -1,13 +1,21 @@
 <?php
-// Orders: the student's paid purchases only (failed / unfinished payments never show). An order is a fixed record:
-// giving or removing course access changes My Courses, not this list.
+// Orders: the student's paid purchases (failed / unfinished payments never show) and the free courses / notes they
+// joined, newest first, each with the item's picture. A paid order is a fixed record: giving or removing access changes
+// My Courses, not this list.
 require_once dirname(__DIR__) . '/includes/config.php';
 require_once INCLUDES_PATH . '/shop.php';
 $pdo = sh_db();
 $u = sh_need_login();
-$q = $pdo->prepare("SELECT o.*, p.slug, p.type FROM sh_orders o LEFT JOIN sh_products p ON p.id = o.product_id WHERE o.user_id = ? AND o.status = 'paid' ORDER BY o.paid_at DESC, o.id DESC LIMIT 200");
+$q = $pdo->prepare("SELECT o.*, p.slug, p.type, p.thumb, p.mrp FROM sh_orders o LEFT JOIN sh_products p ON p.id = o.product_id WHERE o.user_id = ? AND o.status = 'paid' ORDER BY o.paid_at DESC, o.id DESC LIMIT 200");
 $q->execute([$u['id']]);
 $orders = $q->fetchAll(PDO::FETCH_ASSOC);
+foreach ($orders as &$__o) $__o['at'] = $__o['paid_at'] ?: $__o['created_at']; unset($__o);
+// free items joined (no order is made for them)
+$q = $pdo->prepare("SELECT a.granted_at AS at, p.title, p.slug, p.type, p.thumb, p.mrp, p.price FROM sh_access a JOIN sh_products p ON p.id = a.product_id
+    WHERE a.user_id = ? AND a.source = 'free' AND a.revoked = 0 ORDER BY a.granted_at DESC LIMIT 200");
+$q->execute([$u['id']]);
+foreach ($q->fetchAll(PDO::FETCH_ASSOC) as $f) $orders[] = $f + ['free' => 1, 'status' => 'joined'];
+usort($orders, fn($a, $b) => strcmp((string)$b['at'], (string)$a['at']));
 $stTitle = 'Orders';
 require ROOT_PATH . '/components/store-open.php';
 $ico = fn($n) => sh_icon($n);
@@ -17,14 +25,15 @@ $ico = fn($n) => sh_icon($n);
   <div class="ac-main">
     <div class="ac-h"><h1>Orders</h1></div>
     <?php if (!$orders): ?>
-      <div class="ac-empty"><span class="ac-empty-i"><?= $ico('receipt') ?></span><b>No orders yet</b><p>When you buy a course or notes, the order shows here.</p><a class="ac-btn" href="/store/"><?= $ico('compass') ?> Browse courses</a></div>
+      <div class="ac-empty"><span class="ac-empty-i"><?= $ico('receipt') ?></span><b>No orders yet</b><p>When you buy or join a course or notes, it shows here.</p><a class="ac-btn" href="/store/"><?= $ico('compass') ?> Browse courses</a></div>
     <?php else: ?>
     <div class="ac-orders">
     <?php foreach ($orders as $o): $st = $o['status']; ?>
+      <?php $free = !empty($o['free']); $link = $o['slug'] ? sh_url($o) : ''; ?>
       <div class="ac-ord">
-        <div class="ac-ord-i"><?= $ico($o['type'] === 'notes' ? 'notes' : 'video') ?></div>
-        <div class="ac-ord-t"><b><?= sh_e($o['title']) ?></b><small><?= sh_e($o['order_no'] ?: 'Order #' . $o['id']) ?> · <?= date('d M Y, h:i A', strtotime($o['paid_at'] ?: $o['created_at'])) ?><?= $o['rzp_payment'] && !str_starts_with((string)$o['rzp_payment'], 'pay_DEMO') ? ' · ' . sh_e($o['rzp_payment']) : '' ?></small></div>
-        <div class="ac-ord-r"><b><?= sh_money($o['amount']) ?></b><span class="st-badge <?= sh_e($st) ?>"><?= $st === 'paid' ? 'Paid' : ($st === 'failed' ? 'Failed' : 'Not paid') ?></span></div>
+        <<?= $link ? 'a href="' . sh_e($link) . '"' : 'span' ?> class="ac-ord-th" tabindex="-1" aria-hidden="true"><?php if (!empty($o['thumb'])): ?><img src="<?= sh_e($o['thumb']) ?>" alt="" loading="lazy" width="128" height="72"><?php else: ?><span class="ac-ord-i"><?= $ico($o['type'] === 'notes' ? 'notes' : 'video') ?></span><?php endif; ?><em><?= $o['type'] === 'notes' ? 'PDF notes' : 'Course' ?></em></<?= $link ? 'a' : 'span' ?>>
+        <div class="ac-ord-t"><b><?= $link ? '<a href="' . sh_e($link) . '">' . sh_e($o['title']) . '</a>' : sh_e($o['title']) ?></b><small><?= $free ? 'Joined free' : sh_e($o['order_no'] ?: 'Order #' . $o['id']) ?> · <?= date('d M Y, h:i A', strtotime((string)$o['at'])) ?><?= !$free && $o['rzp_payment'] && !str_starts_with((string)$o['rzp_payment'], 'pay_DEMO') ? ' · ' . sh_e($o['rzp_payment']) : '' ?></small></div>
+        <div class="ac-ord-r"><?php if ($free): ?><span class="ac-ord-fp"><?= sh_free_price($o) ?></span><span class="st-badge paid">Joined</span><?php else: ?><b><?= sh_money($o['amount']) ?></b><span class="st-badge <?= sh_e($st) ?>"><?= $st === 'paid' ? 'Paid' : ($st === 'failed' ? 'Failed' : 'Not paid') ?></span><?php endif; ?></div>
         <?php if ($o['slug']): ?><a class="ac-ord-go" href="<?= sh_e(sh_url($o)) ?>">View ›</a><?php endif; ?>
       </div>
     <?php endforeach; ?>
