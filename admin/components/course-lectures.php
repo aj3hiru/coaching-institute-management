@@ -72,10 +72,7 @@ $hm = $secsTotal ? (intdiv($secsTotal, 3600) ? intdiv($secsTotal, 3600) . 'h ' :
 .lc-row .lc-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:5px;align-items:center}
 .lc-free{font-size:12px;font-weight:700;border:1px solid #d1d5db;background:#fff;padding:4px 10px;cursor:pointer;color:#6b7280;white-space:nowrap}.lc-free.on{color:#15803d;border-color:#86efac;background:#f0fdf4}
 .lc-quick{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}.lc-quick a{font-size:12px;font-weight:600;padding:2px 8px;border:1px dashed #c4b5fd;color:var(--ci-acc,#7c3aed);text-decoration:none;background:#faf8ff}.lc-quick a:hover{border-style:solid;background:#f3effa}
-.lc-emb{position:fixed;inset:0;z-index:100050;background:rgba(17,24,39,.55);display:flex;align-items:center;justify-content:center;padding:18px}
-.lc-emb-box{width:min(1300px,100%);height:min(94vh,1000px);background:#fff;display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(15,23,42,.35)}
-.lc-emb-h{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid #e5e7eb}.lc-emb-h b{font-size:16px}
-.lc-emb iframe{flex:1;width:100%;border:0}
+.lc-sum{padding:16px 18px;border:1px solid #e5e7eb;background:#fff;margin:0 0 14px}
 .lc-empty{padding:16px;color:#6b7280;font-size:13.5px}
 .lc-empty a{font-weight:600}
 .shc-bar{height:6px;background:#e5e7eb;margin-top:6px;display:none}.shc-bar i{display:block;height:100%;width:0;background:var(--ci-acc,#4a3369);transition:width .2s}.shc-up.busy .shc-bar{display:block}
@@ -84,7 +81,18 @@ $hm = $secsTotal ? (intdiv($secsTotal, 3600) ? intdiv($secsTotal, 3600) . 'h ' :
 @media (max-width:760px){.lc-row{grid-template-columns:80px minmax(0,1fr);gap:10px}.lc-row .lc-ln{display:none}.lc-row .lc-th{width:80px}.lc-row .lc-free,.lc-row .ci-icos{grid-column:2}.lc-top .lc-cimg{display:none}}
 </style>
 <div class="lc-wrap" id="lectures">
-<?php if ($isCourse): ?>
+<?php if ($isCourse && !empty($lcSummary)): ?>
+<div class="lc-sum">
+  <div class="lc-stats">
+    <div class="lc-stat"><i class="fas fa-layer-group"></i><div><b><?= count($secs) ?></b><small>Chapters</small></div></div>
+    <div class="lc-stat"><i class="fas fa-film"></i><div><b><?= count($allL) ?></b><small>Lectures<?= $secsTotal ? ' · ' . $hm : '' ?></small></div></div>
+    <div class="lc-stat"><i class="fas fa-file-pdf"></i><div><b><?= $notesN ?></b><small>Notes PDFs</small></div></div>
+    <div class="lc-stat"><i class="fas fa-list-check"></i><div><b><?= $mcqT ?></b><small>MCQs</small></div></div>
+  </div>
+  <p class="ci-muted" style="margin:10px 0 12px">The YouTube playlist, chapters, units, and each lecture's notes PDF, MCQ and VVI questions are managed on the Lectures page.</p>
+  <a class="ci-btn" href="/admin/shop-lectures.php?course=<?= $pid ?>"><i class="fas fa-table-list"></i> Open Lectures</a>
+</div>
+<?php elseif ($isCourse): ?>
 <div class="lc-stats">
   <div class="lc-stat"><i class="fas fa-layer-group"></i><div><b><?= count($secs) ?></b><small>Chapters</small></div></div>
   <div class="lc-stat"><i class="fas fa-film"></i><div><b><?= count($allL) ?></b><small>Lectures<?= $secsTotal ? ' · ' . $hm : '' ?></small></div></div>
@@ -198,22 +206,6 @@ document.addEventListener('click', function (e) {
   window.ciModal.open('#lcQuick');
 });
 </script>
-<!-- the lecture editor (notes PDF, quiz / MCQ, VVI …) in a popup on this page -->
-<div class="lc-emb" id="lcEmb" hidden><div class="lc-emb-box" role="dialog" aria-modal="true" aria-label="Lecture"><div class="lc-emb-h"><b id="lcEmbT">Lecture</b><button type="button" class="ci-btn ci-ghost ci-sm" id="lcEmbX"><i class="fas fa-times"></i> Close</button></div><iframe id="lcEmbF" title="Lecture editor"></iframe></div></div>
-<script>
-(function () {
-  var box = document.getElementById('lcEmb'), fr = document.getElementById('lcEmbF'), t = document.getElementById('lcEmbT');
-  function close() { box.hidden = true; fr.src = 'about:blank'; document.documentElement.style.overflow = ''; }
-  document.addEventListener('click', function (e) {
-    var a = e.target.closest('a[data-embed]'); if (!a || e.ctrlKey || e.metaKey) return; e.preventDefault();
-    if (window.ciModal) try { window.ciModal.close('#lcQuick'); } catch (x) {}
-    t.textContent = /#quiz/.test(a.href) ? 'Quiz / MCQ' : (/#notes/.test(a.href) ? 'Notes PDF' : (/#vvi/.test(a.href) ? 'VVI questions' : (/course=/.test(a.href) ? 'Add lecture' : 'Edit lecture')));
-    fr.src = a.getAttribute('href'); box.hidden = false; document.documentElement.style.overflow = 'hidden';
-  });
-  document.getElementById('lcEmbX').addEventListener('click', close);
-  box.addEventListener('click', function (e) { if (e.target === box) close(); });
-  window.addEventListener('message', function (e) { if (e.origin === location.origin && e.data && e.data.lectureSaved) { close(); location.hash = 'lectures'; location.reload(); } });
-})();
-</script>
+<?php require __DIR__ . '/lecture-popup.php'; ?>
 <script>window.SHC = { pid: <?= $pid ?>, csrf: <?= json_encode(csrf_token()) ?>, self: <?= json_encode('/admin/shop-products.php?edit=' . $pid . '&type=' . $p['type']) ?> };</script>
 <script src="/assets/js/shop-admin.js?v=<?= @filemtime(ROOT_PATH . '/assets/js/shop-admin.js') ?: 1 ?>" defer></script>

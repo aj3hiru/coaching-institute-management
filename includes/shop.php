@@ -14,7 +14,7 @@
  */
 require_once __DIR__ . '/settings.php';
 
-const SH_SCHEMA = 15;
+const SH_SCHEMA = 16;
 
 function sh_db(): PDO
 {
@@ -151,6 +151,18 @@ function sh_tables(PDO $pdo): void
     $add('hm_slides', 'show_t', 'TINYINT(1) NOT NULL DEFAULT 1');
     $add('hm_slides', 'show_d', 'TINYINT(1) NOT NULL DEFAULT 1');
     $add('hm_free', 'thumb_custom', 'VARCHAR(255) NULL');
+    // v16: a course has an intro video and ONE YouTube playlist of its own (Lectures page): its videos are the lectures,
+    //      new ones come in by themselves (into yt_section, or without a chapter); yt_skip = videos removed by the admin
+    $add('sh_products', 'intro_url', 'VARCHAR(500) NULL');
+    $add('sh_products', 'yt_list', 'VARCHAR(64) NULL');
+    $add('sh_products', 'yt_synced', 'DATETIME NULL');
+    $add('sh_products', 'yt_section', 'INT UNSIGNED NULL');
+    $add('sh_products', 'yt_skip', 'TEXT NULL');
+    try { // a course whose playlist was linked to one chapter: the playlist now belongs to the course, new videos still go to that chapter
+        foreach ($pdo->query("SELECT product_id, MIN(id) sid, MIN(yt_list) l FROM sh_sections WHERE yt_list IS NOT NULL GROUP BY product_id HAVING COUNT(*) = 1")->fetchAll(PDO::FETCH_ASSOC) as $m)
+            if ($pdo->prepare("UPDATE sh_products SET yt_list = ?, yt_section = ? WHERE id = ? AND yt_list IS NULL")->execute([$m['l'], $m['sid'], $m['product_id']]))
+                $pdo->prepare("UPDATE sh_sections SET yt_list = NULL WHERE id = ? AND product_id IN (SELECT id FROM sh_products WHERE yt_list = ?)")->execute([$m['sid'], $m['l']]);
+    } catch (Throwable) {}
     // v15: blocking students — from one course (the access row stays, marked blocked), from every free course, or the whole
     //      account suspended; a ban list keeps a suspended mobile / email from making a new account
     $add('sh_access', 'blocked', 'TINYINT(1) NOT NULL DEFAULT 0');
@@ -1162,10 +1174,48 @@ function sh_link_playlist(PDO $pdo, int $pid, string $url, int $sec = 0, string 
     @set_time_limit(300);
     return [$sec, max(0, sh_yt_sync_section($pdo, $sec, max(0, $freeFirst)))];
 }
+/** The course's own playlist (Lectures page): adds its videos that are not lectures yet, in playlist order, into the
+    course's "new videos" chapter (or without a chapter). Videos the admin removed (yt_skip) stay out. Returns how many were
+    added (-1: the playlist cannot be read). */
+function sh_yt_sync_course(PDO $pdo, int $pid, int $freeFirst = 0): int
+{
+    $p = $pdo->query("SELECT id, yt_list, yt_section, yt_skip FROM sh_products WHERE id = $pid")->fetch(PDO::FETCH_ASSOC);
+    if (!$p || !$p['yt_list']) return 0;
+    $pl = sh_yt_playlist((string)$p['yt_list']);
+    $pdo->prepare("UPDATE sh_products SET yt_synced = NOW() WHERE id = ?")->execute([$pid]);
+    if (!$pl) return -1;
+    $sid = (int)$p['yt_section'];
+    if ($sid && !(int)$pdo->query("SELECT COUNT(*) FROM sh_sections WHERE id = $sid AND product_id = $pid")->fetchColumn()) $sid = 0;
+    $have = array_flip(array_filter(array_map(fn($u) => sh_yt_id((string)$u), $pdo->query("SELECT video_url FROM sh_lessons WHERE product_id = $pid AND video_url IS NOT NULL")->fetchAll(PDO::FETCH_COLUMN))));
+    foreach (json_decode((string)$p['yt_skip'], true) ?: [] as $v) $have[$v] = 1;
+    $sort = (int)$pdo->query("SELECT COALESCE(MAX(sort),0) FROM sh_lessons WHERE product_id = $pid")->fetchColumn();
+    $no = (int)$pdo->query("SELECT COALESCE(MAX(lecture_no),0) FROM sh_lessons WHERE product_id = $pid AND " . ($sid ? "section_id = $sid" : 'section_id IS NULL'))->fetchColumn();
+    $first = !(int)$pdo->query("SELECT COUNT(*) FROM sh_lessons WHERE product_id = $pid")->fetchColumn();
+    $ins = $pdo->prepare("INSERT INTO sh_lessons (product_id, section_id, title, video_url, duration, free, sort, lecture_no, doubts_on) VALUES (?,?,?,?,?,?,?,?,1)");
+    $added = 0;
+    @set_time_limit(300);
+    foreach ($pl as [$v, $t]) {
+        if (isset($have[$v])) continue;
+        if ($t === '') $t = sh_yt_title($v) ?: 'Lecture ' . ($no + 1);
+        $ins->execute([$pid, $sid ?: null, mb_substr($t, 0, 200), 'https://www.youtube.com/watch?v=' . $v, $added < 60 ? (sh_yt_duration($v) ?: null) : null, $first && $added < $freeFirst ? 1 : 0, ++$sort, ++$no]);
+        $have[$v] = 1; $added++;
+    }
+    return $added;
+}
+/** Title, picture and length of one YouTube video (the course intro): [id, title, thumb, duration, channel] or error. */
+function sh_yt_video_info(string $url): array
+{
+    $id = sh_yt_id($url);
+    if (!$id) return ['error' => 'Paste a YouTube video link (youtube.com/watch?v=… or youtu.be/…).'];
+    $o = json_decode(sh_http_get('https://www.youtube.com/oembed?format=json&url=' . rawurlencode('https://www.youtube.com/watch?v=' . $id), 10), true) ?: [];
+    if (empty($o['title'])) return ['error' => 'Could not read this video. It must be Public or Unlisted.'];
+    return ['id' => $id, 'title' => (string)$o['title'], 'channel' => (string)($o['author_name'] ?? ''), 'thumb' => 'https://i.ytimg.com/vi/' . $id . '/hqdefault.jpg', 'duration' => sh_yt_duration($id)];
+}
 /** Course pages call this: chapters linked to a playlist look for new videos at most every 6 hours. */
 function sh_yt_autosync(PDO $pdo, int $pid): void
 {
     try {
+        if ((int)$pdo->query("SELECT COUNT(*) FROM sh_products WHERE id = $pid AND yt_list IS NOT NULL AND (yt_synced IS NULL OR yt_synced < NOW() - INTERVAL 6 HOUR)")->fetchColumn()) sh_yt_sync_course($pdo, $pid);
         foreach ($pdo->query("SELECT id FROM sh_sections WHERE product_id = $pid AND yt_list IS NOT NULL AND (yt_synced IS NULL OR yt_synced < NOW() - INTERVAL 6 HOUR) LIMIT 3")->fetchAll(PDO::FETCH_COLUMN) as $sid)
             sh_yt_sync_section($pdo, (int)$sid);
     } catch (Throwable $e) { error_log('yt autosync: ' . $e->getMessage()); }

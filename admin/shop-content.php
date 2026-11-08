@@ -11,7 +11,7 @@ sh_tables($pdo);
 $pid = (int)($_GET['id'] ?? $_POST['pid'] ?? 0);
 $p = $pid ? sh_product($pdo, $pid, false) : null;
 if (!$p) { header('Location: /admin/shop-products.php'); exit; }
-$self = '/admin/shop-products.php?edit=' . $pid . '&type=' . $p['type']; // lectures are managed on the course edit page
+$self = $p['type'] === 'course' ? '/admin/shop-lectures.php?course=' . $pid : '/admin/shop-products.php?edit=' . $pid . '&type=' . $p['type']; // course lectures: the Lectures page
 $dur = fn($v) => preg_match('/^\d{1,3}:\d{2}(:\d{2})?$/', trim((string)$v)) ? trim((string)$v) : null;
 
 /** Deletes the uploaded files of a lesson (main video + its qualities). */

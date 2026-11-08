@@ -95,7 +95,7 @@ function admin_shell_nav(): array
                     $link(true, 'Add Courses', '/admin/shop-products.php?new=1&type=course', 'fa-plus'),
                     $link(true, 'Add Playlist', '/admin/shop-products.php?type=course&addpl=1', 'fa-circle-play'),
                 ])] : null,
-                $link(sh_perm($cu, 'products'), 'Add Lecture', '/admin/shop-lecture.php', 'fa-film'),
+                $link(sh_perm($cu, 'products'), 'Lectures', '/admin/shop-lectures.php', 'fa-film'),
                 $link(sh_perm($cu, 'products'), 'PDF Notes', '/admin/shop-products.php?type=notes', 'fa-file-pdf'),
                 $link(sh_perm($cu, 'products'), 'Categories', '/admin/shop-categories.php', 'fa-shapes'),
                 $link(sh_perm($cu, 'teacher') || sh_perm($cu, 'products') || sh_perm($cu, 'customers'), 'Doubts', '/admin/shop-doubts.php', 'fa-circle-question'),

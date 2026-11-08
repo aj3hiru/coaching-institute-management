@@ -150,7 +150,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $P) {
     }
     admin_log('shop_lecture', ($L ? 'Edited' : 'Added') . " lecture #$newId \"$title\" in course #$pidI");
     $next = !empty($_POST['next']);
-    $go = $next ? '/admin/shop-lecture.php?course=' . $pidI . '&chapter=' . $sec . '&unit=' . $unit . ($embed ? '&embed=1' : '') : ($embed ? '/admin/shop-lecture.php?embed_done=' . $newId : '/admin/shop-products.php?edit=' . $pidI . '&type=course#lectures');
+    $go = $next ? '/admin/shop-lecture.php?course=' . $pidI . '&chapter=' . $sec . '&unit=' . $unit . ($embed ? '&embed=1' : '') : ($embed ? '/admin/shop-lecture.php?embed_done=' . $newId : '/admin/shop-lectures.php?course=' . $pidI);
     if ($ajax) { header('Content-Type: application/json'); exit(json_encode(['ok' => true, 'id' => $newId, 'go' => $go])); }
     admin_flash($L ? 'Lecture saved.' : 'Lecture added.' . ($next ? ' Add the next one.' : ''));
     header('Location: ' . $go); exit;
@@ -236,7 +236,7 @@ html.slc-embed .top-nav{padding:10px 16px!important;min-height:0!important}html.
 </style>
 </head>
 <body<?= $embed ? ' class="slc-embed"' : '' ?>><?php if ($embed): ?><script>document.documentElement.classList.add('slc-embed');</script><?php endif; ?>
-<?php admin_shell_open($L ? 'Edit lecture' : 'Add lecture', $P ? ci_e($P['title']) : 'Choose a course first', $P ? '<a class="ci-btn ci-ghost" href="/admin/shop-products.php?edit=' . (int)$P['id'] . '&type=course#lectures"><i class="fas fa-list"></i> All lectures</a>' : ''); ?>
+<?php admin_shell_open($L ? 'Edit lecture' : 'Add lecture', $P ? ci_e($P['title']) : 'Choose a course first', $P ? '<a class="ci-btn ci-ghost" href="/admin/shop-lectures.php?course=' . (int)$P['id'] . '"><i class="fas fa-list"></i> All lectures</a>' : ''); ?>
 <div class="ci slc">
 <?= admin_flash() ?>
 <?php if (!$courses): ?>

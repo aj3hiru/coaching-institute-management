@@ -83,10 +83,19 @@ $tabs = array_filter(['about' => $desc !== '' ? 'About' : '', 'content' => $isCo
 
 <div class="sp-wrap sp-body">
   <aside class="sp-card" id="buy">
+    <?php $introYt = $isCourse && !empty($p['intro_url']) ? sh_yt_id((string)$p['intro_url']) : null; $cardImg = $p['thumb'] ?: ($introYt ? 'https://i.ytimg.com/vi/' . $introYt . '/hqdefault.jpg' : ''); ?>
+    <?php if ($introYt): // the intro video plays right in the card ?>
+    <button type="button" class="sp-media sp-intro" data-intro="<?= sh_e($introYt) ?>" aria-label="Watch the intro video">
+      <?php if ($cardImg): ?><img src="<?= sh_e($cardImg) ?>" alt=""><?php endif; ?>
+      <span class="sp-play"><span class="sp-pbtn"><?= $ico('playsolid') ?></span><b>Watch intro video</b></span>
+    </button>
+    <script>document.addEventListener('click', function (e) { var b = e.target.closest('[data-intro]'); if (!b) return; var f = document.createElement('iframe'); f.src = 'https://www.youtube-nocookie.com/embed/' + b.getAttribute('data-intro') + '?autoplay=1&rel=0&modestbranding=1&playsinline=1'; f.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen'; f.allowFullscreen = true; f.title = 'Intro video'; f.className = 'sp-media sp-intro-f'; b.replaceWith(f); });</script>
+    <?php else: ?>
     <<?= $preview ? 'a href="' . sh_e($preview) . '"' : 'div' ?> class="sp-media">
-      <?php if ($p['thumb']): ?><img src="<?= sh_e($p['thumb']) ?>" alt=""><?php else: ?><span class="sp-ph"><?= sh_e($p['title']) ?></span><?php endif; ?>
+      <?php if ($cardImg): ?><img src="<?= sh_e($cardImg) ?>" alt=""><?php else: ?><span class="sp-ph"><?= sh_e($p['title']) ?></span><?php endif; ?>
       <?php if ($preview): ?><span class="sp-play"><span class="sp-pbtn"><?= $ico('playsolid') ?></span><b><?= $freeL ? 'Watch free preview' : 'Read free preview' ?></b></span><?php endif; ?>
     </<?= $preview ? 'a' : 'div' ?>>
+    <?php endif; ?>
     <div class="sp-cb">
       <?php if ($own): ?>
         <div class="sp-owned"><?= $ico('check') ?> You have this <?= $isCourse ? 'course' : 'notes pack' ?></div>
