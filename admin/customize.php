@@ -296,6 +296,7 @@ const PANELS = [
     ['text', 'h_login_url', 'Log in link', { hint: 'Empty = the admin login page.' }],
     ['toggle', 'h_sub', 'Show “Subscribe”'],
     ['text', 'h_sub_text', 'Subscribe text'],
+    ['select', 'h_sub_icon', 'Icon before the text', { options: [['', 'None (normal button)'], ['whatsapp', 'WhatsApp'], ['youtube', 'YouTube'], ['facebook', 'Facebook'], ['instagram', 'Instagram'], ['x', 'X (Twitter)'], ['telegram', 'Telegram'], ['linkedin', 'LinkedIn']], hint: 'With an icon, the button takes that app’s colour (WhatsApp green, YouTube red …). Tip: put your WhatsApp / YouTube link in “Subscribe link”.' }],
     ['text', 'h_sub_url', 'Subscribe link', { hint: 'Empty = turns on job alerts (push notifications).' }],
     ['heading', 'Mobile menu'],
     ['toggle', 'h_drawer_hello', 'Show the greeting (“Hello, Reader”)'],
