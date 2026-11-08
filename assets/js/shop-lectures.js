@@ -24,15 +24,14 @@
 
   // ---- rows ----
   function rowHtml(r) {
-    var x = function (hash, label, n) { return '<a data-embed class="' + (n ? 'has' : '') + '" href="/admin/shop-lecture.php?id=' + r.id + '&embed=1#' + hash + '">' + label + (n ? ' (' + n + ')' : '') + '</a>'; };
+    var x = function (hash, icon, name, n) { return '<a data-embed class="' + (n ? 'has' : '') + '" title="' + name + (n ? ' (' + n + ')' : ' — add') + '" href="/admin/shop-lecture.php?id=' + r.id + '&embed=1#' + hash + '"><i class="fas ' + icon + '"></i> ' + (n ? n : '+') + '</a>'; };
     return '<td class="cb"><input type="checkbox" class="pick" aria-label="Select"></td><td class="no"></td>'
       + '<td><div class="vid"><span class="hd" draggable="true" title="Drag to change the order"><i class="fas fa-grip-vertical"></i></span>' + (r.thumb ? '<img src="' + esc(r.thumb) + '" alt="" loading="lazy">' : '<span class="ph"><i class="fas ' + (r.pdf ? 'fa-file-pdf' : 'fa-film') + '"></i></span>')
-      + '<input class="t" maxlength="200" value="' + esc(r.title) + '" aria-label="Lecture name"></div></td>'
-      + '<td class="ci-muted">' + esc(r.dur || '—') + '</td>'
-      + '<td><select class="s" aria-label="Chapter">' + secOpts(r.section_id) + '</select></td>'
-      + '<td><select class="u" aria-label="Unit">' + unitOpts(r.section_id, r.unit_id) + '</select></td>'
+      + '<div class="tw"><input class="t" maxlength="200" value="' + esc(r.title) + '" aria-label="Lecture name" title="' + esc(r.title) + '"><small>' + esc(r.dur || '') + (r.yt ? (r.dur ? ' · ' : '') + 'YouTube' : '') + '</small></div></div></td>'
+      + '<td class="cs"><select class="s" aria-label="Chapter">' + secOpts(r.section_id) + '</select></td>'
+      + '<td class="us"><select class="u" aria-label="Unit">' + unitOpts(r.section_id, r.unit_id) + '</select></td>'
       + '<td class="fr"><input type="checkbox" class="f" aria-label="Free"' + (r.free ? ' checked' : '') + '></td>'
-      + '<td><div class="ls-x3">' + x('notes', '<i class="fas fa-file-pdf"></i> Notes', r.n) + x('quiz', '<i class="fas fa-list-check"></i> MCQ', r.q) + x('vvi', '<i class="fas fa-circle-question"></i> VVI', r.v) + '</div></td>'
+      + '<td><div class="ls-x3">' + x('notes', 'fa-file-pdf', 'Notes PDF', r.n) + x('quiz', 'fa-list-check', 'Quiz / MCQ', r.q) + x('vvi', 'fa-circle-question', 'VVI questions', r.v) + '</div></td>'
       + '<td><a class="ci-ico" data-embed href="/admin/shop-lecture.php?id=' + r.id + '&embed=1" aria-label="Edit lecture"><i class="fas fa-pen"></i></a></td>';
   }
   function draw() {
