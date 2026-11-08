@@ -137,6 +137,6 @@ RewriteRule ^([a-z0-9-]+)/?$ page.php?slug=$1 [L,QSA]
 # ============================================================
 # PDF HOTLINK PROTECTION
 # ============================================================
-RewriteCond %{HTTP_REFERER} !^https?://(www\.)?dkacademy\.co\.in(/.*)?$ [NC]
+RewriteCond %{HTTP_HOST}@@%{HTTP_REFERER} !^(?:www\.)?([^@]+)@@https?://(?:www\.)?\1(?:[:/].*)?$ [NC]
 RewriteCond %{HTTP_REFERER} !^$
 RewriteRule \.(pdf)$ - [F,L]

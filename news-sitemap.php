@@ -10,7 +10,8 @@ header('Content-Type: application/xml; charset=utf-8');
 
 // --- GOOGLE NEWS SETTINGS ---
 // IMPORTANT: Update these to match your Google News Publisher Center settings
-$publication_name = "EduMint24"; // e.g., "The Daily News"
+if (!function_exists('edu_site_name') && defined('INCLUDES_PATH')) require_once INCLUDES_PATH . '/site.php';
+$publication_name = function_exists('edu_site_name') ? edu_site_name() : (defined('SITE_NAME') ? SITE_NAME : ''); // the site title (Site Identity)
 $publication_language = "en"; // e.g., "en" for English, "hi" for Hindi
 
 // Get site URL 

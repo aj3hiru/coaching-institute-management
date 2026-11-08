@@ -555,6 +555,7 @@ function edu_theme_head(): string
     if ($t['menu_style'] === 'pills') $css .= '.nb-h-racing .inb-scroll-menu a{padding:6px 14px!important;margin:8px 0;border-radius:999px;border:1px solid rgba(0,0,0,.08)}.nb-h-racing .inb-scroll-menu a::after{display:none}.nb-h-racing .inb-scroll-menu a:hover,.nb-h-racing .inb-scroll-menu a.current{background:var(--edu-strip-hover);color:#fff!important}';
     if ($t['menu_style'] === 'plain') $css .= '.nb-h-racing .inb-scroll-menu a::after{display:none}';
     if ($t['menu_align'] === 'left') $css .= '@media (min-width:981px){.nb-h-racing .inb-scroll-menu-inner{justify-content:flex-start}}';
+    else $css .= '@media (min-width:981px){.nb-h-racing .inb-scroll-menu-inner{max-width:none;justify-content:safe center}}'; // longer than the screen: starts at the first link and scrolls, nothing cut off
     $custom = trim((string)$t['custom_css']);
     if ($custom !== '') $css .= str_ireplace('</style', '<\/style', $custom);
     return $out . '<style id="edu-theme">' . $css . '</style>';

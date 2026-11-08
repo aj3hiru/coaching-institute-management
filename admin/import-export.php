@@ -1,5 +1,5 @@
 <?php
-// Import & Export — posts or pages as a ZIP that this site, another EduMint site and the StoryTimes CMS all read:
+// Import & Export — posts or pages as a ZIP that this site, another site on this CMS and the StoryTimes CMS all read:
 // content, address (same URL path), SEO fields, categories, tags, FAQs and every image.
 // Import: the file is checked first (what it holds, what is already here), then "Start import" runs item by item
 // with a log; posts can be given to the original author or to an author chosen here, like WordPress.
@@ -159,11 +159,11 @@ $authors = $pdo->query("SELECT id, name FROM authors ORDER BY name")->fetchAll(P
 <?= edu_chunk_js() ?>
 </head>
 <body>
-<?php admin_shell_open('Import &amp; Export', 'Move posts and pages between this site, other EduMint sites and the StoryTimes CMS'); ?>
+<?php admin_shell_open('Import &amp; Export', 'Move posts and pages between this site, other sites on this CMS and the StoryTimes CMS'); ?>
 <?= admin_flash() ?>
 <div class="ie-grid">
   <div class="ie-card">
-    <h3><i class="fas fa-file-export"></i> Export</h3><p>Download posts or pages as a ZIP — content, address, SEO, tags, categories, FAQs and every image. It imports on this site, another EduMint site or the StoryTimes CMS.</p>
+    <h3><i class="fas fa-file-export"></i> Export</h3><p>Download posts or pages as a ZIP — content, address, SEO, tags, categories, FAQs and every image. It imports on this site, another site on this CMS or the StoryTimes CMS.</p>
     <form method="POST"><?= csrf_field() ?><input type="hidden" name="action" value="export_posts">
       <strong style="font-size:.9rem">Posts by category</strong> <small style="color:#9ca3af">— none ticked = every published post (<?= $totalPub ?>)</small>
       <div class="ie-cats"><?php foreach ($cats as $c): ?><label><span><input type="checkbox" name="cats[]" value="<?= (int)$c['id'] ?>"> <?= htmlspecialchars($c['name']) ?></span><small><?= (int)$c['n'] ?></small></label><?php endforeach; ?></div>
@@ -171,7 +171,7 @@ $authors = $pdo->query("SELECT id, name FROM authors ORDER BY name")->fetchAll(P
     <form method="POST" style="margin-top:12px"><?= csrf_field() ?><input type="hidden" name="action" value="export_pages"><button type="submit" class="btn btn-secondary" <?= $pageCount ? '' : 'disabled' ?>><i class="fas fa-download"></i> Export pages (<?= $pageCount ?>)</button></form>
   </div>
   <div class="ie-card">
-    <h3><i class="fas fa-file-import"></i> Import</h3><p>Add posts or pages from an Export ZIP (from this site, another EduMint site or the StoryTimes CMS). Each item keeps its address; images, SEO, categories and tags come along.</p>
+    <h3><i class="fas fa-file-import"></i> Import</h3><p>Add posts or pages from an Export ZIP (from this site, another site on this CMS or the StoryTimes CMS). Each item keeps its address; images, SEO, categories and tags come along.</p>
     <div class="ie-steps"><span class="on" id="st1">1 Choose file</span><span id="st2">2 Check</span><span id="st3">3 Import</span></div>
     <label class="ie-drop" id="ie-drop"><i class="fas fa-cloud-arrow-up" style="font-size:1.6rem;display:block;margin-bottom:6px"></i><span id="ie-text">Drop a ZIP here or click to choose<br><small>posts_export_….zip or pages_export_….zip</small></span><input type="file" id="ie-file" accept=".zip,application/zip" hidden></label>
     <div class="ie-prog" id="ie-prog" hidden><span></span></div>
@@ -210,7 +210,7 @@ document.addEventListener('DOMContentLoaded', function () {
       txt.innerHTML = '<i class="fas fa-circle-check" style="color:#16a34a"></i> ' + esc(file.name) + ' — checked, it is a valid export';
       $('rv-count').textContent = d.count; $('rv-type').textContent = d.type === 'posts' ? (d.count === 1 ? 'post' : 'posts') : (d.count === 1 ? 'page' : 'pages');
       $('rv-dup').textContent = d.conflicts.length; $('rv-new').textContent = d.count - d.conflicts.length;
-      var s = d.source || {}, app = /storytimes|next/i.test(s.app || '') ? 'StoryTimes CMS' : /edumint/i.test(s.app || '') ? 'EduMint' : '';
+      var s = d.source || {}, app = /storytimes|next/i.test(s.app || '') ? 'StoryTimes CMS' : /edumint/i.test(s.app || '') ? 'This CMS' : '';
       $('rv-src').innerHTML = 'From ' + (s.name ? '<b>' + esc(s.name) + '</b> ' : '') + (s.url ? esc(s.url.replace(/^https?:\/\//, '')) + ' ' : 'another site ') + (app ? '(' + app + ')' : '') + (s.date ? ' · exported ' + esc(new Date(s.date).toLocaleString()) : '');
       $('rv-titles').innerHTML = d.titles.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + (d.count > d.titles.length ? '<li style="list-style:none;color:#94a3b8">… and ' + (d.count - d.titles.length) + ' more</li>' : '');
       $('rv-conf').hidden = !d.conflicts.length;

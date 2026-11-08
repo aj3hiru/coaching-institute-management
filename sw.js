@@ -7,7 +7,7 @@ self.addEventListener('activate', event => event.waitUntil(self.clients.claim())
 self.addEventListener('push', event => {
     let data = {};
     try { data = event.data ? event.data.json() : {}; } catch (e) { data = { body: event.data ? event.data.text() : '' }; }
-    const title = data.title || 'EduMint24';
+    const title = data.title || self.location.hostname.replace(/^www\./, ''); // the push always sends a title; fallback = this site's address
     const url = data.url || SITE + '/';
     const options = {
         body: data.body || '',

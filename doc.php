@@ -1,7 +1,9 @@
 <?php
 require_once __DIR__ . '/includes/config.php';
+require_once INCLUDES_PATH . '/site.php';
+$__sn = htmlspecialchars(edu_site_name()); // site title from Site Identity (nothing hard-coded)
 
-$notFound='<!DOCTYPE html><html><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>Document Not Found • EduMint24</title><meta name="robots" content="noindex, follow"><link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel=stylesheet><style>body{margin:0;height:100vh;display:flex;align-items:center;justify-content:center;background:#f8f9fa;font-family:"Nunito",system-ui,sans-serif;flex-direction:column;color:#444;text-align:center}.brand{font-size:18px;color:#888;margin-bottom:20px;font-weight:500}h2{font-size:28px;margin:0 0 12px;font-weight:700}p{margin:10px 0 0}a{color:#007bff;text-decoration:none;font-weight:600}a:hover{text-decoration:underline}</style></head><body><div class=brand>EduMint24 Secure PDF Viewer</div><h2>Document Not Found!</h2><p><a href=https://EduMint24.co.in>Back to Home</a></p></body></html>';
+$notFound='<!DOCTYPE html><html><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>Document Not Found • '.$__sn.'</title><meta name="robots" content="noindex, follow"><link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel=stylesheet><style>body{margin:0;height:100vh;display:flex;align-items:center;justify-content:center;background:#f8f9fa;font-family:"Nunito",system-ui,sans-serif;flex-direction:column;color:#444;text-align:center}.brand{font-size:18px;color:#888;margin-bottom:20px;font-weight:500}h2{font-size:28px;margin:0 0 12px;font-weight:700}p{margin:10px 0 0}a{color:#007bff;text-decoration:none;font-weight:600}a:hover{text-decoration:underline}</style></head><body><div class=brand>'.$__sn.' Secure PDF Viewer</div><h2>Document Not Found!</h2><p><a href=/>Back to Home</a></p></body></html>';
 
 $id = $_GET['id'] ?? null;
 if (!$id) { die($notFound); }
@@ -30,8 +32,8 @@ if (isset($_GET['stream']) && $_GET['stream'] == '1') {
     exit;
 }
 
- $title = "PDF Document - EduMint24";
- $description  = "Download or view the shared PDF document on EduMint24.";
+ $title = "PDF Document - " . $__sn;
+ $description  = "Download or view the shared PDF document on " . $__sn . ".";
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -44,8 +46,8 @@ if (isset($_GET['stream']) && $_GET['stream'] == '1') {
     <meta property="og:title" content="<?= $title ?>">
     <meta property="og:description" content="<?= $description ?>">
     <meta property="og:type" content="article">
-    <meta property="og:url" content="https://EduMint24.co.in/documents/<?= $id ?>">
-    <meta property="og:site_name" content="EduMint24">
+    <meta property="og:url" content="<?= htmlspecialchars(rtrim(SITE_URL, '/')) ?>/documents/<?= (int)$id ?>">
+    <meta property="og:site_name" content="<?= $__sn ?>">
             	
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
@@ -238,7 +240,7 @@ if (isset($_GET['stream']) && $_GET['stream'] == '1') {
     <div id="pdf-scroll-container">
         </div>
     
-    <div class="footer-brand">Powered by <strong>EduMint24</strong> Secure PDF Viewer</div>
+    <div class="footer-brand">Powered by <strong><?= $__sn ?></strong> Secure PDF Viewer</div>
     
     <div id="search-nav-overlay" class="search-nav-floating" style="display: none;">
     <button id="floatPrev">&lt;</button>
@@ -304,7 +306,7 @@ if (isset($_GET['stream']) && $_GET['stream'] == '1') {
 
             const watermark = document.createElement('div');
             watermark.className = 'watermark';
-            watermark.textContent = 'EduMint24';
+            watermark.textContent = <?= json_encode(edu_site_name()) ?>;
             wrapper.appendChild(watermark);
 
             const shield = document.createElement('div');

@@ -30,7 +30,8 @@ if (count($_SESSION['comment_times']) >= $max) {
 $_SESSION['comment_times'][] = $now;
 
 
-$ADMIN_EMAIL = 'contact@dkacademy.co.in';
+require_once INCLUDES_PATH . '/settings.php';
+$ADMIN_EMAIL = (function_exists('es') ? (es('general', 'contact_email', '') ?: es('general', 'admin_email', '')) : '') ?: 'contact@' . preg_replace('/^www\./', '', (string)parse_url(SITE_URL, PHP_URL_HOST)); // Settings → General → contact email
 
 $id = $_GET['id'] ?? 0;
 if (!$id) {

@@ -1,7 +1,7 @@
 (() => {
   const socialLinks = {
-    whatsapp: "https://whatsapp.com/channel/0029VasVjh8GOj9v3DgoWa3V",
-    telegram: "https://t.me/careerjyoti1"
+    whatsapp: "",
+    telegram: ""
   };
   const STORAGE_KEY = 'social_popup_collapsed_until';
   const COLLAPSE_DURATION = 600000;

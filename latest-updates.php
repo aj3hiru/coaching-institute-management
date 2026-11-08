@@ -19,9 +19,9 @@ require_once INCLUDES_PATH . '/theme.php';
 
 // SEO SECTION ARRAY
 $seo = [
-    'title'       => 'Latest Updates 2026 – New Vacancy, Results & Admit Cards | EduMint24',
+    'title'       => 'Latest Updates ' . date('Y') . ' – New Vacancy, Results & Admit Cards | ' . (function_exists('edu_site_name') ? edu_site_name() : (defined('SITE_NAME') ? SITE_NAME : '')),
 
-    'description' => 'All latest government job updates 2026 in one place. New vacancies, admit cards, results, and answer keys — updated daily on EduMint24.',
+    'description' => 'All latest government job updates ' . date('Y') . ' in one place. New vacancies, admit cards, results, and answer keys — updated daily on ' . (function_exists('edu_site_name') ? edu_site_name() : (defined('SITE_NAME') ? SITE_NAME : '')) . '.',
 
     'image'     => SEO_DEFAULT_IMAGE,
     'type'      => SEO_DEFAULT_TYPE,
@@ -37,7 +37,7 @@ $seo_ctx = ['kind' => 'other'];
 $faqs = [
 
     [
-        'question'    => 'How often are new updates added on EduMint24?',
+        'question'    => 'How often are new updates added on ' . (function_exists('edu_site_name') ? edu_site_name() : (defined('SITE_NAME') ? SITE_NAME : '')) . '?',
         'answer_html' => 'We add new government job updates every day. The newest posts are always at the top of this page, from all categories - new vacancies, admit cards, results, and answer keys — so bookmark it and check daily.',
     ],
 

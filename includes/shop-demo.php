@@ -335,7 +335,7 @@ function sh_demo_showcase(PDO $pdo, int $byUser = 0): string
             ['sc-science10', 0, 5, 'Board Booster batch is worth it — short lectures, clear notes and my doubts were answered the same day.'],
             ['sc-science10', 1, 4, 'Metallurgy and microbiology chapters are explained very well. Good for revision.'],
             ['sc-science10', 10, 5, 'I like that I can watch on my phone at 1.5x speed. Ma\'am explains with real-life examples.'],
-            ['sc-science9', 2, 5, 'Carbon and biotechnology chapters became easy. Thank you DK Academy!'],
+            ['sc-science9', 2, 5, 'Carbon and biotechnology chapters became easy. Thank you!'],
             ['sc-science9', 4, 4, 'Nice foundation course for Class 9. Notes would make it perfect.'],
             ['sc-maths9', 3, 5, 'One lecture per chapter — I revised the whole syllabus in a week before my exam.'],
             ['sc-maths9', 4, 4, 'Quick and to the point. Good for last-minute revision.'],

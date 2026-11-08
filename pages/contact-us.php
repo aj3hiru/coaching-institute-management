@@ -137,8 +137,8 @@ $cTkn = $_SESSION['cTkn'] ??= bin2hex(random_bytes(32));
     <p>For the fastest updates on new government jobs, admit cards, and results, join our communities. It's often faster than email!</p>
     
     <div class="social-grid">
-        <a href="https://whatsapp.com/channel/0029VasVjh8GOj9v3DgoWa3V" target="_blank" class="social-btn bg-wa">Join WhatsApp</a>
-        <a href="https://t.me/careerjyoti1" target="_blank" class="social-btn bg-tg">Join Telegram</a>
+        <a href="#" target="_blank" class="social-btn bg-wa">Join WhatsApp</a>
+        <a href="#" target="_blank" class="social-btn bg-tg">Join Telegram</a>
     </div> -->
 
 <div id="ct-form" class="ct-form">

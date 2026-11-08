@@ -22,7 +22,7 @@ $input = json_decode(file_get_contents('php://input'), true) ?? [];
 $title  = trim($input['title']  ?? '');
 $body   = trim($input['body']   ?? '');
 $image  = trim($input['image']  ?? '');
-$url    = trim($input['url']    ?? 'https://dkacademy.co.in');
+$url    = trim($input['url']    ?? (defined('SITE_URL') ? SITE_URL : '')); // default: this site's address
 $post_id = !empty($input['post_id']) ? (int)$input['post_id'] : null;
 
 if (empty($title) || empty($url)) {

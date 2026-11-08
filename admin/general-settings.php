@@ -66,7 +66,7 @@ $social = edu_social();
       <div class="wps-row"><div class="wps-th"><label for="site_title">Site Title</label></div><div class="wps-td"><input id="site_title" name="site_title" class="wps-input" maxlength="100" placeholder="<?= htmlspecialchars(SITE_NAME) ?>" value="<?= htmlspecialchars((string)($g['site_title'] ?? '') !== '' ? (string)$g['site_title'] : edu_site_name()) ?>"><p class="wps-desc">Shown in the header and every page title. Also in Customize → Site Identity.</p></div></div>
       <div class="wps-row"><div class="wps-th"><label for="tagline">Tagline</label></div><div class="wps-td"><input id="tagline" name="tagline" class="wps-input" placeholder="Latest government jobs, results and admit cards" value="<?= $v('tagline') ?>"><p class="wps-desc">In a few words, explain what this site is about. Example: “Latest government jobs, results and admit cards.”</p></div></div>
       <div class="wps-row"><div class="wps-th"><span>Site Logo</span></div><div class="wps-td">
-        <div class="wps-media<?= empty($g['logo']) ? ' empty' : '' ?>" id="logo-prev"><?= !empty($g['logo']) ? '<img src="' . $v('logo') . '" alt="">' : '<span>No logo selected — the built-in EduMint logo is used</span>' ?></div>
+        <div class="wps-media<?= empty($g['logo']) ? ' empty' : '' ?>" id="logo-prev"><?= !empty($g['logo']) ? '<img src="' . $v('logo') . '" alt="">' : '<span>No logo selected</span>' ?></div>
         <div class="wps-media-actions"><button type="button" class="wps-secondary" data-pick="logo">Media Library</button><button type="button" class="wps-secondary" data-clear="logo">Remove</button></div>
         <input type="hidden" name="logo" id="logo" value="<?= $v('logo') ?>">
         <p class="wps-desc">Best: a transparent PNG or SVG, at least 300px wide.</p></div></div>
@@ -95,9 +95,9 @@ $social = edu_social();
     <h2>Email (SMTP)</h2>
     <p class="wps-section-desc">Used to email you new contact-form messages. Get these details from your email/hosting provider. Without them, messages are still saved in Contact Messages.</p>
     <div class="wps-table">
-      <div class="wps-row"><div class="wps-th"><label for="smtp_host">SMTP Host</label></div><div class="wps-td"><input id="smtp_host" name="smtp_host" class="wps-input" placeholder="mail.dkacademy.co.in" value="<?= $v('smtp_host') ?>"></div></div>
+      <div class="wps-row"><div class="wps-th"><label for="smtp_host">SMTP Host</label></div><div class="wps-td"><input id="smtp_host" name="smtp_host" class="wps-input" placeholder="mail.<?= htmlspecialchars(preg_replace('/^www\./', '', (string)parse_url(SITE_URL, PHP_URL_HOST))) ?>" value="<?= $v('smtp_host') ?>"></div></div>
       <div class="wps-row"><div class="wps-th"><span>Port &amp; Security</span></div><div class="wps-td"><div class="wps-inline"><label class="wps-mini">Port<input type="number" name="smtp_port" class="wps-input small" value="<?= $v('smtp_port', 465) ?>"></label><label class="wps-mini">Security<select name="smtp_secure" class="wps-input small"><?php foreach (['ssl' => 'SSL (465)', 'tls' => 'TLS (587)', 'none' => 'None'] as $k => $l): ?><option value="<?= $k ?>" <?= ($g['smtp_secure'] ?? 'ssl') === $k ? 'selected' : '' ?>><?= $l ?></option><?php endforeach; ?></select></label></div></div></div>
-      <div class="wps-row"><div class="wps-th"><label for="smtp_user">Username</label></div><div class="wps-td"><input id="smtp_user" name="smtp_user" class="wps-input" autocomplete="off" placeholder="no-reply@dkacademy.co.in" value="<?= $v('smtp_user') ?>"></div></div>
+      <div class="wps-row"><div class="wps-th"><label for="smtp_user">Username</label></div><div class="wps-td"><input id="smtp_user" name="smtp_user" class="wps-input" autocomplete="off" placeholder="no-reply@<?= htmlspecialchars(preg_replace('/^www\./', '', (string)parse_url(SITE_URL, PHP_URL_HOST))) ?>" value="<?= $v('smtp_user') ?>"></div></div>
       <div class="wps-row"><div class="wps-th"><label for="smtp_pass">Password</label></div><div class="wps-td"><input id="smtp_pass" type="password" name="smtp_pass" class="wps-input" autocomplete="new-password" placeholder="<?= !empty($g['smtp_pass']) ? '•••••••• saved — leave empty to keep' : 'SMTP password' ?>"><?php if (!empty($g['smtp_pass'])): ?><label class="wps-check" style="margin-top:6px"><input type="checkbox" name="smtp_clear_pass" value="1">Remove the saved password</label><?php endif; ?></div></div>
       <div class="wps-row"><div class="wps-th"><label for="smtp_from">From Email / Name</label></div><div class="wps-td"><div class="wps-inline"><input id="smtp_from" type="email" name="smtp_from" class="wps-input" placeholder="Same as username" value="<?= $v('smtp_from') ?>"><input name="smtp_from_name" class="wps-input" placeholder="<?= htmlspecialchars(edu_site_name()) ?>" value="<?= $v('smtp_from_name') ?>"></div><p class="wps-desc">New messages are sent to the Administration Email above.</p></div></div>
     </div>
@@ -156,7 +156,7 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById(key).value = path || '';
     var p = document.getElementById(key + '-prev');
     p.classList.toggle('empty', !path);
-    p.innerHTML = path ? '<img src="' + path + '" alt="">' : (key === 'logo' ? '<span>No logo selected — the built-in EduMint logo is used</span>' : '<i class="fas fa-image"></i>');
+    p.innerHTML = path ? '<img src="' + path + '" alt="">' : (key === 'logo' ? '<span>No logo selected</span>' : '<i class="fas fa-image"></i>');
   }
   document.querySelectorAll('[data-pick]').forEach(function (b) { b.addEventListener('click', function () { EduMedia.pick(function (it) { setImg(b.dataset.pick, it.path); }); }); });
   document.querySelectorAll('[data-clear]').forEach(function (b) { b.addEventListener('click', function () { setImg(b.dataset.clear, ''); }); });

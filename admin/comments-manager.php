@@ -5,7 +5,7 @@ require_once __DIR__ . '/components/guard.php';
 require_once INCLUDES_PATH . '/mailer.php';
 $me = admin_guard(['admin', 'editor', 'author']);
 if (!admin_can('blogs.manage_comments')) { http_response_code(403); exit('Access Denied'); }
-$adminEmail = defined('CONTACT_EMAIL') ? CONTACT_EMAIL : 'contact@dkacademy.co.in';
+$adminEmail = defined('CONTACT_EMAIL') ? CONTACT_EMAIL : ((function_exists('es') ? (es('general', 'contact_email', '') ?: es('general', 'admin_email', '')) : '') ?: 'contact@' . preg_replace('/^www\./', '', (string)parse_url(SITE_URL, PHP_URL_HOST))); // Settings → General → contact email
 $adminName = edu_site_name() . ' Support';
 
 function cmt_json(array $d): void

@@ -168,8 +168,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $mode = ($_POST['mode'] ?? '') === 'original' ? 'original' : 'advanced';
         edu_settings_save('seo', ['mode' => $mode]);
         seo_robots_sync($mode);
-        admin_log('seo_update', 'SEO mode: ' . ($mode === 'original' ? 'Original EduMint SEO' : 'Advanced SEO'));
-        admin_flash($mode === 'original' ? 'Original EduMint SEO is on — the site uses exactly its original SEO and /sitemap.xml.' : 'Advanced SEO is on — Rank Math-style titles, schema and the /sitemap_index.xml sitemap are used.');
+        admin_log('seo_update', 'SEO mode: ' . ($mode === 'original' ? 'Basic SEO' : 'Advanced SEO'));
+        admin_flash($mode === 'original' ? 'Basic SEO is on — the site uses exactly its original SEO and /sitemap.xml.' : 'Advanced SEO is on — Rank Math-style titles, schema and the /sitemap_index.xml sitemap are used.');
         header('Location: ' . ($_POST['back'] ?? '/admin/seo.php')); exit;
     }
     if ($act === 'submit') {
@@ -354,7 +354,7 @@ $tab = preg_replace('/[^a-z]/', '', $_GET['tab'] ?? '');
 <body>
 <?php admin_shell_open('SEO', 'Titles, schema, sitemaps &amp; indexing', '<form method="POST" style="margin:0">' . csrf_field() . '<input type="hidden" name="action" value="mode"><input type="hidden" name="back" value="' . $esc($_SERVER['REQUEST_URI']) . '"><div class="rm-mode" title="Which SEO the site uses"><button name="mode" value="advanced" class="' . ($adv ? 'on' : '') . '">Advanced</button><button name="mode" value="original" class="' . (!$adv ? 'on' : '') . '">Original</button></div></form>'); ?>
 <?= admin_flash() ?>
-<?php if (!$adv): ?><div class="rm-warn" style="margin:0 0 14px;max-width:1060px"><b>Original EduMint SEO is on.</b> The site uses exactly its original titles, descriptions, schema and /sitemap.xml. The settings here are saved but only used after switching to <b>Advanced</b> (top right).</div><?php endif; ?>
+<?php if (!$adv): ?><div class="rm-warn" style="margin:0 0 14px;max-width:1060px"><b>Basic SEO is on.</b> The site uses exactly its original titles, descriptions, schema and /sitemap.xml. The settings here are saved but only used after switching to <b>Advanced</b> (top right).</div><?php endif; ?>
 <div class="rm-top"><div class="rm-crumbs"><a href="/admin/seo.php">Dashboard</a><?= $view !== 'dashboard' ? ' / ' . $esc($viewNames[$view]) : ' / Modules' ?></div></div>
 
 <?php if ($view === 'dashboard'): ?>
@@ -432,7 +432,7 @@ $tab = preg_replace('/[^a-z]/', '', $_GET['tab'] ?? '');
     <?php endforeach; elseif ($tab === 'system'): require_once INCLUDES_PATH . '/cron.php'; $cron = edu_cron_state(); $rows = [
         ['PHP version', PHP_VERSION, version_compare(PHP_VERSION, '8.0', '>=')], ['cURL (indexing, Cloudflare test)', extension_loaded('curl') ? 'Available' : 'Missing', extension_loaded('curl')],
         ['OpenSSL (Google Indexing API)', extension_loaded('openssl') ? 'Available' : 'Missing', extension_loaded('openssl')], ['WebP images (GD)', function_exists('imagewebp') ? 'Available' : 'Missing', function_exists('imagewebp')],
-        ['robots.txt writable', is_writable(ROOT_PATH . '/robots.txt') ? 'Yes' : 'No', is_writable(ROOT_PATH . '/robots.txt')], ['SEO mode', $adv ? 'Advanced (Rank Math style)' : 'Original EduMint SEO', true],
+        ['robots.txt writable', is_writable(ROOT_PATH . '/robots.txt') ? 'Yes' : 'No', is_writable(ROOT_PATH . '/robots.txt')], ['SEO mode', $adv ? 'Advanced (Rank Math style)' : 'Basic SEO', true],
         ['Sitemap', $base . '/' . $smName, true], ['Background jobs (cron)', !empty($cron['minute_at']) ? 'Last run ' . date('j M, g:i a', (int)$cron['minute_at']) : 'Not seen yet', !empty($cron['minute_at']) && time() - (int)$cron['minute_at'] < 600],
       ]; ?>
       <div style="padding:16px 0"><table class="rm-table"><tbody><?php foreach ($rows as [$l, $v, $ok]): ?><tr><th style="width:42%;background:none;text-transform:none;font-size:13.5px;color:#334155"><?= $esc($l) ?></th><td><span class="rm-pill <?= $ok ? 'ok' : 'warn' ?>"><?= $ok ? 'OK' : 'Check' ?></span> <?= $esc($v) ?></td></tr><?php endforeach; ?></tbody></table></div>

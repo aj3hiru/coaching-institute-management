@@ -7,12 +7,12 @@ use PHPMailer\PHPMailer\Exception;
 class CommentMailer
 {
     private $baseUrl = '';
-    private $siteName = 'EduMint24';
+    private $siteName = '';
 
     public function __construct()
     {
         if (defined('SITE_URL')) $this->baseUrl = rtrim(SITE_URL, '/');
-        if (function_exists('edu_site_name')) $this->siteName = edu_site_name();
+        if (function_exists('edu_site_name')) $this->siteName = edu_site_name(); elseif (defined('SITE_NAME')) $this->siteName = SITE_NAME;
     }
 
     private function mailer(): PHPMailer

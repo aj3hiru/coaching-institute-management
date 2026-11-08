@@ -44,7 +44,7 @@ function edu_chunk_receive(): ?array
 function edu_sql_dump(PDO $pdo, string $file): int
 {
     $fh = fopen($file, 'wb');
-    fwrite($fh, "-- EduMint24 backup " . date('c') . "\nSET NAMES utf8mb4;\nSET FOREIGN_KEY_CHECKS=0;\n");
+    fwrite($fh, "-- " . (defined('SITE_URL') ? parse_url(SITE_URL, PHP_URL_HOST) : 'site') . " backup " . date('c') . "\nSET NAMES utf8mb4;\nSET FOREIGN_KEY_CHECKS=0;\n");
     $tables = $pdo->query("SHOW FULL TABLES WHERE Table_type = 'BASE TABLE'")->fetchAll(PDO::FETCH_COLUMN);
     foreach ($tables as $t) {
         $create = $pdo->query("SHOW CREATE TABLE `$t`")->fetch(PDO::FETCH_NUM)[1];

@@ -225,6 +225,7 @@ html[data-theme="dark"] .nb-dd-b{color:#e5e7eb}html[data-theme="dark"] .nb-dd-p{
       bar();}
       function bar(){ // tablet / computer: the student's own bar at the very top (not for staff, who have the admin bar)
       if(document.getElementById('shBar')||document.getElementById('wpadminbar'))return;
+      try{if(window.self!==window.top||/[?&]czp=1/.test(location.search))return;}catch(e){return;} // not in the Customizer preview
       var av='';try{av=decodeURIComponent((document.cookie.match(/(?:^|; )sh_av=([^;]*)/)||[])[1]||'');}catch(e){}
       if(!/^\/uploads\/avatars\/[a-z0-9-]+\.(jpg|png|webp)$/.test(av))av='';
       var e=function(t){return String(t).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});};

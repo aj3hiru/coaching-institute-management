@@ -65,7 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($mode !== 'original') { require_once INCLUDES_PATH . '/indexing.php'; edu_ix_key(); }
     }
     admin_log('seo_wizard', 'SEO Setup Wizard: ' . (WZ_STEPS[$step] ?? WZ_ADV[$step]) . (empty($_POST['skip']) ? ' saved' : ' skipped'));
-    if ($step === 'start' && ($save['mode'] ?? '') === 'original') { admin_flash('Original EduMint SEO is on. You can switch to Advanced SEO any time (SEO → top right).'); header('Location: /admin/seo.php'); exit; }
+    if ($step === 'start' && ($save['mode'] ?? '') === 'original') { admin_flash('Basic SEO is on. You can switch to Advanced SEO any time (SEO → top right).'); header('Location: /admin/seo.php'); exit; }
     if ($nx === 'done') { admin_flash('Advanced options saved — your SEO is ready.'); header('Location: /admin/seo.php'); exit; }
     header('Location: /admin/seo-wizard.php?step=' . $nx);
     exit;
@@ -140,7 +140,7 @@ body{background:#f0f2f5;margin:0;font-family:-apple-system,BlinkMacSystemFont,"S
     <div class="wz-body" style="padding-top:50px">
       <label class="wz-opt"><input type="radio" name="level" value="easy" <?= $lvl === 'easy' ? 'checked' : '' ?>><span><b>Easy</b>For websites where you only want to change the basics and let the SEO do most of the heavy lifting. Most settings are set to default as per industry best practices. One just has to set it and forget it.</span></label>
       <label class="wz-opt"><input type="radio" name="level" value="advanced" <?= $lvl === 'advanced' ? 'checked' : '' ?>><span><b>Advanced</b>For the advanced users who want to control every SEO aspect of the website. You are offered options to change everything and have full control over the website’s SEO.</span></label>
-      <label class="wz-opt"><input type="radio" name="level" value="original" <?= $lvl === 'original' ? 'checked' : '' ?>><span><b>Original EduMint SEO</b>Keep exactly the site’s original SEO — its own titles, descriptions, structured data and /sitemap.xml. None of the settings here are used.</span></label>
+      <label class="wz-opt"><input type="radio" name="level" value="original" <?= $lvl === 'original' ? 'checked' : '' ?>><span><b>Basic SEO</b>Keep exactly the site’s original SEO — its own titles, descriptions, structured data and /sitemap.xml. None of the settings here are used.</span></label>
       <p class="wz-note"><em>Note</em>You can easily switch between modes at any point.</p>
       <div class="wz-start"><button type="submit">Start Wizard <i class="fas fa-chevron-right" style="font-size:16px;margin-left:6px"></i></button></div>
     </div>
