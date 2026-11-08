@@ -19,6 +19,8 @@
 .sidebar.sb .sb-icon{width:36px;flex:0 0 36px;font-size:16px;color:var(--wpm-txt);opacity:.85;transition:none}
 .sidebar.sb .sb-button{color:var(--wpm-txt)!important;font-size:14px;font-weight:400}
 .sidebar.sb .sb-link:hover,.sidebar.sb .sb-link:focus-visible,.sidebar.sb [data-submenu]:hover > .sb-row .sb-link,.sidebar.sb [data-submenu].fly > .sb-row .sb-link{background:var(--wpm-hi);color:#fff!important;outline:0}
+/* WordPress 7: a 4px white line on the left of any hovered menu or sub-menu item (measured on skylerchin.com) */
+.sidebar.sb .sb-link:hover,.sidebar.sb .sb-link:focus-visible,.sidebar.sb [data-submenu]:hover > .sb-row .sb-link,.sidebar.sb [data-submenu].fly > .sb-row .sb-link{box-shadow:inset 4px 0 0 0 #fff!important}
 .sidebar.sb .sb-link:hover .sb-icon,.sidebar.sb [data-submenu]:hover > .sb-row .sb-icon,.sidebar.sb [data-submenu].fly > .sb-row .sb-icon{opacity:1}
 /* the page you are on: olive, with the little arrow pointing at the page */
 .sidebar.sb .sb-link.active:not(.sb-sub),.sidebar.sb [data-force="1"] > .sb-row .sb-link{background:var(--wpm-hi)!important;color:#fff!important}
@@ -32,7 +34,7 @@
 .sidebar.sb .sb-submenu.open{padding:6px 0 7px}
 .sidebar.sb .sb-link.sb-sub{min-height:0;padding:5px 12px;font-size:13px;line-height:18.2px;color:var(--wpm-subtxt)!important;background:transparent}
 .sidebar.sb .sb-sub .sb-icon{display:none}
-.sidebar.sb .sb-link.sb-sub:hover,.sidebar.sb .sb-link.sb-sub:focus-visible{background:transparent;color:var(--wpm-subhov)!important}
+.sidebar.sb .sb-link.sb-sub:hover,.sidebar.sb .sb-link.sb-sub:focus-visible{background:transparent;color:#fff!important;box-shadow:inset 4px 0 0 0 #fff!important}
 .sidebar.sb .sb-link.sb-sub.active{color:#fff!important;font-weight:600;background:transparent}
 .sidebar.sb .sb-link .sb-badge{margin-left:6px;background:#d46f15!important;color:#fff;border-radius:9px!important;min-width:18px;height:18px;font-size:9px;line-height:18px;padding:0 5px}
 /* computers: no arrows; a sub-menu that is not open flies out to the right on hover (placed by the script in shell.php) */
