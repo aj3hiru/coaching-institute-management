@@ -1,6 +1,7 @@
 /* Display options (top of every admin page): show / hide each section of the page and each element inside it —
  * summary tiles, table columns, buttons, list rows, optional form fields. Choices are kept per page in this browser.
- * Sections are found automatically (cards and blocks of the page); a page can name one with data-ds="Name".
+ * Sections are found automatically (cards and blocks of the page); a page can name one with data-ds="Name",
+ * mark a block deeper inside as its own section with data-ds-section (named by data-ds), and list its parts with data-ds-item="Name".
  */
 (function () {
   'use strict';
@@ -80,6 +81,8 @@
   }
   function elementsOf(sec, skey) {
     var list = [];
+    var own = sec.querySelectorAll('[data-ds-item]'); // the page lists the parts itself
+    if (sec.matches('[data-ds-section]') && own.length) { own.forEach(function (x) { var l = x.getAttribute('data-ds-item'); list.push({ key: skey + ':i' + slug(l), label: l, el: x }); }); return list; }
     sec.querySelectorAll('.ci-stat, .stat-card').forEach(function (t, i) { list.push({ key: skey + ':t' + i, label: 'Tile: ' + (txt(t.querySelector('small, .stat-label, p')) || txt(t).slice(0, 30)), el: t }); });
     sec.querySelectorAll('table').forEach(function (tb, ti) {
       var ths = tb.querySelectorAll('thead th');
@@ -137,6 +140,7 @@
     if (!root) return false;
     var blocks = [];
     collect(root, blocks, 0);
+    [].forEach.call(root.querySelectorAll('[data-ds-section]'), function (el) { if (blocks.indexOf(el) < 0) blocks.push(el); }); // blocks the page names as their own sections
     // the page is one big wrapper (e.g. analytics, file manager): use the blocks inside it
     for (var guard = 0; blocks.length === 1 && guard < 6; guard++) {
       var only = blocks[0], inner = [].filter.call(only.children, isBlock);

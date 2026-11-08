@@ -87,11 +87,11 @@ $pre = ['type' => in_array((string)($_GET['type'] ?? ''), $types, true) ? (strin
 <body>
 <?php admin_shell_open('Reports', 'See any report here and download it as a PDF'); ?>
 <div class="ci">
-<div class="ci-card"><div class="ci-card-b"><div class="rp-pick">
+<div class="ci-card" data-ds="Reports"><div class="ci-card-b"><div class="rp-pick">
   <div class="rp-side">
 <?php foreach ($GROUPS as $gk => [$glabel, $gitems]): $gi = array_intersect_key($gitems, array_flip($types)); if (!$gi) continue; ?>
-    <div class="rp-group rp-<?= $gk ?>" data-group="<?= $gk ?>"><span class="rp-glabel"><i class="fas <?= $gk === 'online' ? 'fa-globe' : 'fa-school' ?>"></i> <?= $glabel ?></span>
-      <div class="rp-types" role="tablist"><?php foreach ($gi as $k => [$ic, $l]): ?><button type="button" data-type="<?= $k ?>" class="<?= $pre['type'] === $k ? 'on' : '' ?>"><i class="fas <?= $ic ?>"></i> <?= $l ?></button><?php endforeach; ?></div>
+    <div class="rp-group rp-<?= $gk ?>" data-group="<?= $gk ?>" data-ds-section data-ds="<?= $glabel ?> reports"><span class="rp-glabel"><i class="fas <?= $gk === 'online' ? 'fa-globe' : 'fa-school' ?>"></i> <?= $glabel ?></span>
+      <div class="rp-types" role="tablist"><?php foreach ($gi as $k => [$ic, $l]): ?><button type="button" data-type="<?= $k ?>" data-ds-item="<?= ci_e($l) ?>" class="<?= $pre['type'] === $k ? 'on' : '' ?>"><i class="fas <?= $ic ?>"></i> <?= $l ?></button><?php endforeach; ?></div>
     </div>
 <?php endforeach; ?>
   </div>
