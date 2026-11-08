@@ -156,15 +156,12 @@ $skipN = $P ? count(json_decode((string)$P['yt_skip'], true) ?: []) : 0;
 .ls-top{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:16px;align-items:start}
 @media (max-width:1100px){.ls-top{grid-template-columns:1fr}}
 .ls-side{min-width:0}
-/* like the post editor: the left column and the sidebar scroll on their own (wide screens) */
+/* like the post editor: the left column and the sidebar scroll on their own (wide screens); the sheet stays below, full width */
 @media (min-width:1101px){
-  html.ls-split,html.ls-split body{overflow:hidden!important}
-  html.ls-split .top-nav{position:relative!important;top:0!important}
-  html.ls-split .admin-container>.sidebar,html.ls-split body:has(#wpadminbar) .admin-container>.sidebar{position:relative;top:0!important}
-  html.ls-split .ls-top{grid-template-rows:minmax(0,1fr);align-items:stretch;overflow:hidden}
-  html.ls-split .ls-main,html.ls-split .ls-side{min-height:0;height:100%;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-width:thin;padding-bottom:40px}
+  html.ls-split .ls-top{height:calc(100vh - var(--wp-admin--admin-bar--height,32px) - 28px);grid-template-rows:minmax(0,1fr);align-items:stretch;overflow:hidden;margin-bottom:16px}
+  html.ls-split .ls-main,html.ls-split .ls-side{min-height:0;height:100%;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-width:thin;padding-bottom:24px}
   html.ls-split .ls-main{padding-right:8px}html.ls-split .ls-side{padding-right:4px}
-  html.ls-split .ls-tools{top:0}
+}
 }
 .ls-sf label{display:block;font-weight:600;font-size:13px;margin:0 0 6px}.ls-sf select{width:100%;height:38px}
 .ls-facts{list-style:none;margin:12px 0;padding:0;font-size:13px;color:#374151}.ls-facts li{display:flex;gap:8px;align-items:baseline;padding:5px 0;border-bottom:1px dashed #eef0f3}.ls-facts li:last-child{border-bottom:0}.ls-facts i{width:16px;color:#9ca3af;text-align:center}
@@ -212,10 +209,10 @@ table.ls-t{width:100%;border-collapse:collapse;font-size:13.5px}
 .ls-t .hd{cursor:grab;color:#c0c4cc;padding:0 4px}
 .ls-t .vid{display:flex;gap:8px;align-items:center;min-width:220px}
 .ls-t .tw{flex:1;min-width:0;display:flex;flex-direction:column}.ls-t .tw small{font-size:11.5px;color:#9ca3af;padding:0 6px}
-.ls-t .vid img,.ls-t .vid .ph{width:64px;aspect-ratio:16/9;object-fit:cover;background:#f3f4f6;flex:0 0 auto;display:grid;place-items:center;color:#9ca3af}
+.ls-t .vid img,.ls-t .vid .ph{width:88px;aspect-ratio:16/9;object-fit:cover;background:#f3f4f6;flex:0 0 auto;display:grid;place-items:center;color:#9ca3af}
 .ls-t .vid input{width:100%;min-width:0;height:30px;border:1px solid transparent;background:transparent;font-weight:600;padding:0 6px}.ls-t .vid input:hover,.ls-t .vid input:focus{border-color:#d1d5db;background:#fff;outline:0}
-.ls-t select{height:32px;width:100%;min-width:110px;max-width:170px}
-.ls-t td.cs{width:150px}.ls-t td.us{width:120px}
+.ls-t select{height:32px;width:100%;min-width:150px;max-width:230px}
+.ls-t td.cs{width:220px}.ls-t td.us{width:180px}
 .ls-t .fr{text-align:center}
 .ls-x3{display:flex;gap:4px;flex-wrap:nowrap}
 .ls-x3 a{font-size:12px;font-weight:600;padding:3px 6px;min-width:34px;text-align:center;border:1px dashed #c4b5fd;color:var(--ci-acc,#7c3aed);text-decoration:none;background:#faf8ff;white-space:nowrap}
@@ -252,24 +249,6 @@ table.ls-t{width:100%;border-collapse:collapse;font-size:13.5px}
   <div class="ls-chadd"><input id="lsChName" maxlength="200" placeholder="New chapter name — e.g. Chapter 1 — Numbers"><button type="button" class="ci-btn ci-ghost" id="lsChAdd"><i class="fas fa-plus"></i> Add chapter</button></div>
 </div></div>
 
-<div class="ls-card" id="lsSheet">
-  <div class="ls-tools">
-    <span class="sel" id="lsSel">0 selected</span>
-    <button type="button" class="ci-btn ci-sm" data-needsel id="lsMk"><i class="fas fa-folder-plus"></i> Make chapter</button>
-    <select id="lsTo" data-needsel aria-label="Move selected to chapter"><option value="">Move to chapter…</option></select>
-    <select id="lsToU" data-needsel aria-label="Put selected in unit"><option value="">Put in unit…</option></select>
-    <button type="button" class="ci-btn ci-ghost ci-sm" data-needsel id="lsFrOn"><i class="fas fa-unlock"></i> Free</button>
-    <button type="button" class="ci-btn ci-ghost ci-sm" data-needsel id="lsFrOff"><i class="fas fa-lock"></i> Not free</button>
-    <button type="button" class="ci-btn ci-ghost ci-sm" data-needsel id="lsRm" style="color:#b91c1c"><i class="fas fa-trash"></i> Remove</button>
-    <span class="grow"></span>
-    <input type="search" id="lsQ" placeholder="Search lectures…">
-    <select id="lsF" aria-label="Show"><option value="all">All chapters</option><option value="0">No chapter</option></select>
-    <span class="ls-dirty" id="lsDirty" hidden>Unsaved changes</span>
-    <button type="button" class="ci-btn" id="lsSave"><i class="fas fa-check"></i> Save</button>
-  </div>
-  <div class="ls-wrap"><table class="ls-t" data-sheet="off"><thead><tr><th><input type="checkbox" id="lsAll" aria-label="Select all"></th><th>#</th><th>Lecture</th><th>Chapter</th><th>Unit</th><th>Free</th><th title="Notes PDF · Quiz / MCQ · VVI">PDF · MCQ · VVI</th><th></th></tr></thead><tbody id="lsBody"></tbody></table></div>
-  <div class="ls-empty" id="lsEmpty" hidden>No lectures yet. Paste the course's YouTube playlist above and press <b>Scan playlist</b> — or <a data-embed href="/admin/shop-lecture.php?course=<?= $pid ?>&amp;embed=1">add a lecture by link</a>.</div>
-</div>
 </div>
 <aside class="ls-side">
   <div class="ls-card"><h3><span>Publish</span></h3><div class="ls-body">
@@ -293,6 +272,25 @@ table.ls-t{width:100%;border-collapse:collapse;font-size:13.5px}
 </aside>
 </div>
 
+<div class="ls-card" id="lsSheet">
+  <div class="ls-tools">
+    <span class="sel" id="lsSel">0 selected</span>
+    <button type="button" class="ci-btn ci-sm" data-needsel id="lsMk"><i class="fas fa-folder-plus"></i> Make chapter</button>
+    <select id="lsTo" data-needsel aria-label="Move selected to chapter"><option value="">Move to chapter…</option></select>
+    <select id="lsToU" data-needsel aria-label="Put selected in unit"><option value="">Put in unit…</option></select>
+    <button type="button" class="ci-btn ci-ghost ci-sm" data-needsel id="lsFrOn"><i class="fas fa-unlock"></i> Free</button>
+    <button type="button" class="ci-btn ci-ghost ci-sm" data-needsel id="lsFrOff"><i class="fas fa-lock"></i> Not free</button>
+    <button type="button" class="ci-btn ci-ghost ci-sm" data-needsel id="lsRm" style="color:#b91c1c"><i class="fas fa-trash"></i> Remove</button>
+    <span class="grow"></span>
+    <input type="search" id="lsQ" placeholder="Search lectures…">
+    <select id="lsF" aria-label="Show"><option value="all">All chapters</option><option value="0">No chapter</option></select>
+    <span class="ls-dirty" id="lsDirty" hidden>Unsaved changes</span>
+    <button type="button" class="ci-btn" id="lsSave"><i class="fas fa-check"></i> Save</button>
+  </div>
+  <div class="ls-wrap"><table class="ls-t" data-sheet="off"><thead><tr><th><input type="checkbox" id="lsAll" aria-label="Select all"></th><th>#</th><th>Lecture</th><th>Chapter</th><th>Unit</th><th>Free</th><th title="Notes PDF · Quiz / MCQ · VVI">PDF · MCQ · VVI</th><th></th></tr></thead><tbody id="lsBody"></tbody></table></div>
+  <div class="ls-empty" id="lsEmpty" hidden>No lectures yet. Paste the course's YouTube playlist above and press <b>Scan playlist</b> — or <a data-embed href="/admin/shop-lecture.php?course=<?= $pid ?>&amp;embed=1">add a lecture by link</a>.</div>
+</div>
+
 <div class="ci-modal" id="lsMkF" data-mform hidden><div class="ci-modal-box" role="dialog" aria-modal="true" aria-labelledby="lsMkH">
 <div class="ci-card-h"><h3 id="lsMkH">Make a chapter</h3><button type="button" class="ci-x" data-close aria-label="Close"><i class="fas fa-times"></i></button></div><div class="ci-card-b">
 <form id="lsMkForm"><div class="ci-f"><label>Chapter name <span class="ci-req">*</span></label><input name="title" required maxlength="200" placeholder="e.g. Chapter 1 — Numbers"><span class="ci-hint" id="lsMkHint"></span></div>
@@ -305,11 +303,10 @@ table.ls-t{width:100%;border-collapse:collapse;font-size:13.5px}
 <script>
 (function () { // split scrolling: the two columns fill the screen below the header
   function fit() {
-    var lay = document.querySelector('.ls-top'); if (!lay) return;
-    var on = window.innerWidth >= 1101; document.documentElement.classList.toggle('ls-split', on);
-    if (!on) { lay.style.height = ''; return; }
-    window.scrollTo(0, 0); lay.style.height = 'auto';
-    lay.style.height = Math.max(380, window.innerHeight - lay.getBoundingClientRect().top - 12) + 'px';
+    document.documentElement.classList.toggle('ls-split', !!document.querySelector('.ls-top') && window.innerWidth >= 1101);
+    var tn = document.querySelector('.top-nav'), tb = document.querySelector('.ls-tools'); if (!tb) return; // the sheet toolbar sticks just under the page header
+    var stuck = tn && /sticky|fixed/.test(getComputedStyle(tn).position);
+    tb.style.top = (stuck ? Math.round(parseFloat(getComputedStyle(tn).top) || 0) + tn.offsetHeight : (parseInt(getComputedStyle(document.documentElement).getPropertyValue('--wp-admin--admin-bar--height')) || 32)) + 'px';
   }
   fit(); window.addEventListener('resize', fit); window.addEventListener('load', function () { fit(); setTimeout(fit, 400); });
 })();
