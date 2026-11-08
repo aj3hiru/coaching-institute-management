@@ -7,7 +7,10 @@ require_once INCLUDES_PATH . '/institute.php';
 require_once INCLUDES_PATH . '/shop.php';
 $type = (string)($_GET['type'] ?? '');
 // online sales need the store "Orders" permission; every other report needs institute access
-if ($type === 'store') { $me = admin_guard(['admin', 'editor', 'author', 'teacher', 'accountant']); if (!sh_perm($me, 'orders')) { http_response_code(403); exit('{"error":"Access denied"}'); } ci_tables($pdo); sh_tables($pdo); }
+// online reports: sales and students need the store "Orders" permission; courses / notes reports need Orders or Products
+$onlineTypes = ['store', 'ostudents', 'ocourses', 'ocourse', 'onotes'];
+if (in_array($type, $onlineTypes, true)) { $me = admin_guard(['admin', 'editor', 'author', 'teacher', 'accountant']);
+    if (!(sh_perm($me, 'orders') || (in_array($type, ['ocourses', 'ocourse', 'onotes'], true) && sh_perm($me, 'products')))) { http_response_code(403); exit('{"error":"Access denied"}'); } ci_tables($pdo); sh_tables($pdo); }
 else $me = ci_page_start($pdo);
 header('Content-Type: application/json; charset=utf-8');
 $id = (int)($_GET['id'] ?? 0);
@@ -47,6 +50,8 @@ $studentHead = fn(bool $b) => array_merge(['Reg. No.', 'Student', 'Mobile'], $b 
 $moneyCols = fn(bool $b) => $b ? [6, 7, 8] : [5, 6, 7]; // Fee, Paid, Due
 $summary = fn(array $t) => [['Students (all time)', (string)$t['n']], ['Studying now', (string)$t['active']], ['Completed', (string)$t['completed']], ['Left / dropped in between', (string)$t['left']],
     ['Total fee (after discounts)', $rs($t['fee'])], ['Fee collected', $rs($t['paid'])], ['Fee still due', $rs($t['due'])]];
+
+if (in_array($type, ['ostudents', 'ocourses', 'ocourse', 'onotes'], true)) require __DIR__ . '/components/online-reports.php';
 
 if ($type === 'student') {
     $q = $pdo->prepare("SELECT s.*, c.name AS class_name FROM ci_students s LEFT JOIN ci_classes c ON c.id = s.class_id WHERE s.id = ?");
