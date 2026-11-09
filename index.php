@@ -88,7 +88,7 @@ $short0 = function (string $n) { $p = preg_split('/\s+/', trim(preg_replace('/\(
 <script type="application/ld+json"><?= json_encode(array_filter(['@context' => 'https://schema.org', '@type' => 'EducationalOrganization', 'name' => $brand, 'url' => SITE_URL,
     'address' => $inst['address'] ?: null, 'telephone' => $inst['phone'] ?: null, 'email' => $inst['email'] ?: null]), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) ?></script>
 </head>
-<body>
+<body class="hm-home">
 <?php require_once ROOT_PATH . '/components/header.php'; ?>
 <main class="st hm">
 

@@ -71,7 +71,7 @@
 .hm-cats{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
 .hm-cat{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;padding:18px 10px 14px;background:#fff;border:1px solid #e5e7eb;color:#111827!important;text-decoration:none!important;transition:border-color .2s,box-shadow .2s,transform .2s}
 .hm-cat:hover{border-color:var(--sa,#0c6878);box-shadow:0 12px 24px rgba(15,23,42,.08);transform:translateY(-2px)}
-.hm-cat-i{width:58px;height:58px;border-radius:50%;display:grid;place-items:center;background:#eef7f8;overflow:hidden}.hm-cat-i img{width:44px;height:44px;object-fit:contain}
+.hm-cat-i{width:58px;height:58px;border-radius:50%;display:grid;place-items:center;background:var(--sa-soft,#eef7f8);overflow:hidden}.hm-cat-i img{width:44px;height:44px;object-fit:contain}
 .hm-cat-i b{font-size:18px;font-weight:900;color:var(--sa,#0c6878)}
 .hm-cat-n{font-weight:800;font-size:15px;line-height:1.25}.hm-cat small{color:#6b7280;font-size:12px}
 .hm-cat:nth-child(6n+2) .hm-cat-i{background:#fef3c7}.hm-cat:nth-child(6n+2) .hm-cat-i b{color:#b45309}
@@ -86,7 +86,7 @@
 .hm-btc{display:grid;grid-template-columns:1.05fr 1fr;background:#fff;border:1px solid #e5e7eb;height:100%;box-sizing:border-box}
 .hm-btc-i{display:block;background:#0f172a;overflow:hidden}.hm-btc-i .st-thumb,.hm-btc-i img{display:block;width:100%;height:100%;min-height:260px;object-fit:cover}
 .hm-btc-b{padding:24px 26px;display:flex;flex-direction:column;gap:10px;min-width:0}
-.hm-btc-tags{display:flex;gap:6px;flex-wrap:wrap}.hm-btc-tags span{font-size:11.5px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;padding:4px 9px;background:#eef7f8;color:var(--sa,#0c6878)}
+.hm-btc-tags{display:flex;gap:6px;flex-wrap:wrap}.hm-btc-tags span{font-size:11.5px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;padding:4px 9px;background:var(--sa-soft,#eef7f8);color:var(--sa,#0c6878)}
 .hm-btc-tags .t-up{background:#fbbf24;color:#1f2937}.hm-btc-tags .t-new{background:#dcfce7;color:#15803d}
 .hm-btc h3{margin:0;font-size:24px;line-height:1.25;font-weight:800}.hm-btc h3 a{color:#111827!important;text-decoration:none!important}
 .hm-btc-b > p{margin:0;color:#4b5563;font-size:15px;line-height:1.55}
@@ -185,7 +185,7 @@
 .hm-pc-ph b{position:absolute;inset:0;display:grid;place-items:center;font-size:34px;color:var(--sa,#0c6878)}
 .hm-pc-ph em{position:absolute;left:0;right:0;bottom:0;font-style:normal;font-size:11px;font-weight:800;background:rgba(17,24,39,.72);color:#fde68a;padding:2px 0}
 .hm-pc-n{font-size:15px;color:#111827;line-height:1.3}
-.hm-pc-tag{display:inline-block;font-size:11.5px;font-weight:800;letter-spacing:.02em;color:var(--sa,#0c6878);background:#eef7f8;padding:3px 10px;border-radius:999px}
+.hm-pc-tag{display:inline-block;font-size:11.5px;font-weight:800;letter-spacing:.02em;color:var(--sa,#0c6878);background:var(--sa-soft,#eef7f8);padding:3px 10px;border-radius:999px}
 .hm-pc-l{display:flex;align-items:center;gap:5px;justify-content:center;color:#4b5563;font-size:12.5px;line-height:1.35}.hm-pc-l svg{width:13px;height:13px;flex:0 0 auto;color:#9ca3af}
 .hm-pc-a{margin:2px 0 0;color:#6b7280;font-size:12.5px;line-height:1.45}
 .hm-pc-res{display:block;font-size:13px;font-weight:800;color:#15803d;background:#f0fdf4;border:1px solid #bbf7d0;padding:4px 10px;border-radius:8px;line-height:1.35}
@@ -473,3 +473,12 @@
 .hm-fc-b small svg{width:14px;height:14px;flex:0 0 auto}
 .hm-fc-b{flex:1}
 .fr-grid{margin-top:8px}.fr-grid .hm-fc{border-radius:5px;overflow:hidden}
+
+/* Homepage: the Reports colours (violet) and 5px corners on every box */
+body.hm-home{--gc-accent:#7c3aed;--color-primary:#7c3aed;--color-primary-hover:#6d28d9;--sa:#7c3aed;--sa2:#4a3369;--sa-soft:#f3effa}
+.hm-home .hm-imp{background:linear-gradient(135deg,#4a3369,#7c3aed)}
+.hm-home .hm-hs,.hm-home .hm-btc-i{background:#2e1f45}
+.hm-home main :is(.hc-go,.hm-btn,.hc-up,.off,.t-up,.hm-pc-tag,.hm-btc-tags span,.st-free100,.hc-top,.hm-fc,.hm-fc-i,.hc,.hc-i,.hm-cat,.hm-post,.hm-why,.hm-why-i,.hm-imp-g > div,.tA-card,.tB-card,.tC-card,.tC-exp,.pA-card,.pB-card,.pC-chip,.pA-y,.hm-btc,.hm-hero,.hs-track > *,[class*="-card"]){border-radius:5px!important}
+.hm-home :is(.hm-sec,.hm-imp,.hm-why-w) :is(button,.hs-prev,.hs-next):not(.hs-dots *){border-radius:5px}
+/* Homepage: no shadows (also none on hover) */
+.hm-home main *,.hm-home main *::before,.hm-home main *::after,.hm-home main *:hover,.hm-home main *:focus-within{box-shadow:none!important}
