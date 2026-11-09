@@ -1,6 +1,6 @@
 <?php
 // Contact Messages — an inbox for everything sent from the Contact Us form: list on the left, the open message on
-// the right, search, bulk actions, and replying straight from here (through the SMTP details in Settings → General).
+// the right, search, bulk actions, and replying straight from here (by email, through the server like WordPress).
 require_once __DIR__ . '/components/guard.php';
 require_once INCLUDES_PATH . '/mailer.php';
 $me = admin_guard(['admin']) /* site pages / messages: not part of the blog roles */;
@@ -48,14 +48,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $body = trim((string)($_POST['body'] ?? ''));
         if (!$m) cm_json(['ok' => false, 'error' => 'This message no longer exists.']);
         if ($body === '') cm_json(['ok' => false, 'error' => 'Please write your reply first.']);
-        if (!edu_smtp_ready()) cm_json(['ok' => false, 'error' => 'Add your SMTP details in Settings → General → Email first.']);
         $subject = 'Re: ' . ($m['subject'] ?: 'Your message to ' . edu_site_name());
         $quote = nl2br(htmlspecialchars($m['message']));
         $html = '<div style="font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:#111">' . nl2br(htmlspecialchars($body))
             . '<br><br>— ' . htmlspecialchars(edu_site_name()) . '<br><br><div style="border-left:3px solid #ddd;padding-left:12px;color:#666;font-size:13px">On '
             . date('j M Y, g:i a', strtotime($m['created_at'])) . ', ' . htmlspecialchars($m['name']) . ' wrote:<br>' . $quote . '</div></div>';
         $from = (string)es('general', 'contact_email', es('general', 'admin_email', ''));
-        if (!edu_send_mail($m['email'], $subject, $html, $body, $from, edu_site_name())) cm_json(['ok' => false, 'error' => 'The email could not be sent. Check the SMTP details in Settings → General.']);
+        if (!edu_send_mail($m['email'], $subject, $html, $body, $from, edu_site_name())) cm_json(['ok' => false, 'error' => 'The email could not be sent. Please try again in a minute.']);
         $pdo->prepare("UPDATE contact_messages SET status = 'replied', reply = ?, replied_at = NOW() WHERE id = ?")->execute([$body, $id]);
         admin_log('contact_reply', 'Replied to contact message #' . $id . ' (' . $m['email'] . ')');
         cm_json(['ok' => true, 'at' => date('j M Y, g:i a'), 'counts' => cm_counts($pdo)]);
@@ -108,7 +107,7 @@ $link = function (array $over) use ($status, $q, $page) {
     $p = array_filter(array_merge(['status' => $status === 'all' ? '' : $status, 'q' => $q, 'page' => $page > 1 ? $page : ''], $over), fn($v) => $v !== '' && $v !== null);
     return '/admin/contact-messages.php' . ($p ? '?' . http_build_query($p) : '');
 };
-$smtp = edu_smtp_ready();
+$smtp = edu_mail_ready();
 $esc = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 ?>
 <!DOCTYPE html>

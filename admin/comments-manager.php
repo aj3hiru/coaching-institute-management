@@ -48,7 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         edu_clear_page_cache();
         admin_log('comment_reply', "Replied to comment #$pid on post #{$parent['post_id']}");
         // Tell the commenter (only when their email was verified and email is set up)
-        if ((int)$parent['evf'] === 1 && $parent['email'] !== $adminEmail && edu_smtp_ready()) {
+        if ((int)$parent['evf'] === 1 && $parent['email'] !== $adminEmail && edu_mail_ready()) {
             $url = rtrim(SITE_URL, '/') . '/' . ltrim(postUrl($parent['slug'], (int)$parent['post_id']), '/') . '#comments';
             $html = '<div style="font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:#111">Hi ' . htmlspecialchars($parent['name']) . ',<br><br>'
                 . htmlspecialchars(edu_site_name()) . ' replied to your comment on <b>' . htmlspecialchars($parent['title']) . '</b>:<br><br>'

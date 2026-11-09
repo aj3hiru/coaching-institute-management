@@ -23,14 +23,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'home_keywords'    => $str('home_keywords', 300),
         'date_format'      => in_array($_POST['date_format'] ?? '', ['j F Y', 'M j, Y', 'Y-m-d', 'd/m/Y', 'm/d/Y'], true) ? $_POST['date_format'] : 'j F Y',
     ];
-    $save['smtp_host'] = $str('smtp_host', 200);
-    $save['smtp_port'] = (string)max(0, min(65535, (int)($_POST['smtp_port'] ?? 465)));
-    $save['smtp_secure'] = in_array($_POST['smtp_secure'] ?? '', ['ssl', 'tls', 'none'], true) ? $_POST['smtp_secure'] : 'ssl';
-    $save['smtp_user'] = $str('smtp_user', 200);
-    if (trim((string)($_POST['smtp_pass'] ?? '')) !== '') $save['smtp_pass'] = (string)$_POST['smtp_pass'];
-    if (!empty($_POST['smtp_clear_pass'])) $save['smtp_pass'] = '';
-    $save['smtp_from'] = filter_var(trim((string)($_POST['smtp_from'] ?? '')), FILTER_VALIDATE_EMAIL) ?: '';
-    $save['smtp_from_name'] = $str('smtp_from_name', 100);
     foreach (['facebook', 'twitter', 'instagram', 'whatsapp', 'telegram', 'linkedin', 'threads', 'youtube'] as $s) {
         $save['social_' . $s] = $url('social_' . $s);
     }
@@ -81,7 +73,7 @@ $social = edu_social();
 <body>
 <?php admin_shell_open('General Settings', 'Site tagline, logo, site icon, contact details, social links &amp; more'); ?>
 <?= admin_flash() ?>
-<?php $gsTabs = ['identity' => ['fa-id-card', 'Site Identity'], 'contact' => ['fa-address-book', 'Address & Contact'], 'smtp' => ['fa-envelope', 'Email (SMTP)'],
+<?php $gsTabs = ['identity' => ['fa-id-card', 'Site Identity'], 'contact' => ['fa-address-book', 'Address & Contact'],
   'social' => ['fa-share-nodes', 'Social Profiles'], 'seo' => ['fa-magnifying-glass', 'Search Engines'], 'footer' => ['fa-shoe-prints', 'Footer'], 'date' => ['fa-calendar-day', 'Date Format']]; ?>
 <form class="wps-wrap gs-wrap" method="POST">
   <div class="gs-group"><span class="gs-glabel"><i class="fas fa-gear"></i> Settings</span>
@@ -119,18 +111,6 @@ $social = edu_social();
       <div class="wps-row"><div class="wps-th"><label for="contact_email">Contact Email</label></div><div class="wps-td"><input id="contact_email" type="email" name="contact_email" class="wps-input" placeholder="<?= htmlspecialchars(CONTACT_EMAIL) ?>" value="<?= $v('contact_email') ?>"><p class="wps-desc">Shown to visitors. Empty = <?= htmlspecialchars(CONTACT_EMAIL) ?>.</p></div></div>
       <div class="wps-row"><div class="wps-th"><label for="phone">Phone</label></div><div class="wps-td"><input id="phone" name="phone" class="wps-input" placeholder="<?= htmlspecialchars(PHONE_NUMBER) ?>" value="<?= $v('phone') ?>"></div></div>
       <div class="wps-row"><div class="wps-th"><label for="address">Address</label></div><div class="wps-td"><input id="address" name="address" class="wps-input" placeholder="<?= htmlspecialchars(COMPANY_ADDRESS) ?>" value="<?= $v('address') ?>"></div></div>
-    </div>
-  </section>
-
-  <section class="wps-section" data-tab="smtp">
-    <h2>Email (SMTP)</h2>
-    <p class="wps-section-desc">Used to email you new contact-form messages. Get these details from your email/hosting provider. Without them, messages are still saved in Contact Messages.</p>
-    <div class="wps-table">
-      <div class="wps-row"><div class="wps-th"><label for="smtp_host">SMTP Host</label></div><div class="wps-td"><input id="smtp_host" name="smtp_host" class="wps-input" placeholder="mail.<?= htmlspecialchars(preg_replace('/^www\./', '', (string)parse_url(SITE_URL, PHP_URL_HOST))) ?>" value="<?= $v('smtp_host') ?>"></div></div>
-      <div class="wps-row"><div class="wps-th"><span>Port &amp; Security</span></div><div class="wps-td"><div class="wps-inline"><label class="wps-mini">Port<input type="number" name="smtp_port" class="wps-input small" value="<?= $v('smtp_port', 465) ?>"></label><label class="wps-mini">Security<select name="smtp_secure" class="wps-input small"><?php foreach (['ssl' => 'SSL (465)', 'tls' => 'TLS (587)', 'none' => 'None'] as $k => $l): ?><option value="<?= $k ?>" <?= ($g['smtp_secure'] ?? 'ssl') === $k ? 'selected' : '' ?>><?= $l ?></option><?php endforeach; ?></select></label></div></div></div>
-      <div class="wps-row"><div class="wps-th"><label for="smtp_user">Username</label></div><div class="wps-td"><input id="smtp_user" name="smtp_user" class="wps-input" autocomplete="off" placeholder="no-reply@<?= htmlspecialchars(preg_replace('/^www\./', '', (string)parse_url(SITE_URL, PHP_URL_HOST))) ?>" value="<?= $v('smtp_user') ?>"></div></div>
-      <div class="wps-row"><div class="wps-th"><label for="smtp_pass">Password</label></div><div class="wps-td"><input id="smtp_pass" type="password" name="smtp_pass" class="wps-input" autocomplete="new-password" placeholder="<?= !empty($g['smtp_pass']) ? '•••••••• saved — leave empty to keep' : 'SMTP password' ?>"><?php if (!empty($g['smtp_pass'])): ?><label class="wps-check" style="margin-top:6px"><input type="checkbox" name="smtp_clear_pass" value="1">Remove the saved password</label><?php endif; ?></div></div>
-      <div class="wps-row"><div class="wps-th"><label for="smtp_from">From Email / Name</label></div><div class="wps-td"><div class="wps-inline"><input id="smtp_from" type="email" name="smtp_from" class="wps-input" placeholder="Same as username" value="<?= $v('smtp_from') ?>"><input name="smtp_from_name" class="wps-input" placeholder="<?= htmlspecialchars(edu_site_name()) ?>" value="<?= $v('smtp_from_name') ?>"></div><p class="wps-desc">New messages are sent to the Administration Email above.</p></div></div>
     </div>
   </section>
 
@@ -204,7 +184,7 @@ document.addEventListener('DOMContentLoaded', function () {
     try { history.replaceState(null, '', '#' + id); } catch (e) {}
   }
   nav.addEventListener('click', function (e) { var b = e.target.closest('[data-tab]'); if (b) { show(b.dataset.tab); if (window.innerWidth <= 820) document.querySelector('.gs-main').scrollIntoView({ behavior: 'smooth', block: 'start' }); } });
-  var old = { 'site-identity': 'identity', 'site-address-and-contact': 'contact', 'email-smtp': 'smtp', 'social-profiles': 'social', 'search-engines': 'seo', 'footer': 'footer', 'date-format': 'date' }; // earlier #links
+  var old = { 'site-identity': 'identity', 'site-address-and-contact': 'contact', 'social-profiles': 'social', 'search-engines': 'seo', 'footer': 'footer', 'date-format': 'date' }; // earlier #links
   var start = (location.hash || '').slice(1); start = old[start] || start;
   show(secs.some(function (s) { return s.dataset.tab === start; }) ? start : secs[0].dataset.tab);
   window.addEventListener('hashchange', function () { var h = location.hash.slice(1); h = old[h] || h; if (secs.some(function (s) { return s.dataset.tab === h; })) show(h); });
