@@ -1,7 +1,7 @@
 <?php
 // Home page — DK Academy: slider, our courses (newest, 2×2 on phones + View more), categories, latest / upcoming batches,
 // study materials, latest update (blog), free courses (YouTube), our impact, why choose us. Admin: Online Store → Homepage / Categories.
-// The old blog / job-news front page now lives at /latest-update (latest-update.php).
+// The blog front page lives at /blog (blog.php).
 require_once __DIR__ . '/includes/redirects.php';
 edu_redirect_check();
 $cf = __DIR__ . '/cache/index_home.html'; // index_* so publishing a post / Clear cache refreshes it too
@@ -161,7 +161,7 @@ $short0 = function (string $n) { $p = preg_split('/\s+/', trim(preg_replace('/\(
 <?php ob_start(); ?><?php /* 6. latest update — newest blog posts */ ?>
 <?php if ($posts): ?>
 <section class="hm-sec hm-ps-s"><div class="sp-wrap">
-  <div class="hm-h"><div><h2><?= sh_e($ttl('posts')) ?></h2></div><a href="/latest-update">See all ›</a></div>
+  <div class="hm-h"><div><h2><?= sh_e($ttl('posts')) ?></h2></div><a href="/blog">See all ›</a></div>
   <div class="hm-ps" data-hs><div class="hs-track"><?php foreach ($posts as $po): $pimg = (string)$po['img']; ?>
     <div class="hs-s"><a class="hm-post" href="<?= htmlspecialchars(postUrl($po['slug'], $po['id'])) ?>"><span class="hm-post-i"><?php if ($pimg !== ''): ?><img src="<?= htmlspecialchars(preg_match('#^https?://#', $pimg) ? $pimg : '/' . ltrim($pimg, '/')) ?>" alt="" loading="lazy" onerror="this.remove()"><?php endif; ?></span>
       <span class="hm-post-b"><?php if ($po['cat']): ?><small class="hm-post-c"><?= htmlspecialchars($po['cat']) ?></small><?php endif; ?><b><?= htmlspecialchars($po['title']) ?></b><small><?= date('d M Y', strtotime($po['date'])) ?></small></span></a></div>

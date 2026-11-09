@@ -34,6 +34,7 @@ $routes = [
   '#^/search/?$#' => fn() => $run('search.php'),
   '#^/(categories|state-jobs|latest-jobs|latest-updates)/?$#' => function () { header('Location: /latest-posts' . (!empty($_GET['page']) ? '?page=' . (int)$_GET['page'] : ''), true, 301); exit; },
   '#^/latest-posts/?$#' => fn() => $run('latest-posts.php'),
+  '#^/blog/?$#' => fn() => $run('blog.php'),
   '#^/tag/([a-z0-9-]+)-([0-9]+)/?$#' => fn($m) => $run('tag.php', ['id' => $m[2]]),
   '#^/categories/([a-zA-Z0-9-]+)/?$#' => fn($m) => $run('category.php', ['slug' => $m[1]]),
   '#^/author/([a-zA-Z0-9_-]+)/?$#' => fn($m) => $run('author.php', ['slug' => $m[1]]),

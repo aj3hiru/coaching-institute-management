@@ -1631,7 +1631,7 @@ function showPanel(p, keep) {
   b.appendChild(wrap);
   if (keep) return;
   if (p.id === 'post' || p.id === 'alsoread' || p.id === 'progress' || p.id === 'sidebar' || p.id === 'typography') goTo(<?= json_encode($latestUrl) ?>);
-  else if (p.id === 'home') goTo('/latest-update');
+  else if (p.id === 'home') goTo('/blog');
   else if (p.id === 'homepage') goTo('/');
   else if (p.id === 'nf') goTo('/page-that-does-not-exist');
 }

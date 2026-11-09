@@ -179,7 +179,7 @@ function sh_demo_extras(PDO $pdo): string
         ['q' => "State Euclid's division lemma.", 'a' => "For any two positive integers a and b, there exist unique whole numbers q and r such that a = bq + r, where 0 ≤ r < b."],
         ['q' => 'Use Euclid\'s algorithm to find the HCF of 135 and 225.', 'a' => "225 = 135 × 1 + 90, 135 = 90 × 1 + 45, 90 = 45 × 2 + 0. So the HCF is 45."],
         ['q' => 'Show that every positive even integer is of the form 2q.', 'a' => "Take b = 2 in a = bq + r: r is 0 or 1. If r = 0, a = 2q is even; so every even integer is 2q."]],
-        'links' => [['t' => 'More important questions — Latest Update', 'u' => rtrim(SITE_URL, '/') . '/latest-update']]];
+        'links' => [['t' => 'More important questions — Latest Update', 'u' => rtrim(SITE_URL, '/') . '/blog']]];
     $quiz1 = ['items' => [
         ['q' => 'In a = bq + r, what is true about r?', 'o' => ['r < 0', '0 ≤ r < b', 'r > b', 'r = b'], 'a' => 1, 'e' => 'The remainder is always at least 0 and smaller than the divisor b.'],
         ['q' => 'HCF of 96 and 404 is…', 'o' => ['2', '4', '8', '12'], 'a' => 1, 'e' => '404 = 96 × 4 + 20, 96 = 20 × 4 + 16, 20 = 16 × 1 + 4, 16 = 4 × 4. HCF = 4.'],

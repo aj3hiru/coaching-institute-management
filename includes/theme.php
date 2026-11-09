@@ -73,7 +73,7 @@ function edu_theme_defaults(): array
         'f_columns' => [
             ['title' => 'Job Categories', 'auto' => 'categories', 'count' => 6, 'links' => []],
             ['title' => 'Quick Links', 'auto' => '', 'count' => 6, 'links' => [
-                ['label' => 'Blog', 'url' => '/latest-posts'], ['label' => 'About Us', 'url' => '/about-us'], ['label' => 'Contact Us', 'url' => '/contact-us'],
+                ['label' => 'Blog', 'url' => '/blog'], ['label' => 'About Us', 'url' => '/about-us'], ['label' => 'Contact Us', 'url' => '/contact-us'],
                 ['label' => 'Privacy Policy', 'url' => '/privacy-policy'], ['label' => 'Terms', 'url' => '/terms-of-service'], ['label' => 'Disclaimer', 'url' => '/disclaimer'],
                 ['label' => 'Editorial Policy', 'url' => '/editorial-policy'], ['label' => 'Cookies Policy', 'url' => '/cookie-policy'],
             ]],
