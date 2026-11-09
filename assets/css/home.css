@@ -495,4 +495,5 @@
 /* Our Courses: slider first; after View more the grid shows every card (no 4 / 8 limit) */
 .hm-cs .hs-s > .hc{height:100%}
 .hm-grid-all .hc{display:flex!important}
-@media (max-width:760px){.hm-cs .hs-s{flex-basis:calc((100% - 12px) / 2)!important}}
+/* phones: 2 × 2 (four cards) per slide — two rows that slide together */
+@media (max-width:760px){.hm-cs .hs-track{display:grid;grid-auto-flow:column;grid-template-rows:repeat(2,auto);grid-auto-columns:calc((100% - 12px) / 2);gap:12px}.hm-cs .hs-s{flex-basis:auto!important;min-width:0}}

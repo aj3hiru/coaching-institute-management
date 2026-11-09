@@ -94,7 +94,7 @@ if ($__school) {
 ?>
 <?php if ($__school && !$__schoolFull): ?>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@700&family=Roboto:wght@500&display=swap">
+<?php /* the brand font (Poppins) is self-hosted and preloaded in the theme <head> */ ?>
 <style>
 /* School-style brand in the middle of the normal header: tinted panel with a notched right edge and a red stripe */
 .nb-hr-top{position:relative}
@@ -104,8 +104,8 @@ if ($__school) {
 .nb-brand-school::after{content:"";position:absolute;bottom:0;right:7px;width:40px;height:55%;z-index:-1;background:#f02801;clip-path:polygon(50% 0,0 100%,25% 100%)}
 .nb-brand-school .nb-emblem{display:block;width:auto;height:var(--emb-h,52px);max-width:96px;object-fit:contain;flex:0 0 auto}
 .nb-hr-brand .nb-sb-school{display:flex;flex-direction:column;align-items:flex-start;text-align:left;line-height:1.1;min-width:0}
-.nb-sb-school .site-title{font-family:Poppins,Roboto,Arial,sans-serif;font-weight:700;font-size:23px;letter-spacing:-.005em;color:#9e1b32!important;white-space:nowrap}
-.nb-sb-school .nb-brand-line{margin-top:3px;font-family:var(--font-body,Roboto),Arial,sans-serif;font-size:14.5px;font-weight:500;letter-spacing:0;text-transform:none;color:#1a1a1a!important;white-space:nowrap}
+.nb-sb-school .site-title{font-family:Poppins,"Poppins Fallback",Arial,sans-serif;font-weight:700;font-size:23px;letter-spacing:-.005em;color:#9e1b32!important;white-space:nowrap}
+.nb-sb-school .nb-brand-line{margin-top:3px;font-family:var(--font-body,Poppins),"Poppins Fallback",Arial,sans-serif;font-size:14.5px;font-weight:500;letter-spacing:0;text-transform:none;color:#1a1a1a!important;white-space:nowrap}
 /* tablets (768–980px): the same layout as desktop, just a little smaller (the theme switches to the phone layout at 980px) */
 @media (min-width:768px) and (max-width:980px){
   .nb-hr-top{grid-template-columns:1fr auto 1fr!important;gap:10px!important;padding:10px 16px!important}
