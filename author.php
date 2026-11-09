@@ -165,6 +165,36 @@ $seo_ctx = ['kind' => 'author', 'author' => $author ?? null];
   ]
 }
 </script>
+<style id="nb-apx-css">
+/* author profile: a compact card — picture, name + tick, role, articles, social; bio; details row (theme colours) */
+.nb-apx{margin:12px 0 22px}
+.nb-apx-card{border:1px solid var(--edu-card-border,#e5e7eb);border-radius:5px;padding:20px;background:var(--edu-card-bg,#fff)}
+.nb-apx-top{display:flex;gap:18px;align-items:center}
+.nb-apx-img{width:110px;height:110px;flex:0 0 110px;object-fit:cover;border-radius:5px;background:#f3f4f6;display:block}
+.nb-apx-who{flex:1;min-width:0}
+.nb-apx-name{display:flex;align-items:center;gap:8px;margin:0;font-size:24px;line-height:1.25;font-weight:700;color:var(--text-primary,#1f2937)}
+.nb-apx-name > span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nb-apx-name .nb-ap-tick{display:inline-flex;flex-shrink:0;line-height:0;color:var(--gc-accent,#7c3aed)}
+.nb-apx-role{margin:4px 0 0;font-size:16px;color:#374151}
+.nb-apx-count{margin:4px 0 0;font-size:14px;color:#6b7280}
+.nb-apx-soc{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.nb-apx-soc a{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:5px;background:color-mix(in srgb,var(--gc-accent,#7c3aed) 8%,#fff);color:var(--gc-accent,#7c3aed);text-decoration:none;transition:background .15s,color .15s}
+.nb-apx-soc a:hover{background:var(--gc-accent,#7c3aed);color:#fff}
+.nb-apx-bio{margin:16px 0 0;font-size:16px;line-height:1.6;color:#374151}
+.nb-apx-facts{list-style:none;margin:16px 0 0;padding:14px 0 0;border-top:1px solid var(--edu-card-border,#e5e7eb);display:flex;flex-wrap:wrap;gap:8px 22px}
+.nb-apx-facts li{display:flex;align-items:center;gap:7px;font-size:14.5px;color:#374151;margin:0}
+.nb-apx-facts svg{color:var(--gc-accent,#7c3aed);flex-shrink:0}
+.nb-apx-facts a{color:inherit;text-decoration:none}.nb-apx-facts a:hover{color:var(--gc-accent,#7c3aed)}
+.nb-apx-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-top:14px}
+.nb-apx-more{border:1px solid var(--edu-card-border,#e5e7eb);border-radius:5px;padding:12px 14px}.nb-apx-more h2{margin:0 0 6px;font-size:15px}.nb-apx-more p{margin:0;font-size:14.5px;line-height:1.55;color:#374151}
+.nb-apx-h{margin:0 0 18px!important}
+/* "Latest posts by …" = the sidebar title bar (Customize → Colors → Sidebar Widgets → Widget Title) */
+.nb-apx-h.em-wt{display:flex;align-items:stretch;justify-content:space-between;min-height:36px;border-radius:5px;overflow:hidden;padding:0;background:var(--t-sidebar-title-bg,var(--gc-accent,#7c3aed));color:var(--t-sidebar-title,#fff);font:700 14px/18px var(--font-ui,inherit);text-transform:uppercase;letter-spacing:.02em}
+.nb-apx-h .em-wt-l{display:flex;align-items:center;flex:1;min-width:0;padding:9px 14px}
+.nb-apx-h .em-wt-a{flex:0 0 38px;display:grid;place-items:center;background:var(--t-sidebar-title,color-mix(in srgb,var(--gc-accent,#7c3aed) 62%,#000));color:#fff}
+@media (max-width:600px){.nb-apx-card{padding:16px}.nb-apx-top{align-items:flex-start;gap:14px}.nb-apx-img{width:84px;height:84px;flex-basis:84px}.nb-apx-name{font-size:19px}.nb-apx-role{font-size:14.5px}.nb-apx-soc{gap:6px}.nb-apx-soc a{width:28px;height:28px}.nb-apx-bio{font-size:15px}.nb-apx-facts{gap:6px 16px}.nb-apx-facts li{font-size:14px}}
+[data-theme="dark"] .nb-apx-card{background:#151b23;border-color:#263040}[data-theme="dark"] .nb-apx-role,[data-theme="dark"] .nb-apx-bio,[data-theme="dark"] .nb-apx-facts li{color:#d1d5db}
+</style>
 </head>
 <body>
     <?php require_once ROOT_PATH . '/components/header.php'; ?>
@@ -198,37 +228,29 @@ $seo_ctx = ['kind' => 'author', 'author' => $author ?? null];
         ]);
         ?>
         <div class="container">
-            <section class="nb-ap" aria-label="About <?= htmlspecialchars($author['name']) ?>">
-                <div class="nb-ap-top">
-                    <a class="nb-ap-back" href="/" onclick="if(history.length>1&&document.referrer.indexOf(location.host)>-1){history.back();return false}" aria-label="Back"><?= edu_social_svg('back', 22) ?></a>
-                    <div><b><?= htmlspecialchars($author['name']) ?></b><small><?= number_format((int)$total_posts) ?> <?= (int)$total_posts === 1 ? 'Post' : 'Posts' ?></small></div>
-                </div>
-                <div class="nb-ap-cover" aria-hidden="true"></div>
-                <div class="nb-ap-main">
-                    <img class="nb-ap-avatar" src="<?= htmlspecialchars($apImg) ?>" alt="<?= htmlspecialchars($author['name']) ?>" width="150" height="150" onerror="this.onerror=null;this.src='/assets/img/user.png'">
-                    <h1 class="nb-ap-name"><?= htmlspecialchars($author['name']) ?> <span class="nb-ap-tick" title="Verified author"><?= edu_social_svg('verified', 30) ?></span></h1>
-                    <?php if (!empty($author['designation'])): ?><p class="nb-ap-role"><?= htmlspecialchars($author['designation']) ?></p><?php endif; ?>
-                    <?php if ($apSoc): ?>
-                    <nav class="nb-ap-soc" aria-label="<?= htmlspecialchars($author['name']) ?> on social media">
-                        <?php foreach ($apSoc as $net => $u): ?><a href="<?= htmlspecialchars($u) ?>" target="_blank" rel="noopener nofollow me" aria-label="<?= ucfirst($net === 'x' ? 'X (Twitter)' : $net) ?>"><?= edu_social_svg($net, 16) ?></a><?php endforeach; ?>
-                    </nav>
-                    <?php endif; ?>
-                    <?php if (!empty($author['bio'])): ?><p class="nb-ap-bio"><?= nl2br(htmlspecialchars($author['bio'])) ?></p><?php endif; ?>
-                    <?php if ($apFacts || $apMail): ?>
-                    <ul class="nb-ap-facts">
-                        <?php foreach ($apFacts as $ic => $t): ?><li><?= edu_social_svg($ic, 17) ?><span><?= htmlspecialchars($t) ?></span></li><?php endforeach; ?>
-                        <?php if ($apMail): ?><li><?= edu_social_svg('mail', 17) ?><a href="mailto:<?= htmlspecialchars($apMail) ?>"><?= htmlspecialchars($apMail) ?></a></li><?php endif; ?>
-                    </ul>
-                    <?php endif; ?>
-                    <?php if ($apCards): ?>
-                    <div class="nb-ap-cards<?= count($apCards) === 1 ? ' nb-ap-cards--one' : '' ?>">
-                        <?php foreach ($apCards as $h => $t): ?><div class="nb-ap-card"><h2><?= $h ?></h2><p><?= nl2br(htmlspecialchars($t)) ?></p></div><?php endforeach; ?>
+            <section class="nb-apx" aria-label="About <?= htmlspecialchars($author['name']) ?>"><div class="nb-apx-card">
+                <div class="nb-apx-top">
+                    <img class="nb-apx-img" src="<?= htmlspecialchars($apImg) ?>" alt="<?= htmlspecialchars($author['name']) ?>" width="110" height="110" onerror="this.onerror=null;this.src='/assets/img/user.png'">
+                    <div class="nb-apx-who">
+                        <h1 class="nb-apx-name"><span><?= htmlspecialchars($author['name']) ?></span><span class="nb-ap-tick" title="Verified author"><?= edu_social_svg('verified', 22) ?></span></h1>
+                        <?php if (!empty($author['designation'])): ?><p class="nb-apx-role"><?= htmlspecialchars($author['designation']) ?></p><?php endif; ?>
+                        <p class="nb-apx-count"><?= number_format((int)$total_posts) ?> <?= (int)$total_posts === 1 ? 'article' : 'articles' ?></p>
+                        <?php if ($apSoc): ?><nav class="nb-apx-soc" aria-label="<?= htmlspecialchars($author['name']) ?> on social media"><?php foreach ($apSoc as $net => $u): ?><a href="<?= htmlspecialchars($u) ?>" target="_blank" rel="noopener nofollow me" aria-label="<?= ucfirst($net === 'x' ? 'X (Twitter)' : $net) ?>"><?= edu_social_svg($net, 15) ?></a><?php endforeach; ?></nav><?php endif; ?>
                     </div>
-                    <?php endif; ?>
                 </div>
-            </section>
+                <?php if (!empty($author['bio'])): ?><p class="nb-apx-bio"><?= nl2br(htmlspecialchars($author['bio'])) ?></p><?php endif; ?>
+                <?php if ($apFacts || $apMail): ?>
+                <ul class="nb-apx-facts">
+                    <?php foreach ($apFacts as $ic => $t): ?><li><?= edu_social_svg($ic, 16) ?><span><?= htmlspecialchars($t) ?></span></li><?php endforeach; ?>
+                    <?php if ($apMail): ?><li><?= edu_social_svg('mail', 16) ?><a href="mailto:<?= htmlspecialchars($apMail) ?>"><?= htmlspecialchars($apMail) ?></a></li><?php endif; ?>
+                </ul>
+                <?php endif; ?>
+                <?php if ($apCards): ?>
+                <div class="nb-apx-cards"><?php foreach ($apCards as $h => $t): ?><div class="nb-apx-more"><h2><?= $h ?></h2><p><?= nl2br(htmlspecialchars($t)) ?></p></div><?php endforeach; ?></div>
+                <?php endif; ?>
+            </div></section>
 
-            <h2 class="nb-ap-h">Latest posts by <?= htmlspecialchars($author['name']) ?></h2>
+            <h2 class="nb-apx-h em-wt"><span class="em-wt-l">Latest posts by <?= htmlspecialchars($author['name']) ?></span><span class="em-wt-a" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span></h2>
             <?php if (empty($posts)): ?>
             <p class="nb-arch-empty">No posts by this author yet.</p>
             <?php else: ?>
