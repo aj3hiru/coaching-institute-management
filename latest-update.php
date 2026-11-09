@@ -288,6 +288,22 @@ function homeExcerpt(string $html, int $len = 170): string {
     transform var(--ease-fast);
 }
 
+/* a soft half circle in the corner of each box (accent colour, low opacity) */
+.hc-item { position: relative; overflow: hidden; isolation: isolate; }
+.hc-item::after {
+  content: "";
+  position: absolute;
+  top: -26px;
+  right: -26px;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--gc-accent, #0c6878);
+  opacity: .1;
+  z-index: -1;
+  transition: opacity var(--ease-fast), transform var(--ease-fast);
+}
+.hc-item:hover::after { opacity: .18; transform: scale(1.15); }
 .hc-item:hover {
   background: var(--color-primary-soft);
   border-color: var(--color-primary-light);
