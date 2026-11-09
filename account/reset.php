@@ -33,8 +33,8 @@ require ROOT_PATH . '/components/store-open.php';
   <?php else: ?>
     <?php if ($err): ?><div class="st-msg err"><?= sh_e($err) ?></div><?php endif; ?>
     <form method="post" novalidate class="au-form"><?= sh_csrf_field() ?><input type="hidden" name="t" value="<?= sh_e($tok) ?>">
-      <div class="au-f"><label for="rs-p">New password</label><div class="au-in st-pw"><?= sh_auth_icon('lock') ?><input id="rs-p" type="password" name="pass" autocomplete="new-password" required minlength="4" autofocus><?= sh_eye_btn() ?></div></div>
-      <div class="au-f"><label for="rs-p2">New password again</label><div class="au-in"><?= sh_auth_icon('lock') ?><input id="rs-p2" type="password" name="pass2" autocomplete="new-password" required></div></div>
+      <div class="au-f"><label class="au-sr" for="rs-p">New password</label><div class="au-in st-pw"><?= sh_auth_icon('lock') ?><input id="rs-p" placeholder="New password" type="password" name="pass" autocomplete="new-password" required minlength="4" autofocus><?= sh_eye_btn() ?></div></div>
+      <div class="au-f"><label class="au-sr" for="rs-p2">New password again</label><div class="au-in"><?= sh_auth_icon('lock') ?><input id="rs-p2" placeholder="New password again" type="password" name="pass2" autocomplete="new-password" required></div></div>
       <button class="au-btn" type="submit">Save password <?= sh_icon('arrow') ?></button>
     </form>
   <?php endif; ?>
