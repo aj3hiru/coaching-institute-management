@@ -261,10 +261,13 @@ function homeExcerpt(string $html, int $len = 170): string {
 /* ── Category Buttons ──────────────────────────── */
 /* course category slider (small) */
 .cs-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-.cs-slider{position:relative;display:flex;align-items:center;gap:8px;margin-top:var(--space-4)}
+.cs-slider{position:relative;display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:var(--space-4)}
+.cs-dots{order:3;flex:0 0 100%;display:flex;justify-content:center;gap:6px;margin-top:4px}.cs-dots[hidden]{display:none}
+.cs-dots button{width:14px;height:4px;padding:0;border:0;border-radius:99px!important;background:#d1d5db;cursor:pointer;transition:width .25s,background .25s}
+.cs-dots button.on{width:30px;background:var(--gc-accent,#7c3aed)}
 .cs-track{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;flex:1;min-width:0;padding:2px}
 .cs-track::-webkit-scrollbar{display:none}
-.cs-item{position:relative;overflow:hidden;isolation:isolate;flex:0 0 auto;scroll-snap-align:start;display:flex;align-items:center;gap:8px;min-width:124px;padding:6px 12px 6px 7px;background:var(--bg-card,#fff);border:1px solid var(--border-light,#e5e7eb);border-radius:5px;text-decoration:none;color:var(--text-primary,#111827)}
+.cs-item{position:relative;overflow:hidden;isolation:isolate;flex:0 0 calc((100% - 50px) / 6);scroll-snap-align:start;display:flex;align-items:center;gap:8px;min-width:124px;padding:6px 12px 6px 7px;background:var(--bg-card,#fff);border:1px solid var(--border-light,#e5e7eb);border-radius:5px;text-decoration:none;color:var(--text-primary,#111827)}
 .cs-item:hover{border-color:var(--cs)}
 .cs-i{width:28px;height:28px;flex:0 0 auto;border-radius:50%;display:grid;place-items:center;background:color-mix(in srgb,var(--cs) 12%,#fff);color:var(--cs);overflow:hidden}
 .cs-i img{width:20px;height:20px;object-fit:contain}
@@ -272,7 +275,8 @@ function homeExcerpt(string $html, int $len = 170): string {
 .cs-t{display:flex;flex-direction:column;line-height:1.25}.cs-t b{font-size:13px;font-weight:700;white-space:nowrap}.cs-t small{font-size:11px;color:var(--text-secondary,#6b7280);white-space:nowrap}
 .cs-nav{flex:0 0 auto;width:28px;height:28px;display:grid;place-items:center;border:1px solid var(--border-light,#e5e7eb);background:var(--bg-card,#fff);color:var(--text-secondary,#374151);border-radius:5px;cursor:pointer}
 .cs-nav[hidden]{display:none}.cs-nav:hover{color:var(--gc-accent,#7c3aed);border-color:var(--gc-accent,#7c3aed)}
-@media (max-width:560px){.cs-nav{display:none}.cs-item{min-width:118px}}
+@media (max-width:900px){.cs-item{flex-basis:calc((100% - 30px) / 4)}}
+@media (max-width:560px){.cs-nav{display:none}.cs-item{flex-basis:auto;min-width:118px}}
 /* each box its own colour (corner circle + icon) */
 .hero-categories .hc-item:nth-child(6n+1){--hc:var(--gc-accent,#7c3aed)}.hero-categories .hc-item:nth-child(6n+2){--hc:var(--gc-accent-3,#d50808)}
 .hero-categories .hc-item:nth-child(6n+3){--hc:var(--gc-accent-2,#1e73be)}.hero-categories .hc-item:nth-child(6n+4){--hc:#f59e0b}
@@ -500,6 +504,7 @@ function homeExcerpt(string $html, int $len = 170): string {
       </a>
       <?php endforeach; ?>
     </div>
+    <div class="cs-dots" role="tablist" aria-label="Slides"></div>
     <button type="button" class="cs-nav cs-next" aria-label="Next"><svg viewBox="0 0 24 24" width="16" height="16"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
   </div>
   <script>
@@ -513,7 +518,19 @@ function homeExcerpt(string $html, int $len = 170): string {
     ['mouseenter', 'touchstart', 'focusin'].forEach(function (e) { w.addEventListener(e, function () { stop = true; }, { passive: true }); });
     w.addEventListener('mouseleave', function () { stop = false; });
     setInterval(function () { if (!stop && !document.hidden && t.scrollWidth > t.clientWidth + 4) step(1); }, 3500);
-    function arrows() { var more = t.scrollWidth > t.clientWidth + 4; w.querySelectorAll('.cs-nav').forEach(function (b) { b.hidden = !more; }); }
+    // dots: one per screenful (same look as the other sliders); the active one follows the scroll
+    var dots = w.querySelector('.cs-dots');
+    function pages() { return Math.max(1, Math.round(t.scrollWidth / t.clientWidth + .25)); }
+    function build() {
+      var n = pages(); dots.innerHTML = ''; dots.hidden = n < 2;
+      for (var i = 0; i < n; i++) (function (i) { var b = document.createElement('button'); b.type = 'button'; b.setAttribute('aria-label', 'Slide ' + (i + 1));
+        b.addEventListener('click', function () { t.scrollTo({ left: i * t.clientWidth, behavior: 'smooth' }); }); dots.appendChild(b); })(i);
+      mark();
+    }
+    function mark() { var n = dots.children.length; if (!n) return; var max = t.scrollWidth - t.clientWidth, k = max > 0 ? Math.round(t.scrollLeft / max * (n - 1)) : 0;
+      [].forEach.call(dots.children, function (b, i) { b.classList.toggle('on', i === k); }); }
+    t.addEventListener('scroll', function () { requestAnimationFrame(mark); }, { passive: true });
+    function arrows() { var more = t.scrollWidth > t.clientWidth + 4; w.querySelectorAll('.cs-nav').forEach(function (b) { b.hidden = !more; }); build(); }
     arrows(); addEventListener('resize', arrows); addEventListener('load', arrows);
   })();
   </script>
