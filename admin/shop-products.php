@@ -8,17 +8,32 @@ require_once INCLUDES_PATH . '/shop.php';
 $me = sh_page_start($pdo, ['products']);
 sh_tables($pdo);
 
-/** Saves an uploaded thumbnail (JPG/PNG/WebP, max 3 MB) to /uploads/store and returns its address. */
+/** Saves an uploaded thumbnail like a post's featured image: WebP, 16:9 (1200 × 675, centre crop) + smaller sizes, light
+    (about 100 KB); JPG / PNG / WebP up to 8 MB. Without WebP support on the server the picture is kept as it is. */
 function shp_thumb(array $f, string $slug): string
 {
     if (($f['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) throw new RuntimeException('The picture could not be uploaded (it may be too large).');
-    if ($f['size'] > 3 * 1024 * 1024) throw new RuntimeException('The picture is larger than 3 MB.');
+    if ($f['size'] > 8 * 1024 * 1024) throw new RuntimeException('The picture is larger than 8 MB.');
     $info = @getimagesize($f['tmp_name']);
     $ext = [IMAGETYPE_JPEG => 'jpg', IMAGETYPE_PNG => 'png', IMAGETYPE_WEBP => 'webp'][$info[2] ?? 0] ?? null;
     if (!$ext) throw new RuntimeException('The picture must be a JPG, PNG or WebP image.');
     $dir = ROOT_PATH . '/uploads/store';
     if (!is_dir($dir) && !@mkdir($dir, 0755, true)) throw new RuntimeException('The uploads folder is not writable.');
-    $name = substr($slug, 0, 60) . '-' . bin2hex(random_bytes(4)) . '.' . $ext;
+    $base = substr(preg_replace('/[^a-z0-9-]+/', '-', strtolower($slug)), 0, 60) . '-' . bin2hex(random_bytes(4));
+    if (function_exists('imagewebp')) {
+        $src = match ($ext) { 'jpg' => @imagecreatefromjpeg($f['tmp_name']), 'png' => @imagecreatefrompng($f['tmp_name']), 'webp' => @imagecreatefromwebp($f['tmp_name']) };
+        if ($src && $ext === 'jpg' && function_exists('exif_read_data')) {
+            $o = (int)(@exif_read_data($f['tmp_name'])['Orientation'] ?? 1);
+            if ($o === 3) $src = imagerotate($src, 180, 0); elseif ($o === 6) $src = imagerotate($src, -90, 0); elseif ($o === 8) $src = imagerotate($src, 90, 0);
+        }
+        if ($src) {
+            require_once INCLUDES_PATH . '/media.php';
+            [$path] = edu_media_save_webp($src, $dir, 'uploads/store', $base, true); // the same as a post's featured image
+            imagedestroy($src);
+            return '/' . $path;
+        }
+    }
+    $name = $base . '.' . $ext;
     if (!move_uploaded_file($f['tmp_name'], $dir . '/' . $name)) throw new RuntimeException('The picture could not be saved.');
     return '/uploads/store/' . $name;
 }
@@ -68,6 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($id) { $vals[] = $id; $pdo->prepare("UPDATE sh_products SET type=?, title=?, slug=?, subtitle=?, description=?, thumb=?, price=?, mrp=?, validity_days=?, status=?, sort=?, category_id=?, starts_at=?, teacher_id=?, faq=?, includes=?, updated_at=NOW() WHERE id=?")->execute($vals); }
             else { $pdo->prepare("INSERT INTO sh_products (type, title, slug, subtitle, description, thumb, price, mrp, validity_days, status, sort, category_id, starts_at, teacher_id, faq, includes) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")->execute($vals); $id = (int)$pdo->lastInsertId(); }
             admin_log('shop_product', "Saved store product #$id $title");
+            edu_clear_page_cache(); // homepage, lists, category pages and posts with course cards show the new picture / price at once
             if ($type === 'course') { // Free Courses list (the box is ticked by itself when the price is 0)
                 $pdo->prepare("UPDATE sh_products SET free_list = ? WHERE id = ?")->execute([!empty($_POST['free_list']) ? 1 : 0, $id]);
             }
@@ -238,7 +254,7 @@ $badge = fn($s) => '<span class="ci-badge ' . ['published' => 'ci-b-green', 'dra
     </div></div>
     <?php endif; ?>
     <div class="meta-panel"><div class="meta-panel-header"><span>Picture</span></div><div class="meta-panel-body">
-      <label class="sx-thumb" id="sxThumb"><?php if (!empty($ep['thumb'])): ?><img src="<?= ci_e($ep['thumb']) ?>" alt=""><?php else: ?><span><i class="fas fa-image"></i> Choose a picture<small>16:9 · JPG, PNG or WebP · up to 3 MB</small></span><?php endif; ?><input type="file" name="thumb" accept="image/jpeg,image/png,image/webp" hidden></label>
+      <label class="sx-thumb" id="sxThumb"><?php if (!empty($ep['thumb'])): ?><img src="<?= ci_e($ep['thumb']) ?>" alt=""><?php else: ?><span><i class="fas fa-image"></i> Choose a picture<small>16:9 · JPG, PNG or WebP · up to 8 MB · saved as WebP 1200×675</small></span><?php endif; ?><input type="file" name="thumb" accept="image/jpeg,image/png,image/webp" hidden></label>
       <?php if (!empty($ep['thumb'])): ?><label style="font-weight:400;display:flex;gap:6px;align-items:center;margin:0"><input type="checkbox" name="thumb_remove" value="1"> Remove picture</label><?php endif; ?>
     </div></div>
     <div class="meta-panel"><div class="meta-panel-header"><span>Category</span><a href="/admin/shop-categories.php" target="_blank" style="font-size:12px;font-weight:500">Manage</a></div><div class="meta-panel-body">

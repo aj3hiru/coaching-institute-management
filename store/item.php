@@ -55,6 +55,10 @@ $myInc = array_values(array_filter(array_map('strval', sh_json_list($p['includes
 $short = function (string $n) { $p = preg_split('/\s+/', trim(preg_replace('/\(.*?\)/', '', $n))); return trim(($p[0] ?? '') . (isset($p[1]) ? ' ' . mb_substr($p[1], 0, 1) . '.' : '')); };
 $stTitle = $p['title'];
 $stDesc = $p['subtitle'] ?: mb_substr(trim(strip_tags($desc)), 0, 160);
+// the picture shared on WhatsApp / Facebook / Google: the course's own thumbnail, else its intro video's picture
+$__shareImg = (string)($p['thumb'] ?? '');
+if ($__shareImg === '' && ($__iy = sh_yt_id((string)($p['intro_url'] ?? '')))) $__shareImg = 'https://i.ytimg.com/vi/' . $__iy . '/hqdefault.jpg';
+if ($__shareImg !== '') $stImage = str_starts_with($__shareImg, '/') ? rtrim(SITE_URL, '/') . $__shareImg : $__shareImg;
 $stIndex = $p['status'] === 'published';
 require ROOT_PATH . '/components/store-open.php';
 $ico = fn($n) => sh_icon($n);
