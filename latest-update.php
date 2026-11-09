@@ -260,7 +260,7 @@ function homeExcerpt(string $html, int $len = 170): string {
 /* ── Category Buttons ──────────────────────────── */
 .hero-categories {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: var(--space-3);
   margin-top: var(--space-5);
   list-style: none;
@@ -328,7 +328,7 @@ function homeExcerpt(string $html, int $len = 170): string {
 
 /* ── Responsive ────────────────────────────────── */
 @media (max-width: 900px) {
-  .hero-categories { grid-template-columns: repeat(5, 1fr); }
+  .hero-categories { grid-template-columns: repeat(3, 1fr); }
 }
 
 @media (max-width: 560px) {
@@ -464,6 +464,12 @@ function homeExcerpt(string $html, int $len = 170): string {
         <svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M10 9l5 3-5 3V9z"/></svg>
       </span>
       <span class="hc-name">All Courses</span>
+    </a>
+    <a href="/notes/" class="hc-item">
+      <span class="hc-icon">
+        <svg viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9l-6-6z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg>
+      </span>
+      <span class="hc-name">PDF Notes</span>
     </a>
     <a href="/categories/general-knowledge" class="hc-item">
       <span class="hc-icon">
