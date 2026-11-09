@@ -506,3 +506,5 @@
 .hm-hs .hs-dots{position:static!important;margin:12px 0 0!important;padding:0}
 .hm-hs .hs-dots button{background:#d1d5db!important}
 .hm-hs .hs-dots button.on{background:var(--gc-accent,#0c6878)!important}
+/* the slider only moves sideways: a taller picture never makes it scroll up / down (the mouse wheel scrolls the page) */
+.hm-hs .hs-track{overflow-y:hidden!important;overscroll-behavior-y:auto}
