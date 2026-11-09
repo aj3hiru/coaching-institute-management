@@ -85,6 +85,7 @@ if ($__school) {
 }
 // the header brand, also used on the log in / sign up card (sh_auth_side) so both always look the same
 $GLOBALS['edu_brand_html'] = $__school ? '<a href="/" rel="home" class="nb-brand-link nb-brand-school' . (th_on('id_brand_bg') ? '' : ' nb-brand-plain') . '" aria-label="' . htmlspecialchars(edu_site_name()) . ' home">' . $__logo . $__brandText . '</a>' : '';
+$GLOBALS['edu_brand_parts'] = $__school ? ['logo' => $__logo, 'cls' => 'nb-brand-link nb-brand-school' . (th_on('id_brand_bg') ? '' : ' nb-brand-plain')] : null;
 ?>
 <?php if (th_on('h_topbar') && trim((string)th('h_topbar_text')) !== ''): ?><div class="nb-top-bar"><?= edu_shortcodes((string)th('h_topbar_text')) ?></div><?php endif; ?>
 <?php

@@ -962,3 +962,9 @@ a.st-li:hover{background:#f7fbfc}a.st-li:hover svg{color:var(--sa)}
 .au-one .au-alt{margin-top:18px;padding-top:16px}
 @media (max-width:600px){.au.au-one{margin:14px 0 24px;padding:22px 16px 18px}.au-one .au-two{grid-template-columns:1fr}.au-one .au-head h1{font-size:22px}}
 [data-theme="dark"] .au.au-one{background:#151b23;border-color:#263040}[data-theme="dark"] .au-one .au-head h1,[data-theme="dark"] .au-one .au-logo{color:#e5e7eb!important}[data-theme="dark"] .au-one .au-in input{background:#0f141b;border-color:#2b3646;color:#e5e7eb}
+
+.au-one .au-hbrand h1.site-title{margin:0;padding:0;line-height:1.1;border:0;background:none}
+.au-one .au-hbrand .nb-brand-line{font-size:14px!important;font-weight:600!important;max-width:none!important}
+@media (max-width:600px){.au-one .au-hbrand .nb-brand-line{font-size:13px!important}}
+.au-one .au-hbrand{margin-bottom:22px}
+.au-one > a.au-logo h1{margin:0;font-size:22px}

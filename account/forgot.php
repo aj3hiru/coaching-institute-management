@@ -18,15 +18,14 @@ $stTitle = 'Forgot password';
 require ROOT_PATH . '/components/store-open.php';
 ?>
 <div class="au au-one">
-  <?= sh_auth_side() ?>
+  <?= sh_auth_side('forgot') ?>
   <section class="au-main">
-    <div class="au-head"><h1>Forgot password</h1><p>Enter the email of your account. We will send you a link to set a new password.</p></div>
   <?php if ($sent): ?>
     <div class="st-msg ok">If an account uses <b><?= sh_e($email) ?></b>, a link to set a new password has been sent. It works for 1 hour — check your spam folder too.</div>
   <?php else: ?>
     <?php if ($err): ?><div class="st-msg err"><?= sh_e($err) ?></div><?php endif; ?>
     <form method="post" novalidate class="au-form"><?= sh_csrf_field() ?>
-      <div class="au-f"><label for="fg-e">Email</label><div class="au-in"><?= sh_auth_icon('mail') ?><input id="fg-e" name="email" type="email" autocomplete="email" required value="<?= sh_e($email) ?>" placeholder="you@email.com" autofocus></div></div>
+      <div class="au-f"><label for="fg-e">Email</label><div class="au-in"><?= sh_auth_icon('mail') ?><input id="fg-e" name="email" type="email" autocomplete="email" required value="<?= sh_e($email) ?>" autofocus></div><small>We will email you a link to set a new password.</small></div>
       <button class="au-btn" type="submit">Send reset link <?= sh_icon('arrow') ?></button>
     </form>
   <?php endif; ?>

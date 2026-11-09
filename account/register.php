@@ -27,18 +27,17 @@ require ROOT_PATH . '/components/store-open.php';
 <div class="au au-one au-wide">
   <?= sh_auth_side('register') ?>
   <section class="au-main">
-    <div class="au-head"><h1>Create your account</h1><p>Already our student? Use the same mobile number.</p></div>
     <?php if ($err): ?><div class="st-msg err"><?= sh_e($err) ?></div><?php endif; ?>
     <form method="post" novalidate class="au-form"><?= sh_csrf_field() ?><input type="hidden" name="next" value="<?= sh_e($next) ?>">
       <input type="text" name="website" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true">
-      <div class="au-f"><label for="rg-n">Full name</label><div class="au-in"><?= sh_auth_icon('user') ?><input id="rg-n" name="name" autocomplete="name" required maxlength="150" value="<?= sh_e($f['name']) ?>" placeholder="Your name" autofocus></div></div>
+      <div class="au-f"><label for="rg-n">Full name</label><div class="au-in"><?= sh_auth_icon('user') ?><input id="rg-n" name="name" autocomplete="name" required maxlength="150" value="<?= sh_e($f['name']) ?>" autofocus></div></div>
       <div class="au-two">
-        <div class="au-f"><label for="rg-m">Mobile number</label><div class="au-in"><?= sh_auth_icon('device') ?><input id="rg-m" name="mobile" type="tel" inputmode="numeric" autocomplete="tel" required maxlength="14" placeholder="10 digits" value="<?= sh_e($f['mobile']) ?>"></div></div>
-        <div class="au-f"><label for="rg-e">Email</label><div class="au-in"><?= sh_auth_icon('mail') ?><input id="rg-e" name="email" type="email" autocomplete="email" required maxlength="190" value="<?= sh_e($f['email']) ?>" placeholder="you@email.com"></div><small>Used to reset your password.</small></div>
+        <div class="au-f"><label for="rg-m">Mobile number</label><div class="au-in"><?= sh_auth_icon('device') ?><input id="rg-m" name="mobile" type="tel" inputmode="numeric" autocomplete="tel" required maxlength="14" value="<?= sh_e($f['mobile']) ?>"></div><small>Already our student? Use the same mobile number.</small></div>
+        <div class="au-f"><label for="rg-e">Email</label><div class="au-in"><?= sh_auth_icon('mail') ?><input id="rg-e" name="email" type="email" autocomplete="email" required maxlength="190" value="<?= sh_e($f['email']) ?>"></div><small>Used to reset your password.</small></div>
       </div>
       <div class="au-two">
-        <div class="au-f"><label for="rg-p">Password</label><div class="au-in st-pw"><?= sh_auth_icon('lock') ?><input id="rg-p" type="password" name="pass" autocomplete="new-password" required minlength="4" placeholder="At least 4 characters"><?= sh_eye_btn() ?></div></div>
-        <div class="au-f"><label for="rg-p2">Password again</label><div class="au-in"><?= sh_auth_icon('lock') ?><input id="rg-p2" type="password" name="pass2" autocomplete="new-password" required placeholder="Type it again"></div></div>
+        <div class="au-f"><label for="rg-p">Password</label><div class="au-in st-pw"><?= sh_auth_icon('lock') ?><input id="rg-p" type="password" name="pass" autocomplete="new-password" required minlength="4"><?= sh_eye_btn() ?></div></div>
+        <div class="au-f"><label for="rg-p2">Password again</label><div class="au-in"><?= sh_auth_icon('lock') ?><input id="rg-p2" type="password" name="pass2" autocomplete="new-password" required></div></div>
       </div>
       <button class="au-btn" type="submit">Create account <?= sh_icon('arrow') ?></button>
     </form>

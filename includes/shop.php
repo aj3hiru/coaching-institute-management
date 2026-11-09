@@ -1133,13 +1133,17 @@ function sh_lesson_thumb(array $l, array $p): string
 }
 /** The FREE badge (with the light sweep) for free lessons / PDFs. */
 function sh_free_badge(): string { return '<span class="st-freeb">Free</span>'; }
-/** Log in / sign up / password pages: the same brand as the header (logo, site title, address, panel — Customize → Site Identity). */
+/** Log in / sign up / password pages: the header brand panel, with the page name (h1) in place of the site title and the site title in place of the address. */
 function sh_auth_side(string $mode = ''): string
 {
-    if (!empty($GLOBALS['edu_brand_html'])) return '<div class="au-logo au-hbrand nb-hr-brand">' . $GLOBALS['edu_brand_html'] . '</div>'; // set by components/header.php
+    $name = ['login' => 'Login', 'register' => 'Create Account', 'forgot' => 'Forgot Password', 'reset' => 'New Password'][$mode] ?? 'Login';
+    $site = edu_site_name();
+    $bp = $GLOBALS['edu_brand_parts'] ?? null; // set by components/header.php
+    if ($bp) return '<div class="au-logo au-hbrand nb-hr-brand"><a href="/" rel="home" class="' . sh_e($bp['cls']) . '" aria-label="' . sh_e($site) . ' home">' . $bp['logo']
+        . '<span class="nb-site-branding nb-sb-school"><h1 class="site-title">' . sh_e($name) . '</h1><span class="site-tagline nb-brand-line">' . sh_e($site) . '</span></span></a></div>';
     if (!function_exists('ci_brand')) require_once INCLUDES_PATH . '/institute.php';
     $b = ci_brand();
-    return '<a class="au-logo" href="/" aria-label="' . sh_e($b['title']) . ' home">' . ($b['emblem'] !== '' ? '<img src="' . sh_e($b['emblem']) . '" alt="" width="56" height="56">' : '') . '<b>' . sh_e($b['title']) . '</b></a>';
+    return '<a class="au-logo" href="/" aria-label="' . sh_e($site) . ' home">' . ($b['emblem'] !== '' ? '<img src="' . sh_e($b['emblem']) . '" alt="" width="56" height="56">' : '') . '<h1>' . sh_e($name) . '</h1><b>' . sh_e($site) . '</b></a>';
 }
 /** An input with an icon inside (log in / sign up). */
 function sh_auth_icon(string $n): string { return '<span class="au-ic" aria-hidden="true">' . sh_icon($n) . '</span>'; }
