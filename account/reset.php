@@ -24,18 +24,21 @@ if ($u && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 $stTitle = 'New password';
 require ROOT_PATH . '/components/store-open.php';
 ?>
-<div class="st-auth">
-  <h1>Set a new password</h1>
+<div class="au au-one">
+  <?= sh_auth_side() ?>
+  <section class="au-main">
+    <div class="au-head"><h1>Set a new password</h1><p>Choose a new password for your account.</p></div>
   <?php if (!$u): ?>
     <div class="st-msg err">This link is not valid any more (links work for 1 hour, once). Please ask for a new one.</div>
-    <p class="alt"><a href="/account/forgot">Send a new link</a></p>
+    <p class="au-alt"><a href="/account/forgot">Send a new link</a></p>
   <?php else: ?>
-  <?php if ($err): ?><div class="st-msg err"><?= sh_e($err) ?></div><?php endif; ?>
-  <form method="post" novalidate><?= sh_csrf_field() ?><input type="hidden" name="t" value="<?= sh_e($tok) ?>">
-    <div class="st-f"><label for="rs-p">New password</label><div class="st-pw"><input id="rs-p" type="password" name="pass" autocomplete="new-password" required minlength="4" autofocus><button type="button" aria-label="Show password">Show</button></div><small>At least 4 characters.</small></div>
-    <div class="st-f"><label for="rs-p2">New password again</label><input id="rs-p2" type="password" name="pass2" autocomplete="new-password" required></div>
-    <button class="st-btn block" type="submit">Save password</button>
-  </form>
+    <?php if ($err): ?><div class="st-msg err"><?= sh_e($err) ?></div><?php endif; ?>
+    <form method="post" novalidate class="au-form"><?= sh_csrf_field() ?><input type="hidden" name="t" value="<?= sh_e($tok) ?>">
+      <div class="au-f"><label for="rs-p">New password</label><div class="au-in st-pw"><?= sh_auth_icon('lock') ?><input id="rs-p" type="password" name="pass" autocomplete="new-password" required minlength="4" placeholder="At least 4 characters" autofocus><?= sh_eye_btn() ?></div></div>
+      <div class="au-f"><label for="rs-p2">New password again</label><div class="au-in"><?= sh_auth_icon('lock') ?><input id="rs-p2" type="password" name="pass2" autocomplete="new-password" required placeholder="Type it again"></div></div>
+      <button class="au-btn" type="submit">Save password <?= sh_icon('arrow') ?></button>
+    </form>
   <?php endif; ?>
+  </section>
 </div>
 <?php require ROOT_PATH . '/components/store-close.php'; ?>

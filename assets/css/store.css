@@ -931,3 +931,24 @@ a.st-li:hover{background:#f7fbfc}a.st-li:hover svg{color:var(--sa)}
 
 .sp-intro{width:100%;border:0;padding:0;cursor:pointer;font:inherit;color:inherit}
 .sp-intro-f{width:100%;border:0;aspect-ratio:16/9;display:block}
+
+/* log in / sign up / password pages: one centred card in the theme look (flat, accent colour, Customize corner radius) */
+.au.au-one{display:block;max-width:460px;margin:28px auto 40px;padding:28px 28px 24px;border:1px solid var(--edu-card-border,#e5e7eb);border-radius:var(--box-radius,5px);background:var(--edu-card-bg,#fff);box-shadow:none}
+.au.au-one.au-wide{max-width:600px}
+.au-one .au-logo{display:flex;flex-direction:column;align-items:center;gap:8px;margin:0 0 18px;text-decoration:none!important;color:var(--text-primary,#1f2937)!important}
+.au-one .au-logo img{width:56px;height:56px;object-fit:contain}
+.au-one .au-logo b{font-size:18px;line-height:1.2}
+.au-one .au-main{padding:0}
+.au-one .au-head{text-align:center}
+.au-one .au-head h1{font-size:24px;color:var(--text-primary,#1f2937)}
+.au-one .au-head p{margin:0 0 20px}
+.au-one .au-main .st-msg{border-radius:var(--box-radius,5px)}
+.au-one .au-in input{border-radius:var(--box-radius,5px);background:#fff;height:46px}
+.au-one .au-in input:focus{border-color:var(--gc-accent,#0c6878)}
+.au-one .au-in:focus-within .au-ic{color:var(--gc-accent,#0c6878)}
+.au-one .au-lrow a,.au-one .au-alt a{color:var(--gc-accent,#0c6878)}
+.au-one .au-btn{height:46px;border-radius:var(--box-radius,5px);background:var(--gc-accent,#0c6878);box-shadow:none;transform:none}
+.au-one .au-btn:hover{background:color-mix(in srgb,var(--gc-accent,#0c6878) 86%,#000);box-shadow:none;transform:none}
+.au-one .au-alt{margin-top:18px;padding-top:16px}
+@media (max-width:600px){.au.au-one{margin:14px 0 24px;padding:22px 16px 18px}.au-one .au-two{grid-template-columns:1fr}.au-one .au-head h1{font-size:22px}}
+[data-theme="dark"] .au.au-one{background:#151b23;border-color:#263040}[data-theme="dark"] .au-one .au-head h1,[data-theme="dark"] .au-one .au-logo{color:#e5e7eb!important}[data-theme="dark"] .au-one .au-in input{background:#0f141b;border-color:#2b3646;color:#e5e7eb}

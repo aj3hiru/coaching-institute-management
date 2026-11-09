@@ -17,10 +17,10 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 $stTitle = 'Log in';
 require ROOT_PATH . '/components/store-open.php';
 ?>
-<div class="au">
+<div class="au au-one">
   <?= sh_auth_side('login') ?>
   <section class="au-main">
-    <div class="au-head"><h1>Log in</h1><p>Open your courses and notes.</p></div>
+    <div class="au-head"><h1>Log in</h1><p>Log in with your mobile number or email.</p></div>
     <?php if (isset($_GET['reset'])): ?><div class="st-msg ok">Your new password is saved. Please log in.</div><?php endif; ?>
     <?php if ($err): ?><div class="st-msg err"><?= sh_e($err) ?></div><?php endif; ?>
     <form method="post" novalidate class="au-form"><?= sh_csrf_field() ?><input type="hidden" name="next" value="<?= sh_e($next) ?>">

@@ -17,19 +17,20 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 $stTitle = 'Forgot password';
 require ROOT_PATH . '/components/store-open.php';
 ?>
-<div class="st-auth">
-  <h1>Forgot password</h1>
+<div class="au au-one">
+  <?= sh_auth_side() ?>
+  <section class="au-main">
+    <div class="au-head"><h1>Forgot password</h1><p>Enter the email of your account. We will send you a link to set a new password.</p></div>
   <?php if ($sent): ?>
     <div class="st-msg ok">If an account uses <b><?= sh_e($email) ?></b>, a link to set a new password has been sent. It works for 1 hour — check your spam folder too.</div>
-    <p class="alt"><a href="/account/login">Back to log in</a></p>
   <?php else: ?>
-  <p class="st-lead">Enter the email of your account. We will send you a link to set a new password.</p>
-  <?php if ($err): ?><div class="st-msg err"><?= sh_e($err) ?></div><?php endif; ?>
-  <form method="post" novalidate><?= sh_csrf_field() ?>
-    <div class="st-f"><label for="fg-e">Email</label><input id="fg-e" name="email" type="email" autocomplete="email" required value="<?= sh_e($email) ?>" autofocus></div>
-    <button class="st-btn block" type="submit">Send reset link</button>
-  </form>
-  <p class="alt"><a href="/account/login">Back to log in</a></p>
+    <?php if ($err): ?><div class="st-msg err"><?= sh_e($err) ?></div><?php endif; ?>
+    <form method="post" novalidate class="au-form"><?= sh_csrf_field() ?>
+      <div class="au-f"><label for="fg-e">Email</label><div class="au-in"><?= sh_auth_icon('mail') ?><input id="fg-e" name="email" type="email" autocomplete="email" required value="<?= sh_e($email) ?>" placeholder="you@email.com" autofocus></div></div>
+      <button class="au-btn" type="submit">Send reset link <?= sh_icon('arrow') ?></button>
+    </form>
   <?php endif; ?>
+    <p class="au-alt"><a href="/account/login">Back to log in</a></p>
+  </section>
 </div>
 <?php require ROOT_PATH . '/components/store-close.php'; ?>

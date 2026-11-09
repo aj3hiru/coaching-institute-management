@@ -24,10 +24,10 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 $stTitle = 'Create account';
 require ROOT_PATH . '/components/store-open.php';
 ?>
-<div class="au">
+<div class="au au-one au-wide">
   <?= sh_auth_side('register') ?>
   <section class="au-main">
-    <div class="au-head"><h1>Create your account</h1><p>Already a student of our institute? Use the same mobile number.</p></div>
+    <div class="au-head"><h1>Create your account</h1><p>Already our student? Use the same mobile number.</p></div>
     <?php if ($err): ?><div class="st-msg err"><?= sh_e($err) ?></div><?php endif; ?>
     <form method="post" novalidate class="au-form"><?= sh_csrf_field() ?><input type="hidden" name="next" value="<?= sh_e($next) ?>">
       <input type="text" name="website" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true">

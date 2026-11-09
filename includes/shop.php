@@ -1133,16 +1133,12 @@ function sh_lesson_thumb(array $l, array $p): string
 }
 /** The FREE badge (with the light sweep) for free lessons / PDFs. */
 function sh_free_badge(): string { return '<span class="st-freeb">Free</span>'; }
-/** Log in / sign up: the brand panel on the left (on phones a slim band on top). */
-function sh_auth_side(string $mode): string
+/** Log in / sign up / password pages: just the logo and site name on top of the card (theme look, nothing else). */
+function sh_auth_side(string $mode = ''): string
 {
     if (!function_exists('ci_brand')) require_once INCLUDES_PATH . '/institute.php';
     $b = ci_brand();
-    $h = $mode === 'login' ? ['Welcome back!', 'Log in to continue your classes, notes and progress.'] : ['Start learning today', 'One free account for all your courses, notes and doubts.'];
-    $pts = [['video', 'Recorded classes', 'Watch any time, pause and repeat'], ['pdf', 'PDF notes', 'Chapter-wise notes to read and download'], ['chat', 'Doubt solving', 'Ask the teacher under any lecture']];
-    $li = ''; foreach ($pts as [$i, $t, $d]) $li .= '<li><span>' . sh_icon($i) . '</span><div><b>' . sh_e($t) . '</b><small>' . sh_e($d) . '</small></div></li>';
-    return '<aside class="au-side"><a class="au-brand" href="/">' . ($b['emblem'] !== '' ? '<img src="' . sh_e($b['emblem']) . '" alt="" width="44" height="44">' : '') . '<span><b>' . sh_e($b['title']) . '</b>' . ($b['line'] !== '' ? '<small>' . sh_e($b['line']) . '</small>' : '') . '</span></a>'
-        . '<div class="au-hero"><h2>' . sh_e($h[0]) . '</h2><p>' . sh_e($h[1]) . '</p></div><ul class="au-pts">' . $li . '</ul></aside>';
+    return '<a class="au-logo" href="/" aria-label="' . sh_e($b['title']) . ' home">' . ($b['emblem'] !== '' ? '<img src="' . sh_e($b['emblem']) . '" alt="" width="56" height="56">' : '') . '<b>' . sh_e($b['title']) . '</b></a>';
 }
 /** An input with an icon inside (log in / sign up). */
 function sh_auth_icon(string $n): string { return '<span class="au-ic" aria-hidden="true">' . sh_icon($n) . '</span>'; }
