@@ -54,20 +54,25 @@ $social = edu_social();
 <script src="/assets/js/admin-media.js?v=<?= @filemtime(ROOT_PATH . '/assets/js/admin-media.js') ?>" defer></script>
 <style>
 /* like Reports / Store Settings: a list of sections on the left, one section at a time on the right */
-.gs-wrap{display:grid;grid-template-columns:250px minmax(0,1fr);gap:18px;align-items:start;max-width:none;background:none;border:0;border-radius:0;padding:0}
+.gs-wrap{display:grid;grid-template-columns:250px minmax(0,1fr);gap:16px;align-items:start;max-width:none;background:#fff;border:1px solid #e5e7eb;border-radius:0;padding:16px}
 .gs-wrap::before,.gs-wrap::after{content:none!important;display:none!important}
-.gs-nav,.gs-main{grid-row:1}.gs-nav{grid-column:1}.gs-main{grid-column:2}
-@media (max-width:820px){.gs-nav,.gs-main{grid-column:1;grid-row:auto}}
-.gs-main{background:#fff;border:1px solid #e5e7eb;padding:.25rem 1.75rem 1.5rem}
-@media (max-width:782px){.gs-main{padding:.25rem 1rem 1.25rem}}
+.gs-group,.gs-main{grid-row:1}.gs-group{grid-column:1}.gs-main{grid-column:2}
+@media (max-width:820px){.gs-group,.gs-main{grid-column:1;grid-row:auto}.gs-wrap{padding:12px}}
+.gs-main{background:#fff;padding:0 8px}
+/* same colours as Reports: the list in a light box with its name on the border, violet for the chosen one */
+.gs-group{position:relative;border:1px solid #e5e7eb;padding:18px 10px 10px;background:#fff;margin-top:10px}
+.gs-group>.gs-glabel{position:absolute;top:-10px;left:10px;display:inline-flex;align-items:center;gap:6px;padding:0 8px;background:#fff;color:var(--ci-acc,#7c3aed);font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;line-height:1.6}
+.gs-main .wps-section h2{color:#111827}
+.gs-main .wps-input{border-color:#d1d5db}.gs-main .wps-input:focus{border-color:var(--ci-acc,#7c3aed);box-shadow:none;outline:0}
+.gs-main a{color:var(--ci-acc,#7c3aed)}
 @media (max-width:820px){.gs-wrap{grid-template-columns:1fr}}
 .gs-nav{display:flex;flex-direction:column;border:1px solid #e5e7eb;background:#fff}
 @media (max-width:820px){.gs-nav{position:static}}
 .gs-nav button{display:flex;align-items:center;gap:10px;padding:11px 14px;border:0;border-bottom:1px solid #e5e7eb;background:#fff;text-align:left;font:600 13.5px inherit;font-family:inherit;color:#374151;cursor:pointer}
 .gs-nav button:last-child{border-bottom:0}
 .gs-nav button i{width:18px;text-align:center}
-.gs-nav button.on{background:var(--ci-acc,#4a3369);color:#fff}
-.gs-nav button:not(.on):hover{background:#faf8fd;color:var(--ci-acc,#4a3369)}
+.gs-nav button.on{background:var(--ci-acc,#7c3aed);color:#fff}
+.gs-nav button:not(.on):hover{background:#faf8fd;color:var(--ci-acc,#7c3aed)}
 .gs-main{min-width:0}
 .gs-main .wps-section{margin-top:0}
 .gs-main .wps-submit{margin-top:14px}
@@ -79,9 +84,10 @@ $social = edu_social();
 <?php $gsTabs = ['identity' => ['fa-id-card', 'Site Identity'], 'contact' => ['fa-address-book', 'Address & Contact'], 'smtp' => ['fa-envelope', 'Email (SMTP)'],
   'social' => ['fa-share-nodes', 'Social Profiles'], 'seo' => ['fa-magnifying-glass', 'Search Engines'], 'footer' => ['fa-shoe-prints', 'Footer'], 'date' => ['fa-calendar-day', 'Date Format']]; ?>
 <form class="wps-wrap gs-wrap" method="POST">
+  <div class="gs-group"><span class="gs-glabel"><i class="fas fa-gear"></i> Settings</span>
   <nav class="gs-nav" role="tablist" aria-label="Settings sections">
     <?php foreach ($gsTabs as $k => [$ic, $lb]): ?><button type="button" role="tab" data-tab="<?= $k ?>"><i class="fas <?= $ic ?>"></i> <?= htmlspecialchars($lb) ?></button><?php endforeach; ?>
-  </nav>
+  </nav></div>
   <div class="gs-main">
   <?= csrf_field() ?>
   <section class="wps-section" data-tab="identity">
