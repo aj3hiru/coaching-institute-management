@@ -63,32 +63,32 @@ $n = fn(array $a, string $k) => (int)($a[$k] ?? 0);
 if ($type === 'ostudents') {
     [$from, $to, $pl, $range, $pk] = $oPeriod('all');
     $show = in_array($_GET['show'] ?? '', ['buyers', 'free', 'none', 'linked'], true) ? $_GET['show'] : 'all';
-    $q = $pdo->prepare("SELECT u.id, u.name, u.mobile, u.email, u.created_at, u.last_login, u.student_id, u.status,
+    $q = $pdo->prepare("SELECT u.id, u.name, u.mobile, u.email, u.created_at, u.last_login, u.student_id, u.status, st.reg_no, st.stype,
         (SELECT COUNT(*) FROM sh_access a WHERE a.user_id = u.id AND a.revoked = 0 AND (a.expires_at IS NULL OR a.expires_at > NOW())) AS owned,
         (SELECT COUNT(*) FROM sh_access a WHERE a.user_id = u.id AND a.revoked = 0 AND a.source = 'free') AS freec,
         (SELECT COUNT(*) FROM sh_orders o WHERE o.user_id = u.id AND o.status = 'paid') AS orders,
         (SELECT COALESCE(SUM(o.amount),0) FROM sh_orders o WHERE o.user_id = u.id AND o.status = 'paid') AS spent
-        FROM sh_users u WHERE DATE(u.created_at) BETWEEN ? AND ? ORDER BY u.created_at DESC");
+        FROM sh_users u LEFT JOIN ci_students st ON st.id = u.student_id WHERE DATE(u.created_at) BETWEEN ? AND ? ORDER BY u.created_at DESC");
     $q->execute([$from, $to]);
     $all = $q->fetchAll(PDO::FETCH_ASSOC);
-    $rows = array_values(array_filter($all, fn($u) => match ($show) { 'buyers' => (int)$u['orders'] > 0, 'free' => (int)$u['freec'] > 0, 'none' => !(int)$u['owned'], 'linked' => (bool)$u['student_id'], default => true }));
+    $rows = array_values(array_filter($all, fn($u) => match ($show) { 'buyers' => (int)$u['orders'] > 0, 'free' => (int)$u['freec'] > 0, 'none' => !(int)$u['owned'], 'linked' => in_array($u['stype'] ?? '', ['both', 'institute'], true), default => true }));
     $buyers = count(array_filter($all, fn($u) => (int)$u['orders'] > 0));
     $spent = array_sum(array_column($rows, 'spent'));
     $byMonth = [];
     foreach ($pdo->query("SELECT DATE_FORMAT(created_at, '%Y-%m') m, COUNT(*) n FROM sh_users WHERE created_at >= DATE_SUB(DATE_FORMAT(CURDATE(), '%Y-%m-01'), INTERVAL 11 MONTH) GROUP BY m ORDER BY m") as $r) $byMonth[] = [date('M Y', strtotime($r['m'] . '-01')), (string)$r['n']];
-    $showTxt = ['all' => 'All accounts', 'buyers' => 'Bought something', 'free' => 'Joined a free course', 'none' => 'Own nothing yet', 'linked' => 'Also institute students'][$show];
+    $showTxt = ['all' => 'All accounts', 'buyers' => 'Bought something', 'free' => 'Joined a free course', 'none' => 'Own nothing yet', 'linked' => 'Also institute students (Both)'][$show];
     $out(['title' => 'ONLINE STUDENTS REPORT', 'subtitle' => $pl . ' · ' . $showTxt, 'no' => 'OST-' . date('Ymd'), 'file' => 'online-students_' . ($pk === 'all' ? 'all-time' : $from . '_to_' . $to), 'landscape' => true,
         'boxes' => [['head' => 'REPORT FOR', 'rows' => [['Joined', $pl], ['Dates', $range], ['Showing', $showTxt]]],
                     ['head' => 'ACCOUNTS', 'rows' => [['Accounts', (string)count($all)], ['Bought something', (string)$buyers], ['Own nothing yet', (string)count(array_filter($all, fn($u) => !(int)$u['owned']))],
-                        ['Also institute students', (string)count(array_filter($all, fn($u) => (bool)$u['student_id']))], ['Total spent (listed)', $rs($spent)]]]],
+                        ['Online only', (string)count(array_filter($all, fn($u) => ($u['stype'] ?? '') === 'online'))], ['Both (institute + online)', (string)count(array_filter($all, fn($u) => in_array($u['stype'] ?? '', ['both', 'institute'], true)))], ['Total spent (listed)', $rs($spent)]]]],
         'sections' => [
-            ['title' => 'Online students', 'right_text' => count($rows) . ' account(s)', 'head' => ['No.', 'Name', 'Mobile', 'Email', 'Joined', 'Last login', 'Owns', 'Free', 'Paid orders', 'Spent', 'Institute'],
-                'body' => array_map(fn($u, $i) => [$i + 1, $u['name'], $u['mobile'], $u['email'] ?: '-', $d($u['created_at']), $u['last_login'] ? $d($u['last_login']) : '-', (string)(int)$u['owned'], (string)(int)$u['freec'], (string)(int)$u['orders'], $rs0($u['spent']), $u['student_id'] ? 'Yes' : '-'], $rows, array_keys($rows)),
+            ['title' => 'Online students', 'right_text' => count($rows) . ' account(s)', 'head' => ['No.', 'Name', 'Mobile', 'Email', 'Joined', 'Last login', 'Owns', 'Free', 'Paid orders', 'Spent', 'Reg. no. · Type'],
+                'body' => array_map(fn($u, $i) => [$i + 1, $u['name'], $u['mobile'], $u['email'] ?: '-', $d($u['created_at']), $u['last_login'] ? $d($u['last_login']) : '-', (string)(int)$u['owned'], (string)(int)$u['freec'], (string)(int)$u['orders'], $rs0($u['spent']), ($u['reg_no'] ? $u['reg_no'] . ' · ' : '') . (CI_STYPES[$u['stype'] ?? ''] ?? '-')], $rows, array_keys($rows)),
                 'foot' => $rows ? [['', 'Total', '', '', '', '', (string)array_sum(array_column($rows, 'owned')), (string)array_sum(array_column($rows, 'freec')), (string)array_sum(array_column($rows, 'orders')), $rs0($spent), '']] : null,
                 'right' => [6, 7, 8, 9], 'small' => true, 'empty' => 'No online accounts here.'],
             ['title' => 'New accounts by month (last 12 months)', 'head' => ['Month', 'New accounts'], 'body' => $byMonth, 'right' => [1], 'empty' => 'No new accounts in the last 12 months.'],
         ],
-        'notes' => ['"Owns" counts courses and notes the student can open now (bought, free or given by staff). "Institute" = the account is linked to an institute student by mobile number.']]);
+        'notes' => ['"Owns" counts courses and notes the student can open now (bought, free or given by staff). "Type": Online = online courses / notes only; Both = also in an institute batch (linked by mobile number).']]);
 }
 
 // ---- every online course / notes pack

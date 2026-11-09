@@ -24,8 +24,10 @@ $one = fn(string $sql, array $a = []) => (function () use ($pdo, $sql, $a) { $s 
 $today = date('Y-m-d');
 $month = date('Y-m-01');
 $stats = [
-    'active' => (int)$one("SELECT COUNT(*) FROM ci_students WHERE status = 'active'"),
-    'new' => (int)$one("SELECT COUNT(*) FROM ci_students WHERE admission_date >= ?", [$month]),
+    // institute students (Institute + Both); online-only students are counted on their own
+    'active' => (int)$one("SELECT COUNT(*) FROM ci_students WHERE status = 'active' AND stype <> 'online'"),
+    'new' => (int)$one("SELECT COUNT(*) FROM ci_students WHERE admission_date >= ? AND stype <> 'online'", [$month]),
+    'online' => (int)$one("SELECT COUNT(*) FROM ci_students WHERE status = 'active' AND stype IN ('online','both')"),
     'batches' => (int)$one("SELECT COUNT(*) FROM ci_batches WHERE status = 'active'"),
     'courses' => (int)$one("SELECT COUNT(*) FROM ci_courses WHERE status = 'active'"),
     'today' => (float)$one("SELECT COALESCE(SUM(amount),0) FROM ci_payments WHERE paid_on = ?", [$today]),
@@ -34,7 +36,7 @@ $stats = [
     'late' => (int)$one("SELECT COUNT(*) FROM ci_enrollments e WHERE e.status <> 'dropped' AND e.due_date IS NOT NULL AND e.due_date < CURDATE() AND " . CI_DUE_SQL . " > 0.004"),
 ];
 $recentStudents = $pdo->query("SELECT s.*, (SELECT GROUP_CONCAT(c.name SEPARATOR ', ') FROM ci_enrollments e JOIN ci_courses c ON c.id = e.course_id WHERE e.student_id = s.id AND e.status <> 'dropped') AS courses
-    FROM ci_students s ORDER BY s.id DESC LIMIT 8")->fetchAll(PDO::FETCH_ASSOC);
+    FROM ci_students s WHERE s.stype <> 'online' ORDER BY s.id DESC LIMIT 8")->fetchAll(PDO::FETCH_ASSOC);
 $recentPays = $pdo->query("SELECT p.*, s.name, s.reg_no, s.photo, u.username FROM ci_payments p JOIN ci_students s ON s.id = p.student_id LEFT JOIN users u ON u.id = p.created_by ORDER BY p.id DESC LIMIT 8")->fetchAll(PDO::FETCH_ASSOC);
 $upcoming = $pdo->query("SELECT e.id, e.due_date, s.id AS sid, s.name, s.mobile, s.photo, c.name AS course_name, " . CI_DUE_SQL . " AS due
     FROM ci_enrollments e JOIN ci_students s ON s.id = e.student_id LEFT JOIN ci_courses c ON c.id = e.course_id
@@ -69,7 +71,7 @@ $empty = !$stats['active'] && !$stats['courses'] && !$stats['batches'];
 <?php endif; ?>
 
 <div class="ci-stats">
-  <a class="ci-stat" href="/admin/students.php"><i class="fas fa-user-graduate ci-i-violet"></i><div><b><?= number_format($stats['active']) ?></b><small>Active students</small></div></a>
+  <a class="ci-stat" href="/admin/students.php"><i class="fas fa-user-graduate ci-i-violet"></i><div><b><?= number_format($stats['active']) ?></b><small>Active students<?= $stats['online'] ? ' · <span style="color:#0e7490">' . number_format($stats['online']) . ' online</span>' : '' ?></small></div></a>
   <a class="ci-stat" href="/admin/students.php?status=all&amp;from=<?= $month ?>"><i class="fas fa-user-plus ci-i-blue"></i><div><b><?= number_format($stats['new']) ?></b><small>Admissions this month</small></div></a>
   <a class="ci-stat" href="/admin/ci-batches.php"><i class="fas fa-layer-group ci-i-cyan"></i><div><b><?= number_format($stats['batches']) ?></b><small>Active batches · <?= $stats['courses'] ?> courses</small></div></a>
   <a class="ci-stat" href="/admin/ci-fees.php?period=today"><i class="fas fa-indian-rupee-sign ci-i-green"></i><div><b><?= ci_money0($stats['today']) ?></b><small>Fee received today</small></div></a>

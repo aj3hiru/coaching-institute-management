@@ -46,9 +46,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'admission_date' => ci_clean_date($_POST['admission_date'] ?? '') ?: date('Y-m-d'),
         'status' => in_array($_POST['status'] ?? '', ['active', 'left', 'completed'], true) ? $_POST['status'] : 'active',
         'notes' => $in('notes', 2000), 'photo' => $student['photo'] ?? null, 'reg_no' => $student['reg_no'] ?? '',
+        'stype' => isset(CI_STYPES[$_POST['stype'] ?? '']) ? $_POST['stype'] : ($student['stype'] ?? 'institute'),
     ];
+    $spass = (string)($_POST['spass'] ?? ''); // online login password (empty: new student = mobile number, saved student = unchanged)
+    if ($spass !== '' && strlen($spass) < 4) $errors[] = 'The password must have at least 4 characters.';
     if ($form['name'] === '') $errors[] = 'Enter the student name.';
-    if (!$form['class_id'] && $L['classes']) $errors[] = 'Choose the class.';
+    if (!$form['class_id'] && $L['classes'] && $form['stype'] !== 'online') $errors[] = 'Choose the class.'; // online-only students need no class
     $mob = ci_mobile($form['mobile']);
     if ($mob === '') $errors[] = 'Enter a valid 10-digit mobile number.'; else $form['mobile'] = $mob;
     if ($form['alt_mobile'] !== '') { $alt = ci_mobile($form['alt_mobile']); if ($alt === '') $errors[] = 'The alternate mobile number is not valid.'; else $form['alt_mobile'] = $alt; }
@@ -111,7 +114,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             if (!$id) {
                 for ($try = 0; $try < 3; $try++) {
-                    $form['reg_no'] = ci_next_no($pdo, 'ci_students', 'reg_no', CI_REG_PREFIX, 4);
+                    $form['reg_no'] = ci_next_no($pdo, 'ci_students', 'reg_no', CI_REG_PREFIX, 6);
                     try {
                         $pdo->prepare("INSERT INTO ci_students (reg_no, name, mobile, created_by) VALUES (?, ?, ?, ?)")->execute([$form['reg_no'], $form['name'], $form['mobile'], (int)$me['id']]);
                         break;
@@ -132,10 +135,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $leftNow = $form['status'] === 'left' && ($student['status'] ?? '') !== 'left';
             if ($form['status'] !== 'left') $pdo->prepare("UPDATE ci_students SET left_on = NULL WHERE id = ?")->execute([$id]);
             $pdo->prepare("UPDATE ci_students SET name=?, father_name=?, mother_name=?, dob=?, gender=?, mobile=?, alt_mobile=?, email=?, address=?, city=?, state=?, pincode=?,
-                class_id=?, school=?, photo=?, status=?, admission_date=?, notes=? WHERE id=?")->execute([
+                class_id=?, school=?, photo=?, status=?, stype=?, admission_date=?, notes=? WHERE id=?")->execute([
                 $form['name'], $form['father_name'] ?: null, $form['mother_name'] ?: null, $form['dob'], $form['gender'], $form['mobile'], $form['alt_mobile'] ?: null,
                 $form['email'] ?: null, $form['address'] ?: null, $form['city'] ?: null, $form['state'] ?: null, $form['pincode'] ?: null, $form['class_id'],
-                $form['school'] ?: null, $form['photo'], $form['status'], $form['admission_date'], $form['notes'] ?: null, $id]);
+                $form['school'] ?: null, $form['photo'], $form['status'], $form['stype'], $form['admission_date'], $form['notes'] ?: null, $id]);
             $receipt = null;
             foreach ($rows as $r) {
                 $eid = $r['id'];
@@ -166,6 +169,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($leftNow) $pdo->prepare("UPDATE ci_enrollments SET status = 'left', ended_on = CURDATE() WHERE student_id = ? AND status = 'active'")->execute([$id]);
             $pdo->commit();
             if ($oldPhoto && $oldPhoto !== $form['photo']) ci_delete_photo($oldPhoto); // only after the save went through
+            // online login: every student gets an account (mobile + password); a new student's password is the mobile number
+            if (is_file(INCLUDES_PATH . '/shop.php')) {
+                require_once INCLUDES_PATH . '/shop.php';
+                try {
+                    sh_tables($pdo);
+                    $had = $pdo->prepare("SELECT id FROM sh_users WHERE student_id = ? LIMIT 1"); $had->execute([$id]); $hadAcc = (int)$had->fetchColumn();
+                    if ($hadAcc || $spass !== '' || !$student) {
+                        [$uid] = sh_account_for_student($pdo, $id, (int)$me['id']);
+                        $pw = $spass !== '' ? $spass : (!$hadAcc ? $form['mobile'] : '');
+                        if ($pw !== '') $pdo->prepare("UPDATE sh_users SET pass = ? WHERE id = ?")->execute([password_hash($pw, PASSWORD_DEFAULT), $uid]);
+                    }
+                } catch (Throwable $e) { admin_flash('Student saved, but the online login could not be set: ' . $e->getMessage(), 'error'); }
+            }
+            ci_type_sync($pdo, $id);
             admin_log('ci_student', ($student ? 'Updated' : 'Added') . " student {$form['reg_no']} {$form['name']}");
             if (!$receipt) admin_flash($student ? 'Student saved.' : 'Student added: ' . $form['reg_no'] . '.'); // with a payment the profile shows "Saved — Print receipt"
             $online = !empty($_POST['then_online']) ? '&online=1' : ''; // open the online course / notes popup on the profile
@@ -271,7 +288,7 @@ $v = fn($k) => ci_e($form[$k] ?? '');
     <div class="ci-f ci-nofloat"><label>Photo</label><input type="file" name="photo" id="ci-photo-in" accept="image/jpeg,image/png,image/webp" style="height:auto;padding:6px"><span class="ci-hint">JPG, PNG or WebP, up to 3 MB.</span>
     <?php if (!empty($form['photo'])): ?><label class="ci-chk"><input type="checkbox" name="photo_remove" value="1"> Remove photo</label><?php endif; ?></div>
   </div>
-  <div class="ci-grid3">
+  <div class="ci-grid4">
     <div class="ci-f"><label>Student name <span class="ci-req">*</span></label><input name="name" required maxlength="150" value="<?= $v('name') ?>" autofocus></div>
     <div class="ci-f"><label>Father's name</label><input name="father_name" maxlength="150" value="<?= $v('father_name') ?>"></div>
     <div class="ci-f"><label>Mother's name</label><input name="mother_name" maxlength="150" value="<?= $v('mother_name') ?>"></div>
@@ -283,6 +300,8 @@ $v = fn($k) => ci_e($form[$k] ?? '');
     <div class="ci-f"><label>Class <span class="ci-req">*</span></label><select name="class_id" id="ci-class"><option value=""></option><?php foreach ($L['classes'] as $cid => $cn): ?><option value="<?= $cid ?>" <?= (int)($form['class_id'] ?? 0) === $cid ? 'selected' : '' ?>><?= ci_e($cn) ?></option><?php endforeach; ?></select></div>
     <div class="ci-f"><label>Admission date</label><input type="date" name="admission_date" value="<?= $v('admission_date') ?>"></div>
     <div class="ci-f"><label>Status</label><select name="status"><?php foreach (['active' => 'Active', 'completed' => 'Completed', 'left' => 'Left'] as $k => $l): ?><option value="<?= $k ?>" <?= ($form['status'] ?? 'active') === $k ? 'selected' : '' ?>><?= $l ?></option><?php endforeach; ?></select></div>
+    <div class="ci-f"><label>Student type</label><select name="stype" id="ci-stype"><?php foreach (CI_STYPES as $k => $l): ?><option value="<?= $k ?>" <?= ($form['stype'] ?? 'institute') === $k ? 'selected' : '' ?>><?= $l ?></option><?php endforeach; ?></select></div>
+    <div class="ci-f"><label>Password <small class="ci-muted" style="font-weight:400">(online login)</small></label><div class="ci-pwf"><input type="password" name="spass" id="ci-spass" minlength="4" maxlength="72" autocomplete="new-password" placeholder="<?= $student ? 'empty = keep' : 'empty = mobile number' ?>"><button type="button" class="ci-pw-eye" aria-label="Show password" onclick="var i=document.getElementById('ci-spass'),s=i.type==='password';i.type=s?'text':'password';this.querySelector('i').className='fas '+(s?'fa-eye-slash':'fa-eye')"><i class="fas fa-eye"></i></button></div><span class="ci-hint"><?= $student ? 'Type a new one to change it.' : 'Login: mobile number + this password.' ?></span></div>
   </div>
   <div class="ci-sec" style="margin-top:18px">Address</div>
   <div class="ci-grid4">
@@ -293,12 +312,13 @@ $v = fn($k) => ci_e($form[$k] ?? '');
   <div class="ci-f" style="margin-top:12px"><label>Notes</label><textarea name="notes" maxlength="2000" placeholder="anything to remember about this student"><?= $v('notes') ?></textarea></div>
 </div></div>
 
-<div class="ci-card"><div class="ci-card-h"><h3>Course, batch &amp; fee</h3><button type="button" class="ci-btn ci-ghost ci-sm" id="ci-add-row"><i class="fas fa-plus"></i> Add another course</button></div><div class="ci-card-b" id="ci-rows">
+<?php $canOnline = is_file(INCLUDES_PATH . '/shop.php') && (require_once INCLUDES_PATH . '/shop.php') && sh_perm($me, 'orders'); ?>
+<div class="ci-card"><div class="ci-card-h"><h3>Course, batch &amp; fee</h3><div class="ci-acts-r"><button type="button" class="ci-btn ci-ghost ci-sm" id="ci-add-row"><i class="fas fa-plus"></i> Add another course</button><?php if ($canOnline): ?><?php if ($student): ?><button type="button" class="ci-btn ci-sm" data-enroll="Enroll <?= ci_e($student['name']) ?>" data-enroll-sid="<?= (int)$student['id'] ?>" data-enroll-name="<?= ci_e($student['name']) ?>"><i class="fas fa-laptop"></i> Enroll in a course / notes (paid)</button><?php else: ?><button type="button" class="ci-btn ci-sm" id="ci-then-online"><i class="fas fa-laptop"></i> Enroll in a course / notes (paid)</button><?php endif; ?><?php endif; ?></div></div><div class="ci-card-b" id="ci-rows">
 <?php foreach (array_values($drawRows) as $n => $r) echo $rowHtml($r + ['student_id' => $id], $n); ?>
 </div></div>
 
-<?php if (is_file(INCLUDES_PATH . '/shop.php') && (require_once INCLUDES_PATH . '/shop.php') && sh_perm($me, 'orders')): ?>
-<label class="ci-then-online"><input type="checkbox" name="then_online" value="1"> <span><b>Also give an online course / notes</b><small>After saving, a form opens to sell or give a recorded course or PDF notes (cash, UPI, free …).</small></span></label>
+<?php if ($canOnline && !$student): ?>
+<div class="ci-then-online" id="ci-then-box" hidden><input type="hidden" name="then_online" value="" id="ci-then-in"><span><b><i class="fas fa-laptop"></i> Online course / notes after saving</b><small>When you press Save, a form opens to give a recorded course or PDF notes (cash, UPI, free …).</small></span><button type="button" class="ci-btn ci-ghost ci-sm" id="ci-then-x">Remove</button></div>
 <?php endif; ?>
 <div style="display:flex;gap:10px;margin:0 0 30px">
   <button class="ci-btn" type="submit"><i class="fas fa-check"></i> <?= $student ? 'Save changes' : 'Save' ?></button>
@@ -308,6 +328,7 @@ $v = fn($k) => ci_e($form[$k] ?? '');
 
 <template id="ci-row-tpl"><?= $rowHtml([], 0) ?></template>
 </div>
+<?php if ($canOnline && $student) require __DIR__ . '/components/sh-enroll.php'; ?>
 <?php admin_shell_close(); ?>
 <script>
 (function () {
@@ -417,6 +438,12 @@ $v = fn($k) => ci_e($form[$k] ?? '');
     n.innerHTML = n.innerHTML.replace(/__K__/g, 'n' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6)); n.querySelector('[name="e_key[]"]').value = n.querySelector('[name^="pay["]').name.replace(/^pay\[([^\]]+)\].*$/, '$1');
     rows.appendChild(n); wire(n, false);
   });
+  var tOn = document.getElementById('ci-then-online'), tBox = document.getElementById('ci-then-box');
+  if (tOn && tBox) {
+    var tIn = document.getElementById('ci-then-in');
+    tOn.addEventListener('click', function () { tIn.value = '1'; tBox.hidden = false; tBox.scrollIntoView({ block: 'center', behavior: 'smooth' }); });
+    document.getElementById('ci-then-x').addEventListener('click', function () { tIn.value = ''; tBox.hidden = true; });
+  }
   // ?addcourse=1 (from the students list): open a new course row straight away
   if (/[?&]addcourse=1/.test(location.search)) { document.getElementById('ci-add-row').click(); var nr = rows.querySelectorAll('.ci-enr-row'); nr = nr[nr.length - 1]; if (nr) { nr.scrollIntoView({ block: 'center' }); setTimeout(function () { nr.querySelector('.ci-course').focus(); }, 300); } }
 })();

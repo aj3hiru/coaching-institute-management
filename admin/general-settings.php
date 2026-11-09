@@ -18,10 +18,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'contact_email'    => filter_var(trim((string)($_POST['contact_email'] ?? '')), FILTER_VALIDATE_EMAIL) ?: '',
         'phone'            => $str('phone', 40),
         'address'          => $str('address', 300),
-        'footer_tagline'   => $str('footer_tagline', 300),
         'home_description' => $str('home_description', 300),
         'home_keywords'    => $str('home_keywords', 300),
-        'date_format'      => in_array($_POST['date_format'] ?? '', ['j F Y', 'M j, Y', 'Y-m-d', 'd/m/Y', 'm/d/Y'], true) ? $_POST['date_format'] : 'j F Y',
     ];
     foreach (['facebook', 'twitter', 'instagram', 'whatsapp', 'telegram', 'linkedin', 'threads', 'youtube'] as $s) {
         $save['social_' . $s] = $url('social_' . $s);
@@ -74,7 +72,7 @@ $social = edu_social();
 <?php admin_shell_open('General Settings', 'Site tagline, logo, site icon, contact details, social links &amp; more'); ?>
 <?= admin_flash() ?>
 <?php $gsTabs = ['identity' => ['fa-id-card', 'Site Identity'], 'contact' => ['fa-address-book', 'Address & Contact'],
-  'social' => ['fa-share-nodes', 'Social Profiles'], 'seo' => ['fa-magnifying-glass', 'Search Engines'], 'footer' => ['fa-shoe-prints', 'Footer'], 'date' => ['fa-calendar-day', 'Date Format']]; ?>
+  'social' => ['fa-share-nodes', 'Social Profiles'], 'seo' => ['fa-magnifying-glass', 'Search Engines']]; ?>
 <form class="wps-wrap gs-wrap" method="POST">
   <div class="gs-group"><span class="gs-glabel"><i class="fas fa-gear"></i> Settings</span>
   <nav class="gs-nav" role="tablist" aria-label="Settings sections">
@@ -138,26 +136,6 @@ $social = edu_social();
     </div>
   </section>
 
-  <section class="wps-section" data-tab="footer">
-    <h2>Footer</h2>
-    <p class="wps-section-desc">Homepage sections, menus and colors are set in <a href="/admin/customize.php">Customize</a>.</p>
-    <div class="wps-table">
-      <div class="wps-row"><div class="wps-th"><label for="footer_tagline">Footer Text</label></div><div class="wps-td"><textarea id="footer_tagline" name="footer_tagline" class="wps-input large" rows="2" placeholder="<?= htmlspecialchars(SITE_FOOTER_TAGLINE) ?>"><?= $v('footer_tagline') ?></textarea></div></div>
-    </div>
-  </section>
-
-  <section class="wps-section" data-tab="date">
-    <h2>Date Format</h2>
-    <div class="wps-table">
-      <div class="wps-row"><div class="wps-th"><span>Date Format</span></div><div class="wps-td">
-        <?php foreach (['j F Y', 'M j, Y', 'Y-m-d', 'd/m/Y', 'm/d/Y'] as $f): ?>
-        <label class="wps-radio"><input type="radio" name="date_format" value="<?= $f ?>" <?= ($g['date_format'] ?? 'j F Y') === $f ? 'checked' : '' ?>><span class="wps-radio-label"><?= date($f) ?></span><code><?= $f ?></code></label>
-        <?php endforeach; ?>
-        <p class="wps-desc">Used for post dates on the site. Times are shown in India time (Asia/Kolkata).</p>
-      </div></div>
-    </div>
-  </section>
-
   <p class="wps-submit"><button type="submit" class="wps-primary">Save Changes</button></p>
   </div>
 </form>
@@ -184,7 +162,7 @@ document.addEventListener('DOMContentLoaded', function () {
     try { history.replaceState(null, '', '#' + id); } catch (e) {}
   }
   nav.addEventListener('click', function (e) { var b = e.target.closest('[data-tab]'); if (b) { show(b.dataset.tab); if (window.innerWidth <= 820) document.querySelector('.gs-main').scrollIntoView({ behavior: 'smooth', block: 'start' }); } });
-  var old = { 'site-identity': 'identity', 'site-address-and-contact': 'contact', 'social-profiles': 'social', 'search-engines': 'seo', 'footer': 'footer', 'date-format': 'date' }; // earlier #links
+  var old = { 'site-identity': 'identity', 'site-address-and-contact': 'contact', 'social-profiles': 'social', 'search-engines': 'seo' }; // earlier #links
   var start = (location.hash || '').slice(1); start = old[start] || start;
   show(secs.some(function (s) { return s.dataset.tab === start; }) ? start : secs[0].dataset.tab);
   window.addEventListener('hashchange', function () { var h = location.hash.slice(1); h = old[h] || h; if (secs.some(function (s) { return s.dataset.tab === h; })) show(h); });

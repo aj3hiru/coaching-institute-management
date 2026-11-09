@@ -553,6 +553,9 @@ function sh_demo_remove(PDO $pdo): string
     $pdo->exec("DELETE FROM sh_doubts WHERE product_id IN (" . $in($pids) . ")");
     foreach (['sh_lessons', 'sh_sections', 'sh_units', 'sh_files'] as $t) $pdo->exec("DELETE FROM $t WHERE product_id IN (" . $in($pids) . ")");
     $pdo->exec("DELETE FROM sh_products WHERE id IN (" . $in($pids) . ")");
+    // the "Online" student rows made for the demo accounts (only ones with no institute course or payment)
+    try { $pdo->exec("DELETE s FROM ci_students s JOIN sh_users u ON u.student_id = s.id WHERE u.id IN (" . $in($uids) . ") AND s.stype = 'online'
+        AND NOT EXISTS (SELECT 1 FROM ci_enrollments e WHERE e.student_id = s.id) AND NOT EXISTS (SELECT 1 FROM ci_payments p WHERE p.student_id = s.id)"); } catch (Throwable) {}
     $pdo->exec("DELETE FROM sh_users WHERE id IN (" . $in($uids) . ")");
     foreach ($files as $f) sh_media_unlink($f); // every file of the demo products (also ones uploaded later)
     foreach ($pids as $pid) @rmdir(sh_media_dir() . '/' . $pid);

@@ -100,7 +100,6 @@ function admin_shell_nav(): array
                 $link(sh_perm($cu, 'products'), 'Categories', '/admin/shop-categories.php', 'fa-shapes'),
                 $link(sh_perm($cu, 'teacher') || sh_perm($cu, 'products') || sh_perm($cu, 'customers'), 'Doubts', '/admin/shop-doubts.php', 'fa-circle-question'),
                 $link(sh_perm($cu, 'orders'), 'Orders', '/admin/shop-orders.php', 'fa-cart-shopping'),
-                $link(sh_perm($cu, 'customers'), 'Customers', '/admin/shop-customers.php', 'fa-users'),
                 $link(sh_perm($cu, 'products'), 'Reviews', '/admin/shop-reviews.php', 'fa-star'),
                 $link(sh_perm($cu, 'customers'), 'Report', '/admin/shop-reports.php', 'fa-flag'),
                 $link(sh_perm($cu, 'orders') && !$ci, 'Reports', '/admin/ci-reports.php?type=store', 'fa-file-pdf'), // one Reports page (Institute → Reports has Online sales too)
@@ -141,7 +140,6 @@ function admin_shell_nav(): array
             $link($isAdmin, 'Customize', '/admin/customize.php', 'fa-palette'),
             ['label' => 'Settings', 'href' => '#', 'icon' => 'fa-cogs', 'items' => $sub([
                 $link($isAdmin, 'General', '/admin/general-settings.php', 'fa-sliders-h'),
-                $link($isAdmin, 'Performance', '/admin/performance-settings.php', 'fa-tachometer-alt'),
             ])],
             $isAdmin && $has('/admin/contact-messages.php') ? ['label' => 'Contact', 'href' => '/admin/contact-messages.php', 'icon' => 'fa-envelope', 'badge' => admin_shell_unread()] : null,
         ]],

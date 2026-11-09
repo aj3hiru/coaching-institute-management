@@ -38,7 +38,7 @@ $fields = [
     <div class="sc-editor"><div class="sc-gutter"></div><textarea class="sc-textarea" name="<?= $k ?>" id="sn-<?= $k ?>" placeholder="<?= htmlspecialchars($ph) ?>" spellcheck="false" autocomplete="off"><?= htmlspecialchars((string)($sn[$k] ?? '')) ?></textarea></div>
   </div>
   <?php endforeach; ?>
-  <p style="margin:0;font-size:.8rem;color:var(--gray-500)">When “Delay ads and tracking scripts” is on (<a href="/admin/performance-settings.php">Performance</a>), scripts here wait for the visitor’s first scroll or tap.</p>
+
   <div><button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save Snippets</button></div>
 </form>
 <?php admin_shell_close(); ?>

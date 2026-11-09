@@ -20,9 +20,19 @@ if (isset($_GET['blockinfo'])) { // the Block popup: the account and every cours
         'blocked' => (int)$x['blocked'], 'active' => !(int)$x['revoked'] && !(int)$x['blocked'] && (!$x['expires_at'] || strtotime($x['expires_at']) > time()), 'free' => (float)$x['price'] <= 0], $a->fetchAll(PDO::FETCH_ASSOC))], JSON_UNESCAPED_UNICODE));
 }
 
+// The customers list and profile now live in Students: an online account is a student ("Online" / "Both") and its
+// profile is the student profile (admin/components/online-account.php). This page keeps the actions those forms post to.
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    if ($id && ($sid = sh_student_sync($pdo, $id))) { header('Location: /admin/student-view.php?id=' . $sid . '#online'); exit; }
+    $go = array_filter(['type' => 'online', 'q' => trim((string)($_GET['q'] ?? ''))]);
+    header('Location: /admin/students.php?' . http_build_query($go) . (isset($_GET['new']) ? '' : ''));
+    exit;
+}
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_check();
     $a = (string)($_POST['action'] ?? '');
+    $to = (string)($_POST['to'] ?? ''); // the student profile the form was on
+    $to = preg_match('#^/admin/student-view\.php\?id=\d+$#', $to) ? $to : '';
     $back = $id ? '/admin/shop-customers.php?id=' . $id : '/admin/shop-customers.php';
     try {
         if ($a === 'create') {
@@ -34,12 +44,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             $pass = (string)($_POST['pass'] ?? '');
             $made = false;
-            if ($pass === '') { $pass = substr(str_replace(['+', '/', '='], '', base64_encode(random_bytes(9))), 0, 8); $made = true; }
+            if ($pass === '') { $pass = sh_clean_mobile($mobile) ?: substr(str_replace(['+', '/', '='], '', base64_encode(random_bytes(9))), 0, 8); $made = true; } // empty = the mobile number
+            if ($email === '' && preg_match('/^[6-9]\d{9}$/', sh_clean_mobile($mobile))) $email = 'm' . sh_clean_mobile($mobile) . '@noemail.invalid'; // mobile-only login
             $new = sh_register($pdo, $name, $mobile, $email, $pass, (int)$me['id']);
-            if ($sid) $pdo->prepare("UPDATE sh_users SET student_id = ? WHERE id = ?")->execute([$sid, $new]);
+            if ($sid) { $pdo->prepare("UPDATE sh_users SET student_id = ? WHERE id = ?")->execute([$sid, $new]); ci_type_sync($pdo, $sid); }
             admin_log('shop_customer', "Created buyer account #$new for $name");
-            admin_flash('Account created.' . ($made ? ' Password: ' . $pass . ' — give it to the student now (it is not shown again). They can change it under Profile.' : ''));
-            $back = '/admin/shop-customers.php?id=' . $new;
+            admin_flash('Online login made. Login: mobile number' . ($made ? ' · password: ' . $pass : ' + the password you set') . '.');
+            $back = $sid ? '/admin/student-view.php?id=' . $sid . '#online-account' : '/admin/shop-customers.php?id=' . $new;
         } elseif ($id && $a === 'grant') {
             $pid = (int)($_POST['product_id'] ?? 0);
             $days = ($_POST['days'] ?? '') === '' ? null : max(0, (int)$_POST['days']);
@@ -104,9 +115,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $back = (string)($_POST['back'] ?? '') === 'list' ? '/admin/shop-customers.php?' . http_build_query(array_filter(['q' => $_POST['bq'] ?? '', 'show' => $_POST['bshow'] ?? ''])) : '/admin/shop-customers.php?id=' . $id;
         } elseif ($id && $a === 'unlink') {
             $pdo->prepare("UPDATE sh_users SET student_id = NULL WHERE id = ?")->execute([$id]);
+            $ns = sh_student_sync($pdo, $id);
             admin_flash('No longer linked to the institute student.');
+            if ($ns) $to = '/admin/student-view.php?id=' . $ns;
         }
     } catch (RuntimeException $e) { admin_flash($e->getMessage(), 'error'); }
+    if ($to && $a !== 'create') $back = $to . '#online';
     header('Location: ' . $back);
     exit;
 }

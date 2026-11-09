@@ -4,6 +4,7 @@
 // discount, fee for this student, paid, due, and every installment paid for it) and Payments (every receipt + balance).
 require_once __DIR__ . '/components/guard.php';
 require_once INCLUDES_PATH . '/institute.php';
+if (is_file(INCLUDES_PATH . '/shop.php')) require_once INCLUDES_PATH . '/shop.php'; // online account parts of the profile
 $me = ci_page_start($pdo);
 $id = (int)($_GET['id'] ?? $_POST['id'] ?? 0);
 $q = $pdo->prepare("SELECT s.*, c.name AS class_name, u.username AS added_by FROM ci_students s LEFT JOIN ci_classes c ON c.id = s.class_id
@@ -95,7 +96,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($a === 'delete' && ci_perm($me, 'edit_student')) {
         $n = (int)$pdo->query("SELECT COUNT(*) FROM ci_payments WHERE student_id = $id")->fetchColumn();
         if ($n) { admin_flash('This student has fee payments, so they cannot be deleted. Set the status to Left instead.', 'error'); header('Location: ' . $back()); exit; }
+        // an online account with courses or orders stays (suspend it instead); an empty one goes with the student
+        $oaIds = [];
+        try { $oaIds = $pdo->query("SELECT id FROM sh_users WHERE student_id = $id")->fetchAll(PDO::FETCH_COLUMN); } catch (Throwable) {}
+        if ($oaIds) {
+            $inU = implode(',', array_map('intval', $oaIds));
+            if ((int)$pdo->query("SELECT (SELECT COUNT(*) FROM sh_access WHERE user_id IN ($inU) AND source <> 'block') + (SELECT COUNT(*) FROM sh_orders WHERE user_id IN ($inU))")->fetchColumn()) {
+                admin_flash('This student has online courses or orders, so they cannot be deleted. Suspend the online account or set the status to Left instead.', 'error'); header('Location: ' . $back()); exit;
+            }
+        }
         $pdo->beginTransaction();
+        if ($oaIds) { $pdo->exec("DELETE FROM sh_access WHERE user_id IN ($inU)"); $pdo->exec("DELETE FROM sh_users WHERE id IN ($inU)"); }
         $pdo->prepare("DELETE i FROM ci_installments i JOIN ci_enrollments e ON e.id = i.enrollment_id WHERE e.student_id = ?")->execute([$id]);
         $pdo->prepare("DELETE FROM ci_class_history WHERE student_id = ?")->execute([$id]);
         $pdo->prepare("DELETE FROM ci_enrollments WHERE student_id = ?")->execute([$id]);
@@ -174,7 +185,7 @@ $tel = fn(?string $m) => $m ? '<a href="tel:' . ci_e($m) . '">' . ci_e($m) . '</
     <?= ci_avatar($s, 88) ?>
     <div class="ci-ph-txt">
       <h2><?= ci_e($s['name']) ?></h2>
-      <div class="ci-ph-tags"><span class="ci-badge ci-b-violet"><?= ci_e($s['reg_no']) ?></span><?= ci_status_badge($s['status']) ?><?= $s['class_name'] ? '<span class="ci-badge ci-b-blue">Class ' . ci_e($s['class_name']) . '</span>' : '' ?><?= $tot['due'] > 0.004 ? '<span class="ci-badge ci-b-red">Due ' . ci_money0($tot['due']) . '</span>' : ($tot['net'] > 0 ? '<span class="ci-badge ci-b-green">Fee fully paid</span>' : '') ?></div>
+      <div class="ci-ph-tags"><span class="ci-badge ci-b-violet"><?= ci_e($s['reg_no']) ?></span><span class="ci-badge ci-tb-<?= ci_e($s['stype'] ?? 'institute') ?>"><?= ci_e((CI_STYPES[$s['stype'] ?? 'institute'] ?? '') . ' student') ?></span><?= ci_status_badge($s['status']) ?><?= $s['class_name'] ? '<span class="ci-badge ci-b-blue">Class ' . ci_e($s['class_name']) . '</span>' : '' ?><?= $tot['due'] > 0.004 ? '<span class="ci-badge ci-b-red">Due ' . ci_money0($tot['due']) . '</span>' : ($tot['net'] > 0 ? '<span class="ci-badge ci-b-green">Fee fully paid</span>' : '') ?></div>
       <div class="ci-ph-meta">
         <span><i class="fas fa-phone"></i> <?= $tel($s['mobile']) ?><?= $s['alt_mobile'] ? ' · ' . $tel($s['alt_mobile']) : '' ?></span>
         <?php if ($s['father_name']): ?><span><i class="fas fa-user"></i> S/D of <?= ci_e($s['father_name']) ?></span><?php endif; ?>
@@ -188,11 +199,22 @@ $tel = fn(?string $m) => $m ? '<a href="tel:' . ci_e($m) . '">' . ci_e($m) . '</
     <?php if ($wa): ?><a class="ci-ico ci-ico-ok" href="<?= ci_e($wa) ?>" target="_blank" rel="noopener" aria-label="WhatsApp"><i class="fab fa-whatsapp" style="font-size:16px"></i></a><?php endif; ?>
     <?= ci_ico('pdf', null, 'Student report (PDF)', 'button', ' data-report="student" data-id="' . $id . '"') ?>
     <?php if (ci_perm($me, 'edit_student')): ?><?= ci_ico('edit', '/admin/student-edit.php?id=' . $id, 'Edit student') ?><button type="button" class="ci-btn ci-ghost" data-open="ci-addc"><?= ci_svg('book-plus') ?> Add to course / batch</button><?php endif; ?>
+    <?php if (function_exists('sh_perm') && sh_perm($me, 'orders')): ?><button type="button" class="ci-btn ci-ghost" data-enroll="Enroll <?= ci_e($s['name']) ?>" data-enroll-sid="<?= $id ?>" data-enroll-name="<?= ci_e($s['name']) ?>"><i class="fas fa-laptop"></i> Enroll in a course / notes (paid)</button><?php endif; ?>
     <?php if (!$pays && ci_perm($me, 'edit_student')): ?><?= ci_post_ico('trash', 'Delete student', ['action' => 'delete', 'id' => $id], 'Delete student ' . $s['name'] . '? This cannot be undone.') ?><?php endif; ?>
     <?php if ($payable && ci_perm($me, 'fees')): ?><button type="button" class="ci-btn" data-collect="<?= (int)$payable[0]['id'] ?>"><i class="fas fa-indian-rupee-sign"></i> Collect Fee</button><?php endif; ?>
   </div>
 </div></div>
 
+<?php $onlyOnline = ($s['stype'] ?? '') === 'online' && !$enr && !$pays; ?>
+<?php if ($onlyOnline && isset($oa) === false): $oa0 = (function_exists('sh_perm') && sh_perm($me, 'customers')) ? (function () use ($pdo, $s) { sh_tables($pdo); require_once __DIR__ . '/components/online-account.php'; return oa_load($pdo, $s); })() : null; endif; ?>
+<?php if ($onlyOnline && !empty($oa0)): ?>
+<div class="ci-stats ci-stats6">
+  <div class="ci-stat"><i class="fas fa-laptop ci-i-violet"></i><div><b><?= (int)$oa0['open'] ?></b><small>Online courses / notes open now</small></div></div>
+  <div class="ci-stat"><i class="fas fa-indian-rupee-sign ci-i-green"></i><div><b><?= ci_money0($oa0['spent']) ?></b><small>Spent online · <?= (int)$oa0['paid_n'] ?> orders</small></div></div>
+  <div class="ci-stat"><i class="fas fa-calendar-plus ci-i-blue"></i><div><b><?= $oa0['u'] ? date('d M Y', strtotime($oa0['u']['created_at'])) : '—' ?></b><small>Joined online</small></div></div>
+  <div class="ci-stat"><i class="fas fa-right-to-bracket ci-i-amber"></i><div><b><?= $oa0['u'] && $oa0['u']['last_login'] ? date('d M Y', strtotime($oa0['u']['last_login'])) : 'Never' ?></b><small>Last login</small></div></div>
+</div>
+<?php else: ?>
 <div class="ci-stats ci-stats6">
   <div class="ci-stat"><i class="fas fa-file-invoice ci-i-violet"></i><div><b><?= ci_money0($tot['net']) ?></b><small>Total fee (after discount)</small></div></div>
   <div class="ci-stat"><i class="fas fa-circle-check ci-i-green"></i><div><b><?= ci_money0($tot['paid']) ?></b><small>Paid · <?= count($pays) ?> receipts</small></div></div>
@@ -200,6 +222,7 @@ $tel = fn(?string $m) => $m ? '<a href="tel:' . ci_e($m) . '">' . ci_e($m) . '</
   <div class="ci-stat"><i class="fas fa-calendar-xmark ci-i-amber"></i><div><b><?= ci_money0($late) ?></b><small>Due date passed</small></div></div>
   <div class="ci-stat"><i class="fas fa-calendar-day ci-i-blue"></i><div><b><?= $next ? ci_money0($next['amount']) : '—' ?></b><small><?= $next ? 'Next due · ' . ci_date($next['date']) : 'No due date set' ?></small></div></div>
 </div>
+<?php endif; ?>
 
 <?php
   $age = $s['dob'] ? (new DateTime($s['dob']))->diff(new DateTime())->y : null;
@@ -217,16 +240,8 @@ $tel = fn(?string $m) => $m ? '<a href="tel:' . ci_e($m) . '">' . ci_e($m) . '</
         <?php if ($s['notes']): ?><div class="ci-det-notes"><b>Notes</b><br><?= nl2br(ci_e($s['notes'])) ?></div><?php endif; ?></div>
       <button type="button" class="ci-more-btn" data-more>View all details <i class="fas fa-chevron-down"></i></button>
     </div></div>
-    <?php if (is_file(INCLUDES_PATH . '/shop.php') && (require_once INCLUDES_PATH . '/shop.php') && sh_perm($me, 'customers')): // online store account of this student
-      sh_tables($pdo);
-      $oq = $pdo->prepare("SELECT u.id, u.email, (SELECT COUNT(*) FROM sh_access a WHERE a.user_id = u.id AND a.revoked = 0 AND (a.expires_at IS NULL OR a.expires_at > NOW())) AS items FROM sh_users u WHERE u.student_id = ? OR u.mobile = ? ORDER BY u.student_id = ? DESC LIMIT 1");
-      $oq->execute([$s['id'], $s['mobile'], $s['id']]); $oacc = $oq->fetch(PDO::FETCH_ASSOC); ?>
-    <div class="ci-card" data-ds="Online account"><div class="ci-card-h"><h3>Online account</h3></div><div class="ci-card-b">
-      <?php $canSell = sh_perm($me, 'orders'); ?>
-      <?php if ($oacc): ?><p style="margin:0 0 8px"><?= str_ends_with((string)$oacc['email'], '@noemail.invalid') ? 'Mobile login' : ci_e($oacc['email']) ?> · <?= (int)$oacc['items'] ?> online course<?= (int)$oacc['items'] === 1 ? '' : 's' ?> / notes</p><div style="display:flex;gap:6px;flex-wrap:wrap"><?php if ($canSell): ?><button type="button" class="ci-btn ci-sm" data-enroll="Online course / notes for <?= ci_e($s['name']) ?>" data-enroll-sid="<?= (int)$s['id'] ?>" data-enroll-name="<?= ci_e($s['name']) ?>"><i class="fas fa-cart-plus"></i> Sell / give online course</button><?php endif; ?><a class="ci-btn ci-ghost ci-sm" href="/admin/shop-customers.php?id=<?= (int)$oacc['id'] ?>"><i class="fas fa-key"></i> Open account</a></div>
-      <?php else: ?><p class="ci-muted" style="margin:0 0 8px">No online account yet. The student can sign up with mobile <?= ci_e($s['mobile']) ?>, or you can make one.</p><div style="display:flex;gap:6px;flex-wrap:wrap"><?php if ($canSell): ?><button type="button" class="ci-btn ci-sm" data-enroll="Online course / notes for <?= ci_e($s['name']) ?>" data-enroll-sid="<?= (int)$s['id'] ?>" data-enroll-name="<?= ci_e($s['name']) ?>"><i class="fas fa-cart-plus"></i> Sell / give online course</button><?php endif; ?><a class="ci-btn ci-ghost ci-sm" href="/admin/shop-customers.php?new=1&student=<?= (int)$s['id'] ?>"><i class="fas fa-user-plus"></i> Only make the account</a></div><?php endif; ?>
-    </div></div>
-    <?php endif; ?>
+    <?php $oa = null; if (is_file(INCLUDES_PATH . '/shop.php') && (require_once INCLUDES_PATH . '/shop.php') && sh_perm($me, 'customers')) { // online account (login, status, password, block)
+      sh_tables($pdo); require_once __DIR__ . '/components/online-account.php'; $oa = oa_load($pdo, $s); oa_side($oa, $me); } ?>
     <div class="ci-card" data-ds="Class history"><div class="ci-card-h"><h3>Class history</h3></div><div class="ci-card-b">
       <ul class="ci-timeline">
         <?php foreach ($history as $h): ?><li><b><?= ci_e($h['from_name'] ?? '—') ?> → <?= ci_e($h['to_name'] ?? '—') ?></b><small><?= ci_date($h['changed_on']) ?><?= $h['session_name'] ? ' · ' . ci_e($h['session_name']) : '' ?><?= $h['note'] ? ' · ' . ci_e($h['note']) : '' ?></small></li><?php endforeach; ?>
@@ -235,8 +250,9 @@ $tel = fn(?string $m) => $m ? '<a href="tel:' . ci_e($m) . '">' . ci_e($m) . '</
     </div></div>
   </aside>
   <div class="ci-pf-main">
+    <?php $oaFirst = $oa && ($s['stype'] ?? '') === 'online'; if ($oaFirst) { oa_main($oa, $me); echo '<div style="height:16px"></div>'; } ?>
     <div class="ci-sec-h" data-ds="Courses &amp; batches"><h3>Courses &amp; batches <span class="ci-muted">(<?= count($enr) ?>)</span></h3><?php if (ci_perm($me, 'edit_student') || ci_perm($me, 'add_student')): ?><button type="button" class="ci-btn ci-sm ci-noprint" data-open="ci-addc"><?= ci_svg('book-plus') ?> Add to course / batch</button><?php endif; ?></div>
-    <?php if (!$enr): ?><div class="ci-card"><div class="ci-card-b ci-empty">Not in any course yet.</div></div><?php endif; ?>
+    <?php if (!$enr): ?><div class="ci-card"><div class="ci-card-b ci-empty">Not in any institute course / batch yet.</div></div><?php endif; ?>
     <?php foreach ($enr as $e): $eid = (int)$e['id']; $bi = $batchInfo[$e['batch_id']] ?? []; $dropped = $e['status'] === 'dropped'; $inst = ($e['fee_type'] ?? 'full') === 'installment'; $ep = array_reverse($byEnr[$eid] ?? []); $late = $e['due_date'] && $e['due_date'] < date('Y-m-d') && (float)$e['due'] > 0.004; ?>
     <div class="ci-cc<?= $e['status'] !== 'active' ? ' is-off' : '' ?>" id="enr-<?= $eid ?>">
       <div class="ci-cc-h">
@@ -273,8 +289,10 @@ $tel = fn(?string $m) => $m ? '<a href="tel:' . ci_e($m) . '">' . ci_e($m) . '</
     <?php endforeach; ?>
     <?php if ($pays): ?><tr class="ci-total-row"><td colspan="4">Total paid</td><td class="ci-num"><?= ci_money($tot['paid']) ?></td><td class="ci-num"><?= ci_money($tot['due']) ?></td><td class="ci-noprint"></td></tr><?php endif; ?>
     </tbody></table></div></div>
+    <?php if ($oa && !$oaFirst) { echo '<div style="height:16px"></div>'; oa_main($oa, $me); } ?>
   </div>
 </div>
+<?php if ($oa) oa_modals($oa); ?>
 
 <?php if (ci_perm($me, 'edit_student') || ci_perm($me, 'add_student')): $myClass = (string)(int)$s['class_id']; ?>
 <div class="ci-modal" id="ci-addc" hidden><div class="ci-modal-box ci-modal-wide" role="dialog" aria-modal="true" aria-labelledby="ci-addc-h">

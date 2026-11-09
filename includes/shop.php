@@ -14,7 +14,7 @@
  */
 require_once __DIR__ . '/settings.php';
 
-const SH_SCHEMA = 18;
+const SH_SCHEMA = 19;
 
 function sh_db(): PDO
 {
@@ -202,6 +202,8 @@ function sh_tables(PDO $pdo): void
             if ($office) $pdo->prepare("UPDATE users SET role = ? WHERE id = ?")->execute([$teach ? 'teacher' : 'accountant', (int)$u['id']]);
         }
     } catch (Throwable) {}
+    // 19: every online account is also a student on the All Students list ("Online", or "Both" when it is an institute student with online courses)
+    foreach ($pdo->query("SELECT id FROM sh_users ORDER BY id")->fetchAll(PDO::FETCH_COLUMN) as $__u) sh_student_sync($pdo, (int)$__u);
     edu_settings_save('shop', ['schema' => SH_SCHEMA]);
 }
 
@@ -388,7 +390,42 @@ function sh_register(PDO $pdo, string $name, string $mobile, string $email, stri
     }
     $pdo->prepare("INSERT INTO sh_users (name, mobile, email, pass, student_id, created_by) VALUES (?, ?, ?, ?, ?, ?)")
         ->execute([mb_substr($name, 0, 150), $mobile, mb_substr($email, 0, 190), password_hash($pass, PASSWORD_DEFAULT), sh_find_student($pdo, $mobile), $by]);
-    return (int)$pdo->lastInsertId();
+    $uid = (int)$pdo->lastInsertId();
+    sh_student_sync($pdo, $uid); // also on the All Students list
+    return $uid;
+}
+
+/** Puts an online account on the All Students list: linked to the institute student with the same mobile, else added as an
+ * "Online" student (6-digit reg. no.). An institute student with an online course / notes becomes "Both". Returns the student id. */
+function sh_student_sync(PDO $pdo, int $uid): int
+{
+    try {
+        if (!function_exists('ci_tables')) require_once INCLUDES_PATH . '/institute.php';
+        ci_tables($pdo);
+        $q = $pdo->prepare("SELECT id, name, mobile, email, student_id, created_at, created_by FROM sh_users WHERE id = ?"); $q->execute([$uid]);
+        $u = $q->fetch(PDO::FETCH_ASSOC);
+        if (!$u) return 0;
+        $sid = (int)$u['student_id'];
+        if ($sid) { $c = $pdo->prepare("SELECT COUNT(*) FROM ci_students WHERE id = ?"); $c->execute([$sid]); if (!(int)$c->fetchColumn()) $sid = 0; }
+        if (!$sid) $sid = (int)sh_find_student($pdo, (string)$u['mobile']);
+        if (!$sid) {
+            $email = str_ends_with((string)$u['email'], '@noemail.invalid') ? null : ($u['email'] ?: null);
+            for ($try = 0; $try < 3; $try++) {
+                try {
+                    $pdo->prepare("INSERT INTO ci_students (reg_no, name, mobile, email, status, stype, admission_date, created_by) VALUES (?, ?, ?, ?, 'active', 'online', ?, ?)")
+                        ->execute([ci_next_no($pdo, 'ci_students', 'reg_no', CI_REG_PREFIX, 6), $u['name'], $u['mobile'], $email, substr((string)$u['created_at'], 0, 10) ?: date('Y-m-d'), $u['created_by'] ?: null]);
+                    $sid = (int)$pdo->lastInsertId();
+                    break;
+                } catch (PDOException $e) { if ($e->getCode() !== '23000' || $try === 2) throw $e; }
+            }
+        }
+        if ((int)$u['student_id'] !== $sid) $pdo->prepare("UPDATE sh_users SET student_id = ? WHERE id = ?")->execute([$sid, $uid]);
+        ci_type_sync($pdo, $sid);
+        return $sid;
+    } catch (Throwable $e) {
+        error_log('sh_student_sync: ' . $e->getMessage());
+        return 0;
+    }
 }
 
 /** Is this mobile number or email on the ban list (a suspended account)? */
@@ -473,6 +510,7 @@ function sh_grant(PDO $pdo, int $uid, int $pid, string $source, ?int $orderId = 
         ON DUPLICATE KEY UPDATE source = VALUES(source), order_id = COALESCE(VALUES(order_id), order_id), granted_by = VALUES(granted_by),
         note = VALUES(note), granted_at = NOW(), expires_at = VALUES(expires_at), revoked = 0, blocked = IF(VALUES(source) = 'admin', 0, blocked)") // staff giving it lifts a block
         ->execute([$uid, $pid, $source, $orderId, $by, mb_substr($note, 0, 200), $exp]);
+    sh_student_sync($pdo, $uid); // an institute student with an online course becomes "Both"
 }
 
 /** Lessons of a course grouped by section: [['id'=>…, 'title'=>…, 'lessons'=>[…]], …] (lessons without a section first). */

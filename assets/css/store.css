@@ -981,3 +981,19 @@ a.st-li:hover{background:#f7fbfc}a.st-li:hover svg{color:var(--sa)}
 .au-one .au-forgot{display:flex;justify-content:flex-end;margin-top:7px}
 .au-one .au-forgot a{font-size:13.5px;font-weight:600;color:var(--gc-accent,#0c6878);text-decoration:none}
 .au-one .au-forgot a:hover{text-decoration:underline}
+/* Orders: compact cards (phone: picture, title, then price · status · View on one line) and the access of each item */
+.ac-acc{display:inline-flex;align-items:center;gap:5px;margin-top:6px;padding:2px 8px;border-radius:4px;font-size:12px;font-weight:700;line-height:1.5}
+.ac-acc svg{width:13px;height:13px;flex:0 0 auto}
+.ac-acc-life{background:#dcfce7;color:#15803d}.ac-acc-till{background:#e0f2fe;color:#0369a1}.ac-acc-soon{background:#fef3c7;color:#b45309}.ac-acc-off{background:#fee2e2;color:#b91c1c}
+.ac-ord-off{opacity:1;filter:none}.ac-ord-off .ac-ord-th{opacity:.55;filter:grayscale(.7)}.ac-ord-off .ac-ord-t b,.ac-ord-off .ac-ord-r b{color:#6b7280}
+@media (max-width:600px){
+  .ac-ord{display:grid;grid-template-columns:84px minmax(0,1fr);column-gap:12px;row-gap:8px;align-items:start;padding:12px}
+  .ac-ord-th{width:84px;flex:none;grid-row:1}
+  .ac-ord-t{grid-column:2;min-width:0}
+  .ac-ord-t b{font-size:14.5px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .ac-ord-t small{font-size:12px}
+  .ac-ord-r{grid-column:1/-1;margin:0;flex-direction:row;align-items:center;gap:8px;padding-top:8px;border-top:1px solid #f1f2f4}
+  .ac-ord-r b{font-size:15px}
+  .ac-ord-r .ac-ord-go{margin-left:auto;width:auto;text-align:right}
+  .ac-acc{font-size:11.5px}
+}

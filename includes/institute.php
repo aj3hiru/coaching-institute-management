@@ -12,7 +12,7 @@
 
 if (!function_exists('ci_tables')) {
 
-define('CI_REG_PREFIX', 'DK-');
+define('CI_REG_PREFIX', ''); // registration numbers are 6 digits: 000001, 000002 … (old DK-0001 style ones are changed once)
 define('CI_RECEIPT_PREFIX', 'RCPT-');
 define('CI_METHODS', ['Cash' => 'Cash', 'UPI' => 'UPI', 'Card' => 'Card', 'Bank' => 'Bank transfer', 'Cheque' => 'Cheque', 'Other' => 'Other']);
 
@@ -74,6 +74,14 @@ function ci_tables(PDO $pdo): void
     // split payments (part Cash + part UPI …): one receipt, its parts as JSON [{"m":"Cash","a":3000},…]
     if (!$pdo->query("SHOW COLUMNS FROM ci_payments LIKE 'parts'")->fetch()) $pdo->exec("ALTER TABLE ci_payments ADD COLUMN parts TEXT NULL AFTER method");
     if (!$pdo->query("SHOW COLUMNS FROM ci_enrollments LIKE 'fee_type'")->fetch()) $pdo->exec("ALTER TABLE ci_enrollments ADD COLUMN fee_type VARCHAR(12) NOT NULL DEFAULT 'full' AFTER discount");
+    // student type: institute (offline batches), online (online courses / notes only) or both
+    if (!$pdo->query("SHOW COLUMNS FROM ci_students LIKE 'stype'")->fetch()) $pdo->exec("ALTER TABLE ci_students ADD COLUMN stype VARCHAR(10) NOT NULL DEFAULT 'institute' AFTER status, ADD KEY k_stype (stype)");
+    // old "DK-0001" registration numbers become "000001" (the same number, 6 digits)
+    foreach ($pdo->query("SELECT id, reg_no FROM ci_students WHERE reg_no REGEXP '^DK-[0-9]+$'")->fetchAll(PDO::FETCH_KEY_PAIR) as $sid => $rn) {
+        $newNo = str_pad((string)(int)substr($rn, 3), 6, '0', STR_PAD_LEFT);
+        $q = $pdo->prepare("SELECT COUNT(*) FROM ci_students WHERE reg_no = ?"); $q->execute([$newNo]);
+        if (!(int)$q->fetchColumn()) $pdo->prepare("UPDATE ci_students SET reg_no = ? WHERE id = ?")->execute([$newNo, $sid]);
+    }
     // a fresh install gets the current academic session and a starter list of classes (both editable in Setup)
     if (!(int)$pdo->query("SELECT COUNT(*) FROM ci_sessions")->fetchColumn()) {
         $y = (int)date('Y');
@@ -143,14 +151,35 @@ function ci_e($v): string
     return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 }
 
-/** Next number after the highest one used, e.g. DK-0042 → DK-0043 (works across deleted rows). */
+/** Next number after the highest one used, e.g. 000042 → 000043 (works across deleted rows). With no prefix only all-digit numbers count. */
 function ci_next_no(PDO $pdo, string $table, string $col, string $prefix, int $pad): string
 {
+    if ($prefix === '') {
+        $n = (int)$pdo->query("SELECT MAX(CAST($col AS UNSIGNED)) FROM $table WHERE $col REGEXP '^[0-9]+$'")->fetchColumn();
+        return str_pad((string)($n + 1), $pad, '0', STR_PAD_LEFT);
+    }
     $st = $pdo->prepare("SELECT $col FROM $table WHERE $col LIKE ? ORDER BY LENGTH($col) DESC, $col DESC LIMIT 1");
     $st->execute([$prefix . '%']);
     $last = (string)$st->fetchColumn();
     $n = $last !== '' ? (int)substr($last, strlen($prefix)) : 0;
     return $prefix . str_pad((string)($n + 1), $pad, '0', STR_PAD_LEFT);
+}
+
+if (!defined('CI_STYPES')) define('CI_STYPES', ['institute' => 'Institute', 'online' => 'Online', 'both' => 'Both']);
+
+/** An "Online" student who joins an institute course / batch, or an "Institute" one who gets an online course / notes, becomes "Both". */
+function ci_type_sync(PDO $pdo, int $sid): void
+{
+    if ($sid <= 0) return;
+    $q = $pdo->prepare("SELECT stype FROM ci_students WHERE id = ?"); $q->execute([$sid]);
+    $t = (string)$q->fetchColumn();
+    if ($t === '' || $t === 'both') return;
+    $inst = $t === 'institute' || (int)$pdo->query("SELECT COUNT(*) FROM ci_enrollments WHERE student_id = " . $sid)->fetchColumn() > 0;
+    $onl = $t === 'online';
+    if (!$onl) {
+        try { $onl = (int)$pdo->query("SELECT COUNT(*) FROM sh_access a JOIN sh_users u ON u.id = a.user_id WHERE u.student_id = $sid AND a.revoked = 0 AND a.blocked = 0")->fetchColumn() > 0; } catch (Throwable) { $onl = false; }
+    }
+    if ($inst && $onl) $pdo->prepare("UPDATE ci_students SET stype = 'both' WHERE id = ?")->execute([$sid]);
 }
 
 function ci_lists(PDO $pdo): array
@@ -586,6 +615,7 @@ function ci_enroll(PDO $pdo, int $sid, int $courseId, ?int $batchId, string $typ
         if (is_string($res)) return $res;
         $pid = $res[0];
     }
+    ci_type_sync($pdo, $sid); // an "Online" student joining a batch becomes "Both"
     return [$eid, $pid];
 }
 

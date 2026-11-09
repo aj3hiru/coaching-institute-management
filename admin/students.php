@@ -23,6 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $f = [
+    'type' => isset(CI_STYPES[$_GET['type'] ?? '']) ? $_GET['type'] : '', // Institute / Online / Both
     'q' => trim((string)($_GET['q'] ?? '')),
     'class' => (int)($_GET['class'] ?? 0),
     'course' => (int)($_GET['course'] ?? 0),
@@ -43,6 +44,7 @@ if ($f['q'] !== '') {
     $where[] = '(s.name LIKE ? OR s.reg_no LIKE ? OR s.mobile LIKE ? OR s.alt_mobile LIKE ? OR s.father_name LIKE ? OR s.email LIKE ?)';
     array_push($args, ...array_fill(0, 6, '%' . $f['q'] . '%'));
 }
+if ($f['type'] !== '') { $where[] = 's.stype = ?'; $args[] = $f['type']; }
 if ($f['class']) { $where[] = 's.class_id = ?'; $args[] = $f['class']; }
 if ($f['status'] !== 'all') { $where[] = 's.status = ?'; $args[] = $f['status']; }
 if ($f['place'] !== '') { $where[] = '(s.address LIKE ? OR s.city LIKE ? OR s.state LIKE ? OR s.pincode LIKE ?)'; array_push($args, ...array_fill(0, 4, '%' . $f['place'] . '%')); }
@@ -60,13 +62,15 @@ if ($f['fee'] === 'paid') $having = 'HAVING net > 0 AND due <= 0.004';
 if ($f['fee'] === 'overdue') $having = 'HAVING overdue > 0';
 $order = ['new' => 's.id DESC', 'old' => 's.id ASC', 'name' => 's.name ASC', 'due' => 'due DESC, s.name', 'reg' => 's.reg_no ASC'][$f['sort']];
 
+$hasShop = (bool)$pdo->query("SHOW TABLES LIKE 'sh_access'")->fetch();
 $sql = "SELECT s.*, c.name AS class_name,
     (SELECT COALESCE(SUM(CASE WHEN e.status = 'dropped' THEN 0 ELSE e.fee - e.discount END),0) FROM ci_enrollments e WHERE e.student_id = s.id) AS net,
     (SELECT COALESCE(SUM(" . CI_DUE_SQL . "),0) FROM ci_enrollments e WHERE e.student_id = s.id) AS due,
     (SELECT COALESCE(SUM(p.amount),0) FROM ci_payments p WHERE p.student_id = s.id) AS paid,
     (SELECT COUNT(*) FROM ci_enrollments e WHERE e.student_id = s.id AND e.status <> 'dropped' AND e.due_date IS NOT NULL AND e.due_date < CURDATE() AND " . CI_DUE_SQL . " > 0) AS overdue,
     (SELECT GROUP_CONCAT(CONCAT(co.name, IFNULL(CONCAT(' · ', b.name), '')) ORDER BY e.id SEPARATOR '||') FROM ci_enrollments e
-        LEFT JOIN ci_courses co ON co.id = e.course_id LEFT JOIN ci_batches b ON b.id = e.batch_id WHERE e.student_id = s.id AND e.status <> 'dropped') AS courses
+        LEFT JOIN ci_courses co ON co.id = e.course_id LEFT JOIN ci_batches b ON b.id = e.batch_id WHERE e.student_id = s.id AND e.status <> 'dropped') AS courses" . ($hasShop ? ",
+    (SELECT GROUP_CONCAT(p.title ORDER BY a.id SEPARATOR '||') FROM sh_users u JOIN sh_access a ON a.user_id = u.id AND a.revoked = 0 AND a.blocked = 0 JOIN sh_products p ON p.id = a.product_id WHERE u.student_id = s.id) AS online" : ", '' AS online") . "
     FROM ci_students s LEFT JOIN ci_classes c ON c.id = s.class_id
     WHERE " . implode(' AND ', $where) . " $having ORDER BY $order";
 
@@ -75,10 +79,11 @@ if (($_GET['export'] ?? '') === 'json') {
     $st = $pdo->prepare($sql);
     $st->execute($args);
     $rows = [];
-    foreach ($st as $r) $rows[] = ['reg' => $r['reg_no'], 'name' => $r['name'], 'father' => $r['father_name'], 'mobile' => $r['mobile'], 'class' => $r['class_name'],
-        'courses' => str_replace('||', '; ', (string)$r['courses']), 'admitted' => $r['admission_date'], 'status' => $r['status'],
+    foreach ($st as $r) $rows[] = ['reg' => $r['reg_no'], 'type' => CI_STYPES[$r['stype'] ?? 'institute'] ?? '', 'name' => $r['name'], 'father' => $r['father_name'], 'mobile' => $r['mobile'], 'class' => $r['class_name'],
+        'courses' => str_replace('||', '; ', trim($r['courses'] . ($r['online'] ? '||Online: ' . $r['online'] : ''), '|')), 'admitted' => $r['admission_date'], 'status' => $r['status'],
         'fee' => round((float)$r['net'], 2), 'paid' => round((float)$r['paid'], 2), 'due' => round((float)$r['due'], 2)];
     $desc = [];
+    if ($f['type'] !== '') $desc[] = 'Type: ' . CI_STYPES[$f['type']];
     if ($f['q'] !== '') $desc[] = 'Search: ' . $f['q'];
     if ($f['class'] && isset($L['classes'][$f['class']])) $desc[] = 'Class: ' . $L['classes'][$f['class']];
     if ($f['course'] && isset($L['courses'][$f['course']])) $desc[] = 'Course: ' . $L['courses'][$f['course']]['name'];
@@ -112,7 +117,7 @@ $qs = function (array $over = []) use ($f) {
     if (($p['sort'] ?? '') === 'new') unset($p['sort']);
     return http_build_query($p);
 };
-$filtered = $f['q'] !== '' || $f['class'] || $f['course'] || $f['batch'] || $f['session'] || $f['status'] !== 'active' || $f['fee'] || $f['place'] !== '' || $f['from'] || $f['to'];
+$filtered = $f['type'] !== '' || $f['q'] !== '' || $f['class'] || $f['course'] || $f['batch'] || $f['session'] || $f['status'] !== 'active' || $f['fee'] || $f['place'] !== '' || $f['from'] || $f['to'];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -129,6 +134,7 @@ $filtered = $f['q'] !== '' || $f['class'] || $f['course'] || $f['batch'] || $f['
 <?php if ((int)($_GET['paid'] ?? 0)): ?><div class="ci-alert ci-alert-ok"><i class="fas fa-receipt"></i> <a href="/admin/ci-receipt.php?id=<?= (int)$_GET['paid'] ?>" target="_blank"><b>Print receipt</b></a></div><?php endif; ?>
 
 <div class="ci-card"><div class="ci-card-b"><form method="get" class="ci-filters" id="ci-filter">
+  <div class="ci-f"><label>Student type</label><select name="type"><option value="">All students</option><?php foreach (['institute' => 'Institute only', 'online' => 'Online only', 'both' => 'Both (institute + online)'] as $k => $l): ?><option value="<?= $k ?>" <?= $f['type'] === $k ? 'selected' : '' ?>><?= $l ?></option><?php endforeach; ?></select></div>
   <div class="ci-f" style="grid-column:span 2"><label>Search</label><input name="q" value="<?= ci_e($f['q']) ?>" placeholder="Name, mobile, reg. no., father's name, email"></div>
   <div class="ci-f"><label>Class</label><select name="class"><option value="0">All classes</option><?php foreach ($L['classes'] as $id => $n): ?><option value="<?= $id ?>" <?= $f['class'] === $id ? 'selected' : '' ?>><?= ci_e($n) ?></option><?php endforeach; ?></select></div>
   <div class="ci-f"><label>Course</label><select name="course" id="ci-f-course"><option value="0">All courses</option><?php foreach ($L['courses'] as $id => $c): ?><option value="<?= $id ?>" <?= $f['course'] === $id ? 'selected' : '' ?>><?= ci_e($c['name']) ?></option><?php endforeach; ?></select></div>
@@ -148,10 +154,10 @@ $filtered = $f['q'] !== '' || $f['class'] || $f['course'] || $f['batch'] || $f['
 <thead><tr><th>Student</th><th>Mobile</th><th>Class</th><th>Courses / batches</th><th>Admission</th><th class="ci-num">Fee due</th><th>Action</th></tr></thead><tbody>
 <?php if (!$students): ?><tr><td colspan="7" class="ci-empty"><?= $filtered ? 'No students match these filters.' : 'No students yet. <a href="/admin/student-edit.php">Add the first student</a>.' ?></td></tr><?php endif; ?>
 <?php $back = $qs(['page' => $page]); foreach ($students as $s): $sid = (int)$s['id']; ?>
-<tr><td><div class="ci-person"><?= ci_avatar($s, 36) ?><div><a href="/admin/student-view.php?id=<?= $sid ?>"><?= ci_e($s['name']) ?></a><small><?= ci_e($s['reg_no']) ?></small></div></div></td>
+<tr><td><div class="ci-person"><?= ci_avatar($s, 36) ?><div><a href="/admin/student-view.php?id=<?= $sid ?>"><?= ci_e($s['name']) ?></a><small><?= ci_e($s['reg_no']) ?> <span class="ci-tb ci-tb-<?= ci_e($s['stype'] ?? 'institute') ?>"><?= ci_e(CI_STYPES[$s['stype'] ?? 'institute'] ?? '') ?></span></small></div></div></td>
 <td><a href="tel:<?= ci_e($s['mobile']) ?>"><?= ci_e($s['mobile']) ?></a></td>
 <td><?= ci_e($s['class_name'] ?? '—') ?></td>
-<td><?php $cs = array_filter(explode('||', (string)$s['courses'])); echo $cs ? implode('<br>', array_map('ci_e', $cs)) : '<span class="ci-muted">—</span>'; ?></td>
+<td><?php $cs = array_filter(explode('||', (string)$s['courses'])); $os = array_filter(explode('||', (string)$s['online'])); echo ($cs || $os) ? implode('<br>', array_merge(array_map('ci_e', $cs), array_map(fn($t) => '<span class="ci-onl"><i class="fas fa-laptop"></i> ' . ci_e($t) . '</span>', $os))) : '<span class="ci-muted">—</span>'; ?></td>
 <td class="ci-muted ci-nw"><?= ci_date($s['admission_date']) ?></td>
 <td class="ci-num"><div class="ci-due-cell"><?php if ((float)$s['due'] > 0.004): ?><b class="ci-r"><?= ci_money0($s['due']) ?></b><?= $s['overdue'] ? ' <span class="ci-badge ci-b-amber">Late</span>' : '' ?><?php if (ci_perm($me, 'fees')): ?><?= ci_ico('rupee', null, 'Collect fee', 'button', ' data-collect-sid="' . $sid . '"') ?><?php endif; ?><?php elseif ((float)$s['net'] > 0): ?><span class="ci-badge ci-b-green">Paid</span><?php else: ?><span class="ci-muted">—</span><?php endif; ?></div></td>
 <td><div class="ci-icos">

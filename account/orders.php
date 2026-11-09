@@ -27,6 +27,16 @@ $ended = function (array $o) use ($acc): array {
     if ($a['expires_at'] !== null && strtotime($a['expires_at']) <= time()) return [true, date('d M Y', strtotime($a['expires_at']))];
     return [false, ''];
 };
+/** Access of the item now, as a small label: Lifetime access / Access till … (N days left) / Expired on … / Access removed. */
+$accLabel = function (array $o) use ($acc): string {
+    $a = $acc[(int)($o['product_id'] ?? 0)] ?? null;
+    if (!$a || (int)$a['revoked']) return '<span class="ac-acc ac-acc-off">' . sh_icon('clock') . ' Access removed</span>';
+    if ($a['expires_at'] === null) return '<span class="ac-acc ac-acc-life">' . sh_icon('check') . ' Lifetime access</span>';
+    $t = strtotime($a['expires_at']);
+    if ($t <= time()) return '<span class="ac-acc ac-acc-off">' . sh_icon('clock') . ' Expired on ' . date('d M Y', $t) . '</span>';
+    $d = (int)ceil(($t - time()) / 86400);
+    return '<span class="ac-acc ac-acc-till' . ($d <= 7 ? ' ac-acc-soon' : '') . '">' . sh_icon('clock') . ' Access till ' . date('d M Y', $t) . ' · ' . $d . ' day' . ($d === 1 ? '' : 's') . ' left</span>';
+};
 $stTitle = 'Orders';
 require ROOT_PATH . '/components/store-open.php';
 $ico = fn($n) => sh_icon($n);
@@ -43,9 +53,8 @@ $ico = fn($n) => sh_icon($n);
       <?php $free = !empty($o['free']); [$off, $offAt] = $ended($o); $link = $o['slug'] && !$off ? sh_url($o) : ''; ?>
       <div class="ac-ord<?= $off ? ' ac-ord-off' : '' ?>"<?= $off ? ' aria-disabled="true"' : '' ?>>
         <<?= $link ? 'a href="' . sh_e($link) . '"' : 'span' ?> class="ac-ord-th" tabindex="-1" aria-hidden="true"><?php if (!empty($o['thumb'])): ?><img src="<?= sh_e($o['thumb']) ?>" alt="" loading="lazy" width="128" height="72"><?php else: ?><span class="ac-ord-i"><?= $ico($o['type'] === 'notes' ? 'notes' : 'video') ?></span><?php endif; ?><em><?= $o['type'] === 'notes' ? 'PDF notes' : 'Course' ?></em></<?= $link ? 'a' : 'span' ?>>
-        <div class="ac-ord-t"><b><?= $link ? '<a href="' . sh_e($link) . '">' . sh_e($o['title']) . '</a>' : sh_e($o['title']) ?></b><small><?= $free ? 'Joined free' : sh_e($o['order_no'] ?: 'Order #' . $o['id']) ?> · <?= date('d M Y, h:i A', strtotime((string)$o['at'])) ?><?= !$free && $o['rzp_payment'] && !str_starts_with((string)$o['rzp_payment'], 'pay_DEMO') ? ' · ' . sh_e($o['rzp_payment']) : '' ?></small><?php if ($off): ?><span class="ac-ord-end"><?= $ico('clock') ?> <?= $offAt !== '' ? 'Access ended on ' . sh_e($offAt) : 'Access ended' ?></span><?php endif; ?></div>
-        <div class="ac-ord-r"><?php if ($free): ?><span class="ac-ord-fp"><?= sh_free_price($o) ?></span><span class="st-badge paid">Joined</span><?php else: ?><b><?= sh_money($o['amount']) ?></b><span class="st-badge <?= sh_e($st) ?>"><?= $st === 'paid' ? 'Paid' : ($st === 'failed' ? 'Failed' : 'Not paid') ?></span><?php endif; ?></div>
-        <?php if ($link): ?><a class="ac-ord-go" href="<?= sh_e($link) ?>">View ›</a><?php endif; ?>
+        <div class="ac-ord-t"><b><?= $link ? '<a href="' . sh_e($link) . '">' . sh_e($o['title']) . '</a>' : sh_e($o['title']) ?></b><small><?= $free ? 'Joined free' : sh_e($o['order_no'] ?: 'Order #' . $o['id']) ?> · <?= date('d M Y, h:i A', strtotime((string)$o['at'])) ?><?= !$free && $o['rzp_payment'] && !str_starts_with((string)$o['rzp_payment'], 'pay_DEMO') ? ' · ' . sh_e($o['rzp_payment']) : '' ?></small><?= $accLabel($o) ?></div>
+        <div class="ac-ord-r"><?php if ($free): ?><span class="ac-ord-fp"><?= sh_free_price($o) ?></span><span class="st-badge paid">Joined</span><?php else: ?><b><?= sh_money($o['amount']) ?></b><span class="st-badge <?= sh_e($st) ?>"><?= $st === 'paid' ? 'Paid' : ($st === 'failed' ? 'Failed' : 'Not paid') ?></span><?php endif; ?><?php if ($link): ?><a class="ac-ord-go" href="<?= sh_e($link) ?>">View ›</a><?php endif; ?></div>
       </div>
     <?php endforeach; ?>
     </div>
