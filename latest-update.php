@@ -278,8 +278,8 @@ function homeExcerpt(string $html, int $len = 170): string {
 .hero-categories .hc-item:nth-child(6n+3){--hc:var(--gc-accent-2,#1e73be)}.hero-categories .hc-item:nth-child(6n+4){--hc:#f59e0b}
 .hero-categories .hc-item:nth-child(6n+5){--hc:#16a34a}.hero-categories .hc-item:nth-child(6n+6){--hc:#db2777}
 /* box icons like the class icons on the homepage: a light square tile, a solid coloured square inside, white icon */
-.hero-categories .hc-item .hc-icon{color:#fff;width:50px;height:50px;border-radius:5px;background:color-mix(in srgb,var(--hc) 14%,#fff);transition:background .15s}
-.hero-categories .hc-item .hc-icon::before{content:"";position:absolute;inset:8px;border-radius:5px;background:var(--hc)}
+.hero-categories .hc-item .hc-icon{color:#fff;width:52px;height:52px;border-radius:50%;background:color-mix(in srgb,var(--hc) 14%,#fff);transition:background .15s}
+.hero-categories .hc-item .hc-icon::before{content:"";position:absolute;inset:11px;border-radius:5px;background:var(--hc)}
 .hero-categories .hc-item .hc-icon svg{position:relative;z-index:1;width:20px;height:20px}
 .hero-categories .hc-item:hover .hc-icon{background:color-mix(in srgb,var(--hc) 24%,#fff)}
 .hero-categories .hc-item .hc-icon{position:relative;overflow:hidden}
