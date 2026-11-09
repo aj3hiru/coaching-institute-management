@@ -148,6 +148,7 @@ try {
     $content = edu_content_wrap_tables(edu_seo_filter_content($content, $post['title'])); // Advanced SEO link/image rules + mobile-scrolling tables
     require_once INCLUDES_PATH . '/shop.php';
     $content = sh_site_embeds(sh_yt_lock_content($content)); // YouTube videos play in our own player; course / notes links become cards
+    if (stripos($content, 'edu-quiz') !== false) { require_once INCLUDES_PATH . '/quiz.php'; $content = edu_quiz_split($content); } // 2 questions per box + an empty paragraph, so ads / Also Read find paragraphs
 
     // SEO ARRAY
     $seo = [

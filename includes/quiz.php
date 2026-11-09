@@ -27,6 +27,15 @@ function edu_quiz_assets(string $lang = 'en'): string
 .edu-quiz .eq-opts li.correct{background-color:#28a745 !important;color:#fff !important;border-color:#28a745 !important}
 .edu-quiz .eq-opts li.wrong{background-color:#dc3545 !important;color:#fff !important;border-color:#dc3545 !important}
 .edu-quiz .eq-card.locked .eq-opts li{cursor:default;pointer-events:none}
+/* a tick on the right answer, a cross on a wrong one (white icons on the right of the option) */
+.edu-quiz .eq-opts li{position:relative}
+.edu-quiz .eq-opts li.correct,.edu-quiz .eq-opts li.wrong{padding-right:44px !important}
+.edu-quiz .eq-opts li.correct::after,.edu-quiz .eq-opts li.wrong::after{content:"";position:absolute;right:12px;top:50%;width:22px;height:22px;margin-top:-11px;border-radius:50%;background:rgba(255,255,255,.22) center/14px 14px no-repeat}
+.edu-quiz .eq-opts li.correct::after{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E")}
+.edu-quiz .eq-opts li.wrong::after{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='3.2' stroke-linecap='round'%3E%3Cpath d='M18 6 6 18M6 6l12 12'/%3E%3C/svg%3E")}
+/* the empty paragraph between quiz parts (so ads / Also Read can be placed "after paragraph N") takes no space */
+.entry-content p.eq-br,p.eq-br{margin:0 !important;padding:0 !important;height:0;line-height:0;font-size:0}
+.edu-quiz + p.eq-br + .edu-quiz,.edu-quiz.eq-part{margin-top:0}
 .edu-quiz .eq-exp{display:none;margin-top:12px;font-size:15px}
 .edu-quiz .eq-card.locked .eq-exp{display:block}
 .edu-quiz .eq-exp::before{content:"Explanation:";margin-right:.35em;font-weight:700;color:#111827}
@@ -52,3 +61,53 @@ document.querySelectorAll(".edu-quiz").forEach(function (qz) {
 </script>
 HTML;
 }
+
+/** A quiz with many questions is shown as several quiz boxes of 2 questions, each followed by an empty paragraph,
+ * so "after paragraph N" ads, Also Read boxes etc. also work in a post that is mostly a quiz. The saved post is not changed. */
+function edu_quiz_split(string $html, int $per = 2): string
+{
+    if (stripos($html, 'edu-quiz') === false || !class_exists('DOMDocument')) return $html;
+    $out = ''; $pos = 0;
+    while (preg_match('/<div\b[^>]*class=["\'][^"\']*\bedu-quiz\b[^"\']*["\'][^>]*>/i', $html, $m, PREG_OFFSET_CAPTURE, $pos)) {
+        $start = $m[0][1];
+        // find the matching </div>
+        $depth = 0; $i = $start; $end = -1;
+        while (preg_match('/<(\/?)div\b[^>]*>/i', $html, $t, PREG_OFFSET_CAPTURE, $i)) {
+            $depth += $t[1][0] === '/' ? -1 : 1;
+            $i = $t[0][1] + strlen($t[0][0]);
+            if ($depth === 0) { $end = $i; break; }
+        }
+        if ($end < 0) break;
+        $out .= substr($html, $pos, $start - $pos);
+        $out .= edu_quiz_split_one(substr($html, $start, $end - $start), $per);
+        $pos = $end;
+    }
+    return $out . substr($html, $pos);
+}
+
+function edu_quiz_split_one(string $box, int $per): string
+{
+    $d = new DOMDocument();
+    $prev = libxml_use_internal_errors(true);
+    $ok = $d->loadHTML('<?xml encoding="UTF-8"><body>' . $box . '</body>', LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+    libxml_clear_errors(); libxml_use_internal_errors($prev);
+    if (!$ok) return $box;
+    $root = null;
+    foreach ($d->getElementsByTagName('div') as $el) { if (preg_match('/\bedu-quiz\b/', (string)$el->getAttribute('class'))) { $root = $el; break; } }
+    if (!$root) return $box;
+    $title = ''; $cards = [];
+    foreach ($root->childNodes as $c) {
+        if (!($c instanceof DOMElement)) continue;
+        $cls = (string)$c->getAttribute('class');
+        if (preg_match('/\beq-card\b/', $cls)) $cards[] = $d->saveHTML($c);
+        elseif (preg_match('/\beq-title\b/', $cls)) $title = $d->saveHTML($c);
+        else $cards[] = $d->saveHTML($c); // anything else stays in order
+    }
+    if (count($cards) <= $per) return $box . '<p class="eq-br"></p>';
+    $html = '';
+    foreach (array_chunk($cards, $per) as $k => $chunk) {
+        $html .= '<div class="edu-quiz' . ($k ? ' eq-part' : '') . '">' . ($k === 0 ? $title : '') . implode('', $chunk) . '</div><p class="eq-br"></p>';
+    }
+    return $html;
+}
+
