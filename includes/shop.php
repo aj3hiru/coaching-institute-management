@@ -1451,7 +1451,7 @@ function sh_home_cfg(): array
         'cats_d' => 0, 'cats_m' => 0, // (old "how many to show" — every category shows now; hide single ones below)
         'cats_vis' => (array)(json_decode((string)es('home', 'cats_vis', ''), true) ?: []), // category id => "111" (phone, tablet, computer)
         'cats_cols_d' => max(2, min(10, (int)es('home', 'cats_cols_d', '8'))), 'cats_cols_m' => max(2, min(5, (int)es('home', 'cats_cols_m', '3'))), // categories in one row
-        'posts_count' => max(1, min(20, (int)es('home', 'posts_count', '10'))),
+        'posts_count' => max(1, min(10, (int)es('home', 'posts_count', '10'))),
     ];
 }
 function sh_home_pick(string $v, array $ok, string $def): string { return in_array($v, $ok, true) ? $v : $def; }
@@ -1483,7 +1483,7 @@ function sh_home_sanitize(array $h): array
         'cats_d' => '0', 'cats_m' => '0',
         'cats_vis' => json_encode(array_filter(array_map(fn($v) => preg_match('/^[01]{3}$/', (string)$v) ? (string)$v : '111', (array)($h['cats_vis'] ?? [])), fn($v, $k) => ctype_digit((string)$k) && $v !== '111', ARRAY_FILTER_USE_BOTH) ?: new stdClass()),
         'cats_cols_d' => (string)max(2, min(10, (int)($h['cats_cols_d'] ?? 8))), 'cats_cols_m' => (string)max(2, min(5, (int)($h['cats_cols_m'] ?? 3))),
-        'posts_count' => (string)max(1, min(20, (int)($h['posts_count'] ?? 10)))];
+        'posts_count' => (string)max(1, min(10, (int)($h['posts_count'] ?? 10)))];
 }
 
 /* ---------- orders made by staff (student pays at the office: cash / UPI / card …) ---------- */

@@ -30,8 +30,10 @@ if (!$slides) $slides = [ // until the admin adds slides (Online Store → Homep
     ['image' => 'assets/img/home/default-notes.jpg', 'mobile_image' => 'assets/img/home/default-notes-m.jpg', 'link' => '/notes/', 'title' => 'Notes and study materials', 'new_tab' => 0]];
 $cfg = sh_home_cfg(); // layout + options from Customize → Homepage
 $cw = $cfg['courses_filter'] === 'all' ? '' : $cfg['courses_filter'];
-$courses = sh_latest($pdo, 'course', 9, 0, 0, $cw); // 8 shown, the 9th tells if "View more" has anything
-$moreCourses = count($courses) > 8; $courses = array_slice($courses, 0, 8);
+// homepage sliders show at most 10 each (Our Courses, Study Materials, Free Courses, Latest Update) so the page stays light;
+// "View more courses" only opens these 10 as a grid, the full list is on /courses/
+$courses = sh_latest($pdo, 'course', 10, 0, 0, $cw);
+$moreCourses = false;
 $up = $pdo->query("SELECT p.*, (SELECT COUNT(*) FROM sh_lessons l WHERE l.product_id = p.id) AS lessons, (SELECT COUNT(*) FROM sh_files f WHERE f.product_id = p.id) AS files
     FROM sh_products p WHERE p.status = 'published' AND p.type = 'course' AND p.starts_at >= CURDATE() ORDER BY p.starts_at LIMIT 6")->fetchAll(PDO::FETCH_ASSOC);
 if ($cfg['batches_filter'] === 'launched') { $up = []; $batches = sh_latest($pdo, 'course', 6, 0, 0, 'launched'); }
@@ -39,10 +41,10 @@ else {
     $batches = $up; $seen = array_column($up, 'id');
     if ($cfg['batches_filter'] === 'all') foreach (sh_latest($pdo, 'course', 8) as $p) { if (count($batches) >= 6) break; if (!in_array($p['id'], $seen)) $batches[] = $p; }
 }
-$notes = sh_latest($pdo, 'notes', 12, 0, 0, '', $cfg['notes_sort']);
-$free = sh_free_courses($pdo, 12); // courses ticked "Show in Free Courses"
+$notes = sh_latest($pdo, 'notes', 10, 0, 0, '', $cfg['notes_sort']);
+$free = sh_free_courses($pdo, 10); // courses ticked "Show in Free Courses"
 $posts = $pdo->query("SELECT p.id, p.title, p.slug, p.date, m.file_path AS img, c.name AS cat FROM posts p LEFT JOIN media m ON m.id = p.featured_image_id
-    LEFT JOIN categories c ON c.id = p.category_id WHERE p.status = 'published' ORDER BY p.date DESC LIMIT " . (int)$cfg['posts_count'])->fetchAll(PDO::FETCH_ASSOC);
+    LEFT JOIN categories c ON c.id = p.category_id WHERE p.status = 'published' ORDER BY p.date DESC LIMIT " . min(10, (int)$cfg['posts_count']))->fetchAll(PDO::FETCH_ASSOC);
 $teacherNames = [];
 foreach ($batches as $p) if (!empty($p['teacher_id'])) $teacherNames[(int)$p['teacher_id']] ??= sh_teacher_name($pdo, (int)$p['teacher_id']);
 // "Our Impact": numbers counted by the site unless the admin typed their own

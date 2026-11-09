@@ -1389,7 +1389,7 @@ function renderHomepage(wrap) {
   if (x.id === 'categories') hmCategories(wrap, H);
   if (x.id === 'teachers') hmTeachers(wrap);
   if (x.id === 'notes') { const g = hmGroup('Which PDF notes first'); g.appendChild(opt('', 'notes_sort', [['latest', 'Latest'], ['popular', 'Most popular']])); g.appendChild(html('<p class="hm-desc">Most popular = most students have it.</p>')); wrap.appendChild(g); }
-  if (x.id === 'posts') { const g = hmGroup('Posts'); g.appendChild(cRange('How many latest posts', () => +H.posts_count || 10, v => H.posts_count = v, 1, 20)); wrap.appendChild(g); }
+  if (x.id === 'posts') { const g = hmGroup('Posts'); g.appendChild(cRange('How many latest posts (up to 10)', () => Math.min(10, +H.posts_count || 10), v => H.posts_count = v, 1, 10)); wrap.appendChild(g); }
   if (x.id === 'slider') hmSlides(wrap);
   if (x.id === 'free') hmFree(wrap);
   if (x.id === 'toppers') hmToppers(wrap);
