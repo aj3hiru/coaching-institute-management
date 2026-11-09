@@ -22,6 +22,15 @@ $enrolls = $id ? ci_enrollments($pdo, $id) : [];
 $known = array_column($enrolls, null, 'id');
 $errors = [];
 $form = $student ?: ['status' => 'active', 'admission_date' => date('Y-m-d')];
+// online courses / notes ("+ Add to Course"): the store's items and what this student already has
+$canOnline = is_file(INCLUDES_PATH . '/shop.php') && (require_once INCLUDES_PATH . '/shop.php') && sh_perm($me, 'orders');
+$shItems = $hasOnline = [];
+if ($canOnline) {
+    sh_tables($pdo);
+    $shItems = $pdo->query("SELECT id, title, type, price, validity_days FROM sh_products WHERE status <> 'draft' ORDER BY type = 'course' DESC, title")->fetchAll(PDO::FETCH_UNIQUE | PDO::FETCH_ASSOC);
+    if ($id) { $hq = $pdo->prepare("SELECT p.title, a.expires_at, a.revoked FROM sh_access a JOIN sh_users u ON u.id = a.user_id JOIN sh_products p ON p.id = a.product_id WHERE u.student_id = ? AND a.source <> 'block' ORDER BY a.granted_at"); $hq->execute([$id]); $hasOnline = $hq->fetchAll(PDO::FETCH_ASSOC); }
+}
+$oRows = [];
 
 /** Mobile number as 10 digits (drops +91 / 0 / spaces), or '' when it is not a valid Indian mobile. */
 function ci_mobile(string $v): string
@@ -107,6 +116,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $ids = array_filter(array_column(array_filter($rows, fn($r) => !$r['remove']), 'batch_id'));
     if (count($ids) !== count(array_unique($ids))) $errors[] = 'The same batch is chosen twice.';
 
+    // online rows: o_product[], o_amount[], o_mode[], o_days[] (an empty row is ignored)
+    if ($canOnline) foreach ((array)($_POST['o_product'] ?? []) as $i => $op) {
+        $op = (int)$op;
+        $r = ['product' => $op, 'amount' => trim((string)($_POST['o_amount'][$i] ?? '')), 'mode' => (string)($_POST['o_mode'][$i] ?? 'cash'), 'days' => (string)($_POST['o_days'][$i] ?? '')];
+        if (!$op) continue;
+        if (!isset($shItems[$op])) { $errors[] = 'An online course / notes no longer exists — choose it again.'; continue; }
+        if (!isset(SH_PAY_MODES[$r['mode']])) $errors[] = 'Choose how the student paid for ' . $shItems[$op]['title'] . '.';
+        if ($r['amount'] !== '' && (!is_numeric($r['amount']) || (float)$r['amount'] < 0)) $errors[] = 'The amount for ' . $shItems[$op]['title'] . ' is not valid.';
+        $oRows[] = $r;
+    }
+    if (count(array_column($oRows, 'product')) !== count(array_unique(array_column($oRows, 'product')))) $errors[] = 'The same online course / notes is chosen twice.';
+    // student type follows what is chosen: a batch → Institute, an online course → Online, both → Both
+    $instNow = (bool)array_filter($rows, fn($r) => !$r['remove'] && $r['course_id']);
+    $onlNow = (bool)$oRows || (bool)array_filter($hasOnline, fn($a) => !(int)$a['revoked']);
+    if ($instNow || $onlNow) $form['stype'] = $instNow && $onlNow ? 'both' : ($instNow ? 'institute' : 'online'); // nothing chosen: the type picked in the form stays
+    if (!$form['class_id'] && $L['classes'] && $form['stype'] === 'online') $errors = array_values(array_filter($errors, fn($e) => $e !== 'Choose the class.'));
+
     $photoFile = $_FILES['photo'] ?? ['error' => UPLOAD_ERR_NO_FILE];
     $newPhoto = '';
     if (!$errors) {
@@ -182,10 +208,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 } catch (Throwable $e) { admin_flash('Student saved, but the online login could not be set: ' . $e->getMessage(), 'error'); }
             }
+            // "+ Add to Course" rows: the course / notes is given and the payment saved as an office order (with its invoice)
+            $made = [];
+            foreach ($oRows as $r) {
+                try {
+                    $res = sh_manual_order($pdo, ['sid' => $id], $r['product'], $r['amount'] === '' ? null : (float)$r['amount'], $r['mode'], date('Y-m-d'), 'Added in the student form', $r['days'] === '' ? null : max(0, (int)$r['days']), (int)$me['id']);
+                    $made[] = $res['title'] . ($res['order_no'] ? ' (' . $res['order_no'] . ', ' . ci_money0($res['amount']) . ')' : ' (free)');
+                } catch (Throwable $e) { admin_flash('Online course not given: ' . $e->getMessage(), 'error'); }
+            }
+            if ($made) $_SESSION['ci_online_made'] = 'Online: ' . implode(', ', $made) . '.';
             ci_type_sync($pdo, $id);
             admin_log('ci_student', ($student ? 'Updated' : 'Added') . " student {$form['reg_no']} {$form['name']}");
-            if (!$receipt) admin_flash($student ? 'Student saved.' : 'Student added: ' . $form['reg_no'] . '.'); // with a payment the profile shows "Saved — Print receipt"
-            $online = !empty($_POST['then_online']) ? '&online=1' : ''; // open the online course / notes popup on the profile
+            if (!$receipt) admin_flash(($student ? 'Student saved.' : 'Student added: ' . $form['reg_no'] . '.') . (!empty($_SESSION['ci_online_made']) ? ' ' . $_SESSION['ci_online_made'] : ''));
+            unset($_SESSION['ci_online_made']); // with a payment the profile shows "Saved — Print receipt"
+            $online = '';
             header('Location: /admin/student-view.php?id=' . $id . $online . ($receipt ? '&receipt=' . $receipt . '#payments' : '#fee'));
             exit;
         } catch (Throwable $e) {
@@ -209,8 +245,8 @@ if ($rows) {
     $pb = (int)($_GET['batch'] ?? 0);
     $pb = isset($L['batches'][$pb]) ? $pb : 0;
     $pc = $pb ? (int)$L['batches'][$pb]['course_id'] : 0;
-    $drawRows = [['id' => 0, 'course_id' => $pc, 'batch_id' => $pb ?: null, 'type' => 'full', 'list' => $pc ? (float)$L['courses'][$pc]['fee'] : null,
-        'final' => null, 'due_date' => null, 'status' => 'active', 'paid' => 0, 'key' => 'n0']];
+    $drawRows = $pb ? [['id' => 0, 'course_id' => $pc, 'batch_id' => $pb, 'type' => 'full', 'list' => $pc ? (float)$L['courses'][$pc]['fee'] : null,
+        'final' => null, 'due_date' => null, 'status' => 'active', 'paid' => 0, 'key' => 'n0']] : []; // "+ Add to Batch" / "+ Add to Course" add the rows
 }
 
 /** One course row ($r = [] is the template for "Add another course"). */
@@ -257,6 +293,20 @@ $rowHtml = function (array $r, int $idx) use ($L): string {
     $h .= '<div class="ci-row-sum ci-ec-f"></div>';
     if ($id) $h .= '<div class="ci-ec-note">Paid so far <b>' . ci_money($paid) . '</b> · more fee is collected in the <a href="/admin/student-view.php?id=' . (int)($r['student_id'] ?? 0) . '#enr-' . $id . '">profile</a></div>';
     return $h . '</div>';
+};
+/** One "+ Add to Course" row: an online course / notes, the amount received now, how, and for how long. */
+$oRowHtml = function (array $r) use ($shItems): string {
+    $h = '<div class="ci-enr-row ci-fee-row ci-ec ci-orow"><div class="ci-ec-h"><div class="ci-ec-t"><span class="ci-ec-ico ci-ec-ico-o"><i class="fas fa-laptop"></i></span><div><b class="ci-ec-name">Online course / notes</b><small class="ci-ec-sub">Given now — saved as an office order with its invoice</small></div></div>'
+        . '<div class="ci-icos"><button type="button" class="ci-ico ci-ico-danger ci-orow-del" aria-label="Remove this online course">' . ci_svg('trash') . '</button></div></div><div class="ci-ec-b">';
+    $h .= '<div class="ci-f"><label>Course / notes</label><select name="o_product[]" class="ci-oprod" data-search><option value="">Choose…</option>';
+    foreach ($shItems as $pid => $p) $h .= '<option value="' . (int)$pid . '" data-price="' . (float)$p['price'] . '"' . ((int)($r['product'] ?? 0) === (int)$pid ? ' selected' : '') . '>' . ci_e($p['title'] . ' — ' . ($p['type'] === 'notes' ? 'PDF notes' : 'course') . ' · ' . ((float)$p['price'] > 0 ? ci_money0($p['price']) : 'Free')) . '</option>';
+    $h .= '</select></div>';
+    $h .= '<div class="ci-f"><label>Amount received (₹)</label><input name="o_amount[]" class="ci-oamt" type="number" min="0" step="0.01" value="' . ci_e((string)($r['amount'] ?? '')) . '"></div>';
+    $h .= '<div class="ci-f"><label>Payment mode</label><select name="o_mode[]">';
+    foreach (SH_PAY_MODES as $k => $l) $h .= '<option value="' . $k . '"' . (($r['mode'] ?? 'cash') === $k ? ' selected' : '') . '>' . ci_e($l) . '</option>';
+    $h .= '</select></div><div class="ci-f"><label>Access for</label><select name="o_days[]">';
+    foreach (['' => "Its own period", '0' => 'Lifetime', '30' => '1 month', '90' => '3 months', '180' => '6 months', '365' => '1 year'] as $k => $l) $h .= '<option value="' . $k . '"' . ((string)($r['days'] ?? '') === (string)$k ? ' selected' : '') . '>' . $l . '</option>';
+    return $h . '</select></div></div></div>';
 };
 $batchJs = [];
 foreach ($L['batches'] as $bid => $b) {
@@ -312,14 +362,17 @@ $v = fn($k) => ci_e($form[$k] ?? '');
   <div class="ci-f" style="margin-top:12px"><label>Notes</label><textarea name="notes" maxlength="2000" placeholder="anything to remember about this student"><?= $v('notes') ?></textarea></div>
 </div></div>
 
-<?php $canOnline = is_file(INCLUDES_PATH . '/shop.php') && (require_once INCLUDES_PATH . '/shop.php') && sh_perm($me, 'orders'); ?>
-<div class="ci-card"><div class="ci-card-h"><h3>Course, batch &amp; fee</h3><div class="ci-acts-r"><button type="button" class="ci-btn ci-ghost ci-sm" id="ci-add-row"><i class="fas fa-plus"></i> Add another course</button><?php if ($canOnline): ?><?php if ($student): ?><button type="button" class="ci-btn ci-sm" data-enroll="Enroll <?= ci_e($student['name']) ?>" data-enroll-sid="<?= (int)$student['id'] ?>" data-enroll-name="<?= ci_e($student['name']) ?>"><i class="fas fa-laptop"></i> Enroll in a course / notes (paid)</button><?php else: ?><button type="button" class="ci-btn ci-sm" id="ci-then-online"><i class="fas fa-laptop"></i> Enroll in a course / notes (paid)</button><?php endif; ?><?php endif; ?></div></div><div class="ci-card-b" id="ci-rows">
+<div class="ci-card"><div class="ci-card-h"><h3>Course, batch &amp; fee</h3><div class="ci-acts-r"><button type="button" class="ci-btn ci-ghost ci-sm" id="ci-add-row"><i class="fas fa-plus"></i> Add to Batch</button><?php if ($canOnline): ?><button type="button" class="ci-btn ci-ghost ci-sm" id="ci-add-online"><i class="fas fa-plus"></i> Add to Course</button><?php endif; ?></div></div><div class="ci-card-b">
+<p class="ci-hint ci-rows-hint" id="ci-rows-hint"<?= $drawRows || $oRows ? ' hidden' : '' ?>><b>+ Add to Batch</b> — an institute course and its batch (offline classes, fee). <?php if ($canOnline): ?><b>+ Add to Course</b> — an online video course or PDF notes. <?php endif; ?>The student type changes by itself.</p>
+<div id="ci-rows">
 <?php foreach (array_values($drawRows) as $n => $r) echo $rowHtml($r + ['student_id' => $id], $n); ?>
+</div>
+<?php if ($canOnline): ?>
+<?php if ($hasOnline): ?><div class="ci-ohas"><b><i class="fas fa-laptop"></i> Online courses / notes already given:</b> <?php foreach ($hasOnline as $a): ?><span class="ci-ochip<?= (int)$a['revoked'] || ($a['expires_at'] && strtotime($a['expires_at']) < time()) ? ' off' : '' ?>"><?= ci_e($a['title']) ?><?= (int)$a['revoked'] ? ' · taken back' : ($a['expires_at'] ? (strtotime($a['expires_at']) < time() ? ' · ended' : ' · till ' . date('d M Y', strtotime($a['expires_at']))) : ' · lifetime') ?></span><?php endforeach; ?></div><?php endif; ?>
+<div id="ci-orows"><?php foreach ($oRows as $r) echo $oRowHtml($r); ?></div>
+<?php endif; ?>
 </div></div>
 
-<?php if ($canOnline && !$student): ?>
-<div class="ci-then-online" id="ci-then-box" hidden><input type="hidden" name="then_online" value="" id="ci-then-in"><span><b><i class="fas fa-laptop"></i> Online course / notes after saving</b><small>When you press Save, a form opens to give a recorded course or PDF notes (cash, UPI, free …).</small></span><button type="button" class="ci-btn ci-ghost ci-sm" id="ci-then-x">Remove</button></div>
-<?php endif; ?>
 <div style="display:flex;gap:10px;margin:0 0 30px">
   <button class="ci-btn" type="submit"><i class="fas fa-check"></i> <?= $student ? 'Save changes' : 'Save' ?></button>
   <a class="ci-btn ci-ghost" href="<?= $student ? '/admin/student-view.php?id=' . (int)$student['id'] : '/admin/students.php' ?>">Cancel</a>
@@ -327,8 +380,8 @@ $v = fn($k) => ci_e($form[$k] ?? '');
 </form>
 
 <template id="ci-row-tpl"><?= $rowHtml([], 0) ?></template>
+<?php if ($canOnline): ?><template id="ci-orow-tpl"><?= $oRowHtml([]) ?></template><?php endif; ?>
 </div>
-<?php if ($canOnline && $student) require __DIR__ . '/components/sh-enroll.php'; ?>
 <?php admin_shell_close(); ?>
 <script>
 (function () {
@@ -384,7 +437,7 @@ $v = fn($k) => ci_e($form[$k] ?? '');
     row.addEventListener('input', function (e) { if (e.target.closest('[data-pays]')) sum(row); });
     row.addEventListener('ci-pays', function () { sum(row); });
     var del = row.querySelector('.ci-enr-del');
-    if (del) del.addEventListener('click', function () { if (rows.querySelectorAll('.ci-enr-row').length > 1) row.remove(); else { course.value = ''; fillBatches(row); setFee(row); } });
+    if (del) del.addEventListener('click', function () { row.remove(); typeSync(); });
     var ed = row.querySelector('.ci-ec-edit');
     if (ed) ed.addEventListener('click', function () { var l = row.classList.toggle('is-locked'); ed.classList.toggle('on', !l); if (!l) row.querySelector('.ci-final').focus(); });
     var title = function () {
@@ -433,17 +486,40 @@ $v = fn($k) => ci_e($form[$k] ?? '');
     var url = URL.createObjectURL(f);
     prev.innerHTML = '<img class="ci-av" src="' + url + '" alt="" style="width:84px;height:84px">';
   });
+  // "+ Add to Batch": a new institute row — unless one is still empty (then that one gets the focus)
+  var hint = document.getElementById('ci-rows-hint'), stype = document.getElementById('ci-stype');
+  function focusRow(r, sel) { r.scrollIntoView({ block: 'center', behavior: 'smooth' }); var f = r.querySelector(sel); setTimeout(function () { f && f.focus(); }, 250); r.classList.add('ci-flash'); setTimeout(function () { r.classList.remove('ci-flash'); }, 900); }
   document.getElementById('ci-add-row').addEventListener('click', function () {
+    var empty = [].filter.call(rows.querySelectorAll('.ci-enr-row[data-new="1"]'), function (r) { return !r.querySelector('.ci-course').value; })[0];
+    if (empty) { focusRow(empty, '.ci-course'); return; }
     var n = document.getElementById('ci-row-tpl').content.firstElementChild.cloneNode(true);
     n.innerHTML = n.innerHTML.replace(/__K__/g, 'n' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6)); n.querySelector('[name="e_key[]"]').value = n.querySelector('[name^="pay["]').name.replace(/^pay\[([^\]]+)\].*$/, '$1');
-    rows.appendChild(n); wire(n, false);
+    rows.appendChild(n); wire(n, false); if (hint) hint.hidden = true; focusRow(n, '.ci-course'); typeSync();
   });
-  var tOn = document.getElementById('ci-then-online'), tBox = document.getElementById('ci-then-box');
-  if (tOn && tBox) {
-    var tIn = document.getElementById('ci-then-in');
-    tOn.addEventListener('click', function () { tIn.value = '1'; tBox.hidden = false; tBox.scrollIntoView({ block: 'center', behavior: 'smooth' }); });
-    document.getElementById('ci-then-x').addEventListener('click', function () { tIn.value = ''; tBox.hidden = true; });
+  // "+ Add to Course": a new online course / notes row — unless one is still empty
+  var orows = document.getElementById('ci-orows'), otpl = document.getElementById('ci-orow-tpl');
+  function wireO(r) {
+    var sel = r.querySelector('.ci-oprod'), amt = r.querySelector('.ci-oamt');
+    sel.addEventListener('change', function () { var o = sel.options[sel.selectedIndex]; amt.value = o && o.value ? o.dataset.price : ''; r.querySelector('.ci-ec-name').textContent = o && o.value ? o.textContent.split(' — ')[0] : 'Online course / notes'; typeSync(); });
+    r.querySelector('.ci-orow-del').addEventListener('click', function () { r.remove(); typeSync(); });
   }
+  if (orows) [].forEach.call(orows.children, wireO);
+  var addO = document.getElementById('ci-add-online');
+  if (addO && orows && otpl) addO.addEventListener('click', function () {
+    var empty = [].filter.call(orows.querySelectorAll('.ci-orow'), function (r) { return !r.querySelector('.ci-oprod').value; })[0];
+    if (empty) { focusRow(empty, '.ci-oprod'); return; }
+    var n = otpl.content.firstElementChild.cloneNode(true); orows.appendChild(n); wireO(n); if (hint) hint.hidden = true; focusRow(n, '.ci-oprod');
+  });
+  // the student type follows the rows: a batch → Institute, an online course → Online, both → Both (live)
+  var hadOnline = <?= json_encode((bool)array_filter($hasOnline, fn($a) => !(int)$a['revoked'])) ?>;
+  function typeSync() {
+    if (!stype) return;
+    var inst = [].some.call(rows.querySelectorAll('.ci-enr-row'), function (r) { var c = r.querySelector('.ci-course'), rm = r.querySelector('.ci-enr-rm input'); return c && c.value && !(rm && rm.checked); });
+    var onl = hadOnline || (orows && [].some.call(orows.querySelectorAll('.ci-oprod'), function (s) { return !!s.value; }));
+    var t = inst && onl ? 'both' : inst ? 'institute' : onl ? 'online' : stype.value;
+    if (stype.value !== t) { stype.value = t; stype.dispatchEvent(new Event('change', { bubbles: true })); stype.closest('.ci-f').classList.add('ci-flash'); setTimeout(function () { stype.closest('.ci-f').classList.remove('ci-flash'); }, 900); }
+  }
+  rows.addEventListener('change', function (e) { if (e.target.closest('.ci-course, .ci-enr-rm')) typeSync(); });
   // ?addcourse=1 (from the students list): open a new course row straight away
   if (/[?&]addcourse=1/.test(location.search)) { document.getElementById('ci-add-row').click(); var nr = rows.querySelectorAll('.ci-enr-row'); nr = nr[nr.length - 1]; if (nr) { nr.scrollIntoView({ block: 'center' }); setTimeout(function () { nr.querySelector('.ci-course').focus(); }, 300); } }
 })();

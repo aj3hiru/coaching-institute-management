@@ -371,3 +371,12 @@ div.ci-then-online{align-items:center;cursor:default}div.ci-then-online>span{fle
 .ci-pf-stats{grid-template-columns:repeat(6,minmax(0,1fr))!important}
 @media (max-width:1200px){.ci-pf-stats{grid-template-columns:repeat(3,minmax(0,1fr))!important}}
 @media (max-width:600px){.ci-pf-stats{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+/* student form: online rows, what is already given, a short flash on the row just added */
+.ci-rows-hint{margin:0 0 4px;padding:10px 12px;border:1px dashed #d1d5db;border-radius:5px;background:#fafafa}
+#ci-orows .ci-orow{margin-top:14px;border-left-color:#0e7490}
+.ci-ec-ico-o{background:#ecfeff!important;color:#0e7490!important}
+.ci-ohas{margin-top:14px;padding:10px 12px;border:1px solid #cffafe;background:#f0fdff;border-radius:5px;font-size:13px}
+.ci-ohas b{display:block;margin-bottom:6px;color:#0e7490}
+.ci-ochip{display:inline-block;margin:2px 6px 2px 0;padding:2px 8px;border-radius:4px;background:#fff;border:1px solid #a5f3fc;font-size:12.5px}.ci-ochip.off{opacity:.55;text-decoration:line-through}
+.ci-flash{animation:ciFlash .9s ease}
+@keyframes ciFlash{0%{box-shadow:0 0 0 3px rgba(124,58,237,.35)}100%{box-shadow:0 0 0 0 rgba(124,58,237,0)}}
