@@ -18,6 +18,7 @@ require_once INCLUDES_PATH . '/functions.php';
 require_once INCLUDES_PATH . '/settings.php';
 require_once INCLUDES_PATH . '/theme.php';
 require_once INCLUDES_PATH . '/ads.php';
+require_once INCLUDES_PATH . '/shop.php';
 
 
 // SEO SECTION ARRAY
@@ -258,6 +259,24 @@ function homeExcerpt(string $html, int $len = 170): string {
 .hero-search-btn:hover { opacity: 0.88; }
 
 /* ── Category Buttons ──────────────────────────── */
+/* course category slider (small) */
+.cs-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.cs-slider{position:relative;display:flex;align-items:center;gap:8px;margin-top:var(--space-4)}
+.cs-track{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;flex:1;min-width:0;padding:2px}
+.cs-track::-webkit-scrollbar{display:none}
+.cs-item{position:relative;overflow:hidden;isolation:isolate;flex:0 0 auto;scroll-snap-align:start;display:flex;align-items:center;gap:10px;min-width:150px;padding:9px 14px 9px 10px;background:var(--bg-card,#fff);border:1px solid var(--border-light,#e5e7eb);border-radius:5px;text-decoration:none;color:var(--text-primary,#111827)}
+.cs-item:hover{border-color:var(--cs)}
+.cs-i{width:36px;height:36px;flex:0 0 auto;border-radius:50%;display:grid;place-items:center;background:color-mix(in srgb,var(--cs) 12%,#fff);color:var(--cs);overflow:hidden}
+.cs-i img{width:26px;height:26px;object-fit:contain}.cs-i b{font-size:13px;font-weight:800}
+.cs-t{display:flex;flex-direction:column;line-height:1.25}.cs-t b{font-size:14px;font-weight:700;white-space:nowrap}.cs-t small{font-size:11.5px;color:var(--text-secondary,#6b7280);white-space:nowrap}
+.cs-nav{flex:0 0 auto;width:32px;height:32px;display:grid;place-items:center;border:1px solid var(--border-light,#e5e7eb);background:var(--bg-card,#fff);color:var(--text-secondary,#374151);border-radius:5px;cursor:pointer}
+.cs-nav:hover{color:var(--gc-accent,#7c3aed);border-color:var(--gc-accent,#7c3aed)}
+@media (max-width:560px){.cs-nav{display:none}.cs-item{min-width:136px}}
+/* each box its own colour (corner circle + icon) */
+.hero-categories .hc-item:nth-child(6n+1){--hc:var(--gc-accent,#7c3aed)}.hero-categories .hc-item:nth-child(6n+2){--hc:var(--gc-accent-3,#d50808)}
+.hero-categories .hc-item:nth-child(6n+3){--hc:var(--gc-accent-2,#1e73be)}.hero-categories .hc-item:nth-child(6n+4){--hc:#f59e0b}
+.hero-categories .hc-item:nth-child(6n+5){--hc:#16a34a}.hero-categories .hc-item:nth-child(6n+6){--hc:#db2777}
+.hero-categories .hc-item .hc-icon{color:var(--hc);width:46px;height:46px;border-radius:50%;background:color-mix(in srgb,var(--hc) 13%,#fff);transition:background .15s}.hero-categories .hc-item .hc-icon svg{width:24px;height:24px}.hero-categories .hc-item:hover .hc-icon{background:color-mix(in srgb,var(--hc) 22%,#fff)}.hero-categories .hc-item .hc-icon svg,.hero-categories .hc-item:hover .hc-icon svg{stroke:var(--hc)!important}
 .hero-categories {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
@@ -288,22 +307,6 @@ function homeExcerpt(string $html, int $len = 170): string {
     transform var(--ease-fast);
 }
 
-/* a soft half circle in the corner of each box (accent colour, low opacity) */
-.hc-item { position: relative; overflow: hidden; isolation: isolate; }
-.hc-item::after {
-  content: "";
-  position: absolute;
-  top: -26px;
-  right: -26px;
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  background: var(--gc-accent, #0c6878);
-  opacity: .1;
-  z-index: -1;
-  transition: opacity var(--ease-fast), transform var(--ease-fast);
-}
-.hc-item:hover::after { opacity: .18; transform: scale(1.15); }
 .hc-item:hover {
   background: var(--color-primary-soft);
   border-color: var(--color-primary-light);
@@ -444,33 +447,36 @@ function homeExcerpt(string $html, int $len = 170): string {
 <?php if (th_on('home_hero')): ?>
 <section class="hero-search-section">
 
-  <!-- Gradient Search Card -->
-  <form class="hero-search-card" action="/search" method="get">
-  <h1 class="hero-search-label">Find Government Jobs 2026</h1>
-
-  <p class="hero-search-sub">
-    Search from thousands of latest sarkari naukri updates
-  </p>
-
-  <div class="hero-search-form">
-    <input
-      class="hero-search-input"
-      name="q"
-      type="search"
-      placeholder="Search jobs, exams, results…"
-      autocomplete="off"
-      required
-    />
-
-    <button type="submit" class="hero-search-btn">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="11" cy="11" r="8"></circle>
-        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-      </svg>
-      Search
-    </button>
+  <!-- Course categories: a small slider (Online Store → Categories) -->
+  <h1 class="cs-sr">Latest Updates, Courses &amp; Notes — <?= htmlspecialchars(edu_site_name()) ?></h1>
+  <?php $csCats = array_values(array_filter(sh_categories($pdo), fn($c) => (int)$c['items'] > 0)); if (!$csCats) $csCats = array_values(sh_categories($pdo)); ?>
+  <?php if ($csCats): ?>
+  <div class="cs-slider" data-cs>
+    <button type="button" class="cs-nav cs-prev" aria-label="Previous"><svg viewBox="0 0 24 24" width="16" height="16"><path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <div class="cs-track" role="list">
+      <?php foreach ($csCats as $i => $c): ?>
+      <a class="cs-item" role="listitem" href="<?= htmlspecialchars(sh_cat_url($c['slug'])) ?>" style="--cs:<?= ['var(--gc-accent,#7c3aed)', 'var(--gc-accent-2,#1e73be)', '#16a34a', '#f59e0b', 'var(--gc-accent-3,#d50808)', '#db2777', '#0891b2'][$i % 7] ?>">
+        <span class="cs-i"><?php if ($c['icon']): ?><img src="<?= htmlspecialchars(sh_upload_url($c['icon'])) ?>" alt="" loading="lazy" width="26" height="26"><?php else: ?><b><?= htmlspecialchars(mb_strtoupper(mb_substr(preg_replace('/^Class\s+/i', '', $c['name']), 0, 2))) ?></b><?php endif; ?></span>
+        <span class="cs-t"><b><?= htmlspecialchars($c['name']) ?></b><small><?= (int)$c['items'] ? (int)$c['items'] . ' course' . ((int)$c['items'] === 1 ? '' : 's') : 'Coming soon' ?></small></span>
+      </a>
+      <?php endforeach; ?>
+    </div>
+    <button type="button" class="cs-nav cs-next" aria-label="Next"><svg viewBox="0 0 24 24" width="16" height="16"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
   </div>
-</form>
+  <script>
+  (function () { // arrows + a gentle auto-slide (stops while the mouse or a finger is on it)
+    var w = document.querySelector('[data-cs]'); if (!w) return;
+    var t = w.querySelector('.cs-track'), stop = false;
+    function step(d) { var it = t.querySelector('.cs-item'); var dx = it ? it.offsetWidth + 10 : 160; var end = t.scrollLeft + t.clientWidth >= t.scrollWidth - 4;
+      if (d > 0 && end) t.scrollTo({ left: 0, behavior: 'smooth' }); else t.scrollBy({ left: d * dx, behavior: 'smooth' }); }
+    w.querySelector('.cs-prev').addEventListener('click', function () { step(-1); });
+    w.querySelector('.cs-next').addEventListener('click', function () { step(1); });
+    ['mouseenter', 'touchstart', 'focusin'].forEach(function (e) { w.addEventListener(e, function () { stop = true; }, { passive: true }); });
+    w.addEventListener('mouseleave', function () { stop = false; });
+    setInterval(function () { if (!stop && !document.hidden && t.scrollWidth > t.clientWidth + 4) step(1); }, 3500);
+  })();
+  </script>
+  <?php endif; ?>
 
   <!-- Category Buttons -->
   <nav class="hero-categories" aria-label="Courses and blog categories">
