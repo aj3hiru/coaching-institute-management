@@ -19,7 +19,7 @@ function edu_theme_defaults(): array
         'h1_size' => 30, 'h2_size' => 24, 'h3_size' => 20, 'font_display' => 'swap',
         // Header
         'h_sticky' => '0', 'h_search' => '1', 'h_voice' => '1', 'h_bell' => '1', 'h_socials' => '1', 'h_dark' => '1',
-        'h_topbar' => '0', 'h_topbar_text' => '', 'h_width' => 1200, 'h_search_placeholder' => 'e.g. SSC, UPSC, Railway...',
+        'h_topbar' => '0', 'h_topbar_text' => '', 'h_width' => 1200, 'box_radius' => 5, 'h_search_placeholder' => 'e.g. SSC, UPSC, Railway...',
         'h_login' => '1', 'h_login_text' => 'Log in', 'h_login_url' => '', 'h_sub' => '1', 'h_sub_text' => 'Subscribe', 'h_sub_url' => '', 'h_sub_icon' => '',
         'h_drawer_title' => 'Hello, Reader', 'h_drawer_text' => 'Join our courses and grow your future',
         'h_drawer_hello' => '1', 'h_drawer_login' => '1', 'h_drawer_sub' => '1',
@@ -499,6 +499,7 @@ function edu_theme_head(): string
     $vars[] = '--edu-strip-bg:' . $col('menu_strip', 'background', '#ffffff') . ';--edu-strip-text:' . $col('menu_strip', 'text', '#1d2327') . ';--edu-strip-hover:' . $col('menu_strip', 'text_hover', 'var(--gc-accent)');
     $vars[] = '--edu-card-bg:' . $col('cards', 'background', '#ffffff') . ';--edu-card-border:' . $col('cards', 'border', '#e5e7eb') . ';--edu-toc-bg:' . $col('cards', 'toc_bg', 'var(--gc-accent)');
     $vars[] = '--nb-container:' . max(960, min(1600, (int)$t['h_width'])) . 'px';
+    $vars[] = '--edu-radius:' . max(0, min(30, (int)($t['box_radius'] ?? 5))) . 'px';
     // fonts: the body / headings rules also drive the theme's font variables
     $sys = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
     $bodyFam = $headFam = '';
@@ -555,5 +556,9 @@ function edu_theme_head(): string
     else $css .= '@media (min-width:981px){.nb-h-racing .inb-scroll-menu-inner{max-width:var(--nb-container,1200px);width:100%;min-width:0;overflow-x:auto;scrollbar-width:none;justify-content:flex-start}.nb-h-racing .inb-scroll-menu-inner::-webkit-scrollbar{display:none}.nb-h-racing .inb-scroll-menu-inner>:first-child{margin-left:auto}.nb-h-racing .inb-scroll-menu-inner>:last-child{margin-right:auto}}'; // inside the container: centred while it fits; longer → starts at the first link and scrolls inside the container (nothing cut off)
     $custom = trim((string)$t['custom_css']);
     if ($custom !== '') $css .= str_ireplace('</style', '<\/style', $custom);
+    // Customize → Container → Corner radius: no box, button, card, drop-down or FAQ on the site is rounder than this
+    // (circles such as avatars and round icons stay round). Done in the browser, so every page and every style follows.
+    $rad = max(0, min(30, (int)($t['box_radius'] ?? 5)));
+    $out .= '<script>(function(R){function f(root){[].forEach.call((root||document).querySelectorAll("*"),function(e){if(e.closest&&e.closest("svg"))return;var c=getComputedStyle(e),r=c.borderTopLeftRadius,p=parseFloat(r);if(!r||r.indexOf("%")>-1||!(p>R))return;var w=e.offsetWidth,h=e.offsetHeight;if(w&&h?(Math.abs(w-h)<=2&&p>=w/2-1):(c.width!=="auto"&&c.width===c.height))return;e.style.setProperty("border-radius",R+"px","important")})}function run(){f(document)}if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",run);else run();addEventListener("load",run);document.addEventListener("DOMContentLoaded",function(){new MutationObserver(function(ms){ms.forEach(function(m){[].forEach.call(m.addedNodes,function(n){if(n.nodeType===1){f(n.parentNode||n)}})})}).observe(document.body,{childList:true,subtree:true})})})(' . $rad . ');</script>';
     return $out . '<style id="edu-theme">' . $css . '</style>';
 }

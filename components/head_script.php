@@ -117,10 +117,10 @@ if (isset($seo) && is_array($seo) && function_exists('edu_shortcodes')) foreach 
 
 
   /* ─── SHADOWS ────────────────────────────────── */
-  --shadow-xs: 0 1px 4px rgba(12, 104, 120, 0.06);
-  --shadow-sm: 0 2px 8px rgba(12, 104, 120, 0.08);
-  --shadow-md: 0 8px 24px rgba(12, 104, 120, 0.12);
-  --shadow-lg: 0 16px 40px rgba(12, 104, 120, 0.18);
+  --shadow-xs: 0 1px 4px color-mix(in srgb,var(--gc-accent,var(--gc-accent,#0c6878)) 6%,transparent);
+  --shadow-sm: 0 2px 8px color-mix(in srgb,var(--gc-accent,var(--gc-accent,#0c6878)) 8%,transparent);
+  --shadow-md: 0 8px 24px color-mix(in srgb,var(--gc-accent,var(--gc-accent,#0c6878)) 12%,transparent);
+  --shadow-lg: 0 16px 40px color-mix(in srgb,var(--gc-accent,var(--gc-accent,#0c6878)) 18%,transparent);
 
 
   /* ─── SPACING ────────────────────────────────── */
@@ -396,7 +396,7 @@ header.search-active .search-overlay {
   position: absolute;
   inset: -8px;
   border-radius: 50%;
-  background: rgba(12, 104, 120, 0.25);
+  background: color-mix(in srgb,var(--gc-accent,var(--gc-accent,#0c6878)) 25%,transparent);
   opacity: 0;
 }
 
@@ -877,9 +877,9 @@ if(!same||!document.getElementById("wpadminbar"))render(d,false)}).catch(functio
 <?php require INCLUDES_PATH . '/consent-head.php'; ?>
 
 
-<link rel="stylesheet" href="/assets/css/app.min.css?v=22052026" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="/assets/css/app.min.css?v=<?= @filemtime(ROOT_PATH . '/assets/css/app.min.css') ?: 1 ?>" media="print" onload="this.media='all'">
 
-<noscript><link rel="stylesheet" href="/assets/css/app.min.css?v=22052026"></noscript>
+<noscript><link rel="stylesheet" href="/assets/css/app.min.css?v=<?= @filemtime(ROOT_PATH . '/assets/css/app.min.css') ?: 1 ?>"></noscript>
 <link rel="stylesheet" href="/assets/css/footer.css?v=<?= @filemtime(ROOT_PATH . '/assets/css/footer.css') ?>" media="print" onload="this.media='all'">
 
 <script id="app" src="/assets/js/app.bundle.min.js?v=1210202602" defer></script>
