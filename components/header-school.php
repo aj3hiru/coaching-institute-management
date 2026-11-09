@@ -22,7 +22,7 @@ $__svgChev = '<svg class="nb-sc-chev" viewBox="0 0 24 24" width="12" height="12"
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@700&family=Roboto:wght@500;600;700&display=swap">
 <style>
 .nb-h-school{--sc-navy:#0e2c53;--sc-yellow:#ffc000;--sc-red:#f02801;--sc-panel:rgba(240,174,113,.43);--sc-title:#9e1b32;--sc-pad:60px;
-  position:relative;z-index:500;background:#fff;border-bottom:1px solid #eceef1;font-family:Roboto,system-ui,-apple-system,"Segoe UI",Arial,sans-serif}
+  position:relative;z-index:500;background:#fff;border-bottom:1px solid #eceef1;font-family:var(--font-body,Roboto),system-ui,-apple-system,"Segoe UI",Arial,sans-serif}
 .nb-h-school *{box-sizing:border-box}
 .nb-h-school{overflow-x:clip}
 .nb-sc-in{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:0 var(--sc-pad);height:100%}

@@ -10,3 +10,10 @@
 .sp-hero:not(#edu-x){background:color-mix(in srgb,var(--gc-accent,#0c6878) 30%,#0b0f1a)!important}
 .hf-intro:not(#edu-x),.sp-wrap.hm-why-in:not(#edu-x){background:#fff!important;border:1px solid #e5e7eb}
 .hm-post-i:not(#edu-x){background:#f3f4f6!important}
+/* mobile menu: social links as round light buttons with the icon in the accent colour, on white */
+.nb-drawer-follow{background:#fff!important;border-top:1px solid #eef0f3;padding:14px 18px 18px!important}
+.nb-drawer-follow > span{display:none}
+.nb-drawer-follow > div{display:flex;flex-wrap:wrap;gap:12px}
+.nb-drawer-follow a:not(#edu-x){width:40px;height:40px;display:grid;place-items:center;border-radius:50%!important;background:color-mix(in srgb,var(--gc-accent,#7c3aed) 8%,#fff)!important;color:color-mix(in srgb,var(--gc-accent,#7c3aed) 75%,#000)!important;border:0!important;transition:background .15s,color .15s}
+.nb-drawer-follow a:not(#edu-x):hover{background:var(--gc-accent,#7c3aed)!important;color:#fff!important}
+.nb-drawer-follow a svg{width:19px!important;height:19px!important}

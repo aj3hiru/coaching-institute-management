@@ -31,6 +31,7 @@ $__ico = [
     'fa-table-cells-large' => '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
     'fa-map-location-dot' => '<path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',
     'fa-bolt' => '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
+    'fa-newspaper' => '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h10M7 16h6"/>',
     'fa-briefcase' => '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/><path d="M3 13h18"/>',
     'fa-circle-info' => '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
     'fa-envelope' => '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>',
@@ -104,7 +105,7 @@ if ($__school) {
 .nb-brand-school .nb-emblem{display:block;width:auto;height:var(--emb-h,52px);max-width:96px;object-fit:contain;flex:0 0 auto}
 .nb-hr-brand .nb-sb-school{display:flex;flex-direction:column;align-items:flex-start;text-align:left;line-height:1.1;min-width:0}
 .nb-sb-school .site-title{font-family:Poppins,Roboto,Arial,sans-serif;font-weight:700;font-size:23px;letter-spacing:-.005em;color:#9e1b32!important;white-space:nowrap}
-.nb-sb-school .nb-brand-line{margin-top:3px;font-family:Roboto,Arial,sans-serif;font-size:14.5px;font-weight:500;letter-spacing:0;text-transform:none;color:#1a1a1a!important;white-space:nowrap}
+.nb-sb-school .nb-brand-line{margin-top:3px;font-family:var(--font-body,Roboto),Arial,sans-serif;font-size:14.5px;font-weight:500;letter-spacing:0;text-transform:none;color:#1a1a1a!important;white-space:nowrap}
 /* tablets (768–980px): the same layout as desktop, just a little smaller (the theme switches to the phone layout at 980px) */
 @media (min-width:768px) and (max-width:980px){
   .nb-hr-top{grid-template-columns:1fr auto 1fr!important;gap:10px!important;padding:10px 16px!important}

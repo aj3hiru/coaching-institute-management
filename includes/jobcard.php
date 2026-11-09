@@ -138,7 +138,7 @@ function edu_job_cards_assets(): string
     return <<<'HTML'
 <style>
 .jc-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:6px 0 18px}
-.jc{position:relative;min-width:0;display:flex;flex-direction:column;padding:12px 14px;border:1px solid #dadce0;border-radius:8px;background:#fff;font-family:Roboto,system-ui,-apple-system,"Segoe UI",sans-serif;transition:box-shadow .2s,border-color .2s}
+.jc{position:relative;min-width:0;display:flex;flex-direction:column;padding:12px 14px;border:1px solid #dadce0;border-radius:8px;background:#fff;font-family:var(--font-body,Roboto),system-ui,-apple-system,"Segoe UI",sans-serif;transition:box-shadow .2s,border-color .2s}
 .jc:hover{border-color:#c4c7cc;box-shadow:0 4px 14px rgba(16,24,40,.08)}
 .jc-link{position:absolute;inset:0;z-index:1;border-radius:8px}
 .jc-link:focus-visible{outline:2px solid var(--gc-accent,#0c6878);outline-offset:2px}

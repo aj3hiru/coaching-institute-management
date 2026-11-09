@@ -556,6 +556,20 @@ function edu_theme_head(): string
     else $css .= '@media (min-width:981px){.nb-h-racing .inb-scroll-menu-inner{max-width:var(--nb-container,1200px);width:100%;min-width:0;overflow-x:auto;scrollbar-width:none;justify-content:flex-start}.nb-h-racing .inb-scroll-menu-inner::-webkit-scrollbar{display:none}.nb-h-racing .inb-scroll-menu-inner>:first-child{margin-left:auto}.nb-h-racing .inb-scroll-menu-inner>:last-child{margin-right:auto}}'; // inside the container: centred while it fits; longer → starts at the first link and scrolls inside the container (nothing cut off)
     $custom = trim((string)$t['custom_css']);
     if ($custom !== '') $css .= str_ireplace('</style', '<\/style', $custom);
+    // Typography Manager: a font chosen for Body / All Headings is also the site's own font variables, so every part of
+    // the theme (menus, cards, buttons that use --font-ui / --font-body / --font-heading) follows it
+    $fb = $fh = '';
+    foreach ((array)($t['typography'] ?? []) as $tr) {
+        $fam = trim((string)($tr['family'] ?? ''));
+        if ($fam === '') continue;
+        if (($tr['target'] ?? '') === 'body') $fb = $fam;
+        if (($tr['target'] ?? '') === 'headings') $fh = $fam;
+    }
+    if ($fb !== '' || $fh !== '') {
+        $q = fn($f) => '"' . str_replace('"', '', $f) . '",system-ui,-apple-system,"Segoe UI",sans-serif';
+        $out .= '<style id="edu-font-vars">:root{' . ($fb !== '' ? '--font-body:' . $q($fb) . ';--font-ui:' . $q($fb) . ';' : '') . ($fh !== '' || $fb !== '' ? '--font-heading:' . $q($fh ?: $fb) . ';' : '') . '}'
+            . ($fb !== '' ? 'body,button,input,select,textarea{font-family:var(--font-body)}' : '') . '</style>';
+    }
     // Customize → Container → Corner radius: no box, button, card, drop-down or FAQ on the site is rounder than this
     // (circles such as avatars and round icons stay round). Done in the browser, so every page and every style follows.
     $rad = max(0, min(30, (int)($t['box_radius'] ?? 5)));
