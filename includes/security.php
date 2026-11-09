@@ -11,7 +11,7 @@ if (!function_exists('edu_security_headers')) {
         header('X-Content-Type-Options: nosniff');
         header('X-Frame-Options: SAMEORIGIN');
         header('Referrer-Policy: strict-origin-when-cross-origin');
-        header('Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()');
+        header('Permissions-Policy: camera=(), microphone=(self), geolocation=(), payment=(), usb=()'); // microphone: voice search on our own pages
         if (($_SERVER['HTTPS'] ?? '') === 'on' || ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https' || str_contains((string)($_SERVER['HTTP_CF_VISITOR'] ?? ''), 'https')) {
             header('Strict-Transport-Security: max-age=15552000');
         }

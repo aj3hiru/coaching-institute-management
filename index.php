@@ -109,8 +109,11 @@ $short0 = function (string $n) { $p = preg_split('/\s+/', trim(preg_replace('/\(
 <section class="hm-sec" id="courses"><div class="sp-wrap">
   <div class="hm-h"><div><h2><?= sh_e($ttl('courses')) ?></h2></div><a href="/courses/">View All »</a></div>
   <?php if (!$courses): ?><div class="st-empty">New courses are coming soon.</div><?php else: ?>
-  <div class="hm-grid" id="hmCourses"><?php foreach ($courses as $p) echo sh_mini_card($p, $catName($p)); ?></div>
-  <div class="hm-more"><?php if ($moreCourses || count($courses) > 4): ?><button type="button" class="hm-btn hm-pro hm-splash" id="hmMore" data-o="8" data-w="<?= sh_e($cw) ?>" data-more="<?= $moreCourses ? 1 : 0 ?>">View more courses <span class="hm-pro-a"><?= $ico('arrow') ?></span></button><?php endif; ?><a class="hm-btn hm-pro hm-splash" id="hmAll" href="/courses/"<?= $moreCourses || count($courses) > 4 ? ' hidden' : '' ?>>See all courses <span class="hm-pro-a"><?= $ico('arrow') ?></span></a></div>
+  <?php // first a slider; "View more courses" turns it into a grid (these cards + more loaded below) ?>
+  <div class="hm-fs hm-cs" data-hs id="hmCourseSlider"><div class="hs-track"><?php foreach ($courses as $p): ?><div class="hs-s"><?= sh_mini_card($p, $catName($p)) ?></div><?php endforeach; ?></div>
+    <button type="button" class="hs-prev" aria-label="Previous">‹</button><button type="button" class="hs-next" aria-label="Next">›</button><div class="hs-dots"></div></div>
+  <div class="hm-grid hm-grid-all" id="hmCourses" hidden></div>
+  <div class="hm-more"><?php if ($moreCourses || count($courses) > 4): ?><button type="button" class="hm-btn hm-pro hm-splash" id="hmMore" data-o="<?= count($courses) ?>" data-w="<?= sh_e($cw) ?>" data-more="<?= $moreCourses ? 1 : 0 ?>" data-slider="hmCourseSlider">View more courses <span class="hm-pro-a"><?= $ico('arrow') ?></span></button><?php endif; ?><a class="hm-btn hm-pro hm-splash" id="hmAll" href="/courses/"<?= $moreCourses || count($courses) > 4 ? ' hidden' : '' ?>>See all courses <span class="hm-pro-a"><?= $ico('arrow') ?></span></a></div>
   <?php endif; ?>
 </div></section>
 <?php $S['courses'] = ob_get_clean(); ?>

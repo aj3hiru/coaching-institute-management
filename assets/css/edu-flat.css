@@ -28,3 +28,8 @@
 .ftx-footer{isolation:isolate;overflow:hidden}
 .ftx-copy:not(#edu-x){position:relative;background:transparent!important;padding:14px 0!important}
 .ftx-copy:not(#edu-x)::before{content:"";position:absolute;top:0;bottom:-400px;left:-100vw;right:-100vw;background:var(--t-footer-bar-background,#002b4f);z-index:-1}
+/* phone: the header search opens exactly over the menu strip (same place, same height) */
+@media (max-width:980px){
+  .edu-hsearch:not([hidden]):not(#edu-x){display:flex;align-items:center;padding:0 10px!important;border:0!important;background:var(--edu-strip-bg,#fff)!important;margin:0!important}
+  .edu-hsearch:not(#edu-x) .edu-hsearch-form{flex:1;height:calc(100% - 8px);max-height:40px;border-radius:5px!important}
+}

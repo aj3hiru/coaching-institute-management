@@ -76,10 +76,16 @@
     if (!more || !grid) return;
     var hiddenCards = function () { return [].slice.call(grid.querySelectorAll('.hc')).filter(function (c) { return c.offsetParent === null; }); };
     var done = more.getAttribute('data-more') === '0';
-    var sync = function () { var left = hiddenCards().length; if (done && !left) { more.remove(); if (allBtn) allBtn.hidden = false; } };
+    var slider = document.getElementById(more.getAttribute('data-slider') || ''); // Our Courses: a slider until View more is pressed
+    var sync = function () { if (slider) return; var left = hiddenCards().length; if (done && !left) { more.remove(); if (allBtn) allBtn.hidden = false; } };
     sync(); // e.g. a computer shows all 8 at once and the server has no more
     window.addEventListener('resize', function () { if (document.body.contains(more)) sync(); });
     more.addEventListener('click', function () {
+      if (slider) { // the slider's cards move into the grid, the slider goes; then more come from the server below
+        [].forEach.call(slider.querySelectorAll('.hs-s > *'), function (c) { c.classList.add('shown'); grid.appendChild(c); });
+        slider.remove(); slider = null; grid.hidden = false;
+        if (done) { sync(); return; }
+      }
       var hid = hiddenCards();
       if (hid.length) { hid.slice(0, 8).forEach(function (c) { c.classList.add('shown', 'hm-new'); }); sync(); return; }
       var o = +more.getAttribute('data-o') || 0, label = more.innerHTML, q = '';
