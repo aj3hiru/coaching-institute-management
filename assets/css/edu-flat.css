@@ -1,0 +1,16 @@
+/* Flat look for the whole site (loads in <head>, so pages never show rounder corners first):
+   - corners: never rounder than Customize → Container → Corner radius (--edu-radius); a small script in the theme head
+     catches anything not listed here
+   - no shadows, no gradients, no shine/fade effects; colours come from Customize → Colors → Accent */
+:is(#blog-comment-content,#blog-comment-email,#blog-comment-name,#cf-email,#cf-message,#cf-name,#cf-subject,#li-id,#li-pw,.au,.au-btn,.au-eye,.blog-comment-form-container,.blog-comments-section,.cf-btn,.edu-cform,.edu-hsearch,.edu-hsearch-form,.eq-card,.ftx-cta-card,.ftx-play,.hc-go,.hc-go.hc-join,.hc-item,.hero-search-btn,.hero-search-card,.hero-search-form,.hf-badge,.hf-btn,.hf-intro,.hf-item,.hf-num,.hm-btn.hm-pro.hm-splash,.hv-card.hv-admit,.hv-card.hv-answer,.hv-card.hv-recent,.hv-card.hv-result,.hv-count,.hv-date,.hv-ico,.ls-search,.mnav-switch,.nb-card.nb-card--feat,.nb-card.nb-card--feat.nb-card--lead,.nb-gn-box,.nb-keypoints.nb-keypoints--dot,.nb-share-btn.nb-share--copy,.nb-share-btn.nb-share--device,.nb-share-btn.nb-share--facebook,.nb-share-btn.nb-share--linkedin,.nb-share-btn.nb-share--telegram,.nb-share-btn.nb-share--whatsapp,.nb-share-btn.nb-share--x,.post-card,.st-free100,.ls-pg a,.hs-dots button,.nb-also-img img,.contact-form input,.au-pts li,.hs-dots button,.hs-dots .on,.hc-p .off,.st .off,.jc,.jc-link,.jc-logo,.jss-dots button,.ls-pg span,.ls-pg a,.au-pts span):not(#edu-x){border-radius:var(--edu-radius,5px)!important}
+*:not(#edu-x),*:not(#edu-x)::before,*:not(#edu-x)::after{box-shadow:none!important;text-shadow:none!important}
+/* gradients → flat colours */
+.hero-search-card:not(#edu-x),.hm-imp:not(#edu-x),.sp-media:not(#edu-x),.st-thumb:not(#edu-x){background:var(--gc-accent,#0c6878)!important}
+.hero-search-btn:not(#edu-x){background:color-mix(in srgb,var(--gc-accent,#0c6878) 75%,#000)!important}
+.sp-hero:not(#edu-x){background:color-mix(in srgb,var(--gc-accent,#0c6878) 30%,#0b0f1a)!important}
+.hf-intro:not(#edu-x),.sp-wrap.hm-why-in:not(#edu-x){background:#fff!important;border:1px solid #e5e7eb}
+.hm-post-i:not(#edu-x){background:#f3f4f6!important}
+/* no shine sweeping over buttons / FREE badges */
+.hm-splash:not(#edu-x)::after,.st-free100:not(#edu-x)::after{content:none!important;display:none!important;animation:none!important}
+/* no faded decorative circles behind the "Find Government Jobs" box */
+.hero-search-card:not(#edu-x)::before,.hero-search-card:not(#edu-x)::after{content:none!important;display:none!important}

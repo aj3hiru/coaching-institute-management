@@ -873,6 +873,7 @@ try{sessionStorage.setItem(K,JSON.stringify({k:key,d:d}))}catch(x){}
 // nothing changed: keep the bar already drawn (redrawing it would close a menu under the mouse)
 if(!same||!document.getElementById("wpadminbar"))render(d,false)}).catch(function(){})})();</script>
 <?= edu_theme_head() ?>
+<link rel="stylesheet" href="/assets/css/edu-flat.css?v=<?= @filemtime(ROOT_PATH . '/assets/css/edu-flat.css') ?: 1 ?>">
 <?php require_once INCLUDES_PATH . '/perf.php'; echo edu_snippet('head'); require_once INCLUDES_PATH . '/ads.php'; echo edu_ads_head(); ?>
 <?php require INCLUDES_PATH . '/consent-head.php'; ?>
 
