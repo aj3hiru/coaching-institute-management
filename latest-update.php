@@ -170,7 +170,7 @@ function homeExcerpt(string $html, int $len = 170): string {
 .hero-search-card {
   background: var(--gradient-primary);
   border-radius: var(--border-radius-lg);
-  padding: var(--space-10) var(--space-8);
+  padding: var(--space-6) var(--space-6);
   text-align: center;
   position: relative;
   overflow: hidden;
@@ -186,29 +186,29 @@ function homeExcerpt(string $html, int $len = 170): string {
   pointer-events: none;
 }
 .hero-search-card::before {
-  width: 300px; height: 300px;
-  background: #fff;
-  top: -80px; right: -60px;
-}
-.hero-search-card::after {
   width: 200px; height: 200px;
   background: #fff;
-  bottom: -60px; left: -40px;
+  top: -70px; right: -50px;
+}
+.hero-search-card::after {
+  width: 130px; height: 130px;
+  background: #fff;
+  bottom: -50px; left: -30px;
 }
 
 .hero-search-label {
   font-family: var(--font-heading);
-  font-size: var(--text-2xl);
+  font-size: var(--text-xl);
   font-weight: var(--weight-bold);
   color: var(--text-white);
-  margin-bottom: var(--space-2);
+  margin-bottom: var(--space-1);
   line-height: var(--leading-tight);
 }
 
 .hero-search-sub {
-  font-size: var(--text-base);
-  color: rgba(255, 255, 255, 0.75);
-  margin-bottom: var(--space-6);
+  font-size: var(--text-sm);
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: var(--space-4);
 }
 
 .hero-search-form {
@@ -351,7 +351,7 @@ function homeExcerpt(string $html, int $len = 170): string {
 }
 
 @media (max-width: 560px) {
-  .hero-search-card { padding: var(--space-8) var(--space-5); }
+  .hero-search-card { padding: var(--space-5) var(--space-4); }
   .hero-search-label { font-size: var(--text-xl); }
   .hero-categories { grid-template-columns: repeat(3, 1fr); gap: var(--space-2); }
   .hc-item { padding: var(--space-3) var(--space-1); }
@@ -447,8 +447,35 @@ function homeExcerpt(string $html, int $len = 170): string {
 <?php if (th_on('home_hero')): ?>
 <section class="hero-search-section">
 
+  <!-- Gradient Search Card -->
+  <form class="hero-search-card" action="/search" method="get">
+  <h1 class="hero-search-label">Find Courses, Notes &amp; Updates</h1>
+
+  <p class="hero-search-sub">
+    Search our online courses, PDF notes, quizzes, scholarships and the latest updates
+  </p>
+
+  <div class="hero-search-form">
+    <input
+      class="hero-search-input"
+      name="q"
+      type="search"
+      placeholder="Search courses, notes, quiz, scholarship…"
+      autocomplete="off"
+      required
+    />
+
+    <button type="submit" class="hero-search-btn">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      </svg>
+      Search
+    </button>
+  </div>
+</form>
+
   <!-- Course categories: a small slider (Online Store → Categories) -->
-  <h1 class="cs-sr">Latest Updates, Courses &amp; Notes — <?= htmlspecialchars(edu_site_name()) ?></h1>
   <?php $csCats = array_values(array_filter(sh_categories($pdo), fn($c) => (int)$c['items'] > 0)); if (!$csCats) $csCats = array_values(sh_categories($pdo)); ?>
   <?php if ($csCats): ?>
   <div class="cs-slider" data-cs>

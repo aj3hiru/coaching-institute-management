@@ -15,6 +15,15 @@ if (empty($query)) {
 
 $search_term = "%" . $query . "%";
 
+// Courses and PDF notes of the online store that match
+$found_products = [];
+try {
+    require_once INCLUDES_PATH . '/shop.php';
+    $sp = $pdo->prepare("SELECT p.*, (SELECT COUNT(*) FROM sh_lessons l WHERE l.product_id = p.id) AS lessons, (SELECT COUNT(*) FROM sh_files f WHERE f.product_id = p.id) AS files FROM sh_products p WHERE p.status = 'published' AND (p.title LIKE ? OR p.subtitle LIKE ? OR p.description LIKE ?) ORDER BY (p.title LIKE ?) DESC, p.id DESC LIMIT 12");
+    $sp->execute([$search_term, $search_term, $search_term, $search_term]);
+    $found_products = $sp->fetchAll(PDO::FETCH_ASSOC);
+} catch (Throwable $e) { $found_products = []; }
+
 // 2. Search Topics (Categories & Tags)
 $matched_topics = [];
 
@@ -71,7 +80,7 @@ $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
 // SEO ARRAY
 $seo = [
     'title'       => 'Search Results for "' . $query . '" | ' . edu_site_name(),
-    'description' => 'Search results for "' . $query . '" on ' . edu_site_name() . '. Browse latest updates and articles.',
+    'description' => 'Search results for "' . $query . '" on ' . edu_site_name() . '. Courses, PDF notes and the latest updates.',
     'image'       => SEO_DEFAULT_IMAGE,
     'type'        => SEO_DEFAULT_TYPE,
     'robots'      => 'noindex, follow',
@@ -173,7 +182,7 @@ $seo_ctx = ['kind' => 'search'];
         
             <h1 class="page-title">Search Results for: <em><?= htmlspecialchars($query) ?></em></h1>
                <p style="padding:5px;color:#606060; margin-bottom: 10px;">
-                Found <?= $total_posts ?> article<?= $total_posts != 1 ? 's' : '' ?> 
+                Found <?= $found_products ? count($found_products) . ' course' . (count($found_products) != 1 ? 's' : '') . ' / notes, ' : '' ?><?= $total_posts ?> article<?= $total_posts != 1 ? 's' : '' ?> 
                 <?php if(!empty($matched_topics)) echo " and " . count($matched_topics) . " related topic" . (count($matched_topics) != 1 ? 's' : ''); ?>
             </p>
             
@@ -202,7 +211,29 @@ $seo_ctx = ['kind' => 'search'];
             	
            
             
-            <?php if (empty($posts)): ?>
+            <?php if ($found_products): ?>
+            <style>
+            .sr-prod{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;margin:6px 0 26px}
+            .sr-p{display:flex;gap:12px;align-items:center;padding:10px;border:1px solid #e5e7eb;background:#fff;text-decoration:none;color:inherit}
+            .sr-p:hover{border-color:var(--gc-accent,#7c3aed)}
+            .sr-p img,.sr-p .sr-ph{width:96px;aspect-ratio:16/9;object-fit:cover;flex:0 0 auto;background:var(--gc-accent,#7c3aed);display:grid;place-items:center;color:#fff;font-size:11px;font-weight:700}
+            .sr-p b{display:block;font-size:14.5px;line-height:1.35;color:#111827}
+            .sr-p small{display:block;font-size:12.5px;color:#6b7280;margin-top:3px}
+            .sr-p em{font-style:normal;font-weight:700;color:var(--gc-accent,#7c3aed)}
+            .sr-h{font-size:18px;margin:8px 0 10px}
+            </style>
+            <h2 class="sr-h">Courses &amp; notes</h2>
+            <div class="sr-prod">
+              <?php foreach ($found_products as $sp): $isC = $sp['type'] === 'course'; ?>
+              <a class="sr-p" href="<?= htmlspecialchars(sh_url($sp)) ?>">
+                <?php if ($sp['thumb']): ?><img src="<?= htmlspecialchars($sp['thumb']) ?>" alt="" loading="lazy"><?php else: ?><span class="sr-ph"><?= $isC ? 'COURSE' : 'PDF' ?></span><?php endif; ?>
+                <span><b><?= htmlspecialchars($sp['title']) ?></b><small><?= $isC ? 'Video course · ' . (int)$sp['lessons'] . ' lectures' : 'PDF notes · ' . (int)$sp['files'] . ' PDFs' ?> · <em><?= (float)$sp['price'] > 0 ? '₹' . number_format((float)$sp['price']) : 'Free' ?></em></small></span>
+              </a>
+              <?php endforeach; ?>
+            </div>
+            <?php endif; ?>
+
+            <?php if (empty($posts) && !$found_products): ?>
                 <div class="no-results" style="text-align:center; padding: 50px 0;">
                     <p style="font-size:1.2rem; margin-bottom:15px;">We couldn't find anything matching "<strong><?= htmlspecialchars($query) ?></strong>".</p>
                     <p>Try different keywords or check the spelling.</p>
