@@ -77,7 +77,7 @@ if ($raster) {
     if (!$src) { $raster = false; $outExt = $images[$mime]; }
 }
 if ($raster) {
-    [$path, $set, $w, $h] = edu_media_save_webp($src, $dir, $sub, $base, ($_POST['purpose'] ?? '') === 'featured');
+    [$path, $set, $w, $h] = edu_media_save_webp($src, $dir, $sub, $base, ($_POST['purpose'] ?? '') === 'featured', ($_POST['purpose'] ?? '') === 'slide' ? 1920 : 1280);
 } else {
     $name = $base . '.' . $outExt;
     if (!move_uploaded_file($tmp, $dir . '/' . $name)) mu_fail(500, 'Could not save the file.');
@@ -88,4 +88,6 @@ $type = $isImage ? 'image' : $others[$mime][1];
 edu_media_columns($pdo);
 $pdo->prepare("INSERT INTO media (file_path, responsive_set, file_type, alt_text, title, uploaded_at, uploaded_by) VALUES (?, ?, ?, ?, ?, NOW(), ?)")
     ->execute([$path, $set ? json_encode($set) : null, $type, $alt, $title, (int)$_SESSION['user_id']]);
-echo json_encode(['id' => (int)$pdo->lastInsertId(), 'path' => '/' . $path, 'thumb' => '/' . ($set['sm'] ?? $path), 'alt' => $alt, 'title' => $title, 'type' => $type]);
+$__dim = $raster ? [$w, $h] : (($gi = @getimagesize(ROOT_PATH . '/' . $path)) ? [$gi[0], $gi[1]] : [0, 0]);
+echo json_encode(['id' => (int)$pdo->lastInsertId(), 'path' => '/' . $path, 'thumb' => '/' . ($set['sm'] ?? $path), 'alt' => $alt, 'title' => $title, 'type' => $type,
+    'webp' => $raster, 'size' => (int)@filesize(ROOT_PATH . '/' . $path), 'orig_size' => (int)($_FILES['file']['size'] ?? 0), 'w' => (int)$__dim[0], 'h' => (int)$__dim[1]]);

@@ -50,6 +50,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($row) { $v[] = $id; $pdo->prepare("UPDATE hm_slides SET image=?, mobile_image=?, link=?, title=?, new_tab=?, sort=?, active=?, show_m=?, show_t=?, show_d=? WHERE id=?")->execute($v); }
             else $pdo->prepare("INSERT INTO hm_slides (image, mobile_image, link, title, new_tab, sort, active, show_m, show_t, show_d) VALUES (?,?,?,?,?,?,?,?,?,?)")->execute($v);
             admin_flash('Slide saved.');
+        } elseif ($a === 'slides_add') { // several slides at once (Media Library, many images ticked / uploaded)
+            $paths = array_values(array_filter(array_map(fn($v) => (function ($v) { $v = ltrim(trim((string)$v), '/'); return preg_match('#^uploads/[\w./-]+\.(webp|jpe?g|png|gif|avif)$#i', $v) && !str_contains($v, '..') ? $v : ''; })($v), (array)($_POST['paths'] ?? []))));
+            if (!$paths) throw new RuntimeException('Please choose the slide images.');
+            $sort = (int)$pdo->query("SELECT COALESCE(MAX(sort),0) FROM hm_slides")->fetchColumn();
+            $ins = $pdo->prepare("INSERT INTO hm_slides (image, mobile_image, link, title, new_tab, sort, active, show_m, show_t, show_d) VALUES (?, NULL, NULL, NULL, 0, ?, 1, 1, 1, 1)");
+            foreach (array_slice($paths, 0, 30) as $pth) $ins->execute([$pth, ++$sort]);
+            admin_flash(count($paths) === 1 ? 'Slide added.' : count($paths) . ' slides added.');
         } elseif ($a === 'free_thumb') { // own picture for a free course (Media Library) — empty = back to YouTube's
             $go = 'free';
             $m = $media('photo_path');

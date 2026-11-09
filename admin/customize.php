@@ -219,7 +219,7 @@ body{margin:0;overflow:hidden}
 /* slides */
 .hm-slide{border:1px solid #dcdcde;border-radius:4px;background:#fff;overflow:hidden}
 .hm-slide.is-off .hm-slide-img img{opacity:.45}
-.hm-slide-img{position:relative;background:#f0f0f1}.hm-slide-img img{display:block;width:100%;aspect-ratio:16/5;object-fit:cover}
+.hm-slide-img{position:relative;background:#f0f0f1}.hm-slide-img img{display:block;width:100%;height:auto;object-fit:contain}
 .hm-slide-n{position:absolute;left:8px;top:8px;min-width:20px;height:20px;padding:0 5px;border-radius:3px;background:rgba(0,0,0,.6);color:#fff;font-size:11px;font-weight:600;display:grid;place-items:center}
 .hm-slide-ov{position:absolute;right:6px;top:6px;display:flex;gap:2px;padding:2px;border-radius:5px;background:rgba(255,255,255,.94);box-shadow:0 1px 3px rgba(0,0,0,.15);opacity:0;transition:opacity .15s}
 .hm-slide:hover .hm-slide-ov,.hm-slide:focus-within .hm-slide-ov{opacity:1}
@@ -1309,6 +1309,16 @@ const HM_AUTO = {
 const hmName = x => x.id === 'why' ? 'Why choose us' : (x.title || HOME_SECTIONS[x.id]); // the "Why choose" section keeps its name; its heading is an ordinary text
 function hmLoad(then) { fetch('/admin/home-page.php?json=1', { credentials: 'same-origin' }).then(r => r.json()).then(d => { HMDB = d; if (then) then(); }).catch(() => { HMDB = { slides: [], free: [], toppers: [], cats: [] }; if (then) then(); }); }
 // save to the database; quiet = keep the panel as it is (e.g. while typing a link), only refresh the preview
+function hmSendMany(fields, paths) { // like hmSend, with a list (paths[])
+  if (!paths.length) return;
+  const fd = new FormData(); fd.append('_csrf', CSRF); fd.append('ajax', '1');
+  Object.entries(fields).forEach(([k, v]) => fd.append(k, v)); paths.forEach(p => fd.append('paths[]', p));
+  $('cz-refreshing').hidden = false;
+  return fetch('/admin/home-page.php', { method: 'POST', body: fd, credentials: 'same-origin' }).then(r => r.json()).then(r => {
+    if (!r.ok) { $('cz-refreshing').hidden = true; alert(r.message || 'Could not save. Please try again.'); return; }
+    hmLoad(() => { rerender(); reloadFrame(); });
+  }).catch(() => { $('cz-refreshing').hidden = true; alert('Could not save. Please try again.'); });
+}
 function hmSend(fields, opt = {}) {
   if (hmBusy && !opt.quiet) return; if (!opt.quiet) hmBusy = true;
   const fd = new FormData(); fd.append('_csrf', CSRF); fd.append('ajax', '1');
@@ -1466,7 +1476,7 @@ function hmSlides(wrap) {
       removeLabel: 'Delete slide', remove: () => { if (confirm('Delete this slide?')) { hmEdit = null; hmSend({ action: 'slide_delete', id: r.id }); } },
       body: (b, w) => {
         const pic = html('<div class="hm-w-pic"><img alt=""><button type="button" class="hm-btn">Change image</button></div>');
-        pic.querySelector('img').src = r.image_url; pic.querySelector('button').onclick = () => EduMedia.pick(it => hmSend({ ...slideFields(r), image_path: it.path }));
+        pic.querySelector('img').src = r.image_url; pic.querySelector('button').onclick = () => EduMedia.pick(it => hmSend({ ...slideFields(r), image_path: it.path }), { purpose: 'slide' });
         const lk = html('<label class="cz-field"><span class="cz-label">Link</span><input type="text" placeholder="https://…  or  /courses/"><small class="cz-hint">Where the slide goes when clicked. Empty = no link.</small></label>');
         const li = lk.querySelector('input'); li.value = r.link || '';
         li.oninput = () => { r.link = li.value; w.querySelector('.hm-w-t small').textContent = li.value || 'No link'; clearTimeout(hmLinkT[r.id]); hmLinkT[r.id] = setTimeout(() => save(r), 800); };
@@ -1478,8 +1488,9 @@ function hmSlides(wrap) {
       }
     }));
   });
-  g.appendChild(hmAddBtn('Add slide', () => EduMedia.pick(it => hmSend({ action: 'slide_save', id: 0, image_path: it.path, link: '', title: '', sort: rows.length + 1, active: 1, show_m: 1, show_t: 1, show_d: 1 }))));
-  g.appendChild(html('<p class="hm-desc">Best size 1600 × 500 px. Slides save as soon as you change them.</p>'));
+  // several at once: tick images in the Media Library or upload many from the device (each turns into WebP, shown at once)
+  g.appendChild(hmAddBtn('Add slides', () => EduMedia.pick(items => { const fd = { action: 'slides_add' }; hmSendMany(fd, items.map(it => it.path)); }, { multiple: true, purpose: 'slide' })));
+  g.appendChild(html('<p class="hm-desc">The slider takes the size of your pictures (nothing is cut off) — use pictures of the same size, e.g. 1600 × 500 px. Choose several at once. Slides save as soon as you change them.</p>'));
 }
 
 /* ---- Categories: every class with phone / tablet / desktop, and how many in one row ---- */

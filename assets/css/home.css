@@ -497,3 +497,8 @@
 .hm-grid-all .hc{display:flex!important}
 /* phones: 2 × 2 (four cards) per slide — two rows that slide together */
 @media (max-width:760px){.hm-cs .hs-track{display:grid;grid-auto-flow:column;grid-template-rows:repeat(2,auto);grid-auto-columns:calc((100% - 12px) / 2);gap:12px}.hm-cs .hs-s{flex-basis:auto!important;min-width:0}}
+
+/* top slider: each picture keeps its own shape — the slider is as tall as the picture (no crop, no stretch) */
+.hm-hs .hm-slide img{aspect-ratio:var(--ar,16/5)!important;height:auto;object-fit:cover}
+@media (max-width:700px){.hm-hs .hm-slide img{aspect-ratio:var(--arm,var(--ar,2/1))!important}}
+.hm-hs .hs-track{align-items:flex-start;transition:height .3s ease}

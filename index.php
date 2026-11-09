@@ -92,12 +92,14 @@ $short0 = function (string $n) { $p = preg_split('/\s+/', trim(preg_replace('/\(
 <?php require_once ROOT_PATH . '/components/header.php'; ?>
 <main class="st hm">
 
-<?php ob_start(); ?><?php /* 1. slider */ ?>
+<?php ob_start(); ?><?php /* 1. slider: every slide in its own picture's shape (nothing cut off) */
+$hsDim = function (string $rel): ?array { $f = ROOT_PATH . '/' . ltrim(preg_replace('#^https?://[^/]+#', '', $rel), '/'); $d = is_file($f) ? @getimagesize($f) : false; return $d && $d[0] > 0 && $d[1] > 0 ? [(int)$d[0], (int)$d[1]] : null; }; ?>
 <section class="hm-hs" data-hs data-auto="5000" aria-roledescription="carousel" aria-label="Highlights">
   <div class="hs-track">
   <?php if ($slides): foreach ($slides as $i => $sl): $img = sh_e(sh_upload_url($sl['image'])); $alt = sh_e($sl['title'] ?: $brand); ?>
     <div class="hs-s hm-slide<?= isset($sl['show_m']) && !(int)$sl['show_m'] ? ' hv-m' : '' ?><?= isset($sl['show_t']) && !(int)$sl['show_t'] ? ' hv-t' : '' ?><?= isset($sl['show_d']) && !(int)$sl['show_d'] ? ' hv-d' : '' ?>" role="group" aria-label="Slide <?= $i + 1 ?> of <?= count($slides) ?>"><?php if ($sl['link']): ?><a href="<?= sh_e($sl['link']) ?>"<?= $sl['new_tab'] ? ' target="_blank" rel="noopener"' : '' ?>><?php endif; ?>
-      <picture><?php if ($sl['mobile_image']): ?><source media="(max-width:700px)" srcset="<?= sh_e(sh_upload_url($sl['mobile_image'])) ?>"><?php endif; ?><img src="<?= $img ?>" alt="<?= $alt ?>"<?= $i ? ' loading="lazy"' : ' fetchpriority="high"' ?>></picture>
+      <?php $__d = $hsDim($sl['image']); $__m = $sl['mobile_image'] ? $hsDim($sl['mobile_image']) : null; ?>
+      <picture><?php if ($sl['mobile_image']): ?><source media="(max-width:700px)" srcset="<?= sh_e(sh_upload_url($sl['mobile_image'])) ?>"<?= $__m ? ' width="' . $__m[0] . '" height="' . $__m[1] . '"' : '' ?>><?php endif; ?><img src="<?= $img ?>" alt="<?= $alt ?>"<?= $__d ? ' width="' . $__d[0] . '" height="' . $__d[1] . '" style="--ar:' . $__d[0] . '/' . $__d[1] . ($__m ? ';--arm:' . $__m[0] . '/' . $__m[1] : '') . '"' : '' ?><?= $i ? ' loading="lazy"' : ' fetchpriority="high"' ?>></picture>
     <?php if ($sl['link']): ?></a><?php endif; ?></div>
   <?php endforeach; endif; ?>
   </div>

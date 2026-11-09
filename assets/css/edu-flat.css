@@ -51,9 +51,10 @@ footer.ftx-footer .ftx-copy{padding-top:12px;padding-bottom:12px}
 .nb-h-racing .nb-hr-act .nb-hr-sub:not(#edu-x),.nb-h-racing .nb-hr-act .nb-hr-sub.has-ic:not(#edu-x){display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 16px!important;border:0!important;border-radius:20px!important;background:var(--gc-accent,#0c6878)!important;color:#fff!important;font-size:13.5px!important;font-weight:600;line-height:1}
 .nb-h-racing .nb-hr-act .nb-hr-sub:not(#edu-x):hover{background:var(--t-buttons-background,var(--gc-accent-2,#fe8c07))!important;color:var(--t-buttons-text,#fff)!important}
 .nb-h-racing .nb-hr-act .nb-hr-sub svg{width:15px;height:15px}
-/* side menu: the two buttons one under the other, full width */
-.mnav .mnav-hello-btns:not([hidden]):not(#edu-x){display:grid!important;grid-template-columns:1fr!important;gap:10px}
-.mnav .mnav-btn:not(#edu-x){height:46px;border:0;border-radius:8px!important;font-size:15.5px;font-weight:600;text-decoration:none}
+/* side menu: the two buttons side by side in one row */
+.mnav .mnav-hello-btns:not([hidden]):not(#edu-x){display:grid!important;grid-template-columns:1fr 1fr!important;gap:10px}
+.mnav .mnav-hello-btns:not([hidden]):not(#edu-x):has(> :only-child){grid-template-columns:1fr!important}
+.mnav .mnav-btn:not(#edu-x){height:44px;border:0;border-radius:8px!important;font-size:14.5px;padding:0 8px;white-space:nowrap;font-weight:600;text-decoration:none}
 .mnav .mnav-btn.outline:not(#edu-x){background:var(--t-buttons-background,var(--gc-accent-2,#fe8c07));color:var(--t-buttons-text,#fff)}
 .mnav .mnav-btn.solid:not(#edu-x),.mnav .mnav-btn.solid.has-ic:not(#edu-x){background:var(--gc-accent,#0c6878);color:#fff}
 .mnav .mnav-btn.outline:not(#edu-x):hover{background:var(--t-buttons-background-hover,color-mix(in srgb,var(--t-buttons-background,var(--gc-accent-2,#fe8c07)) 86%,#000))}

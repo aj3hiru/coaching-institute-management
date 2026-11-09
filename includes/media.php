@@ -55,7 +55,7 @@ function edu_media_kind(array $m): string
  * 16:9 centre crop at exactly 1200×675 (+ 480/768/1024 wide) under 100 KB.
  * Returns [ main path, responsive set, width, height ].
  */
-function edu_media_save_webp($src, string $dir, string $sub, string $base, bool $featured): array
+function edu_media_save_webp($src, string $dir, string $sub, string $base, bool $featured, int $maxMain = 1280): array // $maxMain: slider banners keep up to 1920px
 {
     $set = [];
     $w = imagesx($src); $h = imagesy($src);
@@ -92,13 +92,14 @@ function edu_media_save_webp($src, string $dir, string $sub, string $base, bool 
         $set['xl'] = $path;
         [$w, $h] = [1200, 675];
     } else {
-        $path = $save(1280, '', 72);
-        if (filesize($dir . '/' . basename($path)) > 90000) $path = $save(1280, '', 60); // aim for a light main image
+        $path = $save($maxMain, '', $maxMain > 1280 ? 80 : 72);
+        if ($maxMain <= 1280 && filesize($dir . '/' . basename($path)) > 90000) $path = $save(1280, '', 60); // aim for a light main image
         foreach (['sm' => 480, 'md' => 768, 'lg' => 1024] as $k => $mw) {
             if ($w > $mw) $set[$k] = $save($mw, '-' . $mw, 68);
         }
         $set['xl'] = $path;
-        [$w, $h] = [min($w, 1280), (int)round($h * min($w, 1280) / max(1, $w))];
+        $mw0 = $maxMain > 1280 ? $maxMain : 1280;
+        [$w, $h] = [min($w, $mw0), (int)round($h * min($w, $mw0) / max(1, $w))];
     }
     return [$path, $set, $w, $h];
 }

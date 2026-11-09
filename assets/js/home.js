@@ -68,6 +68,15 @@
     [].forEach.call(t.querySelectorAll('img'), function (im) { if (!im.complete) im.addEventListener('load', function () { build(); }, { once: true }); });
   }
   [].forEach.call(document.querySelectorAll('[data-hs]'), slider);
+  // top slider: as tall as the slide in view (slides of different sizes)
+  [].forEach.call(document.querySelectorAll('.hm-hs'), function (box) {
+    var t = box.querySelector('.hs-track'); if (!t) return;
+    var fit = function () { var w = t.clientWidth || 1, k = Math.round(t.scrollLeft / w), s = t.children[k]; if (s && s.offsetHeight) t.style.height = s.offsetHeight + 'px'; };
+    var tm; t.addEventListener('scroll', function () { clearTimeout(tm); tm = setTimeout(fit, 80); }, { passive: true });
+    addEventListener('resize', fit); addEventListener('load', fit);
+    [].forEach.call(t.querySelectorAll('img'), function (im) { if (!im.complete) im.addEventListener('load', fit); });
+    fit();
+  });
 
   // ---- Our Courses: a grid (2 a row on phones, 4 shown first; 4 a row on computers, 8 shown first).
   //      View more shows the next ones right below — first those already on the page, then 8 more from the server.
