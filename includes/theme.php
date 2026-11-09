@@ -539,7 +539,7 @@ function edu_theme_head(): string
         . '.mnav-link:hover,.mnav-sub a:hover{background:var(--t-off-canvas-background-hover,transparent)}.mnav-sub{background:var(--t-off-canvas-sub-bg,var(--mnav-soft))}'
         . '.nb-card,.nb-card--feat,.post-card,.nb-head-card,.author-bio,.blog-comment-form-container,.blog-comments-section{background:var(--edu-card-bg)}'
         . '.nb-card--feat,.post-card{border-color:var(--edu-card-border)}'
-        . '.toc h2,.toc>h2{background:var(--edu-toc-bg)!important}'
+        . '.toc h2,.toc>h2{background:var(--t-sidebar-title-bg,var(--edu-toc-bg))!important;color:var(--t-sidebar-title,inherit)}' // the TOC title bar looks like the sidebar titles
         . '.site-title{color:var(--t-header-site-title,inherit)}.site-tagline{color:var(--t-header-tagline,inherit)}'
         . '.nb-progress span{background:var(--gc-accent)}'
         . '.ftx-logo{display:block;max-width:200px;max-height:64px;width:auto;height:auto;margin:0 0 12px}'

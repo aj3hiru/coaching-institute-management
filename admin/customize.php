@@ -1027,7 +1027,7 @@ const PALETTES = [
     cards: { background: '#ffffff', border: '#e0efff', toc_bg: '#003c6d' },
     forms: { field_bg: '#ffffff', field_bg_focus: '#ffffff', field_text: '#222222', field_text_focus: '#222222', field_border: '#c0e0ff', field_border_focus: '#003c6d' },
     sidebar: { title: '#245284', title_bg: '#eff7ff', link: '#003c6d', link_hover: '#fe8c07' },
-    footer_widgets: { background: '#003c6d', text: '#e0f4ff', link: '#fe8c07', link_hover: '#ffffff', title: '#ffffff', accent: '#fe8c07' },
+    footer_widgets: { background: '#003c6d', text: '#e0f4ff', link: '#ffffff', link_hover: '#fe8c07', title: '#ffffff', accent: '#fe8c07' },
     footer_bar: { background: '#002b4f', text: '#e0f4ff', link: '#fe8c07', link_hover: '#ffffff' },
     search_modal: { field_bg: '#ffffff', field_text: '#222222', overlay_bg: '#002b4f99' } }]];
 

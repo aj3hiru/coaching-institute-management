@@ -555,3 +555,7 @@ h3.cz-wp-h { padding-top: 2px; }
 .cz-typo-btn{align-items:flex-start;padding:10px 12px!important;gap:2px;text-align:left}
 .cz-typo-btn .cz-typo-aa{font-size:22px;font-weight:700;line-height:1.1;color:#1d2327}
 .cz-typo-btn b{font-size:12.5px;color:#1d2327}.cz-typo-btn small{font-size:11px;color:#646970}
+
+/* opened sections (Colors → Content, Cards, Forms, Design tabs …): room on the sides and between rows */
+.cz-sub-body{padding:16px 20px 28px!important;gap:6px!important}
+.cz-sub-body > .cz-color,.cz-sub-body > .cz-field,.cz-sub-body > .cz-row,.cz-sub-body > label{padding:8px 0}

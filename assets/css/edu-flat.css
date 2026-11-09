@@ -24,3 +24,7 @@
 /* the dark mode button is only the moon icon: no leftover pseudo-element pushing it off centre */
 .nb-drawer-follow .nb-drawer-dark:not(#edu-x)::before,.nb-drawer-follow .nb-drawer-dark:not(#edu-x)::after{content:none!important;display:none!important}
 .nb-drawer-follow .nb-drawer-dark:not(#edu-x){display:flex!important;align-items:center!important;justify-content:center!important}
+/* footer: the copyright row carries the footer-bar colour across the full width (not only a strip behind the text) */
+.ftx-footer{isolation:isolate;overflow:hidden}
+.ftx-copy:not(#edu-x){position:relative;background:transparent!important;padding:14px 0!important}
+.ftx-copy:not(#edu-x)::before{content:"";position:absolute;top:0;bottom:-400px;left:-100vw;right:-100vw;background:var(--t-footer-bar-background,#002b4f);z-index:-1}

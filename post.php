@@ -218,7 +218,7 @@ $__graph = edu_seo_module('schema'); // the combined @graph replaces this page's
 /* sidebar, TOC, author box like skylerchin.com: square boxes, title bar (accent) with a darker arrow block */
 .single-post .em-wt,.post-sidebar .em-wt{display:flex;align-items:stretch;min-height:33px;width:100%;box-sizing:border-box;margin:0 0 20px;padding:0;border-radius:0;background:var(--t-sidebar-title-bg,var(--gc-accent,#0c6878));color:var(--t-sidebar-title,#fff)!important;font-family:inherit;font-size:14px;font-weight:700;letter-spacing:.02em;line-height:18px;text-transform:uppercase}
 .em-wt-l{flex:1;min-width:0;display:flex;align-items:center;padding:8px 12px 7px;color:inherit}
-.em-wt-a{flex:0 0 36px;display:grid;place-items:center;background:color-mix(in srgb,var(--t-sidebar-title-bg,var(--gc-accent,#0c6878)) 62%,#000);color:#fff}
+.em-wt-a{flex:0 0 36px;display:grid;place-items:center;background:var(--t-sidebar-title,color-mix(in srgb,var(--t-sidebar-title-bg,var(--gc-accent,#0c6878)) 62%,#000));color:#fff}
 .post-sidebar .em-w{display:block;width:100%;box-sizing:border-box;margin:0 0 30px;padding:20px;border:1px solid #dedede;border-radius:0;background:var(--t-sidebar-background,#fff);box-shadow:none}
 .post-sidebar .em-w:last-child{margin-bottom:0}
 .em-w-sform{position:relative;margin:0}
@@ -235,7 +235,7 @@ $__graph = edu_seo_module('schema'); // the combined @graph replaces this page's
 .post-sidebar .em-w-posts .trending-item-date svg{width:13px;height:13px}
 .single-post .toc{border-radius:0;border-color:#dedede}
 .single-post .toc h2.em-wt{min-height:33px;margin:0 0 16px;padding:0;border-radius:0;font-size:14px;justify-content:flex-start}
-.single-post .toc h2 button.em-wt-a{all:unset;box-sizing:border-box;flex:0 0 36px;width:36px;align-self:stretch;min-height:33px;margin-left:auto!important;display:grid;place-items:center;background:color-mix(in srgb,var(--t-sidebar-title-bg,var(--gc-accent,#0c6878)) 62%,#000);color:#fff;cursor:pointer;margin:0}
+.single-post .toc h2 button.em-wt-a{all:unset;box-sizing:border-box;flex:0 0 36px;width:36px;align-self:stretch;min-height:33px;margin-left:auto!important;display:grid;place-items:center;background:var(--t-sidebar-title,color-mix(in srgb,var(--t-sidebar-title-bg,var(--gc-accent,#0c6878)) 62%,#000));color:#fff;cursor:pointer;margin:0}
 .single-post .toc h2 button.em-wt-a svg{transform:rotate(90deg);transition:transform .2s}
 .single-post .toc.collapsed h2 button.em-wt-a svg{transform:none}
 .single-post .toc h2 button.em-wt-a:focus-visible{outline:2px solid #fff;outline-offset:-4px}
@@ -659,15 +659,13 @@ $__graph = edu_seo_module('schema'); // the combined @graph replaces this page's
           </section>
 
           <!-- Comments Section -->
-          <section class="blog-comments-section">
+          <section class="blog-comments-section"<?= empty($commentTree) ? ' hidden' : '' ?>><?php // hidden until the first comment ?>
             <h2 class="em-wt"><span class="em-wt-l">Comments</span><span class="em-wt-a em-wt-n" aria-label="<?= (int)$commentCount ?> comments"><?= (int)$commentCount ?></span></h2>
             <div id="blog-comments-container" class="blog-comments-container">
-              <?php if (empty($commentTree)): ?>
-              <p>No comments yet. Be the first to comment!</p>
-              <?php else: ?>
-              <?php renderComments($commentTree); ?>
-              <?php endif; ?>
+              <?php if (!empty($commentTree)) renderComments($commentTree); ?>
             </div>
+            <script>(function () { var c = document.getElementById('blog-comments-container'), s = c && c.closest('.blog-comments-section'); if (!s || !s.hidden) return;
+              new MutationObserver(function () { if (c.children.length) s.hidden = false; }).observe(c, { childList: true, subtree: true }); })();</script>
             <?php if ($commentCount > 5): ?>
             <div class="load-more-btn-cont">
               <button id="load-more-comments" class="load-more-cmt-btn" data-offset="5">Show more &#65291;</button>
