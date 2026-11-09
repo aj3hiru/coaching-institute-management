@@ -201,7 +201,7 @@ html[data-theme="dark"] .nb-dd-b{color:#e5e7eb}html[data-theme="dark"] .nb-dd-p{
     </div>
     <div class="nb-hr-act">
       <?php if (th_on('h_bell') && $__pushOn): ?><span class="nb-bell-wrap nb-hr-bell">
-        <button type="button" id="push-notify-btn" class="nb-bell" aria-label="Get notifications" title="Get notifications" style="display:none"
+        <button type="button" id="push-notify-btn" class="nb-bell" aria-label="Get notifications" title="Get notifications" style="visibility:hidden"
           onclick="window.eduPush&&eduPush.ask()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/></svg>
           <span class="nb-bell-dot" aria-hidden="true"></span>

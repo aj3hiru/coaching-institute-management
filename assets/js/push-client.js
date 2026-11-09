@@ -20,7 +20,7 @@
       return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
     } catch (e) { return ''; }
   }
-  function bells(show) { document.querySelectorAll('#push-notify-btn').forEach(function (b) { b.style.display = show ? '' : 'none'; }); }
+  function bells(show) { document.querySelectorAll('#push-notify-btn').forEach(function (b) { b.style.display = ''; b.style.visibility = show ? '' : 'hidden'; }); } // the bell keeps its place, so the header never shifts
   function subscribed(on) { root.classList.toggle('nb-push-sub', on); store('push_subscribed', on ? 'true' : null); bells(!on); }
 
   // the service worker is registered after the page has loaded, so it never slows the first paint / input
