@@ -122,8 +122,8 @@ function isNew(string $dateStr): bool {
 }
 
 $recentPosts = getRecentPosts($pdo, 15);
-// Admit Card + Answer Key + Result together show 15 posts: 5 each, and when one has fewer the other two fill in.
-$hvSide = [getPostsByCategory($pdo, 'admit-card', 15), getPostsByCategory($pdo, 'answer-key', 15), getPostsByCategory($pdo, 'result', 15)];
+// Quiz + Scholarship + General Knowledge together show 15 posts: 5 each, and when one has fewer the other two fill in.
+$hvSide = [getPostsByCategory($pdo, 'quiz', 15), getPostsByCategory($pdo, 'scholarship', 15), getPostsByCategory($pdo, 'general-knowledge', 15)];
 $hvTake = [0, 0, 0];
 for ($left = 15; $left > 0;) {
     $moved = false;
@@ -578,15 +578,15 @@ function renderHvCard(array $posts, string $key, string $title, string $viewAllU
   @media (max-width:480px){.hv-head{padding:12px 14px}.hv-row{padding:10px 14px;gap:10px}.hv-text{font-size:14px}.hv-date{width:40px}}
   [data-theme="dark"] .hv-card{background:#151b23;border-color:#263040}[data-theme="dark"] .hv-section .hv-title,[data-theme="dark"] .hv-date b{color:#e5e7eb}[data-theme="dark"] .hv-row{color:#d1d5db !important}[data-theme="dark"] .hv-date{background:#1f2733}[data-theme="dark"] .hv-head,[data-theme="dark"] .hv-list li+li{border-color:#263040}[data-theme="dark"] .hv-row:hover{background:#1b2230}
   </style>
-  <h2 class="m-h2 hv-h2" id="hv-heading">Latest New Vacancy 2026 - Sarkari Jobs & Government Bharti</h2>
-  <p class="hv-sub">Latest jobs, admit cards, answer keys and results — updated daily.</p>
+  <h2 class="m-h2 hv-h2" id="hv-heading">Latest Updates</h2>
+  <p class="hv-sub">Quiz, scholarships, general knowledge and the latest updates — updated daily.</p>
   <div class="hv-grid">
     <?php
-      renderHvCard($recentPosts, 'recent', 'Recent Updates', '/latest-updates', '<path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 10.4 3.3 3.3-1.4 1.4L11 13.2V6h2z"/>');
+      renderHvCard($recentPosts, 'recent', 'Recent Updates', '/latest-posts', '<path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 10.4 3.3 3.3-1.4 1.4L11 13.2V6h2z"/>');
       echo '<div class="hv-side">';
-      renderHvCard($admitCards, 'admit', 'Admit Card', '/categories/admit-card', '<path d="M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm4 4a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zm-4 9h8c0-1.7-1.8-3-4-3s-4 1.3-4 3zm10-8v2h6V9zm0 4v2h4v-2z"/>');
-      renderHvCard($answerKeys, 'answer', 'Answer Key', '/categories/answer-key', '<path d="M7 3h10a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zm1.3 9.3-1.4 1.4L9.6 16.4 15.1 11l-1.4-1.4-4.1 4.1z"/>');
-      renderHvCard($results, 'result', 'Result', '/categories/result', '<path d="M12 2 9.2 7.7 3 8.6l4.5 4.4-1.1 6.2L12 16.3l5.6 2.9-1.1-6.2L21 8.6l-6.2-.9z"/>');
+      renderHvCard($admitCards, 'admit', 'Quiz', '/categories/quiz', '<path d="M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm4 4a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zm-4 9h8c0-1.7-1.8-3-4-3s-4 1.3-4 3zm10-8v2h6V9zm0 4v2h4v-2z"/>');
+      renderHvCard($answerKeys, 'answer', 'Scholarship', '/categories/scholarship', '<path d="M7 3h10a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zm1.3 9.3-1.4 1.4L9.6 16.4 15.1 11l-1.4-1.4-4.1 4.1z"/>');
+      renderHvCard($results, 'result', 'General Knowledge', '/categories/general-knowledge', '<path d="M12 2 9.2 7.7 3 8.6l4.5 4.4-1.1 6.2L12 16.3l5.6 2.9-1.1-6.2L21 8.6l-6.2-.9z"/>');
       echo '</div>';
     ?>
   </div>
