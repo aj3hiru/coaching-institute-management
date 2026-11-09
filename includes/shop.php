@@ -1133,9 +1133,10 @@ function sh_lesson_thumb(array $l, array $p): string
 }
 /** The FREE badge (with the light sweep) for free lessons / PDFs. */
 function sh_free_badge(): string { return '<span class="st-freeb">Free</span>'; }
-/** Log in / sign up / password pages: just the logo and site name on top of the card (theme look, nothing else). */
+/** Log in / sign up / password pages: the same brand as the header (logo, site title, address, panel — Customize → Site Identity). */
 function sh_auth_side(string $mode = ''): string
 {
+    if (!empty($GLOBALS['edu_brand_html'])) return '<div class="au-logo au-hbrand nb-hr-brand">' . $GLOBALS['edu_brand_html'] . '</div>'; // set by components/header.php
     if (!function_exists('ci_brand')) require_once INCLUDES_PATH . '/institute.php';
     $b = ci_brand();
     return '<a class="au-logo" href="/" aria-label="' . sh_e($b['title']) . ' home">' . ($b['emblem'] !== '' ? '<img src="' . sh_e($b['emblem']) . '" alt="" width="56" height="56">' : '') . '<b>' . sh_e($b['title']) . '</b></a>';

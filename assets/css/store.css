@@ -938,6 +938,16 @@ a.st-li:hover{background:#f7fbfc}a.st-li:hover svg{color:var(--sa)}
 .au-one .au-logo{display:flex;flex-direction:column;align-items:center;gap:8px;margin:0 0 18px;text-decoration:none!important;color:var(--text-primary,#1f2937)!important}
 .au-one .au-logo img{width:56px;height:56px;object-fit:contain}
 .au-one .au-logo b{font-size:18px;line-height:1.2}
+/* the header brand inside the card: same look, centred, no header offsets */
+.au-one .au-hbrand{display:flex!important;justify-content:center!important;align-items:stretch;flex-direction:row;gap:0;margin:0 0 20px;width:100%!important;max-width:none!important}
+.au-one .au-hbrand .nb-brand-link.nb-brand-school{display:inline-flex;align-items:center;margin:0!important;height:auto;align-self:auto}
+.au-one .au-hbrand .nb-brand-link.nb-brand-school{width:auto!important;max-width:100%;flex:0 1 auto;padding:4px 48px 4px 14px;gap:9px;box-sizing:border-box}
+.au-one .au-hbrand .nb-brand-link.nb-brand-school:not(.nb-brand-plain){min-height:54px}
+.au-one .au-hbrand .nb-emblem{height:min(var(--emb-h,52px),46px)!important}
+.au-one .au-hbrand .site-title{font-size:20px!important}
+.au-one .au-hbrand .nb-brand-line{font-size:12px!important;white-space:nowrap!important;display:block!important;-webkit-line-clamp:unset}
+.au-one .au-hbrand .nb-sb-school{min-width:0}
+@media (max-width:600px){.au-one .au-hbrand .nb-brand-link.nb-brand-school{padding:4px 40px 4px 12px;gap:8px}.au-one .au-hbrand .nb-emblem{height:42px!important}.au-one .au-hbrand .site-title{font-size:17px!important}.au-one .au-hbrand .nb-brand-line{font-size:11.5px!important;line-height:1.25;white-space:normal!important;max-width:172px}}
 .au-one .au-main{padding:0}
 .au-one .au-head{text-align:center}
 .au-one .au-head h1{font-size:24px;color:var(--text-primary,#1f2937)}
