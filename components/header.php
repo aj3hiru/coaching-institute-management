@@ -125,6 +125,11 @@ if ($__school) {
 }
 @media (max-width:767px){
   .nb-hr-brand .nb-brand-link.nb-brand-school{margin:-5px 0 -5px -14px;padding:3px 44px 3px 14px;gap:8px;height:52px;box-sizing:border-box;align-self:center}
+  /* the brand box takes its size from the screen, not from its text: fonts or scripts loading later can never make the panel jump */
+  .nb-hr-brand .nb-brand-link.nb-brand-school{width:min(300px,calc(100vw - 118px));flex:0 0 auto}
+  .nb-hr-brand .nb-sb-school{flex:1 1 auto;min-width:0;overflow:hidden}
+  .nb-sb-school .site-title{overflow:hidden;text-overflow:ellipsis;max-width:100%}
+  .nb-sb-school .nb-brand-line{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.2}
   .nb-brand-school::after{right:4px;width:30px;clip-path:polygon(35% 0,0 100%,20% 100%)}
   .nb-brand-school .nb-emblem{width:auto;height:min(var(--emb-h,52px),46px)}
   .nb-sb-school .site-title{font-size:18px}
@@ -134,6 +139,7 @@ if ($__school) {
   .nb-hr-nav .nb-strip-search{display:inline-flex!important}
 }
 .nb-hr-nav .nb-strip-search{display:none;align-items:center;justify-content:center;flex:0 0 auto;padding-left:14px;padding-right:14px}
+@media (max-width:380px){.nb-hr-brand .nb-brand-link.nb-brand-school{padding-right:38px!important;gap:6px!important}.nb-sb-school .nb-brand-line{font-size:10px!important;letter-spacing:-.1px}.nb-sb-school .site-title{font-size:16px!important}}
 @media (max-width:400px){.nb-hr-brand .nb-brand-link.nb-brand-school{height:48px}.nb-brand-school .nb-emblem{width:auto;height:min(var(--emb-h,52px),42px)}.nb-sb-school .site-title{font-size:16.5px}.nb-sb-school .nb-brand-line{font-size:10.5px}}
 /* menu strip drop-downs (a group of links under one name) */
 .nb-dd{position:relative;display:inline-flex;flex:0 0 auto}
