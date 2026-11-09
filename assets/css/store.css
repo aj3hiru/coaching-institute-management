@@ -968,3 +968,10 @@ a.st-li:hover{background:#f7fbfc}a.st-li:hover svg{color:var(--sa)}
 @media (max-width:600px){.au-one .au-hbrand .nb-brand-line{font-size:13px!important}}
 .au-one .au-hbrand{margin-bottom:22px}
 .au-one > a.au-logo h1{margin:0;font-size:22px}
+/* the brand badge sits on the card's top border (half above, half inside); solid panel colour so the border line never shows through it */
+.au.au-one{margin-top:52px;padding-top:0;overflow:visible}
+.au-one .au-hbrand{margin:-28px 0 20px!important}
+.au-one .au-hbrand .nb-brand-school::before{background:#f9dbc2}
+.au-one .au-hbrand .nb-brand-plain{background:var(--edu-card-bg,#fff);padding-left:10px!important;padding-right:10px!important}
+[data-theme="dark"] .au-one .au-hbrand .nb-brand-plain{background:#151b23}
+@media (max-width:600px){.au.au-one{margin-top:44px}}
