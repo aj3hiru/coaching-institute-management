@@ -222,7 +222,7 @@ function edu_job_slider(PDO $pdo, int $limit = 12): string
   @media (max-width:1024px){.jss-slide{flex-basis:calc((100% - 14px) / 2.2)}}
   @media (max-width:640px){.jss-slide{flex-basis:85%;gap:12px}.jss-track{gap:12px}.jss .jss-h2{font-size:20px}}
   </style>
-  <div class="jss-head"><h2 class="jss-h2" id="jss-h">Latest Jobs</h2><a class="jss-all" href="/latest-updates">View all ›</a></div>
+  <div class="jss-head"><h2 class="jss-h2" id="jss-h">Latest Jobs</h2><a class="jss-all" href="/latest-posts">View all ›</a></div>
   <div class="jss-track" tabindex="0" aria-label="Latest jobs — swipe for more">{$slides}</div>
   <div class="jss-dots">{$dots}</div>
   <script>

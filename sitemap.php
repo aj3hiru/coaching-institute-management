@@ -80,7 +80,7 @@ echo '<?xml version="1.0" encoding="UTF-8"?>';
   </url>
   
   <url>
-        <loc><?= htmlspecialchars($base_url) ?>/latest-updates</loc>
+        <loc><?= htmlspecialchars($base_url) ?>/latest-posts</loc>
         <lastmod><?= $global_last_mod ?></lastmod>
         <changefreq>daily</changefreq>
         <priority>0.9</priority>
@@ -92,19 +92,6 @@ echo '<?xml version="1.0" encoding="UTF-8"?>';
     <url><loc><?= htmlspecialchars($u) ?></loc><lastmod><?= $m ? gmdate('c', strtotime($m)) : $global_last_mod ?></lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
 <?php endforeach; endif; ?>
   <!-- Categories & State Jobs-->
-    <url>
-        <loc><?= htmlspecialchars($base_url) ?>/categories</loc>
-        <lastmod><?= $global_last_mod ?></lastmod>
-        <changefreq>daily</changefreq>
-        <priority>0.9</priority>
-    </url>
-    
-    <url>
-        <loc><?= htmlspecialchars($base_url) ?>/state-jobs</loc>
-        <lastmod><?= $global_last_mod ?></lastmod>
-        <changefreq>daily</changefreq>
-        <priority>0.9</priority>
-    </url>
        	
 <?php
 $stmt = $pdo->query("

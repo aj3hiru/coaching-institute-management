@@ -25,9 +25,7 @@ function edu_theme_defaults(): array
         'h_drawer_hello' => '1', 'h_drawer_login' => '1', 'h_drawer_sub' => '1',
         // Menus
         'menu' => [
-            ['label' => 'Home', 'url' => '/'], ['label' => 'Job Categories', 'url' => '/categories'],
-            ['label' => 'State Wise Jobs', 'url' => '/state-jobs'], ['label' => 'Latest Updates', 'url' => '/latest-updates'],
-            ['label' => 'Latest Jobs', 'url' => '/latest-jobs'],
+            ['label' => 'Home', 'url' => '/'], ['label' => 'Latest Posts', 'url' => '/latest-posts'],
             ['label' => 'About Us', 'url' => '/about-us'], ['label' => 'Contact Us', 'url' => '/contact-us'],
         ],
         'menu_align' => 'center', 'menu_style' => 'underline', 'menu_dark_icon' => '1',
@@ -68,15 +66,14 @@ function edu_theme_defaults(): array
         // ---- Customizer v2 (same structure as the new CMS) ----
         // Menus: 'menu' = Primary Menu (mobile menu; items may have children), the strip has its own list
         'strip_source' => 'custom', 'strip_items' => [
-            ['label' => 'Home', 'url' => '/'], ['label' => 'Job Categories', 'url' => '/categories'],
-            ['label' => 'State Wise Jobs', 'url' => '/state-jobs'], ['label' => 'Latest Updates', 'url' => '/latest-updates'],
+            ['label' => 'Home', 'url' => '/'], ['label' => 'Latest Posts', 'url' => '/latest-posts'],
             ['label' => 'About Us', 'url' => '/about-us'], ['label' => 'Contact Us', 'url' => '/contact-us'],
         ],
         // Footer link columns (each: heading + own links, or all categories automatically)
         'f_columns' => [
             ['title' => 'Job Categories', 'auto' => 'categories', 'count' => 6, 'links' => []],
             ['title' => 'Quick Links', 'auto' => '', 'count' => 6, 'links' => [
-                ['label' => 'About Us', 'url' => '/about-us'], ['label' => 'Contact Us', 'url' => '/contact-us'],
+                ['label' => 'Blog', 'url' => '/latest-posts'], ['label' => 'About Us', 'url' => '/about-us'], ['label' => 'Contact Us', 'url' => '/contact-us'],
                 ['label' => 'Privacy Policy', 'url' => '/privacy-policy'], ['label' => 'Terms', 'url' => '/terms-of-service'], ['label' => 'Disclaimer', 'url' => '/disclaimer'],
                 ['label' => 'Editorial Policy', 'url' => '/editorial-policy'], ['label' => 'Cookies Policy', 'url' => '/cookie-policy'],
             ]],

@@ -7,7 +7,7 @@ require_once INCLUDES_PATH . '/push.php';
 try { $__pushOn = edu_push_collecting(); } catch (Throwable $e) { $__pushOn = false; }
 // Menu from Customize → Menus; icons picked by the link's address.
 $__iconFor = function (string $url): string {
-    $map = ['/categories' => 'fa-table-cells-large', '/state-jobs' => 'fa-map-location-dot', '/latest-updates' => 'fa-bolt', '/latest-jobs' => 'fa-briefcase',
+    $map = ['/categories' => 'fa-table-cells-large', '/state-jobs' => 'fa-map-location-dot', '/latest-updates' => 'fa-bolt', '/latest-posts' => 'fa-newspaper', '/latest-jobs' => 'fa-briefcase',
             '/about' => 'fa-circle-info', '/contact' => 'fa-envelope'];
     if ($url === '/') return 'fa-house';
     foreach ($map as $k => $v) if (strpos($url, $k) === 0) return $v;

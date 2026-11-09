@@ -83,8 +83,7 @@ $nfI = [
 $nfIco = fn($k) => '<i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' . $nfI[$k] . '</svg></i>';
 $nfQuick = [['/', 'Home', 'home']];
 if ($nf_store) { $nfQuick[] = ['/courses/', 'All Courses', 'grid']; $nfQuick[] = ['/notes/', 'PDF Notes', 'pdf']; if (is_file(ROOT_PATH . '/store/free.php')) $nfQuick[] = ['/free-courses/', 'Free Courses', 'play']; }
-$nfQuick[] = ['/latest-updates', 'Latest Updates', 'news'];
-if (!$nf_store) $nfQuick[] = ['/categories', 'All Categories', 'folder'];
+$nfQuick[] = ['/latest-posts', 'Latest Posts', 'news'];
 ?>
 <main class="nf">
   <section class="nf-hero">
@@ -109,7 +108,7 @@ if (!$nf_store) $nfQuick[] = ['/categories', 'All Categories', 'folder'];
   <div class="hm-grid"><?php foreach ($nf_courses as $p) echo sh_mini_card($p, $nf_ccat[(int)($p['category_id'] ?? 0)] ?? ''); ?></div>
   <?php endif; ?>
   <?php if ($nf_cats && $nfOn('nf_cats')): ?><div class="nf-h"><h2>Popular categories</h2><a href="/categories">All categories →</a></div><div class="nf-cats"><?php foreach ($nf_cats as $c): ?><a href="/categories/<?= htmlspecialchars($c['slug']) ?>"><?= htmlspecialchars($c['name']) ?><small><?= (int)$c['n'] ?></small></a><?php endforeach; ?></div><?php endif; ?>
-  <?php if ($nf_posts && $nfOn('nf_posts')): ?><div class="nf-h"><h2>Latest posts</h2><a href="/latest-updates">More →</a></div><div class="nf-grid"><?php foreach ($nf_posts as $p): $u = postUrl($p['slug'], (int)$p['id']); ?>
+  <?php if ($nf_posts && $nfOn('nf_posts')): ?><div class="nf-h"><h2>Latest posts</h2><a href="/latest-posts">More →</a></div><div class="nf-grid"><?php foreach ($nf_posts as $p): $u = postUrl($p['slug'], (int)$p['id']); ?>
     <article class="nf-card"><a href="<?= htmlspecialchars($u) ?>" tabindex="-1" aria-hidden="true"><?php if ($p['img']): ?><img src="/<?= htmlspecialchars(ltrim($p['img'], '/')) ?>" alt="" loading="lazy" width="640" height="360"><?php else: ?><span class="ph"><?= htmlspecialchars(mb_strtoupper(mb_substr((string)$p['title'], 0, 1))) ?></span><?php endif; ?></a>
       <div><?php if ($p['cat_name']): ?><span class="cat"><?= htmlspecialchars($p['cat_name']) ?></span><?php endif; ?><h3><a href="<?= htmlspecialchars($u) ?>"><?= htmlspecialchars($p['title']) ?></a></h3></div></article>
   <?php endforeach; ?></div><?php endif; ?>

@@ -133,10 +133,9 @@ function edu_sm_serve(PDO $pdo, string $type, int $n = 1): void
     } elseif ($type === 'page' && seo_opt('sm_pages') === '1') {
         $last = $pdo->query("SELECT MAX(COALESCE(updated_at, date)) FROM posts WHERE status = 'published'")->fetchColumn();
         $rows[] = [$b . '/', $last];
-        foreach (['latest-updates', 'categories', 'state-jobs'] as $p) $rows[] = [$b . '/' . $p, $last];
+        $rows[] = [$b . '/latest-posts', $last];
         // Latest Jobs only once a post has a job card (the empty page is noindex)
         $jobsLast = $pdo->query("SELECT MAX(COALESCE(p.updated_at, p.date)) FROM posts p JOIN post_meta jm ON jm.post_id = p.id AND jm.meta_key = 'job_card' AND jm.meta_value = '1' WHERE p.status = 'published'")->fetchColumn();
-        if ($jobsLast) $rows[] = [$b . '/latest-jobs', $jobsLast];
         try {
             $sp = $pdo->query("SELECT slug, updated_at FROM site_pages WHERE status = 'published' AND (noindex IS NULL OR noindex = 0) ORDER BY title")->fetchAll(PDO::FETCH_ASSOC);
         } catch (Throwable $e) { $sp = []; }

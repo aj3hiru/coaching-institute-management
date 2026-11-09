@@ -32,11 +32,11 @@ $static = 'about-us|contact-us|terms-of-service|cookie-policy|privacy-policy|dis
 $routes = [
   "#^/($static)/?$#i" => fn($m) => $run("pages/{$m[1]}.php"),
   '#^/search/?$#' => fn() => $run('search.php'),
-  '#^/categories/?$#' => fn() => $run('categories.php'),
+  '#^/(categories|state-jobs|latest-jobs|latest-updates)/?$#' => function () { header('Location: /latest-posts' . (!empty($_GET['page']) ? '?page=' . (int)$_GET['page'] : ''), true, 301); exit; },
+  '#^/latest-posts/?$#' => fn() => $run('latest-posts.php'),
   '#^/tag/([a-z0-9-]+)-([0-9]+)/?$#' => fn($m) => $run('tag.php', ['id' => $m[2]]),
   '#^/categories/([a-zA-Z0-9-]+)/?$#' => fn($m) => $run('category.php', ['slug' => $m[1]]),
   '#^/author/([a-zA-Z0-9_-]+)/?$#' => fn($m) => $run('author.php', ['slug' => $m[1]]),
-  '#^/state-jobs/?$#' => fn() => $run('states.php'),
   '#^/state-jobs/([a-zA-Z0-9-]+)/?$#' => fn($m) => $run('state-jobs.php', ['slug' => $m[1]]),
   '#^/documents/(\d+)$#' => fn($m) => $run('doc.php', ['id' => $m[1]]),
   '#^/sitemap\.xml$#' => fn() => $run('sitemap.php'),

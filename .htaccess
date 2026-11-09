@@ -94,8 +94,12 @@ RewriteRule ^commercial-policy/?$ /pages/commercial-policy.php [L,QSA,NC]
 # Search
 RewriteRule ^search/?$ search.php [L,QSA]
 
-# Categories listing
-RewriteRule ^categories/?$ categories.php [L,QSA]
+# Old listing pages → the one Latest Posts page
+RewriteRule ^categories/?$ /latest-posts [R=301,L]
+RewriteRule ^state-jobs/?$ /latest-posts [R=301,L]
+RewriteRule ^latest-jobs/?$ /latest-posts [R=301,L]
+RewriteRule ^latest-updates/?$ /latest-posts [R=301,L,QSA]
+RewriteRule ^latest-posts/?$ latest-posts.php [L,QSA]
 
 # Taxonomy & metadata pages
 RewriteRule ^tag/([a-z0-9-]+)-([0-9]+)/?$ tag.php?id=$2 [L,QSA]
@@ -103,7 +107,6 @@ RewriteRule ^categories/([a-zA-Z0-9-]+)/?$ category.php?slug=$1 [L,QSA]
 RewriteRule ^author/([a-zA-Z0-9_-]+)/?$ author.php?slug=$1 [L,QSA]
 
 # State jobs
-RewriteRule ^state-jobs/?$ states.php [L]
 RewriteRule ^state-jobs/([a-zA-Z0-9-]+)/?$ state-jobs.php?slug=$1 [L]
 
 # Web stories
