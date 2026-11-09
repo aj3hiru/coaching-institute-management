@@ -84,6 +84,8 @@ function wpbar_html(array $ctx = []): string
     $inAdmin = ($ctx['kind'] ?? '') === 'admin';
     if (!function_exists('ci_can')) require_once __DIR__ . '/institute.php';
     $ci = ci_can($u);
+    if (!function_exists('sh_perm') && is_file(__DIR__ . '/shop.php')) require_once __DIR__ . '/shop.php';
+    $shopEdit = function_exists('sh_perm') && sh_perm($u, 'products');
     $root = $_SERVER['DOCUMENT_ROOT'] ?? '';
     $has = fn(string $href) => is_file($root . parse_url($href, PHP_URL_PATH));
     $keep = fn(array $items) => array_values(array_filter($items, fn($i) => !empty($i[3]) && $has($i[2])));
@@ -133,6 +135,8 @@ function wpbar_html(array $ctx = []): string
         ['new-post', 'Post', '/admin/post-manager.php', admin_can('blogs.create')],
         ['new-media', 'Media', '/admin/file-manager.php', admin_can('files.access_file_manager')],
         ['new-page', 'Page', '/admin/page-editor.php', $isAdmin],
+        ['new-course', 'Course', '/admin/shop-products.php?new=1&type=course', $shopEdit],
+        ['new-notes', 'PDF notes', '/admin/shop-products.php?new=1&type=notes', $shopEdit],
         ['new-user', 'User', '/admin/user-manager.php', admin_can('users.create')],
     ]);
     if ($new) $left .= wpbar_li('new-content', '<span class="ab-icon" aria-hidden="true"></span><span class="ab-label">New</span>', $new[0][2], '', [['new-content-default', $new]]);
@@ -153,10 +157,18 @@ function wpbar_html(array $ctx = []): string
         if ($pg = $p->fetchColumn()) $edit = ['Edit Page', '/admin/page-editor.php?id=' . (int)$pg];
     } elseif ($kind === 'category' && admin_can('blogs.manage_categories')) {
         $edit = ['Edit Category', '/admin/categories-manager.php'];
+    } elseif (($cid = (int)($ctx['course'] ?? 0)) > 0) { // a course / PDF notes page: edit it (staff who may edit courses)
+        if (!function_exists('sh_perm')) require_once __DIR__ . '/shop.php';
+        $cp = $pdo->prepare('SELECT id, type FROM sh_products WHERE id = ?'); $cp->execute([$cid]);
+        if (($row = $cp->fetch(PDO::FETCH_ASSOC)) && sh_perm($u, 'products')) {
+            $isC = $row['type'] === 'course';
+            $edit = [$isC ? 'Edit Course' : 'Edit Notes', '/admin/shop-products.php?edit=' . $cid . '&type=' . ($isC ? 'course' : 'notes'),
+                $isC ? [['edit-course-lectures', 'Lectures & chapters', '/admin/shop-lectures.php?course=' . $cid], ['edit-course-details', 'Course details, price & picture', '/admin/shop-products.php?edit=' . $cid . '&type=course']] : []];
+        }
     } elseif ($kind === 'home' && $isAdmin) {
         $edit = ['Edit Homepage', '/admin/customize.php'];
     }
-    if ($edit) $left .= wpbar_li('edit', wpbar_e($edit[0]), $edit[1]);
+    if ($edit) $left .= wpbar_li('edit', wpbar_e($edit[0]), $edit[1], '', !empty($edit[2]) ? [['edit-sub', $edit[2]]] : []);
 
     // Right side: photo + name (profile menu), Search
     $av = $u['avatar'] !== '' ? $u['avatar'] : wpbar_default_avatar();

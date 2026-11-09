@@ -54,6 +54,7 @@ $myFaq = array_values(array_filter(sh_json_list($p['faq'] ?? ''), fn($f) => !emp
 $myInc = array_values(array_filter(array_map('strval', sh_json_list($p['includes'] ?? '')), fn($v) => trim($v) !== ''));
 $short = function (string $n) { $p = preg_split('/\s+/', trim(preg_replace('/\(.*?\)/', '', $n))); return trim(($p[0] ?? '') . (isset($p[1]) ? ' ' . mb_substr($p[1], 0, 1) . '.' : '')); };
 $stTitle = $p['title'];
+$stEditProduct = (int)$p['id']; // admin bar: "Edit Course" / "Edit Notes"
 $stDesc = $p['subtitle'] ?: mb_substr(trim(strip_tags($desc)), 0, 160);
 // the picture shared on WhatsApp / Facebook / Google: the course's own thumbnail, else its intro video's picture
 $__shareImg = (string)($p['thumb'] ?? '');

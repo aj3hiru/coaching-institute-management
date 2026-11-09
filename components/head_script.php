@@ -852,7 +852,7 @@ html.ab-on body{margin-top:32px}html.ab-on body:not(:has(#wpadminbar))::before{c
 body:has(#wpadminbar) .nb-hr-login,body:has(#wpadminbar) .nb-hr-div,body:has(#wpadminbar) .nb-hc-login{display:none !important}html.nb-in-customizer body:has(#wpadminbar){margin-top:0 !important}html.nb-in-customizer body::before{display:none !important}
 </style>
 <script id="ab-boot">(function(){try{if(document.cookie.indexOf("edu_ab=1")<0||window.self!==window.top)return}catch(e){return}
-var C=<?= json_encode(array_filter(['kind' => (string)($seo_ctx['kind'] ?? ''), 'id' => (($seo_ctx['kind'] ?? '') === 'post' && isset($id)) ? (int)$id : null, 'slug' => (($seo_ctx['kind'] ?? '') === 'page' && isset($page['slug'])) ? (string)$page['slug'] : null], fn($v) => $v !== null && $v !== '')) ?>;
+var C=<?= json_encode(array_filter(['kind' => (string)($seo_ctx['kind'] ?? ''), 'id' => (($seo_ctx['kind'] ?? '') === 'post' && isset($id)) ? (int)$id : null, 'slug' => (($seo_ctx['kind'] ?? '') === 'page' && isset($page['slug'])) ? (string)$page['slug'] : null, 'course' => !empty($stEditProduct) ? (int)$stEditProduct : null], fn($v) => $v !== null && $v !== '')) ?>;
 var R=document.documentElement,K="edu_ab_w",key=JSON.stringify(C),cached=null,fresh=false;R.classList.add("ab-on");
 try{cached=JSON.parse(sessionStorage.getItem(K)||"null")}catch(x){}
 function body(f){if(document.body)f();else{var t=setInterval(function(){if(document.body){clearInterval(t);f()}},15)}}

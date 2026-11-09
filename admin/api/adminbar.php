@@ -11,6 +11,7 @@ $ctx = [
     'kind' => preg_replace('/[^a-z]/', '', (string)($_GET['kind'] ?? '')),
     'id' => (int)($_GET['id'] ?? 0),
     'slug' => (string)($_GET['slug'] ?? ''),
+    'course' => (int)($_GET['course'] ?? 0), // a course / notes page of the online store
 ];
 if ($ctx['kind'] === 'admin') $ctx['kind'] = '';
 $html = wpbar_html($ctx);
