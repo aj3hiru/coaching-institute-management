@@ -549,12 +549,13 @@ function edu_theme_head(): string
         . edu_theme_typo_css();
     if (th_on('h_sticky')) $css .= '#site-navigation.nb-h-racing{position:sticky;top:0}body:has(#wpadminbar) #site-navigation.nb-h-racing{top: var(--wpab-top,32px)}';
     // Containers: a light colour for every box / card so it stands out from the white page (empty = no change)
-    $__boxes = '.hc,.hc-item,.hm-cat,.hm-fc,.hm-post,.hm-btc,.hm-pc,.tC-card,.hv-card,.nb-card,.hf-item,.hf-intro,.sp-card,.lp-list,.sp-rv-top,.eq-card,'
-        . '.nb-ab-card,.nb-apx-card,.nb-also,.blog-comment-form-container,.em-w,.au.au-one,.toc,.nb-keypoints,.st-card,.ac-box,.ac-ord,.ac-empty';
-    if (($__cb = edu_theme_color('containers', 'background')) !== '') $css .= ':is(' . $__boxes . '):not(#edu-x){background-color:' . $__cb . '!important}'
-        . ':is(' . $__boxes . '):not(#edu-x) :is(.hc-b,.hc-body,.nb-card-body,.sp-cb,.hm-fc-b):not(#edu-x){background-color:transparent!important}'
+    $__boxes = '.hc,.hc-item,.hm-cat,.hm-fc,.hm-post,.hm-btc,.hm-pc,.tC-card,.hv-card,.nb-card,.hf-item,.hf-intro,.sp-card,.lp-list,.sp-rv-top,'
+        . '.nb-apx-card,.au.au-one,.st-card,.ac-box,.ac-ord,.ac-empty';
+    $__not = ':not(#edu-x):not(.post-layout *):not(.post-sidebar *)'; // never inside a blog post (its content, boxes, related posts) or a sidebar
+    if (($__cb = edu_theme_color('containers', 'background')) !== '') $css .= ':is(' . $__boxes . ')' . $__not . '{background-color:' . $__cb . '!important}'
+        . ':is(' . $__boxes . ')' . $__not . ' :is(.hc-b,.hc-body,.nb-card-body,.sp-cb,.hm-fc-b):not(#edu-x){background-color:transparent!important}'
         . '.au.au-one .au-in input{background:#fff!important}';
-    if (($__cbr = edu_theme_color('containers', 'border')) !== '') $css .= ':is(' . $__boxes . '):not(#edu-x){border-color:' . $__cbr . '!important}';
+    if (($__cbr = edu_theme_color('containers', 'border')) !== '') $css .= ':is(' . $__boxes . ')' . $__not . '{border-color:' . $__cbr . '!important}';
     if (th_on('sb_sticky')) $css .= '@media (min-width:981px){.post-sidebar .trending-box{position:sticky;top:90px}}';
     if (!th_on('rp_bar')) $css .= '.nb-progress{display:none}';
     $cols = max(2, min(4, (int)$t['arch_columns']));

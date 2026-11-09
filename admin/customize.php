@@ -750,7 +750,7 @@ function renderColors(wrap) {
   wrap.appendChild(th);
   const sf = html('<div class="cz-wpgroup"><h3 class="cz-wp-h">Surface Color</h3></div>');
   [['body', 'background', 'Site Background'], ['content', 'background', 'Content Background'], ['containers', 'background', 'Container Background (boxes & cards)']].forEach(([g, f, l]) => sf.appendChild(colorCtl(l, get(g, f), set(g, f))));
-  sf.appendChild(html('<p class="cz-hint" style="margin:6px 0 0">Container Background: a light colour for every card and box (courses, posts, sidebar, author box, FAQ, quiz …) so they stand out from a white page. Clear it to make them white again.</p>'));
+  sf.appendChild(html('<p class="cz-hint" style="margin:6px 0 0">Container Background: a light colour for the cards and boxes (homepage, courses, PDF notes, post lists, author page …) so they stand out from a white page — not used inside a blog post or its sidebar. Clear it to make them white again.</p>'));
   wrap.appendChild(sf);
   // the rest of the content colours (each part's own colours are in its Design tab)
   [['content', 'Content'], ['containers', 'Containers (boxes & cards)'], ['cards', 'Cards & Boxes'], ['forms', 'Forms']].forEach(([g, label]) => {
