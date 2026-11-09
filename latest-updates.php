@@ -1,4 +1,6 @@
-<?php
+<?php // moved to /latest-posts (one Latest Posts page)
+header('Location: /latest-posts' . (($p = (int)($_GET['page'] ?? 0)) > 1 ? '?page=' . $p : ''), true, 301); exit;
+?><?php
 require_once __DIR__ . '/includes/redirects.php';
 edu_redirect_check();
 $page = max(1, (int)($_GET['page'] ?? 1));

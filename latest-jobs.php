@@ -1,4 +1,6 @@
-<?php
+<?php // moved to /latest-posts (one Latest Posts page)
+header('Location: /latest-posts' . (($p = (int)($_GET['page'] ?? 0)) > 1 ? '?page=' . $p : ''), true, 301); exit;
+?><?php
 // Latest Jobs: only posts with a job card (Post editor → Job card), newest first, 20 per page.
 require_once __DIR__ . '/includes/redirects.php';
 edu_redirect_check();
