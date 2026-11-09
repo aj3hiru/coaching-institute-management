@@ -121,35 +121,47 @@ $logo = (string)es('general', 'logo', '');
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow, noarchive">
 <title>Log In ‹ <?= htmlspecialchars(edu_site_name()) ?></title>
+<?php require_once INCLUDES_PATH . '/theme.php'; echo edu_theme_head(); $__brandBg = !function_exists('th_on') || th_on('id_brand_bg'); ?>
 <?php $__fav = (string)es('general', 'favicon', ''); ?><link rel="icon" href="<?= htmlspecialchars($__fav ?: '/assets/icons/favicon.ico') ?>">
 <style>
+/* same card as the site's Login page: brand badge on the top border, field names inside the fields, theme accent colour */
 *{box-sizing:border-box}
 html,body{margin:0;min-height:100%}
-body{background:#f0f0f1;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen-Sans,Ubuntu,Cantarell,"Helvetica Neue",sans-serif;color:#3c434a;display:flex;align-items:center;justify-content:center;padding:24px 16px;min-height:100vh}
-.lg{width:100%;max-width:320px}
-.lg-card{background:#fff;border:1px solid #c3c4c7;border-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,.04);padding:24px 24px 26px}
-.lg-logo{display:flex;justify-content:center;margin:0 0 20px}
-.lg-logo img{max-height:44px;max-width:220px;width:auto;display:block}
-.lg-logo span{font-size:22px;font-weight:800;color:#1d2327;letter-spacing:-.01em}
-label{display:block;font-size:14px;font-weight:600;color:#1d2327;margin:0 0 6px}
-.lg-in{width:100%;height:42px;border:1px solid #8c8f94;border-radius:4px;padding:0 10px;font-size:16px;color:#2c3338;background:#fff;outline:0}
-.lg-in:focus{border-color:#2271b1;box-shadow:0 0 0 1px #2271b1}
-.lg-row{margin:0 0 16px}
-.lg-pw{position:relative}.lg-pw .lg-in{padding-right:42px}
-.lg-eye{position:absolute;right:4px;top:4px;width:34px;height:34px;border:0;background:none;color:#50575e;cursor:pointer;display:grid;place-items:center;border-radius:4px}
-.lg-eye:hover{color:#2271b1}.lg-eye svg{width:20px;height:20px}
-.lg-rem{display:flex;align-items:center;gap:8px;font-weight:400;color:#3c434a;margin:0 0 20px;cursor:pointer}
-.lg-rem input{width:16px;height:16px;accent-color:#2271b1;margin:0}
-.lg-btn{width:100%;height:42px;border:0;border-radius:4px;background:#2271b1;color:#fff;font-size:15px;font-weight:600;cursor:pointer}
-.lg-btn:hover{background:#135e96}.lg-btn:disabled{opacity:.6;cursor:not-allowed}
-.lg-err{border-left:4px solid #d63638;background:#fff;box-shadow:0 1px 1px rgba(0,0,0,.04);padding:12px;margin:0 0 16px;font-size:13.5px;line-height:1.5;color:#1d2327}
-.lg-back{text-align:center;margin:22px 0 0;font-size:13px}.lg-back a{color:#50575e;text-decoration:none}.lg-back a:hover{color:#2271b1}
+body{background:#f3f4f6;font-family:Poppins,"Poppins Fallback",Arial,sans-serif;color:#1f2937;display:flex;align-items:center;justify-content:center;padding:40px 16px 24px;min-height:100vh}
+.lg{width:100%;max-width:420px}
+.lg-card{position:relative;background:var(--edu-card-bg,#fff);border:1px solid var(--edu-card-border,#e5e7eb);border-radius:var(--box-radius,5px);padding:0 26px 24px}
+.lg-badge{display:flex;justify-content:center;margin:-28px 0 22px}
+.lg-badge a{position:relative;isolation:isolate;display:inline-flex;align-items:center;gap:9px;min-height:54px;padding:4px 48px 4px 14px;text-decoration:none;color:inherit;max-width:100%}
+.lg-badge a::before{content:"";position:absolute;inset:0 12px 0 0;z-index:-1;background:#f9dbc2;clip-path:polygon(0 0,100% 0,97% 45%,100% 100%,0 100%)}
+.lg-badge a::after{content:"";position:absolute;bottom:0;right:7px;width:34px;height:55%;z-index:-1;background:#f02801;clip-path:polygon(50% 0,0 100%,25% 100%)}
+.lg-badge.plain a{background:var(--edu-card-bg,#fff);padding:4px 10px}.lg-badge.plain a::before,.lg-badge.plain a::after{display:none}
+.lg-badge img{height:46px;width:auto;max-width:90px;object-fit:contain;display:block;flex:0 0 auto}
+.lg-badge span{display:flex;flex-direction:column;line-height:1.1;min-width:0}
+.lg-badge h1{margin:0;font-size:20px;font-weight:700;color:#9e1b32;white-space:nowrap}
+.lg-badge small{margin-top:3px;font-size:14px;font-weight:600;color:#1a1a1a;white-space:nowrap}
+.lg-sr{position:absolute!important;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;padding:0}
+.lg-row{margin:0 0 14px}
+.lg-f{position:relative;display:flex;align-items:center}
+.lg-ic{position:absolute;left:13px;top:50%;transform:translateY(-50%);display:grid;color:#94a3b8;pointer-events:none}.lg-ic svg{width:18px;height:18px}
+.lg-f:focus-within .lg-ic{color:var(--gc-accent,#0c6878)}
+.lg-in{width:100%;height:46px;border:1px solid #d6dbe3;border-radius:var(--box-radius,5px);padding:0 44px 0 42px;font:inherit;font-size:15px;color:#0f172a;background:#fff;outline:0}
+.lg-in::placeholder{color:#6b7280;opacity:1}
+.lg-in:focus{border-color:var(--gc-accent,#0c6878)}
+.lg-eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:36px;height:36px;border:0;background:none;color:#94a3b8;cursor:pointer;display:grid;place-items:center;border-radius:5px}
+.lg-eye:hover{background:#eef2f6;color:#334155}.lg-eye svg{width:19px;height:19px}
+.lg-rem{display:flex;align-items:center;gap:8px;font-size:14px;color:#374151;margin:2px 0 18px;cursor:pointer}
+.lg-rem input{width:16px;height:16px;accent-color:var(--gc-accent,#0c6878);margin:0}
+.lg-btn{width:100%;height:46px;border:0;border-radius:var(--box-radius,5px);background:var(--gc-accent,#0c6878);color:#fff;font:inherit;font-size:16px;font-weight:700;cursor:pointer}
+.lg-btn:hover{background:color-mix(in srgb,var(--gc-accent,#0c6878) 86%,#000)}.lg-btn:disabled{opacity:.6;cursor:not-allowed}
+.lg-err{border:1px solid #fecaca;background:#fef2f2;color:#991b1b;border-radius:var(--box-radius,5px);padding:11px 12px;margin:0 0 16px;font-size:14px;line-height:1.5}
+.lg-back{text-align:center;margin:18px 0 0;font-size:14px}.lg-back a{color:#4b5563;text-decoration:none}.lg-back a:hover{color:var(--gc-accent,#0c6878)}
+@media (max-width:480px){.lg-card{padding:0 16px 20px}.lg-badge a{padding:4px 40px 4px 12px;gap:8px}.lg-badge img{height:42px}.lg-badge h1{font-size:18px}.lg-badge small{font-size:13px}}
 </style>
 </head>
 <body>
 <main class="lg">
   <div class="lg-card">
-    <div class="lg-logo"><?php if ($logo !== ''): ?><img src="<?= htmlspecialchars($logo) ?>" alt="<?= htmlspecialchars(edu_site_name()) ?>"><?php else: ?><span><?= htmlspecialchars(edu_site_name()) ?></span><?php endif; ?></div>
+    <div class="lg-badge<?= $__brandBg ? '' : ' plain' ?>"><a href="/" aria-label="<?= htmlspecialchars(edu_site_name()) ?> home"><?php if ($logo !== ''): ?><img src="<?= htmlspecialchars($logo) ?>" alt="" width="52" height="60"><?php endif; ?><span><h1>Admin Login</h1><small><?= htmlspecialchars(edu_site_name()) ?></small></span></a></div>
     <?php if ($locked): ?>
     <div class="lg-err" role="alert"><strong>Too many failed attempts.</strong> Please try again in <span id="lg-left"><?= (int)ceil($lock_left / 60) ?></span> minute<?= ceil($lock_left / 60) == 1 ? '' : 's' ?>.</div>
     <?php elseif ($error !== ''): ?>
@@ -159,13 +171,13 @@ label{display:block;font-size:14px;font-weight:600;color:#1d2327;margin:0 0 6px}
       <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
       <input type="hidden" name="redirect_to" value="<?= htmlspecialchars($redirect_to) ?>">
       <div class="lg-row">
-        <label for="user_login">Username or Email Address</label>
-        <input class="lg-in" type="text" name="log" id="user_login" value="<?= htmlspecialchars($login_value) ?>" autocomplete="username" autocapitalize="off" spellcheck="false" required <?= $locked ? 'disabled' : 'autofocus' ?>>
+        <label class="lg-sr" for="user_login">Username or Email Address</label>
+        <div class="lg-f"><span class="lg-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></span><input class="lg-in" placeholder="Username or email" type="text" name="log" id="user_login" value="<?= htmlspecialchars($login_value) ?>" autocomplete="username" autocapitalize="off" spellcheck="false" required <?= $locked ? 'disabled' : 'autofocus' ?>></div>
       </div>
       <div class="lg-row">
-        <label for="user_pass">Password</label>
-        <div class="lg-pw">
-          <input class="lg-in" type="password" name="pwd" id="user_pass" autocomplete="current-password" required <?= $locked ? 'disabled' : '' ?>>
+        <label class="lg-sr" for="user_pass">Password</label>
+        <div class="lg-f lg-pw"><span class="lg-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>
+          <input class="lg-in" placeholder="Password" type="password" name="pwd" id="user_pass" autocomplete="current-password" required <?= $locked ? 'disabled' : '' ?>>
           <button type="button" class="lg-eye" aria-label="Show password" onclick="var i=document.getElementById('user_pass'),s=i.type==='password';i.type=s?'text':'password';this.setAttribute('aria-label',s?'Hide password':'Show password')"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 5C6.5 5 2.7 9.1 1.5 12c1.2 2.9 5 7 10.5 7s9.3-4.1 10.5-7C21.3 9.1 17.5 5 12 5Zm0 11.5a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9Zm0-2.5a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/></svg></button>
         </div>
       </div>
