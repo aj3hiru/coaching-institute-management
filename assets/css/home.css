@@ -481,3 +481,13 @@
 
 /* Homepage: no shadow anywhere (search box, menu drawer, back-to-top too) */
 .hm-home *,.hm-home *:hover{box-shadow:none!important}
+
+/* section titles like the blog page: a grey line under the row, a short accent bar under the name, "View All »" on the right */
+.hm-h:not(.c){align-items:center;border-bottom:2px solid #e5e7eb;padding-bottom:10px;margin-bottom:20px}
+.hm-h:not(.c) > div{position:relative}
+.hm-h:not(.c) > div::after{content:"";position:absolute;left:0;bottom:-12px;width:60px;height:2px;background:var(--gc-accent,#0c6878)}
+.hm-h:not(.c) h2{font-size:22px}
+.hm-h:not(.c) > a,.hm-h:not(.c) > button{font-size:14px;font-weight:700;color:var(--gc-accent,#0c6878)!important}
+.hm-imp .hm-h:not(.c){border-bottom-color:rgba(255,255,255,.25)}.hm-imp .hm-h:not(.c) > div::after{background:#fff}
+[data-theme="dark"] .hm-h:not(.c){border-bottom-color:#263040}
+@media (max-width:600px){.hm-h:not(.c) h2{font-size:19px}}

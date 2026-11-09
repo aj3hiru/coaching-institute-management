@@ -107,7 +107,7 @@ $short0 = function (string $n) { $p = preg_split('/\s+/', trim(preg_replace('/\(
 
 <?php ob_start(); ?><?php /* 2. our courses: newest first, 2 rows (2 × 2 on phones), slider + View more */ ?>
 <section class="hm-sec" id="courses"><div class="sp-wrap">
-  <div class="hm-h"><div><h2><?= sh_e($ttl('courses')) ?></h2></div><a href="/courses/">View all ›</a></div>
+  <div class="hm-h"><div><h2><?= sh_e($ttl('courses')) ?></h2></div><a href="/courses/">View All »</a></div>
   <?php if (!$courses): ?><div class="st-empty">New courses are coming soon.</div><?php else: ?>
   <div class="hm-grid" id="hmCourses"><?php foreach ($courses as $p) echo sh_mini_card($p, $catName($p)); ?></div>
   <div class="hm-more"><?php if ($moreCourses || count($courses) > 4): ?><button type="button" class="hm-btn hm-pro hm-splash" id="hmMore" data-o="8" data-w="<?= sh_e($cw) ?>" data-more="<?= $moreCourses ? 1 : 0 ?>">View more courses <span class="hm-pro-a"><?= $ico('arrow') ?></span></button><?php endif; ?><a class="hm-btn hm-pro hm-splash" id="hmAll" href="/courses/"<?= $moreCourses || count($courses) > 4 ? ' hidden' : '' ?>>See all courses <span class="hm-pro-a"><?= $ico('arrow') ?></span></a></div>
@@ -119,7 +119,7 @@ $short0 = function (string $n) { $p = preg_split('/\s+/', trim(preg_replace('/\(
 <?php if ($cats): ?>
 <section class="hm-sec hm-cats-s"><div class="sp-wrap">
   <?php $cd = $cfg['cats_d']; $cm = $cfg['cats_m']; $nc = count($cats); $hasMore = ($cd && $nc > $cd) || ($cm && $nc > $cm); $ci = 0; ?>
-  <div class="hm-h"><div><h2><?= sh_e($ttl('categories')) ?></h2></div><?php if ($hasMore): ?><button type="button" class="hm-cats-all<?= $cd && $nc > $cd ? ' d' : '' ?><?= $cm && $nc > $cm ? ' m' : '' ?>" aria-expanded="false" data-more="All ›" data-less="Show less">All ›</button><?php else: ?><a href="/courses/">All ›</a><?php endif; ?></div>
+  <div class="hm-h"><div><h2><?= sh_e($ttl('categories')) ?></h2></div><?php if ($hasMore): ?><button type="button" class="hm-cats-all<?= $cd && $nc > $cd ? ' d' : '' ?><?= $cm && $nc > $cm ? ' m' : '' ?>" aria-expanded="false" data-more="View All »" data-less="Show less">View All »</button><?php else: ?><a href="/courses/">View All »</a><?php endif; ?></div>
   <div class="hm-cats hm-cats-n" id="hmCats" style="--cc-d:<?= (int)$cfg['cats_cols_d'] ?>;--cc-m:<?= (int)$cfg['cats_cols_m'] ?>"><?php foreach ($cats as $c): $ci++; $cv = (string)($cfg['cats_vis'][(int)$c['id']] ?? '111'); if ($cv === '000') continue; ?><a class="hm-cat<?= $cv[0] === '0' ? ' hv-m' : '' ?><?= $cv[1] === '0' ? ' hv-t' : '' ?><?= $cv[2] === '0' ? ' hv-d' : '' ?>" href="<?= sh_e(sh_cat_url($c['slug'])) ?>"><span class="hm-cat-i"><?php if ($c['icon']): ?><img src="<?= sh_e(sh_upload_url($c['icon'])) ?>" alt="" loading="lazy" width="44" height="44"><?php else: ?><b><?= sh_e(mb_strtoupper(mb_substr(preg_replace('/^Class\s+/i', '', $c['name']), 0, 2))) ?></b><?php endif; ?></span><span class="hm-cat-n"><?= sh_e($c['name']) ?></span><?= (int)$c['items'] ? '<small>' . (int)$c['items'] . ' course' . ((int)$c['items'] === 1 ? '' : 's') . '</small>' : '<small class="soon">Coming soon</small>' ?></a><?php endforeach; ?></div>
 </div></section>
 <?php endif; ?>
@@ -150,7 +150,7 @@ $short0 = function (string $n) { $p = preg_split('/\s+/', trim(preg_replace('/\(
 <?php ob_start(); ?><?php /* 5. study materials (PDF notes) */ ?>
 <?php if ($notes): ?>
 <section class="hm-sec"><div class="sp-wrap">
-  <div class="hm-h"><div><h2><?= sh_e($ttl('notes')) ?></h2></div><a href="/notes/">Explore ›</a></div>
+  <div class="hm-h"><div><h2><?= sh_e($ttl('notes')) ?></h2></div><a href="/notes/">View All »</a></div>
   <div class="hm-ns" data-hs><div class="hs-track"><?php foreach ($notes as $p): ?><div class="hs-s"><?= sh_mini_card($p, $catName($p)) ?></div><?php endforeach; ?></div>
     <button type="button" class="hs-prev" aria-label="Previous">‹</button><button type="button" class="hs-next" aria-label="Next">›</button><div class="hs-dots"></div></div>
   <div class="hm-more"><a class="hm-btn hm-pro hm-splash" href="/notes/">Study materials <span class="hm-pro-a"><?= $ico('arrow') ?></span></a></div>
@@ -161,7 +161,7 @@ $short0 = function (string $n) { $p = preg_split('/\s+/', trim(preg_replace('/\(
 <?php ob_start(); ?><?php /* 6. latest update — newest blog posts */ ?>
 <?php if ($posts): ?>
 <section class="hm-sec hm-ps-s"><div class="sp-wrap">
-  <div class="hm-h"><div><h2><?= sh_e($ttl('posts')) ?></h2></div><a href="/blog">See all ›</a></div>
+  <div class="hm-h"><div><h2><?= sh_e($ttl('posts')) ?></h2></div><a href="/blog">View All »</a></div>
   <div class="hm-ps" data-hs><div class="hs-track"><?php foreach ($posts as $po): $pimg = (string)$po['img']; ?>
     <div class="hs-s"><a class="hm-post" href="<?= htmlspecialchars(postUrl($po['slug'], $po['id'])) ?>"><span class="hm-post-i"><?php if ($pimg !== ''): ?><img src="<?= htmlspecialchars(preg_match('#^https?://#', $pimg) ? $pimg : '/' . ltrim($pimg, '/')) ?>" alt="" loading="lazy" onerror="this.remove()"><?php endif; ?></span>
       <span class="hm-post-b"><?php if ($po['cat']): ?><small class="hm-post-c"><?= htmlspecialchars($po['cat']) ?></small><?php endif; ?><b><?= htmlspecialchars($po['title']) ?></b><small><?= date('d M Y', strtotime($po['date'])) ?></small></span></a></div>
@@ -174,7 +174,7 @@ $short0 = function (string $n) { $p = preg_split('/\s+/', trim(preg_replace('/\(
 <?php ob_start(); ?><?php /* 7. free courses — YouTube playlists */ ?>
 <?php if ($free): ?>
 <section class="hm-sec"><div class="sp-wrap">
-  <div class="hm-h"><div><h2><?= sh_e($ttl('free')) ?></h2></div><a href="/free-courses/">All free courses ›</a></div>
+  <div class="hm-h"><div><h2><?= sh_e($ttl('free')) ?></h2></div><a href="/free-courses/">View All »</a></div>
   <div class="hm-fs" data-hs><div class="hs-track"><?php foreach ($free as $f): ?>
     <div class="hs-s"><?= sh_free_card($f, $f['category_id'] && isset($cats[(int)$f['category_id']]) ? $cats[(int)$f['category_id']]['name'] : '') ?></div>
   <?php endforeach; ?></div>

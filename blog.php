@@ -584,7 +584,7 @@ function homeExcerpt(string $html, int $len = 170): string {
 <?= edu_ads('before_content') ?>
 <?php if ($homeCards): ?>
 <section class="home-posts" aria-labelledby="home-posts-title">
-  <div class="home-sec-head"><h2 id="home-posts-title" class="home-sec-title"><?= edu_shortcodes(htmlspecialchars((string)th('home_heading') ?: 'Latest Posts')) ?></h2><a href="/latest-updates" class="home-sec-more">View All »</a></div>
+  <div class="home-sec-head"><h2 id="home-posts-title" class="home-sec-title"><?= edu_shortcodes(htmlspecialchars((string)th('home_heading') ?: 'Latest Posts')) ?></h2><a href="/latest-posts" class="home-sec-more">View All »</a></div>
   <div class="nb-grid nb-grid--feat">
     <?php foreach ($homeCards as $i => $hp): $lead = $i === 0 && th_on('home_lead'); $url = postUrl($hp['slug'], $hp['id']); ?>
     <article class="nb-card nb-card--feat<?= $lead ? ' nb-card--lead' : '' ?>">
