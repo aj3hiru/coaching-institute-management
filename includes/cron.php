@@ -58,6 +58,11 @@ function edu_cron_daily(string $trigger = 'Automatic'): string
     foreach (['incoming', 'exports'] as $d) foreach (glob(edu_private_dir($d) . '/*') ?: [] as $f) if (is_file($f) && filemtime($f) < time() - 86400) { @unlink($f); $old++; }
     foreach (glob(edu_private_dir('uploads') . '/*', GLOB_ONLYDIR) ?: [] as $d) if (filemtime($d) < time() - 86400) { exec('rm -rf ' . escapeshellarg($d)); $old++; }
     $parts[] = "unfinished uploads cleaned: $old";
+    // automatic full backup (Cron Manager → Automatic backup)
+    try { require_once __DIR__ . '/backup.php'; $parts[] = edu_auto_backup($pdo); } catch (Throwable $e) { $parts[] = 'automatic backup failed: ' . $e->getMessage(); }
+    // old YouTube playlist data (kept 6 hours; files older than 7 days are left-overs)
+    $yt = 0; foreach (glob(ROOT_PATH . '/cache/yt/*.json') ?: [] as $f) if (filemtime($f) < time() - 7 * 86400 && @unlink($f)) $yt++;
+    if ($yt) $parts[] = "old YouTube data removed: $yt";
     $msg = implode(' · ', $parts);
     $ms = (microtime(true) - $t) * 1000;
     edu_cron_state(['daily_at' => time(), 'daily_ms' => round($ms), 'daily_result' => $msg]);

@@ -43,6 +43,13 @@ function formatSize($bytes) {
     return $bytes . ' bytes';
 }
 
+// kinds of cache (Overview: count, size, clear one kind)
+$cmTypes = [
+    'home' => ['label' => 'Homepage', 'icon' => 'fa-house', 'glob' => ['index_home*.html'], 'ttl' => 'ttl_home'],
+    'lists' => ['label' => 'Blog & list pages', 'icon' => 'fa-list', 'glob' => ['index_latest_*.html', 'latest-posts*.html', 'latest-jobs-*.html', 'latest-updates*.html'], 'ttl' => 'ttl_list'],
+    'posts' => ['label' => 'Posts', 'icon' => 'fa-newspaper', 'glob' => ['post_*.html', 'post_*.url'], 'ttl' => 'ttl_post'],
+    'yt' => ['label' => 'YouTube playlist data', 'icon' => 'fa-youtube', 'glob' => ['yt/*.json'], 'ttl' => ''],
+];
 // 4. Handle Actions (Delete Single / Clear All)
 $msg = '';
 $msg_type = '';
@@ -77,6 +84,43 @@ if (isset($_POST['action'])) {
         admin_log('cache_clear', "Cleared the page cache ({$count} files)");
     }
 
+    // one kind of cache: homepage / list pages / posts / YouTube playlist data
+    if ($_POST['action'] === 'clear_type') {
+        $k = (string)($_POST['type'] ?? '');
+        $pat = $cmTypes[$k]['glob'] ?? null;
+        $count = 0;
+        if ($pat) foreach ((array)$pat as $g) foreach (glob($cache_dir . $g) ?: [] as $file) if (is_file($file) && unlink($file)) $count++;
+        $msg = $pat ? ($cmTypes[$k]['label'] . ": {$count} file(s) cleared.") : 'Unknown cache.';
+        $msg_type = $pat ? 'success' : 'error';
+        if ($pat) admin_log('cache_clear', "Cleared {$cmTypes[$k]['label']} cache ($count files)");
+    }
+    // one page by its address
+    if ($_POST['action'] === 'clear_url') {
+        $u = trim((string)($_POST['url'] ?? ''));
+        $path = '/' . trim((string)parse_url($u, PHP_URL_PATH), '/');
+        $hits = [];
+        if ($path === '/') $hits = glob($cache_dir . 'index_home*.html') ?: [];
+        elseif (in_array($path, ['/blog', '/latest-update'], true)) $hits = glob($cache_dir . 'index_latest_*.html') ?: [];
+        elseif ($path === '/latest-posts') $hits = glob($cache_dir . 'latest-posts*.html') ?: [];
+        elseif ($path === '/latest-jobs') $hits = glob($cache_dir . 'latest-jobs-*.html') ?: [];
+        else {
+            $slug = basename($path);
+            $q = $pdo->prepare("SELECT id FROM posts WHERE slug = ? LIMIT 1"); $q->execute([$slug]);
+            $pid = (int)$q->fetchColumn();
+            if (!$pid && preg_match('/-(\d+)$/', $slug, $mm)) $pid = (int)$mm[1];
+            if ($pid) $hits = array_filter([$cache_dir . "post_$pid.html", $cache_dir . "post_$pid.url"], 'is_file');
+        }
+        $count = 0; foreach ($hits as $file) if (is_file($file) && unlink($file)) $count++;
+        $msg = $count ? "Cleared the cached copy of $path ($count file(s)). The next visitor gets a fresh page." : "No cached copy of $path was found — it is already fresh (pages that are not cached, like courses, are always fresh).";
+        $msg_type = 'success';
+        if ($count) admin_log('cache_clear', "Cleared cache of $path");
+    }
+    // PHP's own code cache (after files are changed on the server)
+    if ($_POST['action'] === 'opcache') {
+        $ok = function_exists('opcache_reset') && @opcache_reset();
+        $msg = $ok ? 'PHP code cache (OPcache) cleared.' : 'OPcache is not on for this website — nothing to clear.';
+        $msg_type = 'success';
+    }
     // Cache system ON / OFF (as in the CMS): off = pages are built fresh every time and nothing is saved
     if ($_POST['action'] === 'cache_off' || $_POST['action'] === 'cache_on') {
         $off = $_POST['action'] === 'cache_off';
@@ -97,6 +141,7 @@ if (isset($_POST['action'])) {
     }
 }
 $cache_off = perf_opt('cache_off') === '1';
+$cmDur = function (int $s): string { return $s >= 86400 ? round($s / 86400, 1) . ' day' . ($s >= 172800 ? 's' : '') : ($s >= 3600 ? round($s / 3600, 1) . ' hour' . ($s >= 7200 ? 's' : '') : round($s / 60) . ' min'); };
 
 // 5. Scan Directory for List
 $files = [];
@@ -136,6 +181,10 @@ $total_size = array_sum(array_column($files, 'size'));
 <style>
 .cm-files-table td, .cm-files-table th { white-space: nowrap; }
 .cm-files-table .cm-file-name { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .82rem; color: var(--gray-800); }
+.cm-types{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+.cm-type{display:flex;gap:10px;align-items:center;padding:12px;border:1px solid #e5e7eb;border-radius:5px}.cm-type>i{width:34px;height:34px;display:grid;place-items:center;background:var(--primary-lighter,#f3effa);color:var(--primary);border-radius:5px;flex:0 0 auto}
+.cm-type>div{flex:1;min-width:0}.cm-type b{display:block;font-size:.9rem}.cm-type small{display:block;color:#6b7280;font-size:.78rem}
+.cm-url{display:flex;gap:8px;flex-wrap:wrap}.cm-url input{flex:1;min-width:240px}
 .cm-file-actions { display: flex; gap: .4rem; justify-content: flex-end; }
 .cm-file-actions form { margin: 0; }
 .cm-empty { padding: 2.5rem 1rem; text-align: center; color: var(--gray-500); }
@@ -198,17 +247,32 @@ $total_size = array_sum(array_column($files, 'size'));
     <div class="cm-stat-card">
       <div class="cm-stat-icon"><i class="fas fa-clock"></i></div>
       <div class="cm-label">Homepage TTL</div>
-      <div class="cm-value" style="font-size:.9rem">1 hour</div>
+      <div class="cm-value" style="font-size:.9rem"><?= htmlspecialchars($cmDur((int)perf_opt('ttl_home'))) ?></div>
     </div>
     <div class="cm-stat-card">
       <div class="cm-stat-icon"><i class="fas fa-clock"></i></div>
       <div class="cm-label">Post TTL</div>
-      <div class="cm-value" style="font-size:.9rem">6 hours</div>
+      <div class="cm-value" style="font-size:.9rem"><?= htmlspecialchars($cmDur((int)perf_opt('ttl_post'))) ?></div>
     </div>
   </div>
   <div class="cm-card">
+    <h3><i class="fas fa-layer-group" style="color: var(--primary)"></i> What is cached</h3>
+    <div class="cm-types">
+    <?php foreach ($cmTypes as $k => $t): $tf = []; foreach ($t['glob'] as $g) $tf = array_merge($tf, glob($cache_dir . $g) ?: []); $ts = array_sum(array_map('filesize', array_filter($tf, 'is_file'))); ?>
+      <div class="cm-type"><i class="<?= $k === 'yt' ? 'fab' : 'fas' ?> <?= $t['icon'] ?>"></i><div><b><?= htmlspecialchars($t['label']) ?></b><small><?= count($tf) ?> file(s) · <?= formatSize($ts) ?><?= $t['ttl'] ? ' · fresh every ' . htmlspecialchars($cmDur((int)perf_opt($t['ttl']))) : ' · fresh every 6 hours' ?></small></div>
+        <form method="POST" style="margin:0"><?= csrf_field() ?><input type="hidden" name="action" value="clear_type"><input type="hidden" name="type" value="<?= $k ?>"><button class="btn btn-secondary btn-sm" type="submit" <?= $tf ? '' : 'disabled' ?>>Clear</button></form></div>
+    <?php endforeach; ?>
+    </div>
+  </div>
+  <div class="cm-card">
+    <h3><i class="fas fa-link" style="color: var(--primary)"></i> Clear one page</h3>
+    <p class="cm-hint">Changed something and the page still shows the old version? Paste its address.</p>
+    <form method="POST" class="cm-url"><?= csrf_field() ?><input type="hidden" name="action" value="clear_url"><input class="form-control" name="url" required placeholder="<?= htmlspecialchars(rtrim(SITE_URL, '/')) ?>/your-post-address"><button class="btn btn-primary" type="submit"><i class="fas fa-broom"></i> Clear this page</button></form>
+    <form method="POST" style="margin-top:12px"><?= csrf_field() ?><input type="hidden" name="action" value="opcache"><button class="btn btn-secondary btn-sm" type="submit"><i class="fas fa-microchip"></i> Clear PHP code cache (OPcache)</button> <small class="cm-hint" style="display:inline">only needed after files are changed on the server</small></form>
+  </div>
+  <div class="cm-card">
     <h3><i class="fas fa-circle-info" style="color: var(--primary)"></i> How it works</h3>
-    <p class="cm-hint">The first visitor of a page builds it; the HTML is saved in <code>/cache/</code> and the next visitors get that file instantly. The homepage is rebuilt after 1 hour, posts after 6 hours. Clearing removes the saved files, so every page is built fresh on its next visit.</p>
+    <p class="cm-hint">The first visitor of a page builds it; the HTML is saved in <code>/cache/</code> and the next visitors get that file instantly. The homepage is rebuilt after <?= htmlspecialchars($cmDur((int)perf_opt('ttl_home'))) ?>, posts after <?= htmlspecialchars($cmDur((int)perf_opt('ttl_post'))) ?>. Clearing removes the saved files, so every page is built fresh on its next visit.</p>
   </div>
 </div>
 

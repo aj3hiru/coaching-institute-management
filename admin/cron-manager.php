@@ -25,6 +25,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($code === 200 && !empty($j['ok'])) admin_flash("Connection OK — the cron URL answered in {$ms} ms (HTTP 200).");
             else admin_flash('Connection failed: ' . ($err ?: "HTTP $code" . ($code === 403 ? ' (wrong key)' : '')) . ". Make sure {$url} is reachable from the internet.", 'error');
         }
+        elseif ($a === 'auto_backup') {
+            edu_settings_save('cron', ['auto_backup' => in_array($_POST['mode'] ?? '', ['off', 'daily', 'weekly'], true) ? $_POST['mode'] : 'weekly', 'backup_keep' => in_array((int)($_POST['keep'] ?? 0), [2, 3, 4, 7, 14, 30], true) ? (int)$_POST['keep'] : 4]);
+            admin_flash('Automatic backup saved.');
+        }
         elseif ($a === 'retention') { edu_settings_save('cron', ['visitor_days' => in_array((int)($_POST['days'] ?? 0), [0, 30, 90, 180, 365], true) ? (int)$_POST['days'] : 0]); admin_flash('Retention saved.'); }
     } catch (Throwable $e) { admin_flash('Failed: ' . $e->getMessage(), 'error'); }
     header('Location: /admin/cron-manager.php');
@@ -37,6 +41,8 @@ $running = $age !== null && $age < 180;
 $ago = function (?int $ts) { if (!$ts) return 'never'; $d = time() - $ts; return $d < 60 ? $d . 's ago' : ($d < 3600 ? floor($d / 60) . ' min ago' : ($d < 86400 ? floor($d / 3600) . ' h ago' : floor($d / 86400) . ' days ago')); };
 $pendingPush = (int)$pdo->query("SELECT COUNT(*) FROM push_queue q JOIN push_campaigns c ON c.id = q.campaign_id WHERE q.status = 'pending' AND c.created_at >= NOW() - INTERVAL 1 DAY")->fetchColumn();
 $days = (int)es('cron', 'visitor_days', 0);
+$abMode = (string)es('cron', 'auto_backup', 'off'); $abKeep = (int)es('cron', 'backup_keep', 4) ?: 4;
+$abFiles = glob(edu_private_dir('backups') . '/backup-*-auto.zip') ?: []; $abLast = $abFiles ? max(array_map('filemtime', $abFiles)) : 0;
 $cronLine = '* * * * * /usr/bin/php ' . ROOT_PATH . '/push_notifications/cron-process-push-queue.php >/dev/null 2>&1';
 if ((string)es('cron', 'web_key', '') === '') edu_settings_save('cron', ['web_key' => bin2hex(random_bytes(16))]);
 $webUrl = rtrim(SITE_URL, '/') . '/cron?key=' . es('cron', 'web_key', '');
@@ -62,9 +68,17 @@ $webUrl = rtrim(SITE_URL, '/') . '/cron?key=' . es('cron', 'web_key', '');
   <div class="cr-job"><span>Remove old push delivery records (30+ days)</span><span>Automatic</span></div>
   <div class="cr-job"><span>Visitor log cleanup</span><span><?= $days ? "Older than $days days" : 'Kept (retention: forever)' ?></span></div>
   <div class="cr-job"><span>Remove unfinished uploads and old exports</span><span>Older than 1 day</span></div>
+  <div class="cr-job"><span>Automatic full backup</span><span><?= ['off' => 'Off', 'daily' => 'Every day', 'weekly' => 'Once a week'][$abMode] ?? 'Off' ?><?= $abMode !== 'off' ? ' · newest ' . $abKeep . ' kept' : '' ?></span></div>
+  <?php if (!empty($s['daily_result'])): ?><div class="cr-job"><span>Last result</span><span style="text-align:right"><?= htmlspecialchars($s['daily_result']) ?></span></div><?php endif; ?>
   <div class="cr-foot"><span>Last run: <?= $ago($s['daily_at'] ?? null) ?><?= isset($s['daily_ms']) ? ' · ' . (int)$s['daily_ms'] . ' ms' : '' ?></span>
     <form method="POST"><?= csrf_field() ?><input type="hidden" name="action" value="daily"><button class="btn btn-secondary btn-sm"><i class="fas fa-play"></i> Run now</button></form></div>
 </div>
+<form class="cr-card" method="POST"><?= csrf_field() ?><input type="hidden" name="action" value="auto_backup">
+  <h3><i class="fas fa-box-archive"></i> Automatic backup</h3><p class="cr-when">A full backup (database, images, course videos &amp; PDFs) made by the daily job — <?= $abLast ? 'last one ' . $ago($abLast) : 'none made yet' ?>. They are kept on the server (they use its disk) and listed in <a href="/admin/backup-restore.php">Backup &amp; Restore</a>, where you can download them to your computer.</p>
+  <select name="mode" style="padding:8px 10px;border:1px solid #d1d5db;border-radius:5px"><?php foreach (['off' => 'Off (backup by hand)', 'weekly' => 'Once a week', 'daily' => 'Every day'] as $k => $l): ?><option value="<?= $k ?>" <?= $abMode === $k ? 'selected' : '' ?>><?= $l ?></option><?php endforeach; ?></select>
+  <select name="keep" style="padding:8px 10px;border:1px solid #d1d5db;border-radius:5px"><?php foreach ([2, 3, 4, 7, 14, 30] as $k): ?><option value="<?= $k ?>" <?= $abKeep === $k ? 'selected' : '' ?>>Keep the newest <?= $k ?></option><?php endforeach; ?></select>
+  <button class="btn btn-primary btn-sm">Save</button>
+</form>
 <form class="cr-card" method="POST"><?= csrf_field() ?><input type="hidden" name="action" value="retention">
   <h3><i class="fas fa-user-clock"></i> Visitor log retention</h3><p class="cr-when">Anonymous per-visit rows used for unique-visitor counts. View totals are kept either way.</p>
   <select name="days" style="padding:8px 10px;border:1px solid #d1d5db;border-radius:8px"><?php foreach ([0 => 'Keep forever', 30 => '30 days', 90 => '90 days', 180 => '180 days', 365 => '1 year'] as $k => $l): ?><option value="<?= $k ?>" <?= $days === $k ? 'selected' : '' ?>><?= $l ?></option><?php endforeach; ?></select>

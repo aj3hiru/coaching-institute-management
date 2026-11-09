@@ -7,12 +7,48 @@ require_once __DIR__ . '/components/guard.php';
 require_once INCLUDES_PATH . '/tools.php';
 require_once INCLUDES_PATH . '/pages.php';
 require_once INCLUDES_PATH . '/transfer.php';
+require_once INCLUDES_PATH . '/transfer-store.php';
 $me = admin_guard(['admin']);
 @set_time_limit(600);
 @ini_set('memory_limit', '512M');
 edu_pages_table($pdo);
 
 $action = $_POST['action'] ?? '';
+// Courses & PDF notes (ZIP), students / orders / fee payments (CSV for Excel) — see includes/transfer-store.php
+if (in_array($action, ['export_store', 'export_students', 'export_orders', 'export_fees'], true)) {
+    csrf_check();
+    try {
+        if ($action === 'export_store') {
+            [$zipFile, $n, $files] = edu_txs_export($pdo, $_POST, !empty($_POST['videos']));
+            admin_log('export', "Exported $n courses / notes ($files files)");
+            header('Content-Type: application/zip');
+            header('Content-Disposition: attachment; filename="' . basename($zipFile) . '"');
+            header('Content-Length: ' . filesize($zipFile));
+            readfile($zipFile); @unlink($zipFile); exit;
+        }
+        $d = date('Y-m-d');
+        if ($action === 'export_students') { $rows = edu_csv_students($pdo, $_POST); admin_log('export', 'Exported ' . count($rows) . ' students (CSV)'); edu_csv_send("students-$d.csv", EDU_CSV_STUDENT_HEAD, $rows); exit; }
+        if ($action === 'export_orders') { $rows = edu_csv_orders($pdo, $_POST); admin_log('export', 'Exported ' . count($rows) . ' orders (CSV)'); edu_csv_send("orders-$d.csv", EDU_CSV_ORDER_HEAD, $rows); exit; }
+        if ($action === 'export_fees') { $rows = edu_csv_fees($pdo, $_POST); admin_log('export', 'Exported ' . count($rows) . ' fee payments (CSV)'); edu_csv_send("fee-payments-$d.csv", EDU_CSV_FEE_HEAD, $rows); exit; }
+    } catch (Throwable $e) {
+        admin_flash($e->getMessage(), 'error');
+        header('Location: /admin/import-export.php?tab=' . ($action === 'export_store' ? 'store' : ($action === 'export_students' ? 'students' : 'orders')));
+        exit;
+    }
+}
+if ($action === 'import_students') {
+    csrf_check();
+    try {
+        $f = $_FILES['csv'] ?? null;
+        if (!$f || $f['error'] !== UPLOAD_ERR_OK) throw new RuntimeException('Choose the CSV file first.');
+        if (!preg_match('/\.(csv|txt)$/i', (string)$f['name'])) throw new RuntimeException('Please choose a .csv file (in Excel: File → Save as → CSV).');
+        [$added, $skipped, $errs] = edu_csv_import_students($pdo, $f['tmp_name'], (int)$me['id']);
+        admin_log('import', "Imported students: $added added, $skipped already there, " . count($errs) . ' errors');
+        admin_flash("Students imported: $added added, $skipped already there (same name + mobile)." . ($errs ? ' Not added — ' . implode('; ', array_slice($errs, 0, 5)) . (count($errs) > 5 ? ' … and ' . (count($errs) - 5) . ' more' : '') : ''), $errs && !$added ? 'error' : 'success');
+    } catch (Throwable $e) { admin_flash($e->getMessage(), 'error'); }
+    header('Location: /admin/import-export.php?tab=students');
+    exit;
+}
 if ($action === 'export_posts' || $action === 'export_pages') {
     csrf_check();
     try {
@@ -38,15 +74,19 @@ if ($action === 'chunk') {
     try {
         $done = edu_chunk_receive();
         if (!$done) { echo '{"ok":true}'; exit; }
+        $isStore = false;
+        $zz = new ZipArchive();
+        if ($zz->open($done['path']) === true) { $mf = json_decode((string)$zz->getFromName('manifest.json'), true); $isStore = is_array($mf) && ($mf['format'] ?? '') === 'dk-store'; $zz->close(); }
         try {
-            $data = edu_tx_read($done['path']);
+            $data = $isStore ? edu_txs_read($done['path']) : edu_tx_read($done['path']);
         } catch (Throwable $e) {
             @unlink($done['path']);
             throw $e;
         }
         if (!empty($_SESSION['edu_import_file']) && $_SESSION['edu_import_file'] !== $done['path']) @unlink($_SESSION['edu_import_file']);
         $_SESSION['edu_import_file'] = $done['path'];
-        $scan = edu_tx_scan($pdo, $data);
+        $_SESSION['edu_import_kind'] = $isStore ? 'store' : 'content';
+        $scan = $isStore ? edu_txs_scan($pdo, $data) : edu_tx_scan($pdo, $data);
         echo json_encode(['ok' => true, 'ready' => true, 'name' => $done['name'], 'size' => $done['size']] + $scan, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     } catch (Throwable $e) {
         echo json_encode(['error' => $e->getMessage()]);
@@ -61,6 +101,30 @@ if ($action === 'import_step') {
     try {
         $src = (string)($_SESSION['edu_import_file'] ?? '');
         if (!is_file($src)) throw new RuntimeException('Please choose the export ZIP again.');
+        if (($_SESSION['edu_import_kind'] ?? '') === 'store') { // courses & notes: one per request (files can be big)
+            $m = edu_txs_read($src);
+            $offset = max(0, (int)($_POST['offset'] ?? 0));
+            $decisions = json_decode((string)($_POST['decisions'] ?? '{}'), true) ?: [];
+            $total = count($m['items']);
+            $log = [];
+            $zip = new ZipArchive(); $zip->open($src);
+            if ($offset < $total) {
+                $it = $m['items'][$offset];
+                try {
+                    $d = in_array($decisions[$offset] ?? '', ['skip', 'replace', 'keep_both'], true) ? $decisions[$offset] : 'keep_both';
+                    $q = $pdo->prepare("SELECT COUNT(*) FROM sh_products WHERE slug = ?"); $q->execute([(string)$it['slug']]); $was = (int)$q->fetchColumn();
+                    $r = edu_txs_import_item($pdo, $zip, $it, ['decision' => $d, 'status' => in_array($_POST['status'] ?? '', ['file', 'draft', 'published'], true) ? $_POST['status'] : 'file']);
+                    if ($was && $r['outcome'] === 'imported') $r['outcome'] = 'renamed';
+                    if (!empty($r['note'])) $r['error'] = $r['note'];
+                } catch (Throwable $e) { $r = ['outcome' => 'failed', 'title' => (string)($it['title'] ?? 'Item'), 'url' => '', 'error' => $e->getMessage()]; }
+                $log[] = $r;
+            }
+            $zip->close();
+            $next = min($total, $offset + 1);
+            if ($next >= $total) { edu_clear_page_cache(); @unlink($src); unset($_SESSION['edu_import_file'], $_SESSION['edu_import_kind']); admin_log('import', "Imported courses / notes from a ZIP ($total items)"); }
+            echo json_encode(['ok' => true, 'next' => $next, 'total' => $total, 'done' => $next >= $total, 'log' => $log], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
         $data = edu_tx_read($src);
         $offset = max(0, (int)($_POST['offset'] ?? 0));
         $decisions = json_decode((string)($_POST['decisions'] ?? '{}'), true) ?: [];
@@ -118,6 +182,14 @@ $cats = $pdo->query("SELECT c.id, c.name, COUNT(DISTINCT p.id) n FROM categories
 $totalPub = (int)$pdo->query("SELECT COUNT(*) FROM posts WHERE status = 'published'")->fetchColumn();
 $pageCount = (int)$pdo->query("SELECT COUNT(*) FROM site_pages")->fetchColumn();
 $authors = $pdo->query("SELECT id, name FROM authors ORDER BY name")->fetchAll(PDO::FETCH_KEY_PAIR);
+sh_tables($pdo); ci_tables($pdo);
+$shCats = $pdo->query("SELECT id, name FROM sh_categories ORDER BY sort, name")->fetchAll(PDO::FETCH_KEY_PAIR);
+$shProducts = $pdo->query("SELECT id, title FROM sh_products ORDER BY title")->fetchAll(PDO::FETCH_KEY_PAIR);
+$ciClasses = $pdo->query("SELECT id, name FROM ci_classes ORDER BY sort, name")->fetchAll(PDO::FETCH_KEY_PAIR);
+$storeCount = $pdo->query("SELECT SUM(type = 'course') AS course, SUM(type = 'notes') AS notes FROM sh_products")->fetch(PDO::FETCH_ASSOC);
+$vs = 0; foreach ($pdo->query("SELECT video_file, variants FROM sh_lessons WHERE video_file IS NOT NULL AND video_file <> ''") as $l) { foreach (array_merge([$l['video_file']], array_values((array)json_decode((string)$l['variants'], true))) as $rel) { $ab = sh_media_path((string)$rel); if ($rel && is_file($ab)) $vs += filesize($ab); } }
+$storeVideoSize = $vs >= 1073741824 ? number_format($vs / 1073741824, 2) . ' GB' : number_format($vs / 1048576, 1) . ' MB';
+$tab = in_array($_GET['tab'] ?? '', ['content', 'store', 'students', 'orders'], true) ? $_GET['tab'] : 'content';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -154,26 +226,93 @@ $authors = $pdo->query("SELECT id, name FROM authors ORDER BY name")->fetchAll(P
 .ie-log a{margin-left:auto;white-space:nowrap;font-size:.78rem}
 .ie-result{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}
 .ie-result div{padding:10px;border-radius:10px;background:#f8fafc;text-align:center}.ie-result b{display:block;font-size:1.2rem}.ie-result span{font-size:.75rem;color:#64748b}
+/* export tabs */
+.ie-tabs{display:flex;gap:4px;flex-wrap:wrap;margin:10px 0 14px;border-bottom:1px solid #e5e7eb}
+.ie-tabs button{border:0;background:none;padding:9px 12px;font:600 .85rem inherit;font-family:inherit;color:#475569;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+.ie-tabs button.on{color:var(--primary);border-bottom-color:var(--primary)}.ie-tabs button i{margin-right:4px}
+.ie-pane>p{margin:0 0 14px;color:var(--gray-500,#6b7280);font-size:.9rem}
+.ie-chk{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid #e5e7eb;border-radius:5px;margin:0 0 12px;cursor:pointer}.ie-chk input{margin-top:3px}.ie-chk b{display:block;font-size:.88rem}.ie-chk small{display:block;color:#6b7280;font-size:.8rem}
+.ie-muted{font-size:.82rem;color:#6b7280;margin:0 0 12px}
+.ie-sub{margin-top:20px;padding-top:16px;border-top:1px solid #eef0f3}.ie-sub h4,.ie-h4{margin:0 0 6px;font-size:.95rem}.ie-sub p{font-size:.85rem;color:#6b7280;margin:0 0 10px}
+.ie-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.ie-row input[type=file]{flex:1;min-width:200px;height:auto;padding:6px}
 @media(max-width:900px){.ie-grid{grid-template-columns:1fr}.ie-opts{grid-template-columns:1fr}.ie-conf-row{grid-template-columns:1fr}.ie-result{grid-template-columns:1fr 1fr}}
 </style>
 <?= edu_chunk_js() ?>
 </head>
 <body>
-<?php admin_shell_open('Import &amp; Export', 'Move posts and pages between this site, other sites on this CMS and the StoryTimes CMS'); ?>
+<?php admin_shell_open('Import &amp; Export', 'Posts, pages, courses, PDF notes, students, orders and fees — export with filters, import back'); ?>
 <?= admin_flash() ?>
 <div class="ie-grid">
   <div class="ie-card">
-    <h3><i class="fas fa-file-export"></i> Export</h3><p>Download posts or pages as a ZIP — content, address, SEO, tags, categories, FAQs and every image. It imports on this site, another site on this CMS or the StoryTimes CMS.</p>
+    <h3><i class="fas fa-file-export"></i> Export</h3>
+    <nav class="ie-tabs" role="tablist"><button type="button" data-tab="content" class="on"><i class="fas fa-newspaper"></i> Posts &amp; Pages</button><button type="button" data-tab="store"><i class="fas fa-photo-film"></i> Courses &amp; Notes</button><button type="button" data-tab="students"><i class="fas fa-user-graduate"></i> Students</button><button type="button" data-tab="orders"><i class="fas fa-receipt"></i> Orders &amp; Fees</button></nav>
+    <div class="ie-pane" data-pane="content">
+    <p>Download posts or pages as a ZIP — content, address, SEO, tags, categories, FAQs and every image. It imports on this site, another site on this CMS or the StoryTimes CMS.</p>
     <form method="POST"><?= csrf_field() ?><input type="hidden" name="action" value="export_posts">
       <strong style="font-size:.9rem">Posts by category</strong> <small style="color:#9ca3af">— none ticked = every published post (<?= $totalPub ?>)</small>
       <div class="ie-cats"><?php foreach ($cats as $c): ?><label><span><input type="checkbox" name="cats[]" value="<?= (int)$c['id'] ?>"> <?= htmlspecialchars($c['name']) ?></span><small><?= (int)$c['n'] ?></small></label><?php endforeach; ?></div>
       <button type="submit" class="btn btn-primary"><i class="fas fa-download"></i> Export posts</button></form>
     <form method="POST" style="margin-top:12px"><?= csrf_field() ?><input type="hidden" name="action" value="export_pages"><button type="submit" class="btn btn-secondary" <?= $pageCount ? '' : 'disabled' ?>><i class="fas fa-download"></i> Export pages (<?= $pageCount ?>)</button></form>
+    </div>
+    <div class="ie-pane" data-pane="store" hidden>
+      <p>Courses and PDF notes as a ZIP — every detail, price, category, chapters, units, lectures, lecture PDFs, notes files and thumbnails. Import it on this site or another copy of it (the Import box on the right).</p>
+      <form method="POST" class="ie-form"><?= csrf_field() ?><input type="hidden" name="action" value="export_store">
+        <div class="ie-opts">
+          <label>What<select class="form-control" name="type"><option value="">Courses and PDF notes</option><option value="course">Only courses</option><option value="notes">Only PDF notes</option></select></label>
+          <label>Status<select class="form-control" name="status"><option value="">Published and drafts</option><option value="published">Only published</option><option value="draft">Only drafts</option></select></label>
+          <label>Price<select class="form-control" name="price"><option value="">Paid and free</option><option value="paid">Only paid</option><option value="free">Only free</option></select></label>
+          <label>Category<select class="form-control" name="category"><option value="0">All categories</option><?php foreach ($shCats as $cid => $cn): ?><option value="<?= (int)$cid ?>"><?= htmlspecialchars($cn) ?></option><?php endforeach; ?></select></label>
+        </div>
+        <label class="ie-chk"><input type="checkbox" name="videos" value="1"> <span><b>Include uploaded lecture videos</b><small>Videos make the file big (<?= htmlspecialchars($storeVideoSize) ?> now). YouTube lectures are always included as links.</small></span></label>
+        <p class="ie-muted"><?= (int)$storeCount['course'] ?> courses · <?= (int)$storeCount['notes'] ?> PDF notes on this site</p>
+        <button type="submit" class="btn btn-primary"><i class="fas fa-download"></i> Export courses / notes</button>
+      </form>
+    </div>
+    <div class="ie-pane" data-pane="students" hidden>
+      <p>Students as a CSV file (opens in Excel / Google Sheets): details, type, class, courses and batches, online courses, fee, paid and due.</p>
+      <form method="POST" class="ie-form"><?= csrf_field() ?><input type="hidden" name="action" value="export_students">
+        <div class="ie-opts">
+          <label>Student type<select class="form-control" name="type"><option value="">All students</option><option value="institute">Institute only</option><option value="online">Online only</option><option value="both">Both</option></select></label>
+          <label>Status<select class="form-control" name="status"><option value="">Any status</option><option value="active">Active</option><option value="left">Left</option><option value="completed">Completed</option></select></label>
+          <label>Class<select class="form-control" name="class"><option value="0">All classes</option><?php foreach ($ciClasses as $cid => $cn): ?><option value="<?= (int)$cid ?>"><?= htmlspecialchars($cn) ?></option><?php endforeach; ?></select></label>
+          <label>&nbsp;<span></span></label>
+          <label>Admitted from<input class="form-control" type="date" name="from"></label>
+          <label>Admitted to<input class="form-control" type="date" name="to"></label>
+        </div>
+        <button type="submit" class="btn btn-primary"><i class="fas fa-file-csv"></i> Export students</button>
+      </form>
+      <div class="ie-sub">
+        <h4><i class="fas fa-file-import"></i> Import students from a sheet</h4>
+        <p>A CSV with the column names in the first row — at least <b>Name</b> and <b>Mobile</b> (the Export above has every column). A student with the same name and mobile is skipped; new students get the next reg. no.</p>
+        <form method="POST" enctype="multipart/form-data" class="ie-row"><?= csrf_field() ?><input type="hidden" name="action" value="import_students"><input type="file" name="csv" accept=".csv,text/csv" required class="form-control"><button type="submit" class="btn btn-secondary"><i class="fas fa-upload"></i> Import</button></form>
+      </div>
+    </div>
+    <div class="ie-pane" data-pane="orders" hidden>
+      <p>Online orders and institute fee payments (receipts) as CSV files for Excel.</p>
+      <form method="POST" class="ie-form"><?= csrf_field() ?><input type="hidden" name="action" value="export_orders">
+        <h4 class="ie-h4">Online orders</h4>
+        <div class="ie-opts">
+          <label>From<input class="form-control" type="date" name="from" value="<?= date('Y-m-01') ?>"></label>
+          <label>To<input class="form-control" type="date" name="to" value="<?= date('Y-m-d') ?>"></label>
+          <label>Status<select class="form-control" name="status"><option value="paid">Paid</option><option value="">All</option><option value="created">Not paid</option><option value="failed">Failed</option></select></label>
+          <label>Item<select class="form-control" name="product"><option value="0">All courses / notes</option><?php foreach ($shProducts as $pid => $pt): ?><option value="<?= (int)$pid ?>"><?= htmlspecialchars($pt) ?></option><?php endforeach; ?></select></label>
+        </div>
+        <button type="submit" class="btn btn-primary"><i class="fas fa-file-csv"></i> Export orders</button>
+      </form>
+      <form method="POST" class="ie-form" style="margin-top:18px"><?= csrf_field() ?><input type="hidden" name="action" value="export_fees">
+        <h4 class="ie-h4">Institute fee payments</h4>
+        <div class="ie-opts">
+          <label>From<input class="form-control" type="date" name="from" value="<?= date('Y-m-01') ?>"></label>
+          <label>To<input class="form-control" type="date" name="to" value="<?= date('Y-m-d') ?>"></label>
+        </div>
+        <button type="submit" class="btn btn-primary"><i class="fas fa-file-csv"></i> Export fee payments</button>
+      </form>
+    </div>
   </div>
   <div class="ie-card">
-    <h3><i class="fas fa-file-import"></i> Import</h3><p>Add posts or pages from an Export ZIP (from this site, another site on this CMS or the StoryTimes CMS). Each item keeps its address; images, SEO, categories and tags come along.</p>
+    <h3><i class="fas fa-file-import"></i> Import</h3><p>Add posts, pages or courses &amp; notes from an Export ZIP (from this site, another site on this CMS or the StoryTimes CMS). Each item keeps its address; images, SEO, categories and tags come along.</p>
     <div class="ie-steps"><span class="on" id="st1">1 Choose file</span><span id="st2">2 Check</span><span id="st3">3 Import</span></div>
-    <label class="ie-drop" id="ie-drop"><i class="fas fa-cloud-arrow-up" style="font-size:1.6rem;display:block;margin-bottom:6px"></i><span id="ie-text">Drop a ZIP here or click to choose<br><small>posts_export_….zip or pages_export_….zip</small></span><input type="file" id="ie-file" accept=".zip,application/zip" hidden></label>
+    <label class="ie-drop" id="ie-drop"><i class="fas fa-cloud-arrow-up" style="font-size:1.6rem;display:block;margin-bottom:6px"></i><span id="ie-text">Drop a ZIP here or click to choose<br><small>posts, pages or courses export ZIP</small></span><input type="file" id="ie-file" accept=".zip,application/zip" hidden></label>
     <div class="ie-prog" id="ie-prog" hidden><span></span></div>
     <div id="ie-review" hidden>
       <div class="ie-sum"><div><b id="rv-count">0</b><span id="rv-type">posts</span></div><div><b id="rv-new">0</b><span>new here</span></div><div><b id="rv-dup">0</b><span>already here</span></div></div>
@@ -195,6 +334,11 @@ $authors = $pdo->query("SELECT id, name FROM authors ORDER BY name")->fetchAll(P
 <?php admin_shell_close(); ?>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+  // export tabs (?tab=… opens one)
+  var tabs = document.querySelectorAll('.ie-tabs [data-tab]');
+  function showTab(k) { tabs.forEach(function (b) { b.classList.toggle('on', b.dataset.tab === k); }); document.querySelectorAll('.ie-pane').forEach(function (p) { p.hidden = p.dataset.pane !== k; }); }
+  tabs.forEach(function (b) { b.onclick = function () { showTab(b.dataset.tab); }; });
+  showTab(<?= json_encode($tab) ?>);
   var $ = function (id) { return document.getElementById(id); }, CSRF = <?= json_encode(csrf_token()) ?>, scan = null, decisions = {}, busy = false;
   var drop = $('ie-drop'), input = $('ie-file'), prog = $('ie-prog'), txt = $('ie-text');
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
@@ -208,7 +352,7 @@ document.addEventListener('DOMContentLoaded', function () {
     eduChunkUpload('/admin/import-export.php', file, { action: 'chunk', _csrf: CSRF }, bar).then(function (d) {
       scan = d; decisions = {}; step(2);
       txt.innerHTML = '<i class="fas fa-circle-check" style="color:#16a34a"></i> ' + esc(file.name) + ' — checked, it is a valid export';
-      $('rv-count').textContent = d.count; $('rv-type').textContent = d.type === 'posts' ? (d.count === 1 ? 'post' : 'posts') : (d.count === 1 ? 'page' : 'pages');
+      $('rv-count').textContent = d.count; $('rv-type').textContent = d.type === 'store' ? 'courses / notes' : d.type === 'posts' ? (d.count === 1 ? 'post' : 'posts') : (d.count === 1 ? 'page' : 'pages');
       $('rv-dup').textContent = d.conflicts.length; $('rv-new').textContent = d.count - d.conflicts.length;
       var s = d.source || {}, app = /storytimes|next/i.test(s.app || '') ? 'StoryTimes CMS' : /edumint/i.test(s.app || '') ? 'This CMS' : '';
       $('rv-src').innerHTML = 'From ' + (s.name ? '<b>' + esc(s.name) + '</b> ' : '') + (s.url ? esc(s.url.replace(/^https?:\/\//, '')) + ' ' : 'another site ') + (app ? '(' + app + ')' : '') + (s.date ? ' · exported ' + esc(new Date(s.date).toLocaleString()) : '');
@@ -256,7 +400,7 @@ document.addEventListener('DOMContentLoaded', function () {
       });
     })(0);
   };
-  $('ie-again').onclick = function () { scan = null; $('ie-review').hidden = true; $('ie-log').hidden = true; $('ie-result').hidden = true; prog.hidden = true; input.value = ''; txt.innerHTML = 'Drop a ZIP here or click to choose<br><small>posts_export_….zip or pages_export_….zip</small>'; step(1); };
+  $('ie-again').onclick = function () { scan = null; $('ie-review').hidden = true; $('ie-log').hidden = true; $('ie-result').hidden = true; prog.hidden = true; input.value = ''; txt.innerHTML = 'Drop a ZIP here or click to choose<br><small>posts, pages or courses export ZIP</small>'; step(1); };
 });
 </script>
 </body>
