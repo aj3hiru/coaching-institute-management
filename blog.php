@@ -239,7 +239,7 @@ function homeExcerpt(string $html, int $len = 170): string {
 }
 
 .hero-search-btn {
-  background: var(--gradient-dark);
+  background: color-mix(in srgb, var(--gc-accent, #7c3aed) 80%, #000); /* one solid colour (never a gradient) */
   color: var(--text-white);
   border: none;
   border-radius: var(--border-radius-full);
