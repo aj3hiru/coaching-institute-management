@@ -502,3 +502,7 @@
 .hm-hs .hm-slide img{aspect-ratio:var(--ar,16/5)!important;height:auto;object-fit:cover}
 @media (max-width:700px){.hm-hs .hm-slide img{aspect-ratio:var(--arm,var(--ar,2/1))!important}}
 .hm-hs .hs-track{align-items:flex-start;transition:height .3s ease}
+/* top slider dots: below the picture with a small gap (not on it) */
+.hm-hs .hs-dots{position:static!important;margin:12px 0 0!important;padding:0}
+.hm-hs .hs-dots button{background:#d1d5db!important}
+.hm-hs .hs-dots button.on{background:var(--gc-accent,#0c6878)!important}
