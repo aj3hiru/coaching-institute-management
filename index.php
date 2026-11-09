@@ -135,7 +135,7 @@ $hsDim = function (string $rel): ?array { $f = ROOT_PATH . '/' . ltrim(preg_repl
 <?php ob_start(); ?><?php /* 4. latest courses / upcoming batches — one at a time */ ?>
 <?php if ($batches): ?>
 <section class="hm-sec hm-bt-s"><div class="sp-wrap">
-  <div class="hm-h"><div><h2><?= sh_e($ttl('batches', $cfg['batches_filter'] === 'upcoming' ? 'Upcoming batches' : ($up ? 'Latest courses & upcoming batches' : 'Latest courses'))) ?></h2></div></div>
+  <div class="hm-h"><div><h2><?= sh_e($ttl('batches', $cfg['batches_filter'] === 'upcoming' ? 'Upcoming Batches' : ($up ? 'Upcoming Batches' : 'Latest courses'))) ?></h2></div></div>
   <div class="hm-bt" data-hs data-auto="6500">
     <div class="hs-track"><?php foreach ($batches as $p): [$bt, $isUp] = sh_batch($p); $tn = $teacherNames[(int)($p['teacher_id'] ?? 0)] ?? ''; ?>
       <div class="hs-s"><div class="hm-btc">

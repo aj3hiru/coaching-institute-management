@@ -365,3 +365,9 @@ div.ci-then-online{align-items:center;cursor:default}div.ci-then-online>span{fle
 .ci-tb{display:inline-block;margin-left:4px;padding:0 6px;border-radius:4px;font-size:10.5px;font-weight:700;line-height:17px;vertical-align:1px;text-transform:uppercase;letter-spacing:.02em}
 .ci-tb-institute{background:#eef2ff;color:#3730a3}.ci-tb-online{background:#ecfeff;color:#0e7490}.ci-tb-both{background:#f0fdf4;color:#15803d}
 .ci-onl{color:#0e7490}.ci-onl i{font-size:11px;margin-right:2px}
+/* student profile: the same header for every student — name, tags, contact, then one row of actions under them */
+.ci-ph .ci-card-b{flex-direction:column;align-items:stretch}
+.ci-ph .ci-actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-start;padding-top:12px;border-top:1px solid #eef0f3}
+.ci-pf-stats{grid-template-columns:repeat(6,minmax(0,1fr))!important}
+@media (max-width:1200px){.ci-pf-stats{grid-template-columns:repeat(3,minmax(0,1fr))!important}}
+@media (max-width:600px){.ci-pf-stats{grid-template-columns:repeat(2,minmax(0,1fr))!important}}

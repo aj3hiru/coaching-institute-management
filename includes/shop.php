@@ -1413,7 +1413,7 @@ function sh_yt_free_info(string $url): array
 }
 /** Homepage sections in their default order: id => default heading (Customize → Homepage changes order, headings, show / hide). */
 const SH_HOME_SECTIONS = [
-    'slider' => 'Top slider', 'courses' => 'Our Courses', 'categories' => 'Categories', 'batches' => 'Latest courses & upcoming batches',
+    'slider' => 'Top slider', 'courses' => 'Our Courses', 'categories' => 'Categories', 'batches' => 'Upcoming Batches',
     'notes' => 'Study Materials', 'posts' => 'Latest Update', 'free' => 'Free Courses', 'impact' => 'Our Impact', 'why' => 'Why choose us',
     'teachers' => 'Meet our teachers', 'toppers' => 'Meet our toppers',
 ];

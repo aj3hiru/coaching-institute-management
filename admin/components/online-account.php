@@ -13,7 +13,7 @@ function oa_load(PDO $pdo, array $s): array
     if ($u) {
         $a = $pdo->prepare("SELECT a.*, p.title, p.type, u.username AS by_name FROM sh_access a JOIN sh_products p ON p.id = a.product_id LEFT JOIN users u ON u.id = a.granted_by WHERE a.user_id = ? ORDER BY a.revoked, a.granted_at DESC");
         $a->execute([(int)$u['id']]); $acc = $a->fetchAll(PDO::FETCH_ASSOC);
-        $o = $pdo->prepare("SELECT * FROM sh_orders WHERE user_id = ? ORDER BY id DESC LIMIT 50"); $o->execute([(int)$u['id']]); $ord = $o->fetchAll(PDO::FETCH_ASSOC);
+        $o = $pdo->prepare("SELECT * FROM sh_orders WHERE user_id = ? ORDER BY id DESC LIMIT 500"); $o->execute([(int)$u['id']]); $ord = $o->fetchAll(PDO::FETCH_ASSOC); // the whole order history
     }
     $products = $pdo->query("SELECT id, title, type, price, status FROM sh_products ORDER BY status = 'published' DESC, title")->fetchAll(PDO::FETCH_ASSOC);
     $open = count(array_filter($acc, fn($x) => !$x['revoked'] && empty($x['blocked']) && (!$x['expires_at'] || strtotime($x['expires_at']) > time())));
@@ -104,11 +104,21 @@ function oa_main(array $oa, array $me): void
             . '<td class="ci-nw">' . date('d M Y', strtotime($x['granted_at'])) . '</td><td class="ci-nw">' . oa_till($x) . '</td><td class="ci-noprint"><div class="ci-icos">' . $act . '</div></td></tr>';
     }
     echo '</tbody></table></div></div>';
-    if ($oa['ord']) {
-        echo '<div class="ci-card" data-ds="Online orders" style="margin-top:16px"><div class="ci-card-h"><h3>Online orders</h3></div><div class="ci-card-b ci-p0 ci-table-wrap"><table class="ci-table"><thead><tr><th>Order</th><th>Item</th><th class="ci-num">Amount</th><th>Status</th><th>Payment id</th><th>Date</th></tr></thead><tbody>';
-        foreach ($oa['ord'] as $o) echo '<tr><td>' . ci_e($o['order_no'] ?: '#' . $o['id']) . '</td><td>' . ci_e($o['title']) . '</td><td class="ci-num">' . ci_money0($o['amount']) . '</td><td>' . (['paid' => '<span class="ci-badge ci-b-green">Paid</span>', 'created' => '<span class="ci-badge ci-b-amber">Not paid</span>', 'failed' => '<span class="ci-badge ci-b-red">Failed</span>'][$o['status']] ?? '') . '</td><td><small>' . ci_e($o['rzp_payment'] ?: '—') . '</small></td><td class="ci-nw">' . date('d M Y, h:i A', strtotime($o['paid_at'] ?: $o['created_at'])) . '</td></tr>';
-        echo '</tbody></table></div></div>';
+    // every order (also old ones whose access has ended), each with its invoice
+    $paid = array_filter($oa['ord'], fn($o) => $o['status'] === 'paid');
+    echo '<div class="ci-sec-h" data-ds="Online orders &amp; invoices" style="margin-top:16px"><h3>Online orders &amp; invoices <span class="ci-muted">(' . count($oa['ord']) . ')</span></h3>'
+        . ($paid ? '<span class="ci-muted">' . count($paid) . ' paid · ' . ci_money0(array_sum(array_column($paid, 'amount'))) . '</span>' : '') . '</div>';
+    echo '<div class="ci-card"><div class="ci-card-b ci-p0 ci-table-wrap"><table class="ci-table"><thead><tr><th>Order</th><th>Item</th><th class="ci-num">Amount</th><th>Status</th><th>Paid by</th><th>Date</th><th class="ci-noprint">Invoice</th></tr></thead><tbody>';
+    if (!$oa['ord']) echo '<tr><td colspan="7" class="ci-empty">No online orders yet.</td></tr>';
+    foreach ($oa['ord'] as $o) {
+        $office = str_starts_with((string)$o['rzp_order'], 'manual_');
+        echo '<tr><td class="ci-nw"><b>' . ci_e($o['order_no'] ?: '#' . $o['id']) . '</b></td><td>' . ci_e($o['title']) . '</td><td class="ci-num">' . ci_money0($o['amount']) . '</td><td>'
+            . (['paid' => '<span class="ci-badge ci-b-green">Paid</span>', 'created' => '<span class="ci-badge ci-b-amber">Not paid</span>', 'failed' => '<span class="ci-badge ci-b-red">Failed</span>'][$o['status']] ?? '') . '</td>'
+            . '<td>' . ($office ? 'Office' : 'Online') . ($o['method'] ? '<small class="ci-muted" style="display:block">' . ci_e($o['method']) . '</small>' : '') . ($o['rzp_payment'] && !$office ? '<small class="ci-muted" style="display:block">' . ci_e($o['rzp_payment']) . '</small>' : '') . '</td>'
+            . '<td class="ci-nw">' . date('d M Y, h:i A', strtotime($o['paid_at'] ?: $o['created_at'])) . '</td>'
+            . '<td class="ci-noprint">' . ($o['status'] === 'paid' ? '<a class="ci-ico" href="/admin/sh-invoice.php?id=' . (int)$o['id'] . '" target="_blank" aria-label="Invoice" title="Print invoice">' . ci_svg('print') . '</a>' : '<span class="ci-muted">—</span>') . '</td></tr>';
     }
+    echo '</tbody></table></div></div>';
 }
 
 /** The Block / suspend popup (and the password button script). Once per page. */

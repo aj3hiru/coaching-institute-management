@@ -205,24 +205,17 @@ $tel = fn(?string $m) => $m ? '<a href="tel:' . ci_e($m) . '">' . ci_e($m) . '</
   </div>
 </div></div>
 
-<?php $onlyOnline = ($s['stype'] ?? '') === 'online' && !$enr && !$pays; ?>
-<?php if ($onlyOnline && isset($oa) === false): $oa0 = (function_exists('sh_perm') && sh_perm($me, 'customers')) ? (function () use ($pdo, $s) { sh_tables($pdo); require_once __DIR__ . '/components/online-account.php'; return oa_load($pdo, $s); })() : null; endif; ?>
-<?php if ($onlyOnline && !empty($oa0)): ?>
-<div class="ci-stats ci-stats6">
-  <div class="ci-stat"><i class="fas fa-laptop ci-i-violet"></i><div><b><?= (int)$oa0['open'] ?></b><small>Online courses / notes open now</small></div></div>
-  <div class="ci-stat"><i class="fas fa-indian-rupee-sign ci-i-green"></i><div><b><?= ci_money0($oa0['spent']) ?></b><small>Spent online · <?= (int)$oa0['paid_n'] ?> orders</small></div></div>
-  <div class="ci-stat"><i class="fas fa-calendar-plus ci-i-blue"></i><div><b><?= $oa0['u'] ? date('d M Y', strtotime($oa0['u']['created_at'])) : '—' ?></b><small>Joined online</small></div></div>
-  <div class="ci-stat"><i class="fas fa-right-to-bracket ci-i-amber"></i><div><b><?= $oa0['u'] && $oa0['u']['last_login'] ? date('d M Y', strtotime($oa0['u']['last_login'])) : 'Never' ?></b><small>Last login</small></div></div>
+<?php // one layout for every student (Institute / Online / Both): the same tiles, the same sections in the same order
+$oa = null;
+if (function_exists('sh_perm') && sh_perm($me, 'customers')) { sh_tables($pdo); require_once __DIR__ . '/components/online-account.php'; $oa = oa_load($pdo, $s); } ?>
+<div class="ci-stats ci-stats6 ci-pf-stats">
+  <div class="ci-stat"><i class="fas fa-file-invoice ci-i-violet"></i><div><b><?= ci_money0($tot['net']) ?></b><small>Institute fee · <?= count($enr) ?> course<?= count($enr) === 1 ? '' : 's' ?></small></div></div>
+  <div class="ci-stat"><i class="fas fa-circle-check ci-i-green"></i><div><b><?= ci_money0($tot['paid']) ?></b><small>Fee paid · <?= count($pays) ?> receipt<?= count($pays) === 1 ? '' : 's' ?></small></div></div>
+  <div class="ci-stat"><i class="fas fa-hourglass-half ci-i-red"></i><div><b><?= ci_money0($tot['due']) ?></b><small><?= $late > 0 ? 'Due · ' . ci_money0($late) . ' late' : ($next ? 'Due · next ' . ci_date($next['date']) : 'Due (baaki)') ?></small></div></div>
+  <div class="ci-stat"><i class="fas fa-laptop ci-i-blue"></i><div><b><?= $oa ? (int)$oa['open'] : '—' ?></b><small>Online courses / notes open</small></div></div>
+  <div class="ci-stat"><i class="fas fa-cart-shopping ci-i-amber"></i><div><b><?= $oa ? ci_money0($oa['spent']) : '—' ?></b><small>Online orders<?= $oa ? ' · ' . (int)$oa['paid_n'] . ' paid' : '' ?></small></div></div>
+  <div class="ci-stat"><i class="fas fa-right-to-bracket ci-i-violet"></i><div><b><?= $oa && $oa['u'] && $oa['u']['last_login'] ? date('d M Y', strtotime($oa['u']['last_login'])) : ($oa && $oa['u'] ? 'Never' : 'No login') ?></b><small>Last online login</small></div></div>
 </div>
-<?php else: ?>
-<div class="ci-stats ci-stats6">
-  <div class="ci-stat"><i class="fas fa-file-invoice ci-i-violet"></i><div><b><?= ci_money0($tot['net']) ?></b><small>Total fee (after discount)</small></div></div>
-  <div class="ci-stat"><i class="fas fa-circle-check ci-i-green"></i><div><b><?= ci_money0($tot['paid']) ?></b><small>Paid · <?= count($pays) ?> receipts</small></div></div>
-  <div class="ci-stat"><i class="fas fa-hourglass-half ci-i-red"></i><div><b><?= ci_money0($tot['due']) ?></b><small>Due (baaki)</small></div></div>
-  <div class="ci-stat"><i class="fas fa-calendar-xmark ci-i-amber"></i><div><b><?= ci_money0($late) ?></b><small>Due date passed</small></div></div>
-  <div class="ci-stat"><i class="fas fa-calendar-day ci-i-blue"></i><div><b><?= $next ? ci_money0($next['amount']) : '—' ?></b><small><?= $next ? 'Next due · ' . ci_date($next['date']) : 'No due date set' ?></small></div></div>
-</div>
-<?php endif; ?>
 
 <?php
   $age = $s['dob'] ? (new DateTime($s['dob']))->diff(new DateTime())->y : null;
@@ -240,8 +233,7 @@ $tel = fn(?string $m) => $m ? '<a href="tel:' . ci_e($m) . '">' . ci_e($m) . '</
         <?php if ($s['notes']): ?><div class="ci-det-notes"><b>Notes</b><br><?= nl2br(ci_e($s['notes'])) ?></div><?php endif; ?></div>
       <button type="button" class="ci-more-btn" data-more>View all details <i class="fas fa-chevron-down"></i></button>
     </div></div>
-    <?php $oa = null; if (is_file(INCLUDES_PATH . '/shop.php') && (require_once INCLUDES_PATH . '/shop.php') && sh_perm($me, 'customers')) { // online account (login, status, password, block)
-      sh_tables($pdo); require_once __DIR__ . '/components/online-account.php'; $oa = oa_load($pdo, $s); oa_side($oa, $me); } ?>
+    <?php if ($oa) oa_side($oa, $me); // online account (login, status, password, block) ?>
     <div class="ci-card" data-ds="Class history"><div class="ci-card-h"><h3>Class history</h3></div><div class="ci-card-b">
       <ul class="ci-timeline">
         <?php foreach ($history as $h): ?><li><b><?= ci_e($h['from_name'] ?? '—') ?> → <?= ci_e($h['to_name'] ?? '—') ?></b><small><?= ci_date($h['changed_on']) ?><?= $h['session_name'] ? ' · ' . ci_e($h['session_name']) : '' ?><?= $h['note'] ? ' · ' . ci_e($h['note']) : '' ?></small></li><?php endforeach; ?>
@@ -250,8 +242,7 @@ $tel = fn(?string $m) => $m ? '<a href="tel:' . ci_e($m) . '">' . ci_e($m) . '</
     </div></div>
   </aside>
   <div class="ci-pf-main">
-    <?php $oaFirst = $oa && ($s['stype'] ?? '') === 'online'; if ($oaFirst) { oa_main($oa, $me); echo '<div style="height:16px"></div>'; } ?>
-    <div class="ci-sec-h" data-ds="Courses &amp; batches"><h3>Courses &amp; batches <span class="ci-muted">(<?= count($enr) ?>)</span></h3><?php if (ci_perm($me, 'edit_student') || ci_perm($me, 'add_student')): ?><button type="button" class="ci-btn ci-sm ci-noprint" data-open="ci-addc"><?= ci_svg('book-plus') ?> Add to course / batch</button><?php endif; ?></div>
+    <div class="ci-sec-h" data-ds="Courses &amp; batches"><h3>Institute courses &amp; batches <span class="ci-muted">(<?= count($enr) ?>)</span></h3><?php if (ci_perm($me, 'edit_student') || ci_perm($me, 'add_student')): ?><button type="button" class="ci-btn ci-sm ci-noprint" data-open="ci-addc"><?= ci_svg('book-plus') ?> Add to course / batch</button><?php endif; ?></div>
     <?php if (!$enr): ?><div class="ci-card"><div class="ci-card-b ci-empty">Not in any institute course / batch yet.</div></div><?php endif; ?>
     <?php foreach ($enr as $e): $eid = (int)$e['id']; $bi = $batchInfo[$e['batch_id']] ?? []; $dropped = $e['status'] === 'dropped'; $inst = ($e['fee_type'] ?? 'full') === 'installment'; $ep = array_reverse($byEnr[$eid] ?? []); $late = $e['due_date'] && $e['due_date'] < date('Y-m-d') && (float)$e['due'] > 0.004; ?>
     <div class="ci-cc<?= $e['status'] !== 'active' ? ' is-off' : '' ?>" id="enr-<?= $eid ?>">
@@ -276,7 +267,7 @@ $tel = fn(?string $m) => $m ? '<a href="tel:' . ci_e($m) . '">' . ci_e($m) . '</
     </div>
     <?php endforeach; ?>
 
-    <div class="ci-card" data-ds="Fee statement" style="margin-top:16px"><div class="ci-card-h"><h3>Fee statement</h3><div class="ci-actions ci-noprint"><button type="button" class="ci-btn ci-ghost ci-sm" onclick="window.print()"><?= ci_svg('print') ?> Print</button></div></div>
+    <div class="ci-card" data-ds="Fee statement" style="margin-top:16px"><div class="ci-card-h"><h3>Institute fee statement</h3><div class="ci-actions ci-noprint"><button type="button" class="ci-btn ci-ghost ci-sm" onclick="window.print()"><?= ci_svg('print') ?> Print</button></div></div>
     <div class="ci-card-b ci-p0 ci-table-wrap"><table class="ci-table">
     <thead><tr><th>Date</th><th>Receipt</th><th>For</th><th>Paid by</th><th class="ci-num">Amount</th><th class="ci-num">Balance after</th><th class="ci-noprint"></th></tr></thead><tbody>
     <?php if (!$pays): ?><tr><td colspan="7" class="ci-empty">No payments yet.</td></tr><?php endif; ?>
@@ -289,7 +280,7 @@ $tel = fn(?string $m) => $m ? '<a href="tel:' . ci_e($m) . '">' . ci_e($m) . '</
     <?php endforeach; ?>
     <?php if ($pays): ?><tr class="ci-total-row"><td colspan="4">Total paid</td><td class="ci-num"><?= ci_money($tot['paid']) ?></td><td class="ci-num"><?= ci_money($tot['due']) ?></td><td class="ci-noprint"></td></tr><?php endif; ?>
     </tbody></table></div></div>
-    <?php if ($oa && !$oaFirst) { echo '<div style="height:16px"></div>'; oa_main($oa, $me); } ?>
+    <?php if ($oa) { echo '<div style="height:20px"></div>'; oa_main($oa, $me); } ?>
   </div>
 </div>
 <?php if ($oa) oa_modals($oa); ?>

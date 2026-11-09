@@ -70,17 +70,43 @@ if ($type === 'student') {
     $notes = [$s['name'] . ' has ' . count($enr) . ' course(s): total fee ' . $rs($tot['net']) . ', paid ' . $rs($tot['paid']) . ' in ' . count($pays) . ' payment(s), due ' . $rs($tot['due']) . '.'];
     foreach ($enr as $e) if ((float)$e['due'] > 0.004 && $e['due_date']) $notes[] = ($e['course_name'] ?? 'Course') . ': ' . $rs($e['due']) . ' due' . ($e['due_date'] < date('Y-m-d') ? ' - due date ' . $d($e['due_date']) . ' has passed.' : ' by ' . $d($e['due_date']) . '.');
     if ($s['status'] === 'left') $notes[] = 'The student left' . ($s['left_on'] ? ' on ' . $d($s['left_on']) : '') . '.';
+    // online: the account, every course / notes ever given (also ended or taken back) and every order
+    $ou = null; $oAcc = $oOrd = [];
+    try {
+        $uq = $pdo->prepare("SELECT * FROM sh_users WHERE student_id = ? OR mobile = ? ORDER BY student_id = ? DESC, id LIMIT 1"); $uq->execute([$id, $s['mobile'], $id]);
+        if ($ou = $uq->fetch(PDO::FETCH_ASSOC) ?: null) {
+            $aq = $pdo->prepare("SELECT a.*, p.title, p.type FROM sh_access a JOIN sh_products p ON p.id = a.product_id WHERE a.user_id = ? AND a.source <> 'block' ORDER BY a.granted_at"); $aq->execute([(int)$ou['id']]); $oAcc = $aq->fetchAll(PDO::FETCH_ASSOC);
+            $oq = $pdo->prepare("SELECT * FROM sh_orders WHERE user_id = ? ORDER BY COALESCE(paid_at, created_at), id"); $oq->execute([(int)$ou['id']]); $oOrd = $oq->fetchAll(PDO::FETCH_ASSOC);
+        }
+    } catch (Throwable) {}
+    $oPaid = array_filter($oOrd, fn($o) => $o['status'] === 'paid');
+    $oPaidSum = array_sum(array_column($oPaid, 'amount'));
+    $accState = function (array $a) use ($d): string {
+        if (!empty($a['blocked'])) return 'Blocked';
+        if ($a['revoked']) return 'Taken back';
+        if (!$a['expires_at']) return 'Lifetime';
+        return (strtotime($a['expires_at']) > time() ? 'Till ' : 'Ended ') . $d(substr($a['expires_at'], 0, 10));
+    };
+    if ($ou) $notes[] = 'Online: ' . count($oAcc) . ' course(s) / notes given, ' . count(array_filter($oAcc, fn($a) => !$a['revoked'] && empty($a['blocked']) && (!$a['expires_at'] || strtotime($a['expires_at']) > time()))) . ' open now; ' . count($oPaid) . ' paid order(s) for ' . $rs($oPaidSum) . '.';
     $out(['title' => 'STUDENT REPORT', 'subtitle' => 'Student record and fee statement', 'no' => 'SR-' . $s['reg_no'], 'file' => 'student-report_' . $s['reg_no'],
         'boxes' => [
             ['head' => 'STUDENT', 'rows' => [['Name', $s['name']], ['Reg. No.', $s['reg_no']], ["Father's name", $s['father_name'] ?: '-'], ['Mobile', $s['mobile'] . ($s['alt_mobile'] ? ', ' . $s['alt_mobile'] : '')], ['Address', trim(implode(', ', array_filter([$s['address'], $s['city'], $s['state'], $s['pincode']]))) ?: '-']]],
-            ['head' => 'DETAILS', 'rows' => [['Class', $s['class_name'] ?: '-'], ['Admission', $d($s['admission_date'])], ['Status', $withDate($s['status'], $s['left_on'])], ['Date of birth', $d($s['dob'])], ['Email', $s['email'] ?: '-']]],
+            ['head' => 'DETAILS', 'rows' => [['Student type', CI_STYPES[$s['stype'] ?? 'institute'] ?? 'Institute'], ['Class', $s['class_name'] ?: '-'], ['Admission', $d($s['admission_date'])], ['Status', $withDate($s['status'], $s['left_on'])], ['Email', $s['email'] ?: '-']]],
         ],
         'sections' => array_values(array_filter([
-            ['title' => 'Summary of Fee', 'head' => ['Description', 'Amount'], 'body' => [['Total fee (after discounts)', $rs($tot['net'])], ['Paid', $rs($tot['paid'])]], 'foot' => [['Balance due', $rs($tot['due'])]], 'right' => [1], 'w' => [1 => 140]],
-            ['title' => 'Courses', 'right_text' => count($enr) . ' course(s)', 'head' => ['Course', 'Batch', 'Session', 'Plan', 'Course fee', 'Discount', 'Fee', 'Paid', 'Due', 'Status'], 'body' => $cRows, 'right' => [4, 5, 6, 7, 8], 'small' => true],
-            ['title' => 'Payments', 'right_text' => count($pays) . ' receipt(s)', 'head' => ['No.', 'Date', 'Receipt', 'Course', 'Paid by', 'Collected by', 'Amount'],
+            ['title' => 'Summary of Fee', 'head' => ['Description', 'Amount'], 'body' => array_values(array_filter([['Institute fee (after discounts)', $rs($tot['net'])], ['Institute fee paid', $rs($tot['paid'])], ['Institute fee due', $rs($tot['due'])],
+                $ou ? ['Online orders paid', $rs($oPaidSum)] : null])), 'foot' => [['Total paid (institute + online)', $rs($tot['paid'] + $oPaidSum)]], 'right' => [1], 'w' => [1 => 140]],
+            ['title' => 'Institute Courses', 'right_text' => count($enr) . ' course(s)', 'head' => ['Course', 'Batch', 'Session', 'Plan', 'Course fee', 'Discount', 'Fee', 'Paid', 'Due', 'Status'], 'body' => $cRows, 'right' => [4, 5, 6, 7, 8], 'small' => true],
+            ['title' => 'Institute Fee Payments', 'right_text' => count($pays) . ' receipt(s)', 'head' => ['No.', 'Date', 'Receipt', 'Course', 'Paid by', 'Collected by', 'Amount'],
                 'body' => array_map(fn($p, $i) => [$i + 1, $d($p['paid_on']), $p['receipt_no'], $p['course_name'] ?? '-', ci_pay_mode($p), $p['username'] ?: '-', $rs($p['amount'])], $pays, array_keys($pays)),
                 'foot' => $pays ? [['', '', '', '', '', 'Total', $rs($tot['paid'])]] : null, 'right' => [6], 'empty' => 'No payments yet.'],
+            $ou ? ['title' => 'Online Account', 'head' => ['Login', 'Joined online', 'Last login', 'Account'], 'body' => [[$ou['mobile'] . (str_ends_with((string)$ou['email'], '@noemail.invalid') ? '' : ' / ' . $ou['email']), $d(substr((string)$ou['created_at'], 0, 10)), $ou['last_login'] ? $d(substr((string)$ou['last_login'], 0, 10)) : 'Never', $ou['status'] === 'active' ? 'Active' : 'Suspended']]] : null,
+            $ou ? ['title' => 'Online Courses & Notes', 'right_text' => count($oAcc) . ' item(s)', 'head' => ['No.', 'Item', 'Type', 'How', 'Since', 'Access'],
+                'body' => array_map(fn($a, $i) => [$i + 1, $a['title'], $a['type'] === 'notes' ? 'PDF notes' : 'Video course', ['purchase' => 'Bought', 'admin' => 'Given by staff', 'free' => 'Free'][$a['source']] ?? $a['source'], $d(substr((string)$a['granted_at'], 0, 10)), $accState($a)], $oAcc, array_keys($oAcc)),
+                'small' => true, 'empty' => 'No online course or notes.'] : null,
+            $ou ? ['title' => 'Online Orders', 'right_text' => count($oOrd) . ' order(s)', 'head' => ['No.', 'Date', 'Order', 'Item', 'Paid by', 'Status', 'Amount'],
+                'body' => array_map(fn($o, $i) => [$i + 1, $d(substr((string)($o['paid_at'] ?: $o['created_at']), 0, 10)), $o['order_no'] ?: '#' . $o['id'], $o['title'], (str_starts_with((string)$o['rzp_order'], 'manual_') ? 'Office' : 'Online') . ($o['method'] ? ' (' . $o['method'] . ')' : ''), ['paid' => 'Paid', 'created' => 'Not paid', 'failed' => 'Failed'][$o['status']] ?? $o['status'], $rs($o['amount'])], $oOrd, array_keys($oOrd)),
+                'foot' => $oPaid ? [['', '', '', '', '', 'Total paid', $rs($oPaidSum)]] : null, 'right' => [6], 'small' => true, 'empty' => 'No online orders.'] : null,
             $hist ? ['title' => 'Class History', 'head' => ['Date', 'From class', 'To class', 'Note'], 'body' => array_map(fn($h) => [$d($h['changed_on']), $h['f'] ?: '-', $h['t'] ?: '-', $h['note'] ?: '-'], $hist)] : null,
         ])),
         'notes' => $notes]);

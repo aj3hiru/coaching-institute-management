@@ -98,19 +98,7 @@ function wpbar_html(array $ctx = []): string
     if ($inAdmin) {
         $left .= wpbar_li('site-name', wpbar_e($site), '/', 'dk-in-admin');
     } else {
-        $sitePrimary = $keep([
-            ['dashboard', 'Dashboard', '/admin/dashboard.php', true],
-            ['dk-students', 'Students', '/admin/students.php', $ci],
-            ['dk-blog-dash', 'Blog Dashboard', '/admin/blog-dashboard.php', admin_blog_access()],
-            ['dk-posts', 'Posts', '/admin/blogs-manager.php', admin_blog_access()],
-            ['dk-pages', 'Pages', '/admin/pages-list.php', $isAdmin],
-            ['dk-categories', 'Categories', '/admin/categories-manager.php', admin_can('blogs.manage_categories')],
-        ]);
-        $siteAppearance = $keep([
-            ['themes', 'Customize', '/admin/customize.php', $isAdmin],
-            ['dk-push', 'Push Notifications', '/push_notifications/push-manager.php', admin_can('push_notifications.send')],
-        ]);
-        $left .= wpbar_li('site-name', wpbar_e($site), '/admin/dashboard.php', '', [['site-name-default', $sitePrimary], ['appearance', $siteAppearance]]);
+        $left .= wpbar_li('site-name', wpbar_e($site), '/admin/dashboard.php'); // a plain link to the Dashboard (no drop-down on hover)
         // 3. Customize
         if ($isAdmin && $has('/admin/customize.php')) $left .= wpbar_li('customize', 'Customize', '/admin/customize.php', 'hide-if-no-customize');
     }

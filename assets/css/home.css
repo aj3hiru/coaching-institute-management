@@ -511,3 +511,6 @@
 
 /* the slider's own eased move: no snapping / browser smooth scroll while it runs */
 .hs-track.hs-anim{scroll-snap-type:none!important;scroll-behavior:auto!important}
+/* Meet our teachers: the experience tag is white */
+.tC-exp:not(#edu-x){background:#fff!important}
+[data-theme="dark"] .tC-exp:not(#edu-x){background:#1f2937!important}
