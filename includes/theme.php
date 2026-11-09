@@ -115,6 +115,8 @@ const EDU_COLOR_GROUPS = [
         'h3' => 'Heading 3 (H3) Color', 'h4' => 'Heading 4 (H4) Color', 'h5' => 'Heading 5 (H5) Color', 'h6' => 'Heading 6 (H6) Color',
     ]],
     'cards' => ['Cards & Boxes', ['background' => 'Card Background', 'border' => 'Card Border', 'toc_bg' => 'Table of Contents Header']],
+    // every box / card on the site (course cards, post cards, sidebar widgets, author box, FAQ, quiz, comment form …) — empty = white like the page
+    'containers' => ['Containers (boxes & cards)', ['background' => 'Container Background', 'border' => 'Container Border']],
     'forms' => ['Forms', ['field_bg' => 'Form Background', 'field_bg_focus' => 'Form Background Focus', 'field_text' => 'Form Text', 'field_text_focus' => 'Form Text Focus', 'field_border' => 'Form Border', 'field_border_focus' => 'Form Border Focus']],
     'sidebar' => ['Sidebar Widgets', ['background' => 'Background', 'text' => 'Text', 'link' => 'Link', 'link_hover' => 'Link Hover', 'title' => 'Widget Title', 'title_bg' => 'Widget Title Background']],
     'footer_widgets' => ['Footer Widgets', ['background' => 'Background', 'text' => 'Text', 'link' => 'Link', 'link_hover' => 'Link Hover', 'title' => 'Widget Title', 'accent' => 'Heading Underline']],
@@ -546,6 +548,13 @@ function edu_theme_head(): string
         . '.mnav-chev svg{transition:transform .2s}.mnav-chev.open svg{transform:rotate(180deg)}'
         . edu_theme_typo_css();
     if (th_on('h_sticky')) $css .= '#site-navigation.nb-h-racing{position:sticky;top:0}body:has(#wpadminbar) #site-navigation.nb-h-racing{top: var(--wpab-top,32px)}';
+    // Containers: a light colour for every box / card so it stands out from the white page (empty = no change)
+    $__boxes = '.hc,.hc-item,.hm-cat,.hm-fc,.hm-post,.hm-btc,.hm-pc,.tC-card,.hv-card,.nb-card,.hf-item,.hf-intro,.sp-card,.lp-list,.sp-rv-top,.eq-card,'
+        . '.nb-ab-card,.nb-apx-card,.nb-also,.blog-comment-form-container,.em-w,.au.au-one,.toc,.nb-keypoints,.st-card,.ac-box,.ac-ord,.ac-empty';
+    if (($__cb = edu_theme_color('containers', 'background')) !== '') $css .= ':is(' . $__boxes . '):not(#edu-x){background-color:' . $__cb . '!important}'
+        . ':is(' . $__boxes . '):not(#edu-x) :is(.hc-b,.hc-body,.nb-card-body,.sp-cb,.hm-fc-b):not(#edu-x){background-color:transparent!important}'
+        . '.au.au-one .au-in input{background:#fff!important}';
+    if (($__cbr = edu_theme_color('containers', 'border')) !== '') $css .= ':is(' . $__boxes . '):not(#edu-x){border-color:' . $__cbr . '!important}';
     if (th_on('sb_sticky')) $css .= '@media (min-width:981px){.post-sidebar .trending-box{position:sticky;top:90px}}';
     if (!th_on('rp_bar')) $css .= '.nb-progress{display:none}';
     $cols = max(2, min(4, (int)$t['arch_columns']));

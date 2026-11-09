@@ -749,10 +749,11 @@ function renderColors(wrap) {
   [['body', 'link', 'Links'], ['body', 'link_hover', 'Links hover'], ['content', 'title', 'Heading (H1–H6)'], ['body', 'text', 'Body Text'], ['cards', 'border', 'Borders']].forEach(([g, f, l]) => th.appendChild(colorCtl(l, get(g, f), set(g, f))));
   wrap.appendChild(th);
   const sf = html('<div class="cz-wpgroup"><h3 class="cz-wp-h">Surface Color</h3></div>');
-  [['body', 'background', 'Site Background'], ['content', 'background', 'Content Background']].forEach(([g, f, l]) => sf.appendChild(colorCtl(l, get(g, f), set(g, f))));
+  [['body', 'background', 'Site Background'], ['content', 'background', 'Content Background'], ['containers', 'background', 'Container Background (boxes & cards)']].forEach(([g, f, l]) => sf.appendChild(colorCtl(l, get(g, f), set(g, f))));
+  sf.appendChild(html('<p class="cz-hint" style="margin:6px 0 0">Container Background: a light colour for every card and box (courses, posts, sidebar, author box, FAQ, quiz …) so they stand out from a white page. Clear it to make them white again.</p>'));
   wrap.appendChild(sf);
   // the rest of the content colours (each part's own colours are in its Design tab)
-  [['content', 'Content'], ['cards', 'Cards & Boxes'], ['forms', 'Forms']].forEach(([g, label]) => {
+  [['content', 'Content'], ['containers', 'Containers (boxes & cards)'], ['cards', 'Cards & Boxes'], ['forms', 'Forms']].forEach(([g, label]) => {
     wrap.appendChild(sectionEl(label, body => Object.entries(COLOR_GROUPS[g][1]).forEach(([f, fl]) => body.appendChild(colorCtl(fl, get(g, f), set(g, f))))));
   });
 }
@@ -1025,6 +1026,7 @@ const PALETTES = [
     content: { background: '#ffffff', text: '#222222', link: '#003c6d', link_hover: '#fe8c07', title: '#245284', archive_title: '#003c6d', archive_title_hover: '#fe8c07',
       meta_text: '#555555', meta_link: '#003c6d', meta_link_hover: '#fe8c07', h1: '#245284', h2: '#245284', h3: '#245284', h4: '#245284', h5: '#245284', h6: '#245284' },
     cards: { background: '#ffffff', border: '#e0efff', toc_bg: '#003c6d' },
+    containers: { background: '#f7fafd', border: '#e0efff' },
     forms: { field_bg: '#ffffff', field_bg_focus: '#ffffff', field_text: '#222222', field_text_focus: '#222222', field_border: '#c0e0ff', field_border_focus: '#003c6d' },
     sidebar: { title: '#245284', title_bg: '#eff7ff', link: '#003c6d', link_hover: '#fe8c07' },
     footer_widgets: { background: '#003c6d', text: '#e0f4ff', link: '#ffffff', link_hover: '#fe8c07', title: '#ffffff', accent: '#fe8c07' },
