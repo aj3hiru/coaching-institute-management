@@ -283,10 +283,11 @@ function homeExcerpt(string $html, int $len = 170): string {
 .hero-categories .hc-item .hc-icon svg{position:relative;z-index:1;width:20px;height:20px}
 .hero-categories .hc-item:hover .hc-icon{background:color-mix(in srgb,var(--hc) 24%,#fff)}
 .hero-categories .hc-item .hc-icon{position:relative;overflow:hidden}
-.hero-categories .hc-item .hc-icon::after{content:"";position:absolute;z-index:2;top:0;left:-70%;width:45%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.85),transparent);transform:skewX(-20deg);animation:hc-shine 2.8s ease-in-out infinite;pointer-events:none}
-.hero-categories .hc-item:nth-child(2) .hc-icon::after{animation-delay:.25s}.hero-categories .hc-item:nth-child(3) .hc-icon::after{animation-delay:.5s}
-.hero-categories .hc-item:nth-child(4) .hc-icon::after{animation-delay:.75s}.hero-categories .hc-item:nth-child(5) .hc-icon::after{animation-delay:1s}.hero-categories .hc-item:nth-child(6) .hc-icon::after{animation-delay:1.25s}
-@keyframes hc-shine{0%{left:-70%}55%,100%{left:130%}}
+.hero-categories .hc-item .hc-icon::after{content:"";position:absolute;z-index:2;top:0;left:-70%;width:45%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.85),transparent);transform:skewX(-20deg);animation:hc-shine 1.1s ease-in-out .3s 1;pointer-events:none}
+.hero-categories .hc-item:hover .hc-icon::after{animation:hc-shine2 .9s ease-in-out 0s 1} /* once when the page opens, then again on hover */
+.hero-categories .hc-item:nth-child(2):not(:hover) .hc-icon::after{animation-delay:.45s}.hero-categories .hc-item:nth-child(3):not(:hover) .hc-icon::after{animation-delay:.6s}
+.hero-categories .hc-item:nth-child(4):not(:hover) .hc-icon::after{animation-delay:.75s}.hero-categories .hc-item:nth-child(5):not(:hover) .hc-icon::after{animation-delay:.9s}.hero-categories .hc-item:nth-child(6):not(:hover) .hc-icon::after{animation-delay:1.05s}
+@keyframes hc-shine{0%{left:-70%}100%{left:130%}}@keyframes hc-shine2{0%{left:-70%}100%{left:130%}}
 @media (prefers-reduced-motion:reduce){.hero-categories .hc-item .hc-icon::after{animation:none;display:none}}.hero-categories .hc-item .hc-icon svg,.hero-categories .hc-item:hover .hc-icon svg{stroke:#fff!important}
 .hero-categories {
   display: grid;
@@ -537,7 +538,7 @@ function homeExcerpt(string $html, int $len = 170): string {
       <span class="hc-icon">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.5 3.8 5.5 3.8 9s-1.3 6.5-3.8 9c-2.5-2.5-3.8-5.5-3.8-9S9.5 5.5 12 3z"/></svg>
       </span>
-      <span class="hc-name">General Knowledge</span>
+      <span class="hc-name">GK</span>
     </a>
     <a href="/categories/quiz" class="hc-item">
       <span class="hc-icon">
