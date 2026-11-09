@@ -976,7 +976,7 @@ function typoRow(target, label) {
   return w;
 }
 const TYPO_TEMPLATES = [ // [name, font (empty = the device's own), body size, headings weight, H1, H2 [size, weight], H3, H4]
-  ['Scholars Academy', 'Poppins', 16, '700', 30, [28, '600'], 20, 18],
+  ['Poppins', 'Poppins', 16, '700', 30, [28, '600'], 20, 18],
   ['Inter', 'Inter', 16, '700', 32, [26, '700'], 21, 18],
   ['Roboto', 'Roboto', 16, '700', 30, [24, '700'], 20, 18],
   ['Noto Sans (Hindi)', 'Noto Sans', 16, '700', 30, [24, '700'], 20, 18],
@@ -1014,8 +1014,8 @@ const PALETTES = [
   ['Royal', { accent: '#046bd2', 'accent-2': '#045cb4', 'accent-3': '#e11d48', contrast: '#1e293b', 'contrast-2': '#334155' }],
   ['Maroon', { accent: '#9e1b32', 'accent-2': '#c2410c', 'accent-3': '#d50808', contrast: '#1f1f1f', 'contrast-2': '#3b3b3b' }],
   ['Forest', { accent: '#2f6b3a', 'accent-2': '#5c7c2e', 'accent-3': '#c2410c', contrast: '#1c2420', 'contrast-2': '#36423b' }],
-  // a complete theme (like scholarsacademy.co.in): palette + header, menu, buttons, content, cards, footer colours
-  ['Scholars Academy', { accent: '#003c6d', 'accent-2': '#fe8c07', 'accent-3': '#d50808', contrast: '#222222', 'contrast-2': '#333333', base: '#eff7ff', 'base-3': '#ffffff' }, {
+  // a complete theme: palette + header, menu, buttons, content, cards, footer colours
+  ['Navy & Orange', { accent: '#003c6d', 'accent-2': '#fe8c07', 'accent-3': '#d50808', contrast: '#222222', 'contrast-2': '#333333', base: '#eff7ff', 'base-3': '#ffffff' }, {
     body: { background: '#ffffff', text: '#222222', link: '#003c6d', link_hover: '#fe8c07' },
     top_bar: { background: '#003c6d', text: '#ffffff', link: '#fe8c07', link_hover: '#ffffff' },
     header: { racing_bg: '#ffffff', racing_text: '#003c6d', site_title: '#003c6d', tagline: '#333333' },
