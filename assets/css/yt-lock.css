@@ -68,3 +68,9 @@
 .sp-intro-box{background:#000}
 /* small players (the course card): fewer buttons so the time and the bar fit */
 .sp-intro-box .plyr__controls [data-plyr="rewind"],.sp-intro-box .plyr__controls [data-plyr="fast-forward"]{display:none}
+
+/* our picture (course thumbnail / video thumbnail) instead of YouTube's poster: shown at once, over the player while
+   YouTube loads, gone when the video plays, back when it ends. It never takes clicks (the play button stays on top). */
+.yt-lock .yt-lock-ph{display:block!important;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:1!important;z-index:1;pointer-events:none;background:#000}
+.yt-lock.yt-started:not(.is-ended) .yt-lock-ph{display:none!important}
+.yt-lock .plyr__poster{display:none!important}

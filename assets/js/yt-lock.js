@@ -147,7 +147,15 @@
     var el = document.createElement('div');
     el.className = 'plyr__video-embed';
     el.setAttribute('data-plyr-provider', 'youtube'); el.setAttribute('data-plyr-embed-id', id);
-    box.innerHTML = ''; box.appendChild(el);
+    // the picture: the box's own poster (e.g. the course thumbnail) for its first video, else this video's thumbnail.
+    // It shows at once and stays over the player until YouTube really plays (no black box while YouTube loads).
+    var ph = box.querySelector('.yt-lock-ph') || document.createElement('img');
+    ph.className = 'yt-lock-ph'; ph.alt = '';
+    var own = box.getAttribute('data-poster') && box.getAttribute('data-poster-id') === id;
+    var want = own ? box.getAttribute('data-poster') : 'https://i.ytimg.com/vi/' + id + '/hqdefault.jpg';
+    if (ph.getAttribute('src') !== want) ph.setAttribute('src', want);
+    box.classList.remove('yt-started');
+    box.innerHTML = ''; box.appendChild(el); box.appendChild(ph);
     var p = new Plyr(el, {
       controls: ['play-large', 'rewind', 'play', 'fast-forward', 'progress', 'current-time', 'duration', 'mute', 'volume', 'settings', 'fullscreen'],
       settings: ['speed'], speed: { selected: 1, options: [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2] }, seekTime: 10, ratio: '16:9',
@@ -181,7 +189,7 @@
     // YouTube's frame, and with it YouTube's middle play / pause icon changed size — so it is switched off.
     box._q = 'auto'; store.set('auto');
     box.classList.remove('yt-started', 'yt-go');
-    p.on('ready', function () { dress(box); sizeFrame(box); });
+    p.on('ready', function () { dress(box); sizeFrame(box); var wr = box.querySelector('.plyr__video-wrapper'); if (wr && ph.parentNode !== wr) wr.appendChild(ph); }); // under the controls
     // our cover stays until YouTube really plays, so YouTube's own start screen / button never shows through
     p.on('play', function () { box.classList.add('yt-go'); });          // red button goes at the click, like YouTube
     p.on('playing', function () { box.classList.add('yt-started'); }); // the picture goes when YouTube really plays

@@ -85,7 +85,7 @@ $tabs = array_filter(['about' => $desc !== '' ? 'About' : '', 'content' => $isCo
   <aside class="sp-card" id="buy">
     <?php $introYt = $isCourse && !empty($p['intro_url']) ? sh_yt_id((string)$p['intro_url']) : null; $cardImg = $p['thumb'] ?: ($introYt ? 'https://i.ytimg.com/vi/' . $introYt . '/hqdefault.jpg' : ''); ?>
     <?php if ($introYt): // the intro video plays right in the card ?>
-    <div class="sp-media sp-intro-box"><?= sh_yt_lock_html($introYt, 'Intro: ' . $p['title']) ?></div>
+    <div class="sp-media sp-intro-box"><?= sh_yt_lock_html($introYt, 'Intro: ' . $p['title'], '', (string)($p['thumb'] ?? '')) ?></div>
     <?php else: ?>
     <<?= $preview ? 'a href="' . sh_e($preview) . '"' : 'div' ?> class="sp-media">
       <?php if ($cardImg): ?><img src="<?= sh_e($cardImg) ?>" alt=""><?php else: ?><span class="sp-ph"><?= sh_e($p['title']) ?></span><?php endif; ?>

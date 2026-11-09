@@ -1041,7 +1041,9 @@ function sh_embed_url(string $url): string
     return $url;
 }
 /** Locked YouTube player (our controls; YouTube's links, logo and suggestions cut off and not clickable). Prints Plyr once per page. */
-function sh_yt_lock_html(string $id, string $title = '', string $extra = ''): string
+/** $poster: the picture shown at once (before YouTube has loaded) until the video plays — e.g. the course thumbnail;
+    empty = the video's own YouTube thumbnail. */
+function sh_yt_lock_html(string $id, string $title = '', string $extra = '', string $poster = ''): string
 {
     static $assets = false;
     $h = '';
@@ -1051,7 +1053,9 @@ function sh_yt_lock_html(string $id, string $title = '', string $extra = ''): st
         $h = '<link rel="stylesheet" href="/assets/plyr/plyr.css?v=' . $v('/assets/plyr/plyr.css') . '"><link rel="stylesheet" href="/assets/css/yt-lock.css?v=' . $v('/assets/css/yt-lock.css') . '">'
             . '<script src="/assets/plyr/plyr.min.js?v=' . $v('/assets/plyr/plyr.min.js') . '" defer></script><script src="/assets/js/yt-lock.js?v=' . $v('/assets/js/yt-lock.js') . '" defer></script>';
     }
-    return $h . '<div class="yt-lock" data-yt="' . sh_e($id) . '" aria-label="' . sh_e($title ?: 'Video') . '"' . $extra . '><img class="yt-lock-ph" src="https://i.ytimg.com/vi/' . sh_e($id) . '/hqdefault.jpg" alt=""></div>';
+    $poster = trim($poster);
+    $src = $poster !== '' ? $poster : 'https://i.ytimg.com/vi/' . $id . '/hqdefault.jpg';
+    return $h . '<div class="yt-lock" data-yt="' . sh_e($id) . '"' . ($poster !== '' ? ' data-poster="' . sh_e($poster) . '" data-poster-id="' . sh_e($id) . '"' : '') . ' aria-label="' . sh_e($title ?: 'Video') . '"' . $extra . '><img class="yt-lock-ph" src="' . sh_e($src) . '" alt="" decoding="async"></div>';
 }
 /** Post / page content: every YouTube video (an <iframe> embed, a WordPress embed block, or a link alone on its line)
     plays in our own locked player (sh_yt_lock_html) instead of YouTube's. */
