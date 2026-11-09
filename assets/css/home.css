@@ -508,3 +508,6 @@
 .hm-hs .hs-dots button.on{background:var(--gc-accent,#0c6878)!important}
 /* the slider only moves sideways: a taller picture never makes it scroll up / down (the mouse wheel scrolls the page) */
 .hm-hs .hs-track{overflow-y:hidden!important;overscroll-behavior-y:auto}
+
+/* the slider's own eased move: no snapping / browser smooth scroll while it runs */
+.hs-track.hs-anim{scroll-snap-type:none!important;scroll-behavior:auto!important}

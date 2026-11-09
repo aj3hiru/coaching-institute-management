@@ -23,9 +23,22 @@
       for (var q = stops.length - 1; q > 0; q--) if (stops[q] - stops[q - 1] < 3) stops.splice(q, 1);
     }
     var cur = function () { var x = t.scrollLeft, b = 0; stops.forEach(function (o, i) { if (Math.abs(o - x) < Math.abs(stops[b] - x)) b = i; }); return b; };
+    // a soft, eased move (slow start, slow stop) instead of the browser's quick smooth scroll; snapping is off while it runs
+    var anim = 0;
+    var ease = function (k) { return k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2; };
     var go = function (i, smooth) {
       if (i < 0) i = pages - 1; if (i >= pages) i = 0;
-      t.scrollTo({ left: stops[i] || 0, behavior: smooth === false || reduce ? 'auto' : 'smooth' });
+      var to = stops[i] || 0, from = t.scrollLeft, dist = to - from;
+      cancelAnimationFrame(anim);
+      if (smooth === false || reduce || Math.abs(dist) < 2) { t.classList.remove('hs-anim'); t.scrollLeft = to; return; }
+      var dur = Math.min(1100, 650 + Math.abs(dist) / vw() * 120), t0 = 0;
+      t.classList.add('hs-anim');
+      (function step(ts) {
+        if (!t0) t0 = ts;
+        var k = Math.min(1, (ts - t0) / dur);
+        t.scrollLeft = from + dist * ease(k);
+        if (k < 1) anim = requestAnimationFrame(step); else t.classList.remove('hs-anim');
+      })(performance.now());
     };
     function build() {
       measure(); pages = stops.length;
@@ -47,7 +60,9 @@
     if (next) next.addEventListener('click', function () { go(cur() + 1); restart(); });
     // mouse drag (touch scrolls by itself); a drag never opens a card
     var down = false, moved = false, sx = 0, sl = 0;
-    t.addEventListener('mousedown', function (e) { if (e.button) return; down = true; moved = false; sx = e.pageX; sl = t.scrollLeft; });
+    var stopAnim = function () { cancelAnimationFrame(anim); t.classList.remove('hs-anim'); };
+    t.addEventListener('touchstart', stopAnim, { passive: true });
+    t.addEventListener('mousedown', function (e) { if (e.button) return; stopAnim(); down = true; moved = false; sx = e.pageX; sl = t.scrollLeft; });
     window.addEventListener('mousemove', function (e) { if (!down) return; var dx = e.pageX - sx; if (Math.abs(dx) > 5) { moved = true; t.classList.add('drag'); t.scrollLeft = sl - dx; } });
     window.addEventListener('mouseup', function () { if (!down) return; down = false; if (moved) { t.classList.remove('drag'); go(cur()); } });
     t.addEventListener('click', function (e) { if (moved) { e.preventDefault(); e.stopPropagation(); moved = false; } }, true);
