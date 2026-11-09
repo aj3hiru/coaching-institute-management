@@ -222,6 +222,24 @@ foreach ($cfg['order'] as $id) {
 <?php require_once ROOT_PATH . '/components/footer.php'; ?>
 <script src="/assets/js/store.js?v=<?= @filemtime(ROOT_PATH . '/assets/js/store.js') ?: 1 ?>" defer></script>
 <script src="/assets/js/home.js?v=<?= @filemtime(ROOT_PATH . '/assets/js/home.js') ?: 1 ?>" defer></script>
+<script>
+(function () { // homepage: every box, button, drop-down, FAQ … gets 5px corners (circles such as avatars and round icons stay round)
+  function fix(root) {
+    [].forEach.call((root || document).querySelectorAll('*'), function (e) {
+      if (e.closest && e.closest('svg')) return;
+      var c = getComputedStyle(e), r = c.borderTopLeftRadius, px = parseFloat(r);
+      if (!r || r.indexOf('%') > -1 || !(px > 5)) return;
+      var w = e.offsetWidth, h = e.offsetHeight;
+      if (w && h ? (Math.abs(w - h) <= 2 && px >= w / 2 - 1) : (c.width !== 'auto' && c.width === c.height)) return; // a circle
+      e.style.setProperty('border-radius', '5px', 'important');
+    });
+  }
+  function run() { fix(document); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run); else run();
+  window.addEventListener('load', run);
+  new MutationObserver(function (ms) { ms.forEach(function (m) { [].forEach.call(m.addedNodes, function (n) { if (n.nodeType === 1) { fix(n); if (n.parentNode) fix(n.parentNode); } }); }); }).observe(document.body, { childList: true, subtree: true });
+})();
+</script>
 </body>
 </html>
 <?php $minified = minifyHTML(ob_get_clean()); if (empty($__czp)) { @file_put_contents($cf, $minified); } echo $minified; ?>

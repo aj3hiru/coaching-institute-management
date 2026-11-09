@@ -482,3 +482,6 @@ body.hm-home{--gc-accent:#7c3aed;--color-primary:#7c3aed;--color-primary-hover:#
 .hm-home :is(.hm-sec,.hm-imp,.hm-why-w) :is(button,.hs-prev,.hs-next):not(.hs-dots *){border-radius:5px}
 /* Homepage: no shadows (also none on hover) */
 .hm-home main *,.hm-home main *::before,.hm-home main *::after,.hm-home main *:hover,.hm-home main *:focus-within{box-shadow:none!important}
+
+/* Homepage: no shadow anywhere (search box, menu drawer, back-to-top too) */
+.hm-home *,.hm-home *:hover{box-shadow:none!important}
