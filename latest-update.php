@@ -267,7 +267,8 @@ function homeExcerpt(string $html, int $len = 170): string {
 .cs-item{position:relative;overflow:hidden;isolation:isolate;flex:0 0 auto;scroll-snap-align:start;display:flex;align-items:center;gap:8px;min-width:124px;padding:6px 12px 6px 7px;background:var(--bg-card,#fff);border:1px solid var(--border-light,#e5e7eb);border-radius:5px;text-decoration:none;color:var(--text-primary,#111827)}
 .cs-item:hover{border-color:var(--cs)}
 .cs-i{width:28px;height:28px;flex:0 0 auto;border-radius:50%;display:grid;place-items:center;background:color-mix(in srgb,var(--cs) 12%,#fff);color:var(--cs);overflow:hidden}
-.cs-i img{width:20px;height:20px;object-fit:contain}.cs-i b{font-size:11px;font-weight:800}
+.cs-i img{width:20px;height:20px;object-fit:contain}
+.cs-i.cs-img{background:none;border-radius:0;width:30px;height:30px}.cs-i.cs-img img{width:30px;height:30px} /* the class icon alone, as on the homepage — no second background behind it */.cs-i b{font-size:11px;font-weight:800}
 .cs-t{display:flex;flex-direction:column;line-height:1.25}.cs-t b{font-size:13px;font-weight:700;white-space:nowrap}.cs-t small{font-size:11px;color:var(--text-secondary,#6b7280);white-space:nowrap}
 .cs-nav{flex:0 0 auto;width:28px;height:28px;display:grid;place-items:center;border:1px solid var(--border-light,#e5e7eb);background:var(--bg-card,#fff);color:var(--text-secondary,#374151);border-radius:5px;cursor:pointer}
 .cs-nav[hidden]{display:none}.cs-nav:hover{color:var(--gc-accent,#7c3aed);border-color:var(--gc-accent,#7c3aed)}
@@ -276,13 +277,17 @@ function homeExcerpt(string $html, int $len = 170): string {
 .hero-categories .hc-item:nth-child(6n+1){--hc:var(--gc-accent,#7c3aed)}.hero-categories .hc-item:nth-child(6n+2){--hc:var(--gc-accent-3,#d50808)}
 .hero-categories .hc-item:nth-child(6n+3){--hc:var(--gc-accent-2,#1e73be)}.hero-categories .hc-item:nth-child(6n+4){--hc:#f59e0b}
 .hero-categories .hc-item:nth-child(6n+5){--hc:#16a34a}.hero-categories .hc-item:nth-child(6n+6){--hc:#db2777}
-.hero-categories .hc-item .hc-icon{color:var(--hc);width:46px;height:46px;border-radius:50%;background:color-mix(in srgb,var(--hc) 13%,#fff);transition:background .15s}.hero-categories .hc-item .hc-icon svg{width:24px;height:24px}.hero-categories .hc-item:hover .hc-icon{background:color-mix(in srgb,var(--hc) 22%,#fff)}
+/* box icons like the class icons on the homepage: a light square tile, a solid coloured square inside, white icon */
+.hero-categories .hc-item .hc-icon{color:#fff;width:50px;height:50px;border-radius:5px;background:color-mix(in srgb,var(--hc) 14%,#fff);transition:background .15s}
+.hero-categories .hc-item .hc-icon::before{content:"";position:absolute;inset:8px;border-radius:5px;background:var(--hc)}
+.hero-categories .hc-item .hc-icon svg{position:relative;z-index:1;width:20px;height:20px}
+.hero-categories .hc-item:hover .hc-icon{background:color-mix(in srgb,var(--hc) 24%,#fff)}
 .hero-categories .hc-item .hc-icon{position:relative;overflow:hidden}
-.hero-categories .hc-item .hc-icon::after{content:"";position:absolute;top:0;left:-70%;width:45%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.85),transparent);transform:skewX(-20deg);animation:hc-shine 2.8s ease-in-out infinite;pointer-events:none}
+.hero-categories .hc-item .hc-icon::after{content:"";position:absolute;z-index:2;top:0;left:-70%;width:45%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.85),transparent);transform:skewX(-20deg);animation:hc-shine 2.8s ease-in-out infinite;pointer-events:none}
 .hero-categories .hc-item:nth-child(2) .hc-icon::after{animation-delay:.25s}.hero-categories .hc-item:nth-child(3) .hc-icon::after{animation-delay:.5s}
 .hero-categories .hc-item:nth-child(4) .hc-icon::after{animation-delay:.75s}.hero-categories .hc-item:nth-child(5) .hc-icon::after{animation-delay:1s}.hero-categories .hc-item:nth-child(6) .hc-icon::after{animation-delay:1.25s}
 @keyframes hc-shine{0%{left:-70%}55%,100%{left:130%}}
-@media (prefers-reduced-motion:reduce){.hero-categories .hc-item .hc-icon::after{animation:none;display:none}}.hero-categories .hc-item .hc-icon svg,.hero-categories .hc-item:hover .hc-icon svg{stroke:var(--hc)!important}
+@media (prefers-reduced-motion:reduce){.hero-categories .hc-item .hc-icon::after{animation:none;display:none}}.hero-categories .hc-item .hc-icon svg,.hero-categories .hc-item:hover .hc-icon svg{stroke:#fff!important}
 .hero-categories {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
@@ -489,7 +494,7 @@ function homeExcerpt(string $html, int $len = 170): string {
     <div class="cs-track" role="list">
       <?php foreach ($csCats as $i => $c): ?>
       <a class="cs-item" role="listitem" href="<?= htmlspecialchars(sh_cat_url($c['slug'])) ?>" style="--cs:<?= ['var(--gc-accent,#7c3aed)', 'var(--gc-accent-2,#1e73be)', '#16a34a', '#f59e0b', 'var(--gc-accent-3,#d50808)', '#db2777', '#0891b2'][$i % 7] ?>">
-        <span class="cs-i"><?php if ($c['icon']): ?><img src="<?= htmlspecialchars(sh_upload_url($c['icon'])) ?>" alt="" loading="lazy" width="26" height="26"><?php else: ?><b><?= htmlspecialchars(mb_strtoupper(mb_substr(preg_replace('/^Class\s+/i', '', $c['name']), 0, 2))) ?></b><?php endif; ?></span>
+        <span class="cs-i<?= $c['icon'] ? ' cs-img' : '' ?>"><?php if ($c['icon']): ?><img src="<?= htmlspecialchars(sh_upload_url($c['icon'])) ?>" alt="" loading="lazy" width="26" height="26"><?php else: ?><b><?= htmlspecialchars(mb_strtoupper(mb_substr(preg_replace('/^Class\s+/i', '', $c['name']), 0, 2))) ?></b><?php endif; ?></span>
         <span class="cs-t"><b><?= htmlspecialchars($c['name']) ?></b><small><?= (int)$c['items'] ? (int)$c['items'] . ' course' . ((int)$c['items'] === 1 ? '' : 's') : 'Coming soon' ?></small></span>
       </a>
       <?php endforeach; ?>
