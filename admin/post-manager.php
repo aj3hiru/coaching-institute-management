@@ -1409,8 +1409,37 @@ document.querySelectorAll('[data-del-tpl]').forEach(b => b.addEventListener('cli
   adminConfirm('Delete this template? Posts that already use it are not changed.', { title: 'Delete template', confirmText: 'Delete' }).then(ok => { if (ok) tplPost({ tpl_action: 'delete', id: b.dataset.delTpl }).then(d => { if (d.ok) b.closest('.table-template-card').remove(); }); });
 }));
 
+// Post editor → Embed Course: the choices (any other site link can be pasted too)
+const DK_EMBEDS = <?php require_once INCLUDES_PATH . '/shop.php'; $__eo = [['All courses', SITE_URL . '/courses/'], ['Upcoming courses', SITE_URL . '/upcoming-courses/'], ['Free courses', SITE_URL . '/free-courses/'], ['All PDF notes', SITE_URL . '/notes/']];
+try { foreach (sh_categories($pdo) as $__c) $__eo[] = ['Category · ' . $__c['name'], rtrim(SITE_URL, '/') . sh_cat_url($__c['slug'])];
+    foreach ($pdo->query("SELECT * FROM sh_products WHERE status = 'published' ORDER BY type, title")->fetchAll(PDO::FETCH_ASSOC) as $__p) $__eo[] = [($__p['type'] === 'notes' ? 'Notes · ' : 'Course · ') . $__p['title'], rtrim(SITE_URL, '/') . sh_url($__p)];
+} catch (Throwable $e) {}
+echo json_encode(array_map(fn($x) => ['text' => $x[0], 'value' => $x[1]], $__eo), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+window.DK_EMBEDS = DK_EMBEDS;
+function openEmbedDialog(ed) {
+  const cur = ed.dom.getParent(ed.selection.getNode(), '.dk-embed');
+  ed.windowManager.open({
+    title: 'Embed a course, notes or category', size: 'normal',
+    body: { type: 'panel', items: [
+      { type: 'listbox', name: 'pick', label: 'Choose', items: [{ text: '— or paste a link below —', value: '' }].concat(DK_EMBEDS) },
+      { type: 'input', name: 'url', label: 'Link (course, notes, category, upcoming or free courses page)', placeholder: '<?= rtrim(SITE_URL, '/') ?>/courses/…' },
+      { type: 'htmlpanel', html: '<p style="margin:6px 0 0;color:#646970;font-size:12.5px">The post shows it as a card with the picture, name, lectures and price. A category / list link shows its latest four.</p>' } ] },
+    initialData: { pick: '', url: cur ? cur.getAttribute('data-url') : '' },
+    buttons: [{ type: 'cancel', text: 'Cancel' }, { type: 'submit', text: cur ? 'Update' : 'Insert', primary: true }],
+    onChange: (api, d) => { if (d.name === 'pick') { const v = api.getData().pick; if (v) api.setData({ url: v }); } },
+    onSubmit: (api) => {
+      const url = (api.getData().url || '').trim(); if (!url) { ed.windowManager.alert('Choose an item or paste a link.'); return; }
+      const opt = DK_EMBEDS.find(o => o.value === url), label = opt ? opt.text : url;
+      const html = '<div class="dk-embed" data-url="' + ed.dom.encode(url) + '" contenteditable="false">' + ed.dom.encode(label) + '</div>';
+      ed.undoManager.transact(() => { if (cur) ed.dom.setOuterHTML(cur, html); else ed.insertContent(html + '<p>&nbsp;</p>'); });
+      api.close();
+    }
+  });
+}
+
 // Editor look = how the post looks on the website
-const EDITOR_CSS = '.edu-quiz{border:2px dashed #c7d2fe;border-radius:10px;padding:10px 12px;margin:14px 0;background:#fafaff}.edu-quiz::before{content:"GK Quiz \\2014  click inside, then the GK Quiz button to edit";display:block;font:600 12px system-ui,sans-serif;color:#4f46e5;margin:0 0 6px}.eq-title{font-weight:800;font-size:18px;margin:0 0 6px}.eq-card{border:1px solid #e5e7eb;border-radius:8px;padding:12px 14px;margin:0 0 12px;background:#fff}.eq-q{font-weight:600;margin:0 0 8px}.eq-opts{list-style:none;margin:0 !important;padding:0 !important}.eq-opts li{padding:6px 10px;border-radius:6px;margin:0 0 6px;border:1px solid #eef0f3}.eq-opts li::before{content:attr(data-opt) ". ";font-weight:700}' + ['A','B','C','D','E','F'].map(l => '.eq-card[data-ans="' + l + '"] li[data-opt="' + l + '"]').join(',') + '{background:#dcfce7;box-shadow:inset 0 0 0 1px #16a34a}.eq-exp{font-size:14px;color:#475569;border-left:3px solid #6366f1;padding:4px 0 4px 10px;margin-top:10px}.eq-exp::before{content:"Explanation:";margin-right:.35em;font-weight:700;color:#334155}' + 'html{background:#fff}body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:17px;line-height:1.75;color:#373737;padding:24px 0 40px !important;margin:0 !important;box-sizing:border-box}' +
+const EDITOR_CSS = '.dk-embed{display:block;border:2px dashed #c4b5fd;border-radius:5px;padding:14px 16px 14px 46px;margin:14px 0;background:#faf8ff;color:#4c1d95;font-weight:600;position:relative;cursor:pointer}.dk-embed::before{content:"\\25B6";position:absolute;left:16px;top:50%;transform:translateY(-50%);width:20px;height:20px;border-radius:5px;background:#7c3aed;color:#fff;font-size:10px;display:grid;place-items:center}.dk-embed::after{content:"  (shown as a card on the website \\2014  double-click to change)";font-weight:400;color:#6b7280;font-size:12px}' +
+  '.edu-quiz{border:2px dashed #c7d2fe;border-radius:10px;padding:10px 12px;margin:14px 0;background:#fafaff}.edu-quiz::before{content:"GK Quiz \\2014  click inside, then the GK Quiz button to edit";display:block;font:600 12px system-ui,sans-serif;color:#4f46e5;margin:0 0 6px}.eq-title{font-weight:800;font-size:18px;margin:0 0 6px}.eq-card{border:1px solid #e5e7eb;border-radius:8px;padding:12px 14px;margin:0 0 12px;background:#fff}.eq-q{font-weight:600;margin:0 0 8px}.eq-opts{list-style:none;margin:0 !important;padding:0 !important}.eq-opts li{padding:6px 10px;border-radius:6px;margin:0 0 6px;border:1px solid #eef0f3}.eq-opts li::before{content:attr(data-opt) ". ";font-weight:700}' + ['A','B','C','D','E','F'].map(l => '.eq-card[data-ans="' + l + '"] li[data-opt="' + l + '"]').join(',') + '{background:#dcfce7;box-shadow:inset 0 0 0 1px #16a34a}.eq-exp{font-size:14px;color:#475569;border-left:3px solid #6366f1;padding:4px 0 4px 10px;margin-top:10px}.eq-exp::before{content:"Explanation:";margin-right:.35em;font-weight:700;color:#334155}' + 'html{background:#fff}body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:17px;line-height:1.75;color:#373737;padding:24px 0 40px !important;margin:0 !important;box-sizing:border-box}' +
   'h2{font-size:26px;line-height:1.2;font-weight:600;color:#1d1d1d;margin:1.2em 0 .6em}h3{font-size:22px;line-height:1.2;font-weight:600;color:#1d1d1d;margin:1.1em 0 .5em}h4{font-size:19px;margin:1em 0 .5em}h5{font-size:17px;margin:1em 0 .5em}' +
   'p{margin:0 0 1.2em}img{max-width:100%;height:auto;border-radius:6px}a{color:#0c6878}' +
   'ul,ol{margin:0 0 1.2em 1.4em;padding-left:1.2em}' +
@@ -1428,13 +1457,13 @@ tinymce.init({
   placeholder: 'Start writing your post…',
   menubar: false,
   plugins: 'advlist autolink lists link image charmap preview anchor searchreplace visualblocks code codesample fullscreen insertdatetime media table help wordcount autoresize emoticons nonbreaking pagebreak',
-  toolbar: 'blocks | bold italic underline | bullist numlist | alignleft aligncenter alignright | link image table tabletemplate gkquiz | moretoggle | blockquote undo redo | strikethrough forecolor backcolor | hr media linkbutton | unlink pastetext removeformat charmap | outdent indent | searchreplace visualblocks code | emoticons pagebreak | fullscreen help',
+  toolbar: 'blocks | bold italic underline | bullist numlist | alignleft aligncenter alignright | link image table tabletemplate gkquiz dkembed | moretoggle | blockquote undo redo | strikethrough forecolor backcolor | hr media linkbutton | unlink pastetext removeformat charmap | outdent indent | searchreplace visualblocks code | emoticons pagebreak | fullscreen help',
   toolbar_mode: 'wrap',
   toolbar_sticky: false,
   statusbar: true,
   elementpath: true,
   resize: false,
-  menu: { insert: { title: 'Insert', items: 'image link media linkbutton tabletemplate gkquiz codesample | hr pagebreak | anchor charmap emoticons nonbreaking | insertdatetime' } },
+  menu: { insert: { title: 'Insert', items: 'image link media linkbutton tabletemplate gkquiz dkembed codesample | hr pagebreak | anchor charmap emoticons nonbreaking | insertdatetime' } },
   block_formats: 'Paragraph=p; Heading 2=h2; Heading 3=h3; Heading 4=h4; Heading 5=h5; Preformatted=pre',
   contextmenu: 'link image table',
   autoresize_bottom_margin: 40,
@@ -1489,6 +1518,9 @@ tinymce.init({
     ed.ui.registry.addButton('linkbutton', { text: 'Button', tooltip: 'Insert / edit link button', onAction: () => openLinkButtonDialog(ed) });
     ed.ui.registry.addButton('tabletemplate', { text: 'Templates', tooltip: 'Insert a table template', onAction: () => openTemplates(null) });
     ed.ui.registry.addButton('tabletplchange', { text: 'Templates', icon: 'table', tooltip: 'Change this table to a template design', onAction: () => openTemplates(ed.dom.getParent(ed.selection.getNode(), 'table')) });
+    ed.ui.registry.addButton('dkembed', { text: 'Embed Course', icon: 'embed', tooltip: 'Embed a course, notes, category or upcoming courses (shown as a card)', onAction: () => openEmbedDialog(ed) });
+    ed.ui.registry.addMenuItem('dkembed', { text: 'Course / notes card…', icon: 'embed', onAction: () => openEmbedDialog(ed) });
+    ed.on('dblclick', (e) => { if (e.target.closest && e.target.closest('.dk-embed')) openEmbedDialog(ed); });
     ed.ui.registry.addButton('gkquiz', { text: 'GK Quiz', tooltip: 'Insert / edit GK quiz (MCQ questions)', onAction: () => openQuizDialog(ed) });
     ed.ui.registry.addMenuItem('gkquiz', { text: 'GK Quiz (MCQ)…', onAction: () => openQuizDialog(ed) });
     ed.ui.registry.addMenuItem('linkbutton', { text: 'Link button…', onAction: () => openLinkButtonDialog(ed) });

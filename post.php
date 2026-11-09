@@ -146,6 +146,8 @@ try {
     $content = edu_shortcodes_html($content); // [site_title], [year], [contact_form] … (Customize → Shortcodes)
     require_once INCLUDES_PATH . '/seo.php';
     $content = edu_content_wrap_tables(edu_seo_filter_content($content, $post['title'])); // Advanced SEO link/image rules + mobile-scrolling tables
+    require_once INCLUDES_PATH . '/shop.php';
+    $content = sh_site_embeds(sh_yt_lock_content($content)); // YouTube videos play in our own player; course / notes links become cards
 
     // SEO ARRAY
     $seo = [

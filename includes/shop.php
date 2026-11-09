@@ -1015,6 +1015,103 @@ function sh_yt_lock_html(string $id, string $title = '', string $extra = ''): st
     }
     return $h . '<div class="yt-lock" data-yt="' . sh_e($id) . '" aria-label="' . sh_e($title ?: 'Video') . '"' . $extra . '><img class="yt-lock-ph" src="https://i.ytimg.com/vi/' . sh_e($id) . '/hqdefault.jpg" alt=""></div>';
 }
+/** Post / page content: every YouTube video (an <iframe> embed, a WordPress embed block, or a link alone on its line)
+    plays in our own locked player (sh_yt_lock_html) instead of YouTube's. */
+function sh_yt_lock_content(string $html): string
+{
+    if ($html === '' || !preg_match('~youtu\.?be|youtube~i', $html)) return $html;
+    $box = function (string $id, string $title = '') { return '<div class="yt-embed">' . sh_yt_lock_html($id, $title) . '</div>'; };
+    $yt = '(?:https?:)?//(?:www\.)?(?:youtube(?:-nocookie)?\.com/(?:embed/|watch\?(?:[^"\'<\s]*&)?v=|shorts/|live/)|youtu\.be/)([\w-]{11})[^"\'<\s]*';
+    // 1. WordPress embed blocks
+    $html = preg_replace_callback('~<figure[^>]*wp-block-embed[^>]*>.*?(' . $yt . ').*?</figure>~is', fn($m) => $box($m[2]), $html);
+    // 2. iframes (with the <p> / <div> that only holds them)
+    $html = preg_replace_callback('~(?:<(p|div)[^>]*>\s*)?<iframe[^>]*\bsrc=["\'][^"\']*youtube(?:-nocookie)?\.com/embed/([\w-]{11})[^"\']*["\'][^>]*>\s*</iframe>(?:\s*</\1>)?~is',
+        function ($m) { $t = preg_match('~title=["\']([^"\']*)~i', $m[0], $tm) ? html_entity_decode($tm[1], ENT_QUOTES) : ''; return '<div class="yt-embed">' . sh_yt_lock_html($m[2], $t) . '</div>'; }, $html);
+    // 3. a YouTube link alone in a paragraph (plain text or a link)
+    $html = preg_replace_callback('~<p[^>]*>\s*(?:<a[^>]*href=["\'](' . $yt . ')["\'][^>]*>[^<]*</a>|(' . $yt . '))\s*</p>~is', fn($m) => $box($m[2] !== '' ? $m[2] : $m[4]), $html);
+    return $html;
+}
+/** Post editor → "Embed course": a site link (course, notes pack, category, upcoming / free courses, all courses / notes)
+    shown as a card in the post. Works for <div class="dk-embed" data-url="…"> blocks and for such a link alone in a paragraph. */
+function sh_site_embeds(string $html): string
+{
+    if ($html === '' || !preg_match('~dk-embed|/courses|/notes|/store|/category|/upcoming-courses|/free-courses~', $html)) return $html;
+    $host = preg_quote((string)parse_url(SITE_URL, PHP_URL_HOST), '~');
+    $html = preg_replace_callback('~<div[^>]*class=["\'][^"\']*\bdk-embed\b[^"\']*["\'][^>]*data-url=["\']([^"\']+)["\'][^>]*>.*?</div>~is', function ($m) { return sh_site_embed(html_entity_decode($m[1], ENT_QUOTES)) ?? ''; }, $html);
+    $html = preg_replace_callback('~<p[^>]*>\s*(?:<a[^>]*href=["\']([^"\']+)["\'][^>]*>[^<]*</a>|((?:https?://(?:www\.)?' . $host . ')?/(?:courses|notes|store|category|upcoming-courses|free-courses)[^\s<]*))\s*</p>~i',
+        function ($m) { $u = html_entity_decode($m[1] !== '' ? $m[1] : $m[2], ENT_QUOTES); return sh_site_embed($u) ?? $m[0]; }, $html);
+    return $html;
+}
+/** One embed card (null when the address is not one of ours). */
+function sh_site_embed(string $url): ?string
+{
+    $pdo = sh_db();
+    $u = parse_url(trim($url)); if (!$u) return null;
+    $host = strtolower(preg_replace('/^www\./', '', (string)($u['host'] ?? '')));
+    if ($host !== '' && $host !== strtolower(preg_replace('/^www\./', '', (string)parse_url(SITE_URL, PHP_URL_HOST)))) return null;
+    $path = '/' . trim((string)($u['path'] ?? ''), '/'); parse_str((string)($u['query'] ?? ''), $q);
+    $slug = ''; $kind = '';
+    if (preg_match('~^/(courses|notes)/([^/]+)$~', $path, $m)) { $kind = 'item'; $slug = rawurldecode($m[2]); }
+    elseif (preg_match('~^/(courses|notes|store/item)$~', $path) && !empty($q['s'])) { $kind = 'item'; $slug = (string)$q['s']; }
+    elseif (preg_match('~^/category/([^/]+)$~', $path, $m)) { $kind = 'cat'; $slug = rawurldecode($m[1]); }
+    elseif ($path === '/store' && !empty($q['c'])) { $kind = 'cat'; $slug = (string)$q['c']; }
+    elseif ($path === '/upcoming-courses') $kind = 'upcoming';
+    elseif ($path === '/free-courses') $kind = 'free';
+    elseif ($path === '/courses' || $path === '/store') $kind = 'courses';
+    elseif ($path === '/notes') $kind = 'notes';
+    if ($kind === '') return null;
+    if ($kind === 'item') { $p = sh_product($pdo, $slug); return $p ? sh_embed_css() . '<div class="dke">' . sh_embed_card($p, true) . '</div>' : null; }
+    if ($kind === 'cat') {
+        $c = $pdo->prepare("SELECT * FROM sh_categories WHERE slug = ? AND status = 'active'"); $c->execute([$slug]); $c = $c->fetch(PDO::FETCH_ASSOC); if (!$c) return null;
+        return sh_embed_list($c['name'], sh_latest($pdo, 'course', 4, 0, (int)$c['id']) ?: sh_latest($pdo, 'notes', 4, 0, (int)$c['id']), sh_cat_url($c['slug']));
+    }
+    if ($kind === 'upcoming') return sh_embed_list('Upcoming courses', sh_latest($pdo, 'course', 4, 0, 0, 'upcoming'), '/upcoming-courses/');
+    if ($kind === 'free') { $f = array_values(array_filter(sh_latest($pdo, 'course', 20), fn($p) => (float)$p['price'] <= 0)); return sh_embed_list('Free courses', array_slice($f, 0, 4), '/free-courses/'); }
+    if ($kind === 'notes') return sh_embed_list('PDF notes', sh_latest($pdo, 'notes', 4), '/notes/');
+    return sh_embed_list('Our courses', sh_latest($pdo, 'course', 4), '/courses/');
+}
+function sh_embed_list(string $title, array $rows, string $more): ?string
+{
+    if (!$rows) return null;
+    $h = '<div class="dke dke-list"><div class="dke-h"><b>' . sh_e($title) . '</b><a href="' . sh_e($more) . '">View all »</a></div><div class="dke-g">';
+    foreach ($rows as $p) $h .= sh_embed_card($p, false);
+    return sh_embed_css() . $h . '</div></div>';
+}
+function sh_embed_card(array $p, bool $big): string
+{
+    $pdo = sh_db(); $isC = ($p['type'] ?? 'course') === 'course';
+    $thumb = (string)($p['thumb'] ?? '');
+    if ($thumb === '' && ($iy = sh_yt_id((string)($p['intro_url'] ?? '')))) $thumb = 'https://i.ytimg.com/vi/' . $iy . '/hqdefault.jpg';
+    $n = $isC ? (int)$pdo->query("SELECT COUNT(*) FROM sh_lessons WHERE product_id = " . (int)$p['id'])->fetchColumn() : (int)$pdo->query("SELECT COUNT(*) FROM sh_files WHERE product_id = " . (int)$p['id'])->fetchColumn();
+    $cat = sh_category_name($pdo, (int)($p['category_id'] ?? 0));
+    $up = !empty($p['starts_at']) && strtotime((string)$p['starts_at']) >= strtotime('today');
+    $free = (float)$p['price'] <= 0;
+    $meta = ($up ? 'Batch starts ' . date('d M Y', strtotime((string)$p['starts_at'])) : ($n ? $n . ($isC ? ' lecture' : ' PDF') . ($n === 1 ? '' : 's') : ($isC ? 'Video course' : 'PDF notes')));
+    $price = $free ? '<em class="dke-free">FREE</em>' : ((isset($p['mrp']) && $p['mrp'] !== null && (float)$p['mrp'] > (float)$p['price'] ? '<s>' . sh_money($p['mrp']) . '</s>' : '') . '<b>' . sh_money($p['price']) . '</b>');
+    return '<a class="dke-c' . ($big ? ' dke-big' : '') . '" href="' . sh_e(sh_url($p)) . '">'
+        . '<span class="dke-i">' . ($thumb !== '' ? '<img src="' . sh_e($thumb) . '" alt="" loading="lazy">' : '<span class="dke-ph">' . ($isC ? 'COURSE' : 'PDF NOTES') . '</span>') . '</span>'
+        . '<span class="dke-b"><small class="dke-k">' . sh_e(trim(($isC ? 'Video course' : 'PDF notes') . ($cat !== '' ? ' · ' . $cat : '') . ($up ? ' · Upcoming' : ''))) . '</small>'
+        . '<span class="dke-t">' . sh_e($p['title']) . '</span>' . ($big && !empty($p['subtitle']) ? '<span class="dke-s">' . sh_e($p['subtitle']) . '</span>' : '')
+        . '<span class="dke-m">' . sh_e($meta) . '</span><span class="dke-f"><span class="dke-p">' . $price . '</span><span class="dke-go">' . ($free || $up ? 'Join now' : 'View ' . ($isC ? 'course' : 'notes')) . ' →</span></span></span></a>';
+}
+function sh_embed_css(): string
+{
+    static $done = false; if ($done) return ''; $done = true;
+    return '<style id="dke-css">.dke{margin:20px 0;font-family:inherit}.dke a{text-decoration:none!important}'
+        . '.dke-c{display:flex;gap:14px;align-items:stretch;padding:12px;border:1px solid #e5e7eb;border-radius:5px;background:#fff;color:#111827!important;transition:border-color .15s}'
+        . '.dke-c:hover{border-color:var(--gc-accent,#7c3aed)}'
+        . '.dke-i{flex:0 0 40%;max-width:260px;aspect-ratio:16/9;border-radius:5px;overflow:hidden;background:var(--gc-accent,#7c3aed)}.dke-i img{width:100%;height:100%;object-fit:cover;display:block;margin:0!important}'
+        . '.dke-ph{display:grid;place-items:center;height:100%;color:#fff;font-weight:800;font-size:13px;letter-spacing:.06em}'
+        . '.dke-b{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1}.dke-k{font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--gc-accent,#7c3aed)}'
+        . '.dke-t{font-weight:700;font-size:16px;line-height:1.35}.dke-s{font-size:13.5px;color:#4b5563;line-height:1.45}.dke-m{font-size:13px;color:#6b7280}'
+        . '.dke-f{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:auto;padding-top:6px;flex-wrap:wrap}.dke-p{display:flex;gap:6px;align-items:baseline}'
+        . '.dke-p s{color:#9ca3af;font-size:13px}.dke-p b{font-size:16px}.dke-free{font-style:normal;font-weight:800;font-size:12px;color:#fff;background:#16a34a;padding:2px 8px;border-radius:5px}'
+        . '.dke-go{font-size:13px;font-weight:700;color:#fff;background:var(--gc-accent,#7c3aed);padding:6px 12px;border-radius:5px;white-space:nowrap}'
+        . '.dke-h{display:flex;justify-content:space-between;align-items:center;margin:0 0 10px;padding-bottom:8px;border-bottom:2px solid #e5e7eb}.dke-h b{font-size:17px}.dke-h a{font-size:13.5px;font-weight:700;color:var(--gc-accent,#7c3aed)!important}'
+        . '.dke-g{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.dke-g .dke-c{flex-direction:column;gap:8px}.dke-g .dke-i{flex:none;max-width:none;width:100%}.dke-g .dke-t{font-size:14.5px}'
+        . '@media (max-width:560px){.dke-c{flex-direction:column}.dke-i{max-width:none;width:100%;flex:none}.dke-g{grid-template-columns:1fr 1fr;gap:10px}.dke-g .dke-go{display:none}}'
+        . '[data-theme="dark"] .dke-c{background:#151b23;border-color:#263040;color:#e5e7eb!important}</style>';
+}
 /** sh_yt_playlist() kept for 6 hours on disk (an old copy is used if YouTube does not answer). */
 function sh_yt_playlist_cached(string $list): array
 {

@@ -81,7 +81,7 @@ $seo_canonical = rtrim(SITE_URL, '/') . '/' . $page['slug'];
   <nav class="breadcrumbs" aria-label="Breadcrumb"><a href="/">Home</a> » <span><?= htmlspecialchars($page['title']) ?></span></nav>
   <article>
     <h1><?= htmlspecialchars($page['title']) ?></h1>
-    <div class="entry-content"><?= edu_content_wrap_tables(edu_seo_filter_content(edu_page_shortcodes($page['content']), $page['title'])) ?></div>
+    <div class="entry-content"><?php require_once INCLUDES_PATH . '/shop.php'; ?><?= sh_site_embeds(sh_yt_lock_content(edu_content_wrap_tables(edu_seo_filter_content(edu_page_shortcodes($page['content']), $page['title'])))) ?></div>
   </article>
 </main>
 <?php require_once ROOT_PATH . '/components/footer.php'; ?>
