@@ -260,7 +260,7 @@ function homeExcerpt(string $html, int $len = 170): string {
 /* ── Category Buttons ──────────────────────────── */
 .hero-categories {
   display: grid;
-  grid-template-columns: repeat(8, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: var(--space-3);
   margin-top: var(--space-5);
   list-style: none;
@@ -328,13 +328,13 @@ function homeExcerpt(string $html, int $len = 170): string {
 
 /* ── Responsive ────────────────────────────────── */
 @media (max-width: 900px) {
-  .hero-categories { grid-template-columns: repeat(4, 1fr); }
+  .hero-categories { grid-template-columns: repeat(5, 1fr); }
 }
 
 @media (max-width: 560px) {
   .hero-search-card { padding: var(--space-8) var(--space-5); }
   .hero-search-label { font-size: var(--text-xl); }
-  .hero-categories { grid-template-columns: repeat(4, 1fr); gap: var(--space-2); }
+  .hero-categories { grid-template-columns: repeat(3, 1fr); gap: var(--space-2); }
   .hc-item { padding: var(--space-3) var(--space-1); }
 }
 
@@ -457,62 +457,37 @@ function homeExcerpt(string $html, int $len = 170): string {
 </form>
 
   <!-- Category Buttons -->
-  <nav class="hero-categories" aria-label="Job Categories">
+  <nav class="hero-categories" aria-label="Courses and blog categories">
 
-    <a href="/categories/government-jobs" class="hc-item">
+    <a href="/courses/" class="hc-item">
       <span class="hc-icon">
-        <svg viewBox="0 0 24 24"><path d="M3 21h18M3 10h18M12 3L3 10h18L12 3z"/><rect x="5" y="10" width="3" height="11"/><rect x="10.5" y="10" width="3" height="11"/><rect x="16" y="10" width="3" height="11"/></svg>
+        <svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M10 9l5 3-5 3V9z"/></svg>
       </span>
-      <span class="hc-name">Govt Jobs</span>
+      <span class="hc-name">All Courses</span>
     </a>
-
-    <a href="/categories/ssc-jobs" class="hc-item">
+    <a href="/categories/general-knowledge" class="hc-item">
       <span class="hc-icon">
-        <svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h8M8 15h5"/></svg>
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.5 3.8 5.5 3.8 9s-1.3 6.5-3.8 9c-2.5-2.5-3.8-5.5-3.8-9S9.5 5.5 12 3z"/></svg>
       </span>
-      <span class="hc-name">SSC</span>
+      <span class="hc-name">General Knowledge</span>
     </a>
-
-    <a href="/categories/railway-jobs" class="hc-item">
+    <a href="/categories/quiz" class="hc-item">
       <span class="hc-icon">
-        <svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="13" rx="3"/><path d="M4 10h16M8 16l-2 5M16 16l2 5M12 16v5"/><circle cx="8" cy="13" r="1" fill="currentColor" stroke="none"/><circle cx="16" cy="13" r="1" fill="currentColor" stroke="none"/></svg>
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 015 0c0 1.7-2.5 2-2.5 4"/><circle cx="12" cy="17" r=".6" fill="currentColor"/></svg>
       </span>
-      <span class="hc-name">Railway</span>
+      <span class="hc-name">Quiz</span>
     </a>
-
-    <a href="/categories/banking-jobs" class="hc-item">
-      <span class="hc-icon">
-        <svg viewBox="0 0 24 24"><path d="M3 21h18M3 10h18M12 3L3 10h18L12 3z"/><line x1="6" y1="10" x2="6" y2="21"/><line x1="10" y1="10" x2="10" y2="21"/><line x1="14" y1="10" x2="14" y2="21"/><line x1="18" y1="10" x2="18" y2="21"/></svg>
-      </span>
-      <span class="hc-name">Banking</span>
-    </a>
-
-    <a href="/categories/upsc-jobs" class="hc-item">
-      <span class="hc-icon">
-        <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-      </span>
-      <span class="hc-name">UPSC</span>
-    </a>
-
-    <a href="/categories/10th-pass-govt-jobs" class="hc-item">
-      <span class="hc-icon">
-        <svg viewBox="0 0 24 24"><path d="M4 19V7a2 2 0 012-2h12a2 2 0 012 2v12"/><path d="M4 19a2 2 0 002 2h12a2 2 0 002-2"/><path d="M9 11h1V9H9v2zm0 0v4"/><path d="M13 9v6m0-6a1.5 1.5 0 011.5 1.5v3A1.5 1.5 0 0113 15"/></svg>
-      </span>
-      <span class="hc-name">10th Pass</span>
-    </a>
-
-    <a href="/categories/12th-pass-govt-jobs" class="hc-item">
+    <a href="/categories/scholarship" class="hc-item">
       <span class="hc-icon">
         <svg viewBox="0 0 24 24"><path d="M22 9L12 5 2 9l10 4 10-4z"/><path d="M6 11v5c0 2 2.5 4 6 4s6-2 6-4v-5"/></svg>
       </span>
-      <span class="hc-name">12th Pass</span>
+      <span class="hc-name">Scholarship</span>
     </a>
-
-    <a href="/categories" class="hc-item">
+    <a href="/categories/latest-update" class="hc-item">
       <span class="hc-icon">
-        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        <svg viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z"/></svg>
       </span>
-      <span class="hc-name">All Jobs</span>
+      <span class="hc-name">Latest Update</span>
     </a>
 
   </nav>

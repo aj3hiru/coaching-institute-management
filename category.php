@@ -12,7 +12,12 @@ $stmt = $pdo->prepare("SELECT * FROM categories WHERE slug = ?");
 $stmt->execute([$slug]);
 $cat = $stmt->fetch(PDO::FETCH_ASSOC);
 require_once INCLUDES_PATH . '/archive.php';
-if (!$cat) edu_archive_404();
+if (!$cat) { // a category that was renamed or removed (blog.cat_moves): send visitors to the new place
+    require_once INCLUDES_PATH . '/settings.php';
+    $mv = (array)(edu_settings('blog')['cat_moves'] ?? []);
+    if (is_string($slug) && array_key_exists($slug, $mv)) { header('Location: ' . ($mv[$slug] !== '' ? '/categories/' . rawurlencode($mv[$slug]) : '/latest-posts'), true, 301); exit; }
+    edu_archive_404();
+}
 $category_id = $cat['id'];
 
 // Increase category views by 1
