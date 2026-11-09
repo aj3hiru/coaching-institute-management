@@ -726,12 +726,18 @@ function renderColors(wrap) {
   draw();
   // Global Palette: ready-made palettes, then the swatches (click one to edit it, + adds one)
   const pal = html('<div class="cz-wpgroup"><h3 class="cz-wp-h">Global Palette</h3><div class="cz-presets"></div></div>');
-  PALETTES.forEach(([name, cols]) => {
-    const cur = Object.entries(cols).every(([sl, c]) => ((T.global_colors.find(g => g.slug === sl) || {}).color || '').toLowerCase() === c);
+  PALETTES.forEach(([name, cols, areas]) => {
+    const cur = Object.entries(cols).every(([sl, c]) => ((T.global_colors.find(g => g.slug === sl) || {}).color || '').toLowerCase() === c)
+      && (!areas || Object.entries(areas).every(([g, f]) => Object.entries(f).every(([k, v]) => ((T.colors[g] || {})[k] || '').toLowerCase() === v.toLowerCase())));
     const b = html('<button type="button" class="cz-preset' + (cur ? ' active' : '') + '"><span class="cz-preset-bars"></span><b></b></button>');
     ['accent', 'accent-2', 'contrast', 'contrast-2'].forEach(sl => { const i = document.createElement('i'); i.style.background = cols[sl]; b.firstChild.appendChild(i); });
     b.querySelector('b').textContent = name;
-    b.onclick = () => { Object.entries(cols).forEach(([sl, c]) => { const g = T.global_colors.find(x => x.slug === sl); if (g) g.color = c; }); gpalEditing = null; touch(); rerender(); };
+    if (areas) b.title = 'A complete theme: palette, header, menu, buttons, content, cards and footer colours';
+    b.onclick = () => {
+      Object.entries(cols).forEach(([sl, c]) => { const g = T.global_colors.find(x => x.slug === sl); if (g) g.color = c; });
+      if (areas) Object.entries(areas).forEach(([g, f]) => { if (!T.colors[g] || Array.isArray(T.colors[g])) T.colors[g] = {}; Object.assign(T.colors[g], f); });
+      gpalEditing = null; touch(); rerender();
+    };
     pal.querySelector('.cz-presets').appendChild(b);
   });
   pal.appendChild(block); wrap.appendChild(pal);
@@ -969,8 +975,35 @@ function typoRow(target, label) {
   }
   return w;
 }
+const TYPO_TEMPLATES = [ // [name, font (empty = the device's own), body size, headings weight, H1, H2 [size, weight], H3, H4]
+  ['Scholars Academy', 'Poppins', 16, '700', 30, [28, '600'], 20, 18],
+  ['Inter', 'Inter', 16, '700', 32, [26, '700'], 21, 18],
+  ['Roboto', 'Roboto', 16, '700', 30, [24, '700'], 20, 18],
+  ['Noto Sans (Hindi)', 'Noto Sans', 16, '700', 30, [24, '700'], 20, 18],
+  ['Default (system)', '', 16, '700', 30, [24, '700'], 20, 18]];
+function applyTypoTemplate(T, [, fam, body, hw, h1, [h2, h2w], h3, h4]) {
+  if (fam && !T.fonts.some(f => f.family === fam)) T.fonts.push({ family: fam, google: true, variants: ['400', '500', '600', '700'], fallback: 'sans-serif' });
+  const set = (target, vals) => { let r = T.typography.find(x => x.target === target); if (!r) { r = newRule(target); T.typography.push(r); } Object.assign(r, vals); };
+  const sz = v => ({ d: String(v), t: '', m: '' });
+  set('body', { family: fam, size: sz(body) }); set('headings', { family: fam, weight: hw });
+  set('post_title', { size: sz(h1), weight: hw }); set('h1', { size: sz(h1), weight: hw }); set('h2', { size: sz(h2), weight: h2w });
+  set('h3', { size: sz(h3), weight: hw }); set('h4', { size: sz(h4), weight: hw });
+}
 function renderTypography(wrap) {
   const T = state.theme; if (!Array.isArray(T.fonts)) T.fonts = []; if (!Array.isArray(T.typography)) T.typography = [];
+  // Templates: one click sets the font, sizes and weights of the whole site
+  const tg = html('<div class="cz-wpgroup"><h3 class="cz-wp-h">Typography Templates</h3><div class="cz-typo-tpl"></div></div>');
+  const bodyRule = T.typography.find(x => x.target === 'body') || {}, headRule = T.typography.find(x => x.target === 'headings') || {};
+  TYPO_TEMPLATES.forEach(tp => {
+    const cur = (bodyRule.family || '') === tp[1] && (headRule.family || '') === tp[1] && ((bodyRule.size || {}).d || '') === String(tp[2]);
+    const b = html('<button type="button" class="cz-preset cz-typo-btn' + (cur ? ' active' : '') + '"><span class="cz-typo-aa">Aa</span><b></b><small></small></button>');
+    b.querySelector('.cz-typo-aa').style.fontFamily = tp[1] ? '"' + tp[1] + '",sans-serif' : 'system-ui,sans-serif';
+    b.querySelector('b').textContent = tp[0]; b.querySelector('small').textContent = (tp[1] || 'System font') + ' · ' + tp[2] + 'px · H1 ' + tp[4] + 'px';
+    b.onclick = () => { applyTypoTemplate(T, tp); touch(); rerender(); };
+    tg.querySelector('.cz-typo-tpl').appendChild(b);
+  });
+  wrap.appendChild(tg);
+  if (!document.getElementById('czTypoFonts')) { const l = document.createElement('link'); l.id = 'czTypoFonts'; l.rel = 'stylesheet'; l.href = 'https://fonts.googleapis.com/css2?family=Poppins:wght@700&family=Inter:wght@700&family=Roboto:wght@700&family=Noto+Sans:wght@700&display=swap'; document.head.appendChild(l); }
   TYPO_ROWS.forEach(([h, rows]) => { const g = html('<div class="cz-wpgroup"><h3 class="cz-wp-h"></h3></div>'); g.firstChild.textContent = h; rows.forEach(([t, l]) => g.appendChild(typoRow(t, l))); wrap.appendChild(g); });
   renderTypoManager(wrap); // Font Manager + every rule incl. custom selectors (rows that open their own screen)
 }
@@ -980,7 +1013,23 @@ const PALETTES = [
   ['Teal', { accent: '#0c6878', 'accent-2': '#1e73be', 'accent-3': '#d50808', contrast: '#222222', 'contrast-2': '#373737' }],
   ['Royal', { accent: '#046bd2', 'accent-2': '#045cb4', 'accent-3': '#e11d48', contrast: '#1e293b', 'contrast-2': '#334155' }],
   ['Maroon', { accent: '#9e1b32', 'accent-2': '#c2410c', 'accent-3': '#d50808', contrast: '#1f1f1f', 'contrast-2': '#3b3b3b' }],
-  ['Forest', { accent: '#2f6b3a', 'accent-2': '#5c7c2e', 'accent-3': '#c2410c', contrast: '#1c2420', 'contrast-2': '#36423b' }]];
+  ['Forest', { accent: '#2f6b3a', 'accent-2': '#5c7c2e', 'accent-3': '#c2410c', contrast: '#1c2420', 'contrast-2': '#36423b' }],
+  // a complete theme (like scholarsacademy.co.in): palette + header, menu, buttons, content, cards, footer colours
+  ['Scholars Academy', { accent: '#003c6d', 'accent-2': '#fe8c07', 'accent-3': '#d50808', contrast: '#222222', 'contrast-2': '#333333', base: '#eff7ff', 'base-3': '#ffffff' }, {
+    body: { background: '#ffffff', text: '#222222', link: '#003c6d', link_hover: '#fe8c07' },
+    top_bar: { background: '#003c6d', text: '#ffffff', link: '#fe8c07', link_hover: '#ffffff' },
+    header: { racing_bg: '#ffffff', racing_text: '#003c6d', site_title: '#003c6d', tagline: '#333333' },
+    menu_strip: { background: '#ffffff', text: '#003c6d', text_hover: '#fe8c07' },
+    off_canvas: { background: '#ffffff', text: '#003c6d', background_hover: '#eff7ff', sub_bg: '#f5faff' },
+    buttons: { background: '#fe8c07', background_hover: '#e67e00', text: '#ffffff', text_hover: '#ffffff' },
+    content: { background: '#ffffff', text: '#222222', link: '#003c6d', link_hover: '#fe8c07', title: '#245284', archive_title: '#003c6d', archive_title_hover: '#fe8c07',
+      meta_text: '#555555', meta_link: '#003c6d', meta_link_hover: '#fe8c07', h1: '#245284', h2: '#245284', h3: '#245284', h4: '#245284', h5: '#245284', h6: '#245284' },
+    cards: { background: '#ffffff', border: '#e0efff', toc_bg: '#003c6d' },
+    forms: { field_bg: '#ffffff', field_bg_focus: '#ffffff', field_text: '#222222', field_text_focus: '#222222', field_border: '#c0e0ff', field_border_focus: '#003c6d' },
+    sidebar: { title: '#245284', title_bg: '#eff7ff', link: '#003c6d', link_hover: '#fe8c07' },
+    footer_widgets: { background: '#003c6d', text: '#e0f4ff', link: '#fe8c07', link_hover: '#ffffff', title: '#ffffff', accent: '#fe8c07' },
+    footer_bar: { background: '#002b4f', text: '#e0f4ff', link: '#fe8c07', link_hover: '#ffffff' },
+    search_modal: { field_bg: '#ffffff', field_text: '#222222', overlay_bg: '#002b4f99' } }]];
 
 /* ---------- Menus ---------- */
 let menuView = null, miOpen = null, addingFor = null;

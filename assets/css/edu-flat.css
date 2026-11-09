@@ -17,3 +17,7 @@
 .nb-drawer-follow a:not(#edu-x){width:40px;height:40px;display:grid;place-items:center;border-radius:50%!important;background:color-mix(in srgb,var(--gc-accent,#7c3aed) 8%,#fff)!important;color:color-mix(in srgb,var(--gc-accent,#7c3aed) 75%,#000)!important;border:0!important;transition:background .15s,color .15s}
 .nb-drawer-follow a:not(#edu-x):hover{background:var(--gc-accent,#7c3aed)!important;color:#fff!important}
 .nb-drawer-follow a svg{width:19px!important;height:19px!important}
+.nb-drawer-follow .nb-drawer-dark:not(#edu-x){margin-left:auto;cursor:pointer;padding:0!important;min-height:0!important;width:40px!important;height:40px!important;display:grid!important;place-items:center;gap:0!important;flex:0 0 40px}
+.nb-drawer-follow .nb-drawer-dark svg{width:19px!important;height:19px!important;margin:0!important}
+[data-theme="dark"] .nb-drawer-follow{background:#151b23!important;border-top-color:#263040}
+[data-theme="dark"] .nb-drawer-follow a:not(#edu-x){background:#1f2937!important;color:#e5e7eb!important}

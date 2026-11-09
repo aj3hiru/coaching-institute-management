@@ -78,12 +78,10 @@
             <?php endforeach; ?>
           </ul>
         </nav>
-        <div class="mnav-foot"<?= th_on('h_dark') ? '' : ' hidden' ?>>
-          <a role="button" tabindex="0" class="mnav-dark dark-mode-toggle"><svg class="mnav-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg><span>Dark Mode</span><span class="mnav-switch" aria-hidden="true"></span></a>
-        </div>
-        <?php if ($__socials): ?>
+        <?php if ($__socials || th_on('h_dark')): // social links + the dark mode button (icon only) ?>
         <div class="nb-drawer-follow"><span>Follow Us</span><div>
           <?php foreach ($__socials as [$name, $url, $path]): ?><a href="<?= htmlspecialchars($url) ?>" target="_blank" rel="noopener nofollow" aria-label="<?= $name ?>"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="<?= $path ?>"/></svg></a><?php endforeach; ?>
+          <?php if (th_on('h_dark')): ?><a role="button" tabindex="0" class="mnav-dark dark-mode-toggle nb-drawer-dark" aria-label="Dark mode" title="Dark mode"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></a><?php endif; ?>
         </div></div>
         <?php endif; ?>
       </aside>

@@ -642,7 +642,7 @@ function renderHvCard(array $posts, string $key, string $title, string $viewAllU
   .hv-sub{margin:0 0 18px;color:#6b7280;font-size:14.5px}
   .hv-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:18px;align-items:start}.hv-side{display:flex;flex-direction:column;gap:18px;min-width:0}
   .hv-card{--hv:var(--gc-accent,#0c6878);--hv-soft:#e6f2f4;background:#fff;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;box-shadow:0 1px 2px rgba(16,24,40,.04)}
-  .hv-recent{--hv:var(--gc-accent,#0c6878);--hv-soft:#e6f2f4}.hv-admit{--hv:#2563eb;--hv-soft:#eaf1fe}.hv-answer{--hv:#059669;--hv-soft:#e7f7f1}.hv-result{--hv:#d97706;--hv-soft:#fdf3e2}
+  .hv-recent{--hv:var(--gc-accent,#0c6878);--hv-soft:#e6f2f4}.hv-admit{--hv:#f59e0b;--hv-soft:#fef3e2}.hv-answer{--hv:#16a34a;--hv-soft:#e7f7ec}.hv-result{--hv:var(--gc-accent-2,#1e73be);--hv-soft:#e8f1fa}
   .hv-head{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid #f0f1f3;border-top:3px solid var(--hv)}
   .hv-ico{width:34px;height:34px;border-radius:10px;background:var(--hv-soft);color:var(--hv);display:grid;place-items:center;flex-shrink:0}
   .hv-ico svg{width:19px;height:19px;fill:currentColor}
@@ -670,9 +670,9 @@ function renderHvCard(array $posts, string $key, string $title, string $viewAllU
     <?php
       renderHvCard($recentPosts, 'recent', 'Recent Updates', '/latest-posts', '<path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 10.4 3.3 3.3-1.4 1.4L11 13.2V6h2z"/>');
       echo '<div class="hv-side">';
-      renderHvCard($admitCards, 'admit', 'Quiz', '/categories/quiz', '<path d="M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm4 4a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zm-4 9h8c0-1.7-1.8-3-4-3s-4 1.3-4 3zm10-8v2h6V9zm0 4v2h4v-2z"/>');
-      renderHvCard($answerKeys, 'answer', 'Scholarship', '/categories/scholarship', '<path d="M7 3h10a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zm1.3 9.3-1.4 1.4L9.6 16.4 15.1 11l-1.4-1.4-4.1 4.1z"/>');
-      renderHvCard($results, 'result', 'General Knowledge', '/categories/general-knowledge', '<path d="M12 2 9.2 7.7 3 8.6l4.5 4.4-1.1 6.2L12 16.3l5.6 2.9-1.1-6.2L21 8.6l-6.2-.9z"/>');
+      renderHvCard($admitCards, 'admit', 'Quiz', '/categories/quiz', '<path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M9.5 9.5a2.5 2.5 0 0 1 5 0c0 1.7-2.5 2-2.5 4"/><circle cx="12" cy="17" r="1.1"/>');
+      renderHvCard($answerKeys, 'answer', 'Scholarship', '/categories/scholarship', '<path d="M12 3 1 9l11 6 9-4.9V17h2V9L12 3z"/><path d="M5 13.2V17c0 1.7 3.1 3 7 3s7-1.3 7-3v-3.8l-7 3.8-7-3.8z"/>');
+      renderHvCard($results, 'result', 'General Knowledge', '/categories/general-knowledge', '<path fill="none" stroke="currentColor" stroke-width="2" d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM3 12h18M12 3c2.5 2.5 3.8 5.5 3.8 9s-1.3 6.5-3.8 9c-2.5-2.5-3.8-5.5-3.8-9S9.5 5.5 12 3z"/>');
       echo '</div>';
     ?>
   </div>
