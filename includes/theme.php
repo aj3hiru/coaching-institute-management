@@ -551,10 +551,15 @@ function edu_theme_head(): string
     // Containers: a light colour for every box / card so it stands out from the white page (empty = no change)
     $__boxes = '.hc,.hc-item,.hm-cat,.hm-fc,.hm-post,.hm-btc,.hm-pc,.tC-card,.hv-card,.nb-card,.hf-item,.hf-intro,.sp-card,.lp-list,.sp-rv-top,'
         . '.nb-apx-card,.au.au-one,.st-card,.ac-box,.ac-ord,.ac-empty';
-    $__not = ':not(#edu-x):not(.post-layout *):not(.post-sidebar *)'; // never inside a blog post (its content, boxes, related posts) or a sidebar
+    $__not = ':not(#edu-x):not(.post-layout *):not(.post-sidebar *)';
+    // "inside one of those boxes" written as :is(.a *,.b *) — the page minifier drops the space in ".a :is(…)"
+    $__in = ':is(' . implode(',', array_map(fn($c) => $c . ' *', explode(',', $__boxes))) . '):not(#edu-x):not(.post-layout *):not(.post-sidebar *)'; // never inside a blog post (its content, boxes, related posts) or a sidebar
     if (($__cb = edu_theme_color('containers', 'background')) !== '') $css .= ':is(' . $__boxes . ')' . $__not . '{background-color:' . $__cb . '!important}'
-        . ':is(' . $__boxes . ')' . $__not . ' :is(.hc-b,.hc-body,.nb-card-body,.sp-cb,.hm-fc-b):not(#edu-x){background-color:transparent!important}'
-        . '.au.au-one .au-in input{background:#fff!important}';
+        . ':is(.hc-b,.hc-body,.nb-card-body,.sp-cb,.hm-fc-b)' . $__in . '{background-color:transparent!important}'
+        . '.au.au-one .au-in input{background:#fff!important}'
+        // outline buttons on a coloured card (Join batch, View details, Get free notes …) stay white
+        . ':is(.hc-go,.hm-btn.ghost,.st-btn.ghost,.ac-btn.ghost)' . $__in . '{background-color:#fff!important}'
+        . '.hc-go.hc-go:is(.hc:hover *)' . $__in . '{background-color:var(--sa,#0c6878)!important;color:#fff!important}'; // the card hovered: the button fills, as before
     if (($__cbr = edu_theme_color('containers', 'border')) !== '') $css .= ':is(' . $__boxes . ')' . $__not . '{border-color:' . $__cbr . '!important}';
     if (th_on('sb_sticky')) $css .= '@media (min-width:981px){.post-sidebar .trending-box{position:sticky;top:90px}}';
     if (!th_on('rp_bar')) $css .= '.nb-progress{display:none}';
