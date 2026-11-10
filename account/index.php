@@ -22,7 +22,7 @@ $ico = fn($n) => sh_icon($n);
 $card = function (array $p) use ($ico) {
     $pct = (int)$p['lessons'] ? (int)round((int)$p['done'] * 100 / (int)$p['lessons']) : 0;
     $isC = $p['type'] === 'course';
-    return '<a class="ac-cc" href="' . sh_e(sh_learn_url($p['slug'])) . '">' . sh_thumb_html($p)
+    return '<a class="ac-cc" href="' . sh_e(sh_learn_url($p['slug'])) . '">' . preg_replace('#<span class="st-type">.*?</span>#', '', sh_thumb_html($p)) // no "Video Course" tag — the heading already says it
         . '<div class="ac-cc-b"><h3>' . sh_e($p['title']) . '</h3>'
         . ($isC && (int)$p['lessons'] ? '<div class="ac-pg"><i style="width:' . $pct . '%"></i></div><span class="ac-pt">' . $pct . '% complete · ' . (int)$p['done'] . '/' . (int)$p['lessons'] . ' videos</span>' : '<span class="ac-pt">' . (int)$p['files'] . ' PDF' . ((int)$p['files'] === 1 ? '' : 's') . '</span>')
         . '<span class="ac-exp">' . $ico($p['expires_at'] ? 'calendar' : 'infinity') . ($p['expires_at'] ? 'Access till ' . date('d M Y', strtotime($p['expires_at'])) : 'Lifetime access') . '</span>'
@@ -33,10 +33,9 @@ $card = function (array $p) use ($ico) {
   <?= sh_account_nav($u, '') ?>
   <div class="ac-main">
     <?php if (isset($_GET['welcome'])): ?><div class="st-msg ok">Welcome, <?= sh_e($u['name']) ?>! Your account is ready.</div><?php endif; ?>
-    <div class="ac-h"><h1>My Courses</h1><a class="ac-browse" href="/store/"><?= $ico('compass') ?> Browse courses</a></div>
+    <div class="ac-h"><h1>My Courses</h1></div>
     <?php if (!$mine): ?>
-      <div class="ac-empty"><span class="ac-empty-i"><?= $ico('book') ?></span><b>You haven't joined any course yet</b><p>Start learning today — browse recorded courses and PDF notes from our teachers.</p>
-        <a class="ac-btn" href="/store/"><?= $ico('compass') ?> Browse courses</a></div>
+      <div class="ac-empty"><span class="ac-empty-i"><?= $ico('book') ?></span><b>You haven't joined any course yet</b><p>Start learning today — recorded courses and PDF notes from our teachers are under Courses in the menu.</p></div>
     <?php else: ?>
       <?php if ($courses): ?><h2 class="ac-sub">Video courses <small><?= count($courses) ?></small></h2><div class="ac-grid"><?php foreach ($courses as $p) echo $card($p); ?></div><?php endif; ?>
       <?php if ($notes): ?><h2 class="ac-sub">PDF notes <small><?= count($notes) ?></small></h2><div class="ac-grid"><?php foreach ($notes as $p) echo $card($p); ?></div><?php endif; ?>
