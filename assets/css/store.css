@@ -1056,3 +1056,12 @@ a.st-li:hover{background:#f7fbfc}a.st-li:hover svg{color:var(--sa)}
 .lt-pane{animation:ltIn .22s ease}
 @keyframes ltIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){.lt-strip button .lt-lb,.lt-pane{transition:none;animation:none}}
+/* discussion: the next messages load while scrolling — a small spinner at the end of the list; a new post fades in */
+.lt-dmore{display:flex;justify-content:center;padding:14px 0}.lt-dmore[hidden]{display:none}
+.lt-dspin{width:22px;height:22px;border-radius:50%!important;border:3px solid #e5e7eb;border-top-color:var(--sa,#0c6878);animation:ytSpin .8s linear infinite}
+@keyframes ytSpin{to{transform:rotate(360deg)}}
+.lt-dm.lt-new{animation:ltIn .3s ease}
+/* profile: small, quiet buttons (Add photo, Change password) */
+.ac-btn.ac-btn-sm{display:inline-flex;align-items:center;gap:6px;width:auto;min-height:0;padding:6px 12px!important;font-size:13px!important;font-weight:600;line-height:1.3}
+.ac-btn.ac-btn-sm svg{width:14px;height:14px}
+.ac-photo-b{margin-top:8px}

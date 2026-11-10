@@ -383,7 +383,7 @@
   // doubts
   var db = document.getElementById('ltDoubts'), loaded = false;
   function esc(s) { return String(s || '').replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
-  function badge(k, n) { var b = lt.querySelector('.lt-n[data-n=' + k + ']'); if (!b) return; b.textContent = n > 99 ? '99+' : n; b.hidden = !n; }
+  function badge(k, n) { var b = lt.querySelector('.lt-n[data-n=' + k + ']'); if (!b) return; b.setAttribute('data-c', n); b.textContent = n > 99 ? '99+' : n; b.hidden = !n; }
   function render(list) {
     var box = db.querySelector('.lt-dlist'); badge('doubts', list.length);
     if (!list.length) { box.innerHTML = '<p class="lt-dl-empty">No doubts yet.</p>'; return; }
@@ -409,35 +409,60 @@
     });
     if (lt.querySelector('.lt-strip button.on[data-lt=doubts]')) loadDoubts();
   }
-  // discussion: everyone in the course reads and writes (newest first); your own message can be removed
+  // discussion: everyone in the course reads and writes (newest first). Only 30 come at a time: the next 30 load when the
+  // visitor scrolls near the end of the list (never all at once). A new message / a removed one changes just that one item.
   var dc = document.getElementById('ltDisc'), dLoaded = false;
-  function renderDisc(list) {
-    var box = dc.querySelector('.lt-dlist'); badge('discuss', list.length);
-    if (!list.length) { box.innerHTML = '<p class="lt-dl-empty">No messages yet.</p>'; return; }
-    box.innerHTML = list.map(function (d) {
-      return '<div class="lt-d lt-dm' + (d.mine ? ' mine' : '') + (d.teacher ? ' tchr' : '') + '"><div class="lt-d-q"><span class="sp-av sp-av' + (d.id % 3) + '">' + esc(d.who.charAt(0)) + '</span><div><b>' + (d.mine ? 'You' : esc(d.who))
-        + (d.teacher ? ' <em class="lt-tb">Teacher</em>' : '') + '</b><small>' + esc(d.at) + '</small><p>' + esc(d.m).replace(/\n/g, '<br>') + '</p></div>'
-        + (d.can_del ? '<button type="button" class="lt-del" data-del="' + d.id + '" aria-label="Remove">✕</button>' : '') + '</div></div>';
-    }).join('');
-  }
-  function loadDisc() {
-    if (!dc || dLoaded) return; dLoaded = true;
-    fetch('/store/discuss?l=' + dc.getAttribute('data-l'), { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (d) { if (d.error) { dc.querySelector('.lt-dlist').innerHTML = '<p class="lt-dl-empty">' + esc(d.error) + '</p>'; return; } renderDisc(d.list || []); }).catch(function () { dLoaded = false; });
+  function dItem(d) {
+    return '<div class="lt-d lt-dm' + (d.mine ? ' mine' : '') + (d.teacher ? ' tchr' : '') + '" data-id="' + d.id + '"><div class="lt-d-q"><span class="sp-av sp-av' + (d.id % 3) + '">' + esc(d.who.charAt(0)) + '</span><div><b>' + (d.mine ? 'You' : esc(d.who))
+      + (d.teacher ? ' <em class="lt-tb">Teacher</em>' : '') + '</b><small>' + esc(d.at) + '</small><p>' + esc(d.m).replace(/\n/g, '<br>') + '</p></div>'
+      + (d.can_del ? '<button type="button" class="lt-del" data-del="' + d.id + '" aria-label="Remove">✕</button>' : '') + '</div></div>';
   }
   if (dc) {
-    var df = dc.querySelector('.lt-ask'), dta = df.querySelector('textarea'), dm = df.querySelector('.lt-ask-m'), dbtn = df.querySelector('button'), dHint = dm.textContent;
-    var post = function (fd, ok) {
+    var dBox = dc.querySelector('.lt-dlist'), dBusy = false, dMore = true, dLast = 0, dCount = 0, dIo = null;
+    var dBadge = lt.querySelector('.lt-n[data-n=discuss]'); dCount = dBadge ? parseInt(dBadge.getAttribute('data-c'), 10) || 0 : 0;
+    var setCount = function (n) { dCount = Math.max(0, n); badge('discuss', dCount); };
+    var sentinel = document.createElement('div'); sentinel.className = 'lt-dmore'; sentinel.innerHTML = '<span class="lt-dspin"></span>';
+    var empty = function () { if (!dBox.querySelector('.lt-dm')) { var e = dBox.querySelector('.lt-dl-empty'); if (!e) { e = document.createElement('p'); e.className = 'lt-dl-empty'; dBox.insertBefore(e, dBox.firstChild); } e.textContent = 'No messages yet.'; } else { var x = dBox.querySelector('.lt-dl-empty'); if (x) x.remove(); } };
+    var page = function () {
+      if (dBusy || !dMore) return; dBusy = true; sentinel.hidden = false;
+      fetch('/store/discuss?l=' + dc.getAttribute('data-l') + (dLast ? '&before=' + dLast : ''), { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (d) {
+        if (d.error) { dBox.innerHTML = '<p class="lt-dl-empty">' + esc(d.error) + '</p>'; dMore = false; return; }
+        if (!dLast) dBox.innerHTML = '';
+        var list = d.list || [], tmp = document.createElement('div'); tmp.innerHTML = list.map(dItem).join('');
+        while (tmp.firstChild) dBox.appendChild(tmp.firstChild);
+        if (list.length) dLast = list[list.length - 1].id;
+        dMore = !!d.more; dBox.appendChild(sentinel); sentinel.hidden = !dMore; empty();
+      }).catch(function () { dLoaded = false; }).then(function () {
+        dBusy = false;
+        // the end is already on screen (short list / tall screen): load the next page too
+        if (dMore && sentinel.getBoundingClientRect().top < innerHeight + 300 && !lt.querySelector('[data-pane=discuss]').hidden) page();
+      });
+    };
+    window._ltDiscPage = page;
+    if ('IntersectionObserver' in window) { dIo = new IntersectionObserver(function (es) { if (es[0].isIntersecting) page(); }, { rootMargin: '0px 0px 400px 0px' }); dIo.observe(sentinel); }
+    else addEventListener('scroll', function () { if (sentinel.getBoundingClientRect().top < innerHeight + 400) page(); }, { passive: true });
+  }
+  function loadDisc() { if (!dc || dLoaded) return; dLoaded = true; window._ltDiscPage(); }
+  if (dc) {
+    var df = dc.querySelector('.lt-ask'), dta = df.querySelector('textarea'), dm = df.querySelector('.lt-ask-m'), dbtn = df.querySelector('button');
+    var post = function (fd) {
       fd.append('l', dc.getAttribute('data-l')); fd.append('_t', dc.getAttribute('data-t'));
-      return fetch('/store/discuss', { method: 'POST', body: fd, credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (d) { if (d.error) { dm.textContent = d.error; return; } ok && ok(); renderDisc(d.list || []); });
+      return fetch('/store/discuss', { method: 'POST', body: fd, credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (d) { if (d.error) { dm.textContent = d.error; throw 0; } return d; });
     };
     df.addEventListener('submit', function () {
       var m = dta.value.trim(); if (m.length < 2) { dm.textContent = 'Please write your message.'; dta.focus(); return; }
       dbtn.disabled = true; dm.textContent = 'Posting…';
       var fd = new FormData(); fd.append('m', m);
-      post(fd, function () { dta.value = ''; dm.textContent = dHint; }).catch(function () { dm.textContent = 'Could not post. Please try again.'; }).finally(function () { dbtn.disabled = false; });
+      post(fd).then(function (d) {
+        dta.value = ''; dm.textContent = '';
+        if (d.item) { var t = document.createElement('div'); t.innerHTML = dItem(d.item); var n = t.firstChild; n.classList.add('lt-new'); dBox.insertBefore(n, dBox.firstChild); setCount(dCount + 1); empty(); }
+      }).catch(function (e) { if (e !== 0) dm.textContent = 'Could not post. Please try again.'; }).then(function () { dbtn.disabled = false; });
     });
-    dc.addEventListener('click', function (e) { var b = e.target.closest('[data-del]'); if (!b) return; var go = function () { var fd = new FormData(); fd.append('del', b.getAttribute('data-del')); post(fd); };
-      if (window.EduDialog) EduDialog.confirm('This message will be removed for everyone.', { title: 'Remove this message?', danger: true }).then(function (y) { if (y) go(); }); else if (confirm('Remove this message?')) go(); });
+    dc.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-del]'); if (!b) return;
+      var go = function () { var fd = new FormData(); fd.append('del', b.getAttribute('data-del')); post(fd).then(function (d) { var row = b.closest('.lt-dm'); if (row) row.remove(); if (d.removed) setCount(dCount - 1); empty(); }).catch(function () {}); };
+      if (window.EduDialog) EduDialog.confirm('This message will be removed for everyone.', { title: 'Remove this message?', danger: true }).then(function (y) { if (y) go(); }); else if (confirm('Remove this message?')) go();
+    });
     if (lt.querySelector('.lt-strip button.on[data-lt=discuss]')) loadDisc();
   }
 })();

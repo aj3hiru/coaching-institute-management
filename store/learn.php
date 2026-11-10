@@ -127,7 +127,7 @@ $ico = fn($n) => sh_icon($n);
     <?php // Discussion / PDF notes / MCQ / VVI / doubts: right under the video and its title ?>
     <?php if ($tabs): ?>
     <div class="lt" id="lt">
-      <div class="lt-strip" role="tablist"><?php $first = true; foreach ($tabs as $k => [$lab, $ic, $cnt]): ?><button type="button" role="tab" data-lt="<?= $k ?>" aria-selected="<?= $first ? 'true' : 'false' ?>" aria-label="<?= sh_e($lab) ?>" title="<?= sh_e($lab) ?>" class="<?= $first ? 'on' : '' ?><?= $k === 'discuss' ? ' lt-main' : '' ?>"><?= $ico($ic) ?><i class="lt-n" data-n="<?= $k ?>"<?= $cnt ? '' : ' hidden' ?>><?= $cnt > 99 ? '99+' : $cnt ?></i><span class="lt-lb"><?= $lab ?></span></button><?php $first = false; endforeach; ?></div>
+      <div class="lt-strip" role="tablist"><?php $first = true; foreach ($tabs as $k => [$lab, $ic, $cnt]): ?><button type="button" role="tab" data-lt="<?= $k ?>" aria-selected="<?= $first ? 'true' : 'false' ?>" aria-label="<?= sh_e($lab) ?>" title="<?= sh_e($lab) ?>" class="<?= $first ? 'on' : '' ?><?= $k === 'discuss' ? ' lt-main' : '' ?>"><?= $ico($ic) ?><i class="lt-n" data-n="<?= $k ?>" data-c="<?= (int)$cnt ?>"<?= $cnt ? '' : ' hidden' ?>><?= $cnt > 99 ? '99+' : $cnt ?></i><span class="lt-lb"><?= $lab ?></span></button><?php $first = false; endforeach; ?></div>
       <?php $first = true; foreach ($tabs as $k => $_): ?><div class="lt-pane" data-pane="<?= $k ?>"<?= $first ? '' : ' hidden' ?>>
         <?php if ($k === 'discuss'): ?>
           <?php if ($owner || $staff): ?>

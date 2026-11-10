@@ -63,8 +63,8 @@ $ico = fn($n) => sh_icon($n);
         <?php $avUrl = sh_avatar_url($u); ?>
         <div class="ac-photo">
           <span class="ac-photo-i" id="pfPrev"><?php if ($avUrl): ?><img src="<?= sh_e($avUrl) ?>" alt=""><?php else: ?><?= sh_e(mb_strtoupper(mb_substr($u['name'], 0, 1))) ?><?php endif; ?></span>
-          <div><b>Profile photo</b><small>JPG, PNG or WebP. It shows at the top of the site when you are logged in.</small>
-            <div class="ac-photo-b"><label class="ac-btn ghost" for="pf-ph"><?= $ico('user') ?> <?= $avUrl ? 'Change photo' : 'Add photo' ?></label><input type="file" id="pf-ph" name="photo" accept="image/jpeg,image/png,image/webp" hidden>
+          <div><b>Profile photo</b>
+            <div class="ac-photo-b"><label class="ac-btn ghost ac-btn-sm" for="pf-ph"><?= $ico('user') ?> <?= $avUrl ? 'Change photo' : 'Add photo' ?></label><input type="file" id="pf-ph" name="photo" accept="image/jpeg,image/png,image/webp" hidden>
             <?php if ($avUrl): ?><label class="ac-photo-rm"><input type="checkbox" name="photo_rm" value="1"> Remove photo</label><?php endif; ?></div></div>
         </div>
         <div class="ac-two">
@@ -82,7 +82,7 @@ $ico = fn($n) => sh_icon($n);
     </div>
     <div class="ac-box">
       <div class="ac-row" id="password"><div><b>Password</b><small>Keep your account safe with a password only you know.</small></div>
-        <button type="button" class="ac-btn ghost" id="acPwBtn" aria-expanded="<?= $openPw ? 'true' : 'false' ?>" aria-controls="acPw"><?= $ico('lock') ?> Change password</button></div>
+        <button type="button" class="ac-btn ghost ac-btn-sm" id="acPwBtn" aria-expanded="<?= $openPw ? 'true' : 'false' ?>" aria-controls="acPw"><?= $ico('lock') ?> Change password</button></div>
       <form method="post" class="ac-form ac-pw" id="acPw"<?= $openPw ? '' : ' hidden' ?>><?= sh_csrf_field() ?><input type="hidden" name="a" value="password">
         <div class="st-f ac-pw1"><label for="pf-p">New password</label><div class="st-pw"><input id="pf-p" type="password" name="pass" autocomplete="new-password" required minlength="4"><button type="button" aria-label="Show password">Show</button></div><small>At least 4 characters.</small></div>
         <button class="ac-btn" type="submit">Save new password</button>

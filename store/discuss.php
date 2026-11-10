@@ -1,6 +1,8 @@
 <?php
 // Lecture Discussion (JSON) — like comments: every student who has the course, and the teachers / staff, read and write;
-// everyone sees everyone's messages. GET l=ID → the list; POST l, m → write; POST l, del=ID → remove your own (staff: any).
+// everyone sees everyone's messages. GET l=ID[&before=ID] → one page (newest first, PAGE at a time, "more" when older ones
+// are left — the page asks for the next page as the visitor scrolls); POST l, m → write (answers only the new message);
+// POST l, del=ID → remove your own (staff: any). Uses the (lesson_id, id) index, so 5000 messages cost the same as 50.
 // Private questions go to Doubts & Problems instead (store/doubt.php).
 require_once dirname(__DIR__) . '/includes/config.php';
 require_once INCLUDES_PATH . '/shop.php';
@@ -18,9 +20,10 @@ $uid = $u ? (int)$u['id'] : 0;
 $owner = $uid && sh_has_access($pdo, $uid, (int)$L['product_id']);
 if (!$owner && !$staffId) $out(['error' => 'Only students of this course can see and join the discussion.'], 403);
 $short = function (string $n): string { $p = preg_split('/\s+/', trim(preg_replace('/\(.*?\)/', '', $n))); return trim(($p[0] ?? 'Student') . (isset($p[1]) ? ' ' . mb_substr($p[1], 0, 1) . '.' : '')) ?: 'Student'; };
-$list = function () use ($pdo, $lid, $uid, $staffId, $short) {
+const DISC_PAGE = 30;
+$list = function (int $before = 0, int $only = 0) use ($pdo, $lid, $uid, $staffId, $short) {
     $q = $pdo->prepare("SELECT d.*, u.name, s.username, a.name AS aname FROM sh_discuss d LEFT JOIN sh_users u ON u.id = d.user_id LEFT JOIN users s ON s.id = d.staff_id
-        LEFT JOIN authors a ON a.user_id = d.staff_id WHERE d.lesson_id = ? AND d.status = 'visible' ORDER BY d.id DESC LIMIT 200");
+        LEFT JOIN authors a ON a.user_id = d.staff_id WHERE d.lesson_id = ? AND d.status = 'visible'" . ($only ? ' AND d.id = ' . $only : ($before ? ' AND d.id < ' . $before : '')) . " ORDER BY d.id DESC LIMIT " . (DISC_PAGE + 1));
     $q->execute([$lid]);
     return array_map(fn($d) => ['id' => (int)$d['id'], 'teacher' => (bool)$d['staff_id'], 'who' => $d['staff_id'] ? trim((string)($d['aname'] ?: $d['username'])) ?: 'Teacher' : $short((string)$d['name']),
         'mine' => ($uid && (int)$d['user_id'] === $uid) || ($staffId && (int)$d['staff_id'] === $staffId), 'can_del' => ($uid && (int)$d['user_id'] === $uid) || $staffId > 0,
@@ -29,8 +32,8 @@ $list = function () use ($pdo, $lid, $uid, $staffId, $short) {
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     if (!sh_csrf_ok()) $out(['error' => 'This page had expired. Please reload it.'], 400);
     if (($del = (int)($_POST['del'] ?? 0)) > 0) {
-        $pdo->prepare("UPDATE sh_discuss SET status = 'hidden' WHERE id = ? AND lesson_id = ? AND (? > 0 OR (user_id = ? AND user_id IS NOT NULL))")->execute([$del, $lid, $staffId, $uid]);
-        $out(['ok' => true, 'list' => $list()]);
+        $st = $pdo->prepare("UPDATE sh_discuss SET status = 'hidden' WHERE id = ? AND lesson_id = ? AND (? > 0 OR (user_id = ? AND user_id IS NOT NULL))"); $st->execute([$del, $lid, $staffId, $uid]);
+        $out(['ok' => true, 'removed' => $st->rowCount() > 0 ? $del : 0]);
     }
     $text = trim(preg_replace("/\r\n?/", "\n", (string)($_POST['m'] ?? '')));
     if (mb_strlen($text) < 2) $out(['error' => 'Please write your message.'], 400);
@@ -41,6 +44,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     }
     $pdo->prepare("INSERT INTO sh_discuss (product_id, lesson_id, user_id, staff_id, body) VALUES (?, ?, ?, ?, ?)")
         ->execute([$L['product_id'], $lid, $staffId ? null : $uid, $staffId ?: null, $text]);
-    $out(['ok' => true, 'list' => $list()]);
+    $out(['ok' => true, 'item' => $list(0, (int)$pdo->lastInsertId())[0] ?? null]);
 }
-$out(['ok' => true, 'list' => $list()]);
+$rows = $list(max(0, (int)($_GET['before'] ?? 0)));
+$more = count($rows) > DISC_PAGE;
+$out(['ok' => true, 'list' => array_slice($rows, 0, DISC_PAGE), 'more' => $more]);
