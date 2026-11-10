@@ -262,7 +262,7 @@ $rowHtml = function (array $r, int $idx) use ($L): string {
     $h = '<div class="ci-enr-row ci-fee-row ci-ec' . ($locked ? ' is-locked' : '') . (!empty($r['remove']) ? ' is-removing' : '') . '"' . ($id ? ' id="enr-' . $id . '"' : '') . ' data-paid="' . $paid . '" data-new="' . ($id ? 0 : 1) . '">';
     $h .= '<input type="hidden" name="e_id[]" value="' . $id . '"><input type="hidden" name="e_key[]" value="' . ci_e($key) . '">';
     // head: what this course is, and its buttons
-    $h .= '<div class="ci-ec-h"><div class="ci-ec-t"><span class="ci-ec-ico">' . ci_svg('book-plus') . '</span><div><b class="ci-ec-name">' . ci_e($cname ?: 'New course') . '</b><small class="ci-ec-sub">'
+    $h .= '<div class="ci-ec-h"><div class="ci-ec-t"><span class="ci-ec-ico">' . ci_svg('book-plus') . '</span><div><b class="ci-ec-name">' . ci_e($cname ?: 'Add to New Batch') . '</b><small class="ci-ec-sub">'
         . ci_e(implode(' · ', array_filter([$bname ? 'Batch ' . $bname : ($id ? 'No batch' : ''), $id ? ($type === 'installment' ? 'Installment' : 'Final fee') : '', $id && ($r['status'] ?? 'active') !== 'active' ? ucfirst($r['status']) : '']))) . '</small></div></div><div class="ci-icos">';
     if ($id) $h .= '<button type="button" class="ci-ico ci-ec-edit" aria-label="Change this course">' . ci_svg('edit') . '</button>';
     if (!$id) $h .= '<button type="button" class="ci-ico ci-ico-danger ci-enr-del" aria-label="Remove this course">' . ci_svg('trash') . '</button>';
@@ -442,7 +442,7 @@ $v = fn($k) => ci_e($form[$k] ?? '');
     if (ed) ed.addEventListener('click', function () { var l = row.classList.toggle('is-locked'); ed.classList.toggle('on', !l); if (!l) row.querySelector('.ci-final').focus(); });
     var title = function () {
       var o = course.options[course.selectedIndex], b = row.querySelector('.ci-batch'), bo = b.options[b.selectedIndex];
-      row.querySelector('.ci-ec-name').textContent = o && o.value ? o.textContent.replace(/ — ₹[\d,]+$/, '') : 'New course';
+      row.querySelector('.ci-ec-name').textContent = o && o.value ? o.textContent.replace(/ — ₹[\d,]+$/, '') : 'Add to New Batch';
       row.querySelector('.ci-ec-sub').textContent = [bo && bo.value ? 'Batch ' + bo.textContent.split(' · ')[0] : '', type.value === 'installment' ? 'Installment' : 'Final fee'].filter(Boolean).join(' · ');
     };
     [course, row.querySelector('.ci-batch'), type].forEach(function (el) { el.addEventListener('change', title); });

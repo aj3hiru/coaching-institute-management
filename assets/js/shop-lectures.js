@@ -15,7 +15,7 @@
     return fetch('/admin/shop-lectures.php?course=' + C.pid, { method: 'POST', body: fd, credentials: 'same-origin' }).then(function (r) { return r.json(); })
       .then(function (d) { if (!d.ok) throw new Error(d.error || 'Could not save.'); return d; });
   }
-  function fail(e) { alert(e.message || e); }
+  function fail(e) { EduDialog.alert(e.message || e, { title: 'Could not save' }); }
   function color(sid) { var i = C.secs.findIndex(function (s) { return s.id === sid; }); return i < 0 ? 'transparent' : COLORS[i % COLORS.length]; }
   function secOpts(sel) { return '<option value="0">— No chapter —</option>' + C.secs.map(function (s) { return '<option value="' + s.id + '"' + (s.id === sel ? ' selected' : '') + '>' + esc(s.title) + '</option>'; }).join(''); }
   function unitOpts(sid, sel) { var u = C.units[sid] || []; return '<option value="0">' + (sid ? (u.length ? '— No unit —' : '— no units —') : '—') + '</option>' + u.map(function (x) { return '<option value="' + x.id + '"' + (x.id === sel ? ' selected' : '') + '>' + esc(x.title) + '</option>'; }).join(''); }
@@ -103,8 +103,8 @@
   });
   $('lsRm').addEventListener('click', function () {
     var ids = picked().map(function (tr) { return +tr.dataset.id; }); if (!ids.length) return;
-    if (!confirm('Remove ' + ids.length + ' lecture' + (ids.length === 1 ? '' : 's') + ' from this course? Their notes, MCQs and VVI go too. Videos of the playlist will not come back by themselves.')) return;
-    post({ action: 'remove', ids: ids }).then(function () { C.rows = C.rows.filter(function (r) { return ids.indexOf(r.id) < 0; }); trs().forEach(function (tr) { if (ids.indexOf(+tr.dataset.id) > -1) tr.remove(); }); $('lsEmpty').hidden = !!trs().length; paint(); }).catch(fail);
+    EduDialog.confirm('Their notes, MCQs and VVI go too. Videos of the playlist will not come back by themselves.', { title: 'Remove ' + ids.length + ' lecture' + (ids.length === 1 ? '' : 's') + '?', danger: true }).then(function (y) { if (!y) return;
+    post({ action: 'remove', ids: ids }).then(function () { C.rows = C.rows.filter(function (r) { return ids.indexOf(r.id) < 0; }); trs().forEach(function (tr) { if (ids.indexOf(+tr.dataset.id) > -1) tr.remove(); }); $('lsEmpty').hidden = !!trs().length; paint(); }).catch(fail); });
   });
 
   // ---- save ----
@@ -147,16 +147,15 @@
       var dir = +b.dataset.mv, i = C.secs.findIndex(function (s) { return s.id === id; }), j = i + dir; if (j < 0 || j >= C.secs.length) return;
       post({ action: 'ch_move', id: id, dir: dir }).then(function () { var t = C.secs[i]; C.secs[i] = C.secs[j]; C.secs[j] = t; var keep = dirty; refreshSelects(); setDirty(keep); }).catch(fail);
     } else if (e.target.closest('[data-del]')) {
-      if (!confirm('Remove this chapter? Its lectures stay in the course, without a chapter.')) return;
       var go = function () { return post({ action: 'ch_del', id: id }).then(function () { C.secs = C.secs.filter(function (s) { return s.id !== id; }); delete C.units[id]; refreshSelects(); }); };
-      (dirty ? save(true).then(go) : go()).catch(fail);
+      EduDialog.confirm('Its lectures stay in the course, without a chapter.', { title: 'Remove this chapter?', danger: true }).then(function (y) { if (y) (dirty ? save(true).then(go) : go()).catch(fail); });
     } else if (e.target.closest('[data-uadd]')) {
-      var t = prompt('Unit name (inside "' + C.secs.find(function (s) { return s.id === id; }).title + '")'); if (!t || !t.trim()) return;
-      post({ action: 'unit_add', section_id: id, title: t.trim() }).then(function (d) { (C.units[id] = C.units[id] || []).push({ id: d.id, title: d.title }); var keep = dirty; refreshSelects(); setDirty(keep); }).catch(fail);
+      EduDialog.prompt('Inside chapter: ' + C.secs.find(function (s) { return s.id === id; }).title, { title: 'New unit', placeholder: 'Unit name, e.g. Unit 1 — Numbers', ok: 'Add unit' }).then(function (t) { if (!t) return;
+      post({ action: 'unit_add', section_id: id, title: t }).then(function (d) { (C.units[id] = C.units[id] || []).push({ id: d.id, title: d.title }); var keep = dirty; refreshSelects(); setDirty(keep); }).catch(fail); });
     } else if ((b = e.target.closest('[data-udel]'))) {
-      var uid = +b.dataset.udel; if (!confirm('Remove this unit? Its lectures stay in the chapter.')) return;
+      var uid = +b.dataset.udel;
       var go2 = function () { return post({ action: 'unit_del', id: uid }).then(function () { C.units[id] = (C.units[id] || []).filter(function (u) { return u.id !== uid; }); refreshSelects(); }); };
-      (dirty ? save(true).then(go2) : go2()).catch(fail);
+      EduDialog.confirm('Its lectures stay in the chapter.', { title: 'Remove this unit?', danger: true }).then(function (y) { if (y) (dirty ? save(true).then(go2) : go2()).catch(fail); });
     }
   });
   $('lsChAdd').addEventListener('click', function () {
@@ -179,7 +178,7 @@
   });
   $('lsUrl').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); $('lsLink').click(); } });
   if ($('lsScan')) $('lsScan').addEventListener('click', function () { var b = this; busy(b, 'Scanning…'); (dirty ? save(true) : Promise.resolve()).then(function () { return post({ action: 'scan' }); }).then(done).catch(function (e) { say('✗ ' + esc(e.message), false); }).then(function () { b.disabled = false; b.innerHTML = b.dataset.h; }); });
-  if ($('lsUnlink')) $('lsUnlink').addEventListener('click', function () { if (!confirm('Unlink the playlist? The lectures stay; new videos will not come in any more.')) return; post({ action: 'unlink' }).then(function () { setDirty(false); location.reload(); }).catch(fail); });
+  if ($('lsUnlink')) $('lsUnlink').addEventListener('click', function () { EduDialog.confirm('The lectures stay; new videos will not come in any more.', { title: 'Unlink the playlist?', ok: 'Unlink', danger: true }).then(function (y) { if (y) post({ action: 'unlink' }).then(function () { setDirty(false); location.reload(); }).catch(fail); }); });
   if ($('lsUnskip')) $('lsUnskip').addEventListener('click', function (e) { e.preventDefault(); post({ action: 'unskip' }).then(function () { return post({ action: 'scan' }); }).then(done).catch(fail); });
   if ($('lsNew')) $('lsNew').addEventListener('change', function () { post({ action: 'newvids', section_id: this.value }).catch(fail); });
 

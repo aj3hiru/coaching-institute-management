@@ -415,8 +415,8 @@
     var box = dc.querySelector('.lt-dlist'); badge('discuss', list.length);
     if (!list.length) { box.innerHTML = '<p class="lt-dl-empty">No messages yet.</p>'; return; }
     box.innerHTML = list.map(function (d) {
-      return '<div class="lt-d lt-dm' + (d.mine ? ' mine' : '') + (d.teacher ? ' tchr' : '') + '"><div class="lt-d-q"><span class="sp-av sp-av' + (d.id % 3) + '">' + esc(d.who.charAt(0)) + '</span><div><b>' + esc(d.who)
-        + (d.teacher ? ' <em class="lt-tb">Teacher</em>' : '') + (d.mine ? ' <em>you</em>' : '') + '</b><small>' + esc(d.at) + '</small><p>' + esc(d.m).replace(/\n/g, '<br>') + '</p></div>'
+      return '<div class="lt-d lt-dm' + (d.mine ? ' mine' : '') + (d.teacher ? ' tchr' : '') + '"><div class="lt-d-q"><span class="sp-av sp-av' + (d.id % 3) + '">' + esc(d.who.charAt(0)) + '</span><div><b>' + (d.mine ? 'You' : esc(d.who))
+        + (d.teacher ? ' <em class="lt-tb">Teacher</em>' : '') + '</b><small>' + esc(d.at) + '</small><p>' + esc(d.m).replace(/\n/g, '<br>') + '</p></div>'
         + (d.can_del ? '<button type="button" class="lt-del" data-del="' + d.id + '" aria-label="Remove">✕</button>' : '') + '</div></div>';
     }).join('');
   }
@@ -436,7 +436,8 @@
       var fd = new FormData(); fd.append('m', m);
       post(fd, function () { dta.value = ''; dm.textContent = dHint; }).catch(function () { dm.textContent = 'Could not post. Please try again.'; }).finally(function () { dbtn.disabled = false; });
     });
-    dc.addEventListener('click', function (e) { var b = e.target.closest('[data-del]'); if (!b || !confirm('Remove this message?')) return; var fd = new FormData(); fd.append('del', b.getAttribute('data-del')); post(fd); });
+    dc.addEventListener('click', function (e) { var b = e.target.closest('[data-del]'); if (!b) return; var go = function () { var fd = new FormData(); fd.append('del', b.getAttribute('data-del')); post(fd); };
+      if (window.EduDialog) EduDialog.confirm('This message will be removed for everyone.', { title: 'Remove this message?', danger: true }).then(function (y) { if (y) go(); }); else if (confirm('Remove this message?')) go(); });
     if (lt.querySelector('.lt-strip button.on[data-lt=discuss]')) loadDisc();
   }
 })();
