@@ -33,7 +33,7 @@ $card = function (array $p) use ($ico) {
   <?= sh_account_nav($u, '') ?>
   <div class="ac-main">
     <?php if (isset($_GET['welcome'])): ?><div class="st-msg ok">Welcome, <?= sh_e($u['name']) ?>! Your account is ready.</div><?php endif; ?>
-    <div class="ac-h"><h1>My Courses</h1></div>
+    <div class="ac-h ac-h-sr"><h1>My Courses</h1></div>
     <?php if (!$mine): ?>
       <div class="ac-empty"><span class="ac-empty-i"><?= $ico('book') ?></span><b>You haven't joined any course yet</b><p>Start learning today — recorded courses and PDF notes from our teachers are under Courses in the menu.</p></div>
     <?php else: ?>

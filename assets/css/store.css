@@ -1000,8 +1000,8 @@ a.st-li:hover{background:#f7fbfc}a.st-li:hover svg{color:var(--sa)}
 /* lecture tabs under the video: Discussion with its name, the others as icons — a name opens on hover or when the tab is open */
 .lt{margin-top:14px}
 .lt-strip button .lt-lb{display:inline-block;max-width:0;overflow:hidden;opacity:0;transition:max-width .25s ease,opacity .2s ease;vertical-align:middle}
-.lt-strip button.lt-main .lt-lb,.lt-strip button.on .lt-lb,.lt-strip button:hover .lt-lb,.lt-strip button:focus-visible .lt-lb{max-width:180px;opacity:1}
-.lt-strip button:not(.lt-main):not(.on):not(:hover) {gap:0;padding-left:14px;padding-right:14px}
+.lt-strip button.on .lt-lb,.lt-strip button:hover .lt-lb,.lt-strip button:focus-visible .lt-lb{max-width:180px;opacity:1}
+.lt-strip button:not(.on):not(:hover) {gap:0;padding-left:14px;padding-right:14px}
 .lt-strip button svg{width:18px;height:18px}
 .lt-strip button.on{color:var(--sa,#0c6878)}
 /* discussion */
@@ -1034,10 +1034,13 @@ a.st-li:hover{background:#f7fbfc}a.st-li:hover svg{color:var(--sa)}
 /* lecture tabs: a round number badge after the icon; an empty tab says so in one line */
 .lt-strip button .lt-n{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;margin-left:5px;border-radius:99px!important;background:var(--sa,#0c6878);color:#fff;font:700 10.5px/1 inherit;font-family:inherit;font-style:normal}
 .lt-strip button .lt-n[hidden]{display:none}
-.lt-strip button:not(.lt-main):not(.on):not(:hover) .lt-n{margin-left:4px}
+.lt-strip button:not(.on):not(:hover) .lt-n{margin-left:4px}
 .lt-strip button .lt-lb{margin-left:6px}
-.lt-strip button:not(.lt-main):not(.on):not(:hover) .lt-lb{margin-left:0}
+.lt-strip button:not(.on):not(:hover) .lt-lb{margin-left:0}
 .lt-none{display:flex;align-items:center;gap:10px;padding:16px;color:#6b7280;font-size:14px;background:#f8fafc;border:1px dashed #d1d5db;border-radius:5px}
 .lt-none svg{width:20px;height:20px;flex:0 0 auto;color:#9ca3af}
 .lt-ask-m:empty{display:none}
-.lt-strip button,.lt-strip button:not(.lt-main):not(.on):not(:hover){gap:0}
+.lt-strip button,.lt-strip button:not(.on):not(:hover){gap:0}
+/* My Courses: the page name is for screen readers only — the Video courses / PDF notes headings carry the underline */
+.ac-h.ac-h-sr{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;margin:0;padding:0;border:0}
+.ac-h-sr+.ac-sub{margin-top:4px}
