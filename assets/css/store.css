@@ -1044,3 +1044,15 @@ a.st-li:hover{background:#f7fbfc}a.st-li:hover svg{color:var(--sa)}
 /* My Courses: the page name is for screen readers only — the Video courses / PDF notes headings carry the underline */
 .ac-h.ac-h-sr{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;margin:0;padding:0;border:0}
 .ac-h-sr+.ac-sub{margin-top:4px}
+/* lecture tabs, smooth switching: the same padding and spacing on every tab (nothing jumps), only the name slides open / shut;
+   on touch phones a tapped tab does not stay "hovered", so only the open tab shows its name */
+.lt-strip button,.lt-strip button:not(.on):not(:hover){gap:0;padding:13px 14px;transition:color .2s ease}
+.lt-strip button .lt-n,.lt-strip button:not(.on):not(:hover) .lt-n{margin-left:5px}
+.lt-strip button .lt-lb,.lt-strip button:not(.on):not(:hover) .lt-lb{margin-left:0;padding-left:0;max-width:0;opacity:0;transition:max-width .28s cubic-bezier(.4,0,.2,1),opacity .2s ease,padding-left .28s cubic-bezier(.4,0,.2,1);will-change:max-width}
+.lt-strip button.on .lt-lb{max-width:150px;opacity:1;padding-left:7px}
+@media (hover:hover){.lt-strip button:hover .lt-lb{max-width:150px;opacity:1;padding-left:7px}}
+@media (hover:none){.lt-strip button:not(.on):hover .lt-lb{max-width:0;opacity:0;padding-left:0}}
+.lt-strip button::after{transition:transform .25s ease}
+.lt-pane{animation:ltIn .22s ease}
+@keyframes ltIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.lt-strip button .lt-lb,.lt-pane{transition:none;animation:none}}

@@ -343,8 +343,11 @@
   var lt = document.getElementById('lt'); if (!lt) return;
   var btns = lt.querySelectorAll('.lt-strip button'), panes = lt.querySelectorAll('.lt-pane');
   function show(k) {
-    btns.forEach(function (b) { var on = b.getAttribute('data-lt') === k; b.classList.toggle('on', on); b.setAttribute('aria-selected', on ? 'true' : 'false'); if (on) b.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' }); });
+    btns.forEach(function (b) { var on = b.getAttribute('data-lt') === k; b.classList.toggle('on', on); b.setAttribute('aria-selected', on ? 'true' : 'false'); if (on) { var st = b.parentNode, x = b.offsetLeft - st.offsetLeft; if (x < st.scrollLeft || x + b.offsetWidth + 150 > st.scrollLeft + st.clientWidth) st.scrollTo({ left: Math.max(0, x - 40), behavior: 'smooth' }); } });
+    // keep the box as tall as before while switching, so the page below does not jump up (then it fits the new tab)
+    var h = lt.offsetHeight; lt.style.minHeight = h + 'px';
     panes.forEach(function (p) { p.hidden = p.getAttribute('data-pane') !== k; });
+    clearTimeout(lt._mh); lt._mh = setTimeout(function () { lt.style.minHeight = ''; }, 260);
     if (k === 'doubts') loadDoubts();
     if (k === 'discuss') loadDisc();
   }
