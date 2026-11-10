@@ -1055,7 +1055,9 @@ function sh_yt_lock_html(string $id, string $title = '', string $extra = '', str
     if (!$assets) {
         $assets = true;
         $v = fn($f) => @filemtime(ROOT_PATH . $f) ?: 1;
-        $h = '<link rel="stylesheet" href="/assets/plyr/plyr.css?v=' . $v('/assets/plyr/plyr.css') . '"><link rel="stylesheet" href="/assets/css/yt-lock.css?v=' . $v('/assets/css/yt-lock.css') . '">'
+        // the player starts sooner: talk to YouTube while the page is still loading
+        $h = '<link rel="preconnect" href="https://www.youtube-nocookie.com"><link rel="preconnect" href="https://www.google.com"><link rel="preconnect" href="https://i.ytimg.com"><link rel="preconnect" href="https://s.ytimg.com">'
+            . '<link rel="stylesheet" href="/assets/plyr/plyr.css?v=' . $v('/assets/plyr/plyr.css') . '"><link rel="stylesheet" href="/assets/css/yt-lock.css?v=' . $v('/assets/css/yt-lock.css') . '">'
             . '<script src="/assets/plyr/plyr.min.js?v=' . $v('/assets/plyr/plyr.min.js') . '" defer></script><script src="/assets/js/yt-lock.js?v=' . $v('/assets/js/yt-lock.js') . '" defer></script>';
     }
     $poster = trim($poster);

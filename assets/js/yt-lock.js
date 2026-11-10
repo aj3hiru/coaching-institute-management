@@ -188,8 +188,8 @@
     // Quality is left to YouTube (Auto): it picks the best for the internet and screen. Our own quality menu scaled
     // YouTube's frame, and with it YouTube's middle play / pause icon changed size — so it is switched off.
     box._q = 'auto'; store.set('auto');
-    box.classList.remove('yt-started', 'yt-go');
-    p.on('ready', function () { dress(box); sizeFrame(box); var wr = box.querySelector('.plyr__video-wrapper'); if (wr && ph.parentNode !== wr) wr.appendChild(ph); }); // under the controls
+    box.classList.remove('yt-started', 'yt-go', 'yt-ready');
+    p.on('ready', function () { box.classList.add('yt-ready'); dress(box); sizeFrame(box); var wr = box.querySelector('.plyr__video-wrapper'); if (wr && ph.parentNode !== wr) wr.appendChild(ph); }); // under the controls
     // our cover stays until YouTube really plays, so YouTube's own start screen / button never shows through
     p.on('play', function () { box.classList.add('yt-go'); });          // red button goes at the click, like YouTube
     p.on('playing', function () { box.classList.add('yt-started'); }); // the picture goes when YouTube really plays
