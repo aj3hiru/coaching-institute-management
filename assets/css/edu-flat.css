@@ -77,3 +77,11 @@ footer.ftx-footer .ftx-copy{padding-top:12px;padding-bottom:12px}
   /* things that were fixed at the bottom move above the bar */
   #back-to-top,.back-to-top,.nb-totop,.wa-float,.whatsapp-float{bottom:76px!important}
 }
+/* bottom bar + other fixed things on phones: the course Buy bar sits on top of it, Back-to-top above both, the side menu covers it */
+@media (max-width:768px){
+  body:has(.dk-bnav) .st-mbar:not(#edu-x){bottom:calc(62px + env(safe-area-inset-bottom))!important;padding-bottom:10px!important;box-shadow:0 -4px 14px rgba(15,23,42,.06)}
+  body:has(.dk-bnav) .edu-totop:not(#edu-x){bottom:calc(76px + env(safe-area-inset-bottom))!important}
+  body:has(.dk-bnav):has(.st-mbar) .edu-totop:not(#edu-x){bottom:calc(140px + env(safe-area-inset-bottom))!important}
+  body:has(.dk-bnav):has(.st-mbar){padding-bottom:calc(132px + env(safe-area-inset-bottom))!important}
+  html.mnav-lock .dk-bnav{display:none!important}
+}

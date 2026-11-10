@@ -18,6 +18,9 @@ function edu_theme_defaults(): array
         'font_body' => 'system', 'font_heading' => 'system', 'font_size' => 16, 'line_height' => 1.7, 'heading_weight' => 700,
         'h1_size' => 30, 'h2_size' => 24, 'h3_size' => 20, 'font_display' => 'swap',
         // Header
+        // phones: the bottom bar (components/footer.php)
+        'bnav' => '1', 'bnav_home' => '1', 'bnav_explore' => '1', 'bnav_orders' => '1', 'bnav_courses' => '1', 'bnav_profile' => '1',
+        'bnav_home_t' => 'Home', 'bnav_explore_t' => 'Explore', 'bnav_orders_t' => 'Orders', 'bnav_courses_t' => 'Courses', 'bnav_profile_t' => 'Profile',
         'h_sticky' => '0', 'h_search' => '1', 'h_voice' => '1', 'h_bell' => '1', 'h_socials' => '1', 'h_dark' => '1',
         'h_topbar' => '0', 'h_topbar_text' => '', 'h_width' => 1200, 'box_radius' => 5, 'h_search_placeholder' => 'e.g. SSC, UPSC, Railway...',
         'h_login' => '1', 'h_login_text' => 'Log in', 'h_login_url' => '', 'h_sub' => '1', 'h_sub_text' => 'Subscribe', 'h_sub_url' => '', 'h_sub_icon' => '',

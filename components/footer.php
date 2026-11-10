@@ -78,18 +78,28 @@ $__fsoc[] = ['RSS Feed', '/feed/', 'M6.503 20.752c0 1.794-1.456 3.248-3.251 3.24
   </div>
 </footer>
 <?php // phones: an app-like bar fixed at the bottom — Home, Explore (all courses), Orders, Courses (my courses), Profile (photo / initials when logged in)
-$__bp = strtok($_SERVER['REQUEST_URI'] ?? '/', '?'); $__bon = fn(string $re) => preg_match($re, $__bp) ? ' on' : ''; ?>
-<nav class="dk-bnav" aria-label="Quick links">
-  <a href="/"<?= $__bp === '/' ? ' class="on" aria-current="page"' : '' ?>><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span>Home</span></a>
-  <a href="/courses/" class="<?= trim($__bon('#^/(courses|notes|store|category|free-courses|all-categories)(/|$)#')) ?>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5z"/></svg><span>Explore</span></a>
-  <a href="/account/orders" data-bn-auth class="<?= trim($__bon('#^/account/orders#')) ?>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg><span>Orders</span></a>
-  <a href="/account/" data-bn-auth class="<?= trim($__bon('#^/(account/?$|account/index|learn/)#')) ?>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 4h7a3 3 0 0 1 3 3v14a2 2 0 0 0-2-2H2z"/><path d="M22 4h-7a3 3 0 0 0-3 3v14a2 2 0 0 1 2-2h8z"/></svg><span>Courses</span></a>
-  <a href="/account/profile" data-bn-me class="<?= trim($__bon('#^/account/(profile|login|register)#')) ?>"><span class="dk-bn-me"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></span><span class="dk-bn-l">Profile</span></a>
+// Customize → Footer → Mobile Bottom Bar: on / off, each button and its name
+$__bp = strtok($_SERVER['REQUEST_URI'] ?? '/', '?'); $__bon = fn(string $re) => preg_match($re, $__bp) ? ' on' : '';
+$__bt = fn(string $k, string $d) => htmlspecialchars(trim((string)th('bnav_' . $k . '_t')) !== '' ? (string)th('bnav_' . $k . '_t') : $d);
+$__bsvg = ['home' => '<path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>', 'explore' => '<circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5z"/>',
+    'orders' => '<path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/>', 'courses' => '<path d="M2 4h7a3 3 0 0 1 3 3v14a2 2 0 0 0-2-2H2z"/><path d="M22 4h-7a3 3 0 0 0-3 3v14a2 2 0 0 1 2-2h8z"/>',
+    'profile' => '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>'];
+$__bi = fn(string $k) => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' . $__bsvg[$k] . '</svg>';
+$__bitems = array_filter(['home', 'explore', 'orders', 'courses', 'profile'], fn($k) => th_on('bnav_' . $k));
+if (th_on('bnav') && $__bitems): ?>
+<nav class="dk-bnav" aria-label="Quick links" style="grid-template-columns:repeat(<?= count($__bitems) ?>,1fr)">
+  <?php foreach ($__bitems as $__k): if ($__k === 'home'): ?><a href="/"<?= $__bp === '/' ? ' class="on" aria-current="page"' : '' ?>><?= $__bi('home') ?><span><?= $__bt('home', 'Home') ?></span></a>
+  <?php elseif ($__k === 'explore'): ?><a href="/courses/" class="<?= trim($__bon('#^/(courses|notes|store|category|free-courses|all-categories)(/|$)#')) ?>"><?= $__bi('explore') ?><span><?= $__bt('explore', 'Explore') ?></span></a>
+  <?php elseif ($__k === 'orders'): ?><a href="/account/orders" data-bn-auth class="<?= trim($__bon('#^/account/orders#')) ?>"><?= $__bi('orders') ?><span><?= $__bt('orders', 'Orders') ?></span></a>
+  <?php elseif ($__k === 'courses'): ?><a href="/account/" data-bn-auth class="<?= trim($__bon('#^/(account/?$|account/index|learn/)#')) ?>"><?= $__bi('courses') ?><span><?= $__bt('courses', 'Courses') ?></span></a>
+  <?php else: ?><a href="/account/profile" data-bn-me class="<?= trim($__bon('#^/account/(profile|login|register)#')) ?>"><span class="dk-bn-me"><?= $__bi('profile') ?></span><span class="dk-bn-l" data-def="<?= $__bt('profile', 'Profile') ?>"><?= $__bt('profile', 'Profile') ?></span></a>
+  <?php endif; endforeach; ?>
 </nav>
+<?php endif; ?>
 <script>(function(){var c=document.cookie,g=function(k){var m=c.match(new RegExp('(?:^|; )'+k+'=([^;]*)'));try{return m?decodeURIComponent(m[1]):''}catch(e){return ''}};
 var inn=/(?:^|; )sh_in=1/.test(c),me=document.querySelector('.dk-bnav [data-bn-me]');if(!me)return;
 if(!inn){me.href='/account/login';me.querySelector('.dk-bn-l').textContent='Login';document.querySelectorAll('.dk-bnav [data-bn-auth]').forEach(function(a){a.href='/account/login?next='+encodeURIComponent(a.getAttribute('href'))});return}
-var n=g('sh_n'),l=g('sh_l'),av=g('sh_av'),b=me.querySelector('.dk-bn-me');me.querySelector('.dk-bn-l').textContent=n||'Profile';
+var n=g('sh_n'),l=g('sh_l'),av=g('sh_av'),b=me.querySelector('.dk-bn-me');me.querySelector('.dk-bn-l').textContent=n||me.querySelector('.dk-bn-l').getAttribute('data-def');
 if(av){var i=new Image();i.alt='';i.src=av;i.onerror=function(){b.textContent=((n.charAt(0)||'')+(l||'')).toUpperCase();b.classList.add('ini')};b.innerHTML='';b.appendChild(i);b.classList.add('pic')}
 else if(n){b.textContent=(n.charAt(0)+(l||'')).toUpperCase();b.classList.add('ini')}})();</script>
 <?php if (th_on('f_totop') && empty($GLOBALS['__edu_rp_pill'])): // Customize → Layout → Footer → Back to top button; // articles have the reading progress button instead ?>

@@ -403,6 +403,10 @@ const PANELS = [
   { id: 'typography', icon: 'fa-font', label: 'Typography', sub: 'Fonts, sizes, weights', render: renderTypography },
   { id: 'h_primary', icon: 'fa-window-maximize', label: 'Primary Header', sub: '', design: ['header'], fields: [['toggle', 'h_sticky', 'Sticky header'], ['toggle', 'h_bell', 'Notification bell'], ['toggle', 'h_socials', 'Social icons on the left'], ['toggle', 'h_dark', 'Dark mode switch']] },
   { id: 'h_strip', icon: 'fa-grip-lines', label: 'Primary Menu', sub: '', design: ['menu_strip'], render: renderStripOpts },
+  { id: 'bnav', icon: 'fa-mobile-screen-button', label: 'Mobile Bottom Bar', sub: 'Phones: Home, Explore, Orders, Courses, Profile', fields: [['toggle', 'bnav', 'Show the bottom bar on phones'],
+    ['toggle', 'bnav_home', 'Home'], ['text', 'bnav_home_t', 'Home — name'], ['toggle', 'bnav_explore', 'Explore (all courses)'], ['text', 'bnav_explore_t', 'Explore — name'],
+    ['toggle', 'bnav_orders', 'Orders'], ['text', 'bnav_orders_t', 'Orders — name'], ['toggle', 'bnav_courses', 'Courses (my courses)'], ['text', 'bnav_courses_t', 'Courses — name'],
+    ['toggle', 'bnav_profile', 'Profile (photo / initials when logged in)'], ['text', 'bnav_profile_t', 'Profile — name']] },
   { id: 'h_search', icon: 'fa-magnifying-glass', label: 'Search', sub: '', design: ['search_modal'], fields: [['toggle', 'h_search', 'Show search'], ['toggle', 'h_voice', 'Voice search'], ['text', 'h_search_placeholder', 'Placeholder']] },
   { id: 'h_account', icon: 'fa-user', label: 'Account (Log in)', sub: '', fields: [['toggle', 'h_login', 'Show “Log in”'], ['text', 'h_login_text', 'Log in text'], ['text', 'h_login_url', 'Log in link', { hint: 'Empty = the admin login page.' }]] },
   { id: 'h_button', icon: 'fa-bell', label: 'Button (Subscribe)', sub: '', fields: [['toggle', 'h_sub', 'Show “Subscribe”'], ['text', 'h_sub_text', 'Subscribe text'], ['select', 'h_sub_icon', 'Icon before the text', { options: [['', 'None (normal button)'], ['whatsapp', 'WhatsApp'], ['youtube', 'YouTube'], ['facebook', 'Facebook'], ['instagram', 'Instagram'], ['x', 'X (Twitter)'], ['telegram', 'Telegram'], ['linkedin', 'LinkedIn']], hint: 'With an icon, the button takes that app’s colour (WhatsApp green, YouTube red …). Tip: put your WhatsApp / YouTube link in “Subscribe link”.' }], ['text', 'h_sub_url', 'Subscribe link', { hint: 'Empty = turns on job alerts (push notifications).' }]] },
@@ -472,11 +476,11 @@ let dirty = false, panel = null, draftTimer = null, subOpen = null;
 const CZ_NAV = ['identity', { id: 'global', label: 'Global', items: ['typography', 'colors', 'container', 'buttons'] },
   { id: 'header', label: 'Header', items: ['h_primary', 'h_strip', 'h_search', 'h_account', 'h_button', 'h_offcanvas', 'h_above'] },
   { id: 'posttypes', label: 'Post Types', items: ['home', 'post', 'alsoread', 'progress'] }, 'homepage', 'sidebar',
-  { id: 'footer', label: 'Footer', items: ['footer', 'f_copy'] }, { id: 'general', label: 'General', items: ['f_scroll', 'nf', 'consent', 'shortcodes'] },
+  { id: 'footer', label: 'Footer', items: ['footer', 'f_copy', 'bnav'] }, { id: 'general', label: 'General', items: ['f_scroll', 'nf', 'consent', 'shortcodes'] },
   'menus', 'css'];
 const CZ_STORE = <?= json_encode(is_file(ROOT_PATH . '/account/login.php')) ?>;
 if (CZ_STORE) { const oc = PANELS.find(x => x.id === 'h_offcanvas'); if (oc) oc.fields = oc.fields.filter(f => f[1] !== 'h_drawer_sub').map(f => f[1] === 'h_drawer_login' ? ['toggle', 'h_drawer_login', 'Courses & Student Login buttons'] : f); }
-const CZ_DEP = { sb_search: 'sb_post', sb_cats: 'sb_post', sb_search_heading: 'sb_search', sb_cats_heading: 'sb_cats', sb_cats_count: 'sb_cats', h_voice: 'h_search', h_search_placeholder: 'h_search', h_login_text: 'h_login', h_login_url: 'h_login', h_sub_text: 'h_sub', h_sub_icon: 'h_sub', h_sub_url: 'h_sub',
+const CZ_DEP = { bnav_home: 'bnav', bnav_explore: 'bnav', bnav_orders: 'bnav', bnav_courses: 'bnav', bnav_profile: 'bnav', bnav_home_t: 'bnav_home', bnav_explore_t: 'bnav_explore', bnav_orders_t: 'bnav_orders', bnav_courses_t: 'bnav_courses', bnav_profile_t: 'bnav_profile', sb_search: 'sb_post', sb_cats: 'sb_post', sb_search_heading: 'sb_search', sb_cats_heading: 'sb_cats', sb_cats_count: 'sb_cats', h_voice: 'h_search', h_search_placeholder: 'h_search', h_login_text: 'h_login', h_login_url: 'h_login', h_sub_text: 'h_sub', h_sub_icon: 'h_sub', h_sub_url: 'h_sub',
   h_drawer_title: 'h_drawer_hello', h_drawer_text: 'h_drawer_hello', h_drawer_sub: 'h_sub', h_topbar_text: 'h_topbar', sb_heading: 'sb_post', sb_count: 'sb_post', sb_source: 'sb_post', sb_sticky: 'sb_post',
   rp_label: 'rp_button', rp_desktop: 'rp_button', f_play_url: 'f_play' };
 if (!CZ_STORE) CZ_DEP.h_drawer_login = 'h_login';
