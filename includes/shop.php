@@ -14,7 +14,7 @@
  */
 require_once __DIR__ . '/settings.php';
 
-const SH_SCHEMA = 19;
+const SH_SCHEMA = 20;
 
 function sh_db(): PDO
 {
@@ -202,6 +202,10 @@ function sh_tables(PDO $pdo): void
             if ($office) $pdo->prepare("UPDATE users SET role = ? WHERE id = ?")->execute([$teach ? 'teacher' : 'accountant', (int)$u['id']]);
         }
     } catch (Throwable) {}
+    // 20: lecture Discussion — every student of the course (and the teachers) can read and write
+    $pdo->exec("CREATE TABLE IF NOT EXISTS sh_discuss (id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, product_id INT UNSIGNED NOT NULL, lesson_id INT UNSIGNED NOT NULL,
+        user_id INT UNSIGNED NULL, staff_id INT UNSIGNED NULL, body TEXT NOT NULL, status VARCHAR(10) NOT NULL DEFAULT 'visible', created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        KEY idx_lesson (lesson_id, id), KEY idx_user (user_id))$t");
     // 19: every online account is also a student on the All Students list ("Online", or "Both" when it is an institute student with online courses)
     foreach ($pdo->query("SELECT id FROM sh_users ORDER BY id")->fetchAll(PDO::FETCH_COLUMN) as $__u) sh_student_sync($pdo, (int)$__u);
     edu_settings_save('shop', ['schema' => SH_SCHEMA]);
@@ -315,10 +319,11 @@ function sh_user(): ?array
 }
 
 /** A small cookie (no secrets) so cached pages can show "My Library" instead of "Log in" in this browser. */
-function sh_mark_cookie(?string $first, string $avatar = ''): void
+function sh_mark_cookie(?string $first, string $avatar = '', string $last = ''): void
 {
     $o = ['path' => '/', 'samesite' => 'Lax', 'secure' => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off', 'httponly' => false];
-    if ($first === null) { foreach (['sh_in', 'sh_n', 'sh_av'] as $c) setcookie($c, '', ['expires' => time() - 3600] + $o); return; }
+    if ($first === null) { foreach (['sh_in', 'sh_n', 'sh_av', 'sh_l'] as $c) setcookie($c, '', ['expires' => time() - 3600] + $o); return; }
+    setcookie('sh_l', rawurlencode(mb_substr(trim($last), 0, 1)), ['expires' => trim($last) !== '' ? time() + 30 * 86400 : time() - 3600] + $o); // last name's first letter (the initials in the bottom bar)
     setcookie('sh_in', '1', ['expires' => time() + 30 * 86400] + $o);
     setcookie('sh_n', rawurlencode(mb_substr($first, 0, 30)), ['expires' => time() + 30 * 86400] + $o);
     setcookie('sh_av', $avatar, ['expires' => $avatar !== '' ? time() + 30 * 86400 : time() - 3600] + $o); // the photo in the student bar
@@ -356,7 +361,7 @@ function sh_login_user(array $u): void
 {
     session_regenerate_id(true);
     $_SESSION['sh_uid'] = (int)$u['id'];
-    sh_mark_cookie(explode(' ', trim((string)$u['name']))[0], sh_avatar_url($u));
+    $__nm = preg_split('/\s+/', trim((string)$u['name'])); sh_mark_cookie($__nm[0], sh_avatar_url($u), count($__nm) > 1 ? (string)end($__nm) : '');
     sh_db()->prepare("UPDATE sh_users SET last_login = NOW() WHERE id = ?")->execute([$u['id']]);
 }
 

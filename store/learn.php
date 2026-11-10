@@ -102,10 +102,12 @@ $ico = fn($n) => sh_icon($n);
     $lNotes = sh_lesson_notes($pdo, (int)$lesson['id']);
     $lVvi = sh_vvi($lesson); $lQuiz = sh_quiz($lesson);
     $canAsk = ($owner || $staff) && !empty($lesson['doubts_on']);
+    // under the video: Discussion first (icon + text), then the rest as icons — a tab's name shows on hover / when open
     $tabs = array_filter([
+        'discuss' => ['Discussion', 'chat'],
         'notes' => $lNotes ? ['PDF Notes', 'notes'] : null,
+        'quiz' => ($lQuiz['items'] || $lQuiz['links']) ? ['MCQ Quiz', 'quiz'] : null,
         'vvi' => ($lVvi['qa'] || $lVvi['links']) ? ['VVI Questions', 'flag'] : null,
-        'quiz' => ($lQuiz['items'] || $lQuiz['links']) ? ['Quiz', 'check'] : null,
         'doubts' => $canAsk ? ['Doubts & Problems', 'pen'] : null,
     ]);
     $linkBox = function (array $links, string $kind) use ($ico) {
@@ -114,12 +116,20 @@ $ico = fn($n) => sh_icon($n);
         return $h;
     };
     ?>
-    <?php ob_start(); // PDF notes / VVI / quiz / doubts are printed below the lesson list (see .lp-more) ?>
+    <?php // Discussion / PDF notes / MCQ / VVI / doubts: right under the video and its title ?>
     <?php if ($tabs): ?>
     <div class="lt" id="lt">
-      <div class="lt-strip" role="tablist"><?php $first = true; foreach ($tabs as $k => [$lab, $ic]): ?><button type="button" role="tab" data-lt="<?= $k ?>" aria-selected="<?= $first ? 'true' : 'false' ?>" class="<?= $first ? 'on' : '' ?>"><?= $ico($ic) ?> <?= $lab ?><?php if ($k === 'notes'): ?><em><?= count($lNotes) ?></em><?php elseif ($k === 'vvi' && $lVvi['qa']): ?><em><?= count($lVvi['qa']) ?></em><?php elseif ($k === 'quiz' && $lQuiz['items']): ?><em><?= count($lQuiz['items']) ?></em><?php endif; ?></button><?php $first = false; endforeach; ?></div>
+      <div class="lt-strip" role="tablist"><?php $first = true; foreach ($tabs as $k => [$lab, $ic]): ?><button type="button" role="tab" data-lt="<?= $k ?>" aria-selected="<?= $first ? 'true' : 'false' ?>" aria-label="<?= sh_e($lab) ?>" title="<?= sh_e($lab) ?>" class="<?= $first ? 'on' : '' ?><?= $k === 'discuss' ? ' lt-main' : '' ?>"><?= $ico($ic) ?><span class="lt-lb"><?= $lab ?></span><?php if ($k === 'notes'): ?><em><?= count($lNotes) ?></em><?php elseif ($k === 'vvi' && $lVvi['qa']): ?><em><?= count($lVvi['qa']) ?></em><?php elseif ($k === 'quiz' && $lQuiz['items']): ?><em><?= count($lQuiz['items']) ?></em><?php endif; ?></button><?php $first = false; endforeach; ?></div>
       <?php $first = true; foreach ($tabs as $k => $_): ?><div class="lt-pane" data-pane="<?= $k ?>"<?= $first ? '' : ' hidden' ?>>
-        <?php if ($k === 'about'): ?><div class="lt-about"><?= nl2br(sh_e($lesson['notes'])) ?></div>
+        <?php if ($k === 'discuss'): ?>
+          <?php if ($owner || $staff): ?>
+          <div class="lt-disc" id="ltDisc" data-l="<?= (int)$lesson['id'] ?>" data-t="<?= sh_e(sh_csrf()) ?>">
+            <form class="lt-ask" onsubmit="return false"><textarea maxlength="2000" rows="3" placeholder="Write something for everyone in this course — a thought, a tip, a question for the class…"></textarea>
+              <div class="lt-ask-b"><span class="lt-ask-m">Everyone in this course can read this. For a private question use Doubts.</span><button type="submit" class="lp-btn"><?= $ico('chat') ?> Post</button></div></form>
+            <div class="lt-dlist"><p class="lt-dl-empty">Loading…</p></div>
+          </div>
+          <?php else: ?><div class="lt-locked"><?= $ico('lock') ?><div><b>Join the course to take part in the discussion</b><span>Students of this course talk about every lecture here.</span></div><a class="lp-btn" href="<?= sh_e(sh_url($p)) ?>#buy"><?= (float)$p['price'] > 0 ? 'Buy for ' . sh_money($p['price']) : 'Join free' ?></a></div><?php endif; ?>
+        <?php elseif ($k === 'about'): ?><div class="lt-about"><?= nl2br(sh_e($lesson['notes'])) ?></div>
         <?php elseif ($k === 'notes'): ?>
           <?php foreach ($lNotes as $nf): $nUrl = sh_media_link('f', (int)$nf['id'], $uid); ?><div class="lt-note lt-nc">
             <div class="lt-nc-top"><span class="lt-nc-i"><?= $ico('pdf') ?></span><span class="lt-nc-t"><b><?= sh_e($nf['title']) ?></b><small><?= $nf['pages'] ? (int)$nf['pages'] . ' pages · ' : '' ?>PDF<?= !empty($nf['size']) ? ' · ' . ((int)$nf['size'] >= 1048576 ? round((int)$nf['size'] / 1048576, 1) . ' MB' : max(1, (int)round((int)$nf['size'] / 1024)) . ' KB') : '' ?></small></span></div>
@@ -146,7 +156,7 @@ $ico = fn($n) => sh_icon($n);
       </div><?php $first = false; endforeach; ?>
     </div>
     <?php endif; ?>
-    <?php $moreHtml = ob_get_clean(); ?>
+    <?php $moreHtml = ''; ?>
   <?php else: ?>
     <?php $fUrl = sh_media_link('f', (int)$file['id'], $uid); ?>
     <div class="lp-head"><div><span class="lp-ch">PDF notes</span><h1><?= sh_e($file['title']) ?></h1><span class="lp-sub" id="stPdfInfo">Loading…</span></div>

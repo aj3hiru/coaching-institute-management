@@ -59,3 +59,21 @@ footer.ftx-footer .ftx-copy{padding-top:12px;padding-bottom:12px}
 .mnav .mnav-btn.solid:not(#edu-x),.mnav .mnav-btn.solid.has-ic:not(#edu-x){background:var(--gc-accent,#0c6878);color:#fff}
 .mnav .mnav-btn.outline:not(#edu-x):hover{background:var(--t-buttons-background-hover,color-mix(in srgb,var(--t-buttons-background,var(--gc-accent-2,#fe8c07)) 86%,#000))}
 .mnav .mnav-btn.solid:not(#edu-x):hover{background:color-mix(in srgb,var(--gc-accent,#0c6878) 85%,#000)}
+/* phones: the bottom bar (Home · Explore · Orders · Courses · Profile), fixed, app-like; the page leaves room for it */
+.dk-bnav{display:none}
+@media (max-width:768px){
+  .dk-bnav{position:fixed;left:0;right:0;bottom:0;z-index:9990;display:grid;grid-template-columns:repeat(5,1fr);height:62px;padding:0 4px env(safe-area-inset-bottom);background:var(--edu-strip-bg,#fff);border-top:1px solid #e5e7eb;box-shadow:0 -4px 14px rgba(15,23,42,.06)}
+  .dk-bnav a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#6b7280!important;text-decoration:none!important;font-size:11px;font-weight:600;min-width:0}
+  .dk-bnav a>svg,.dk-bn-me svg{width:22px;height:22px}
+  .dk-bnav a span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .dk-bnav a.on{color:var(--gc-accent,#0c6878)!important}
+  .dk-bnav a.on::before{content:"";position:absolute;top:0;width:28px;height:3px;border-radius:0 0 3px 3px;background:var(--gc-accent,#0c6878)}
+  .dk-bnav a{position:relative}
+  .dk-bn-me{display:grid;place-items:center;width:26px;height:26px;border-radius:50%!important;overflow:hidden}
+  .dk-bn-me.ini{background:var(--gc-accent,#0c6878);color:#fff;font-size:11px;font-weight:700;letter-spacing:.02em}
+  .dk-bn-me.pic img{width:100%;height:100%;object-fit:cover;display:block}
+  .dk-bnav a.on .dk-bn-me.ini,.dk-bnav a.on .dk-bn-me.pic{box-shadow:0 0 0 2px #fff,0 0 0 4px var(--gc-accent,#0c6878)}
+  body{padding-bottom:calc(62px + env(safe-area-inset-bottom))}
+  /* things that were fixed at the bottom move above the bar */
+  #back-to-top,.back-to-top,.nb-totop,.wa-float,.whatsapp-float{bottom:76px!important}
+}

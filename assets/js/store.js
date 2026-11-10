@@ -346,6 +346,7 @@
     btns.forEach(function (b) { var on = b.getAttribute('data-lt') === k; b.classList.toggle('on', on); b.setAttribute('aria-selected', on ? 'true' : 'false'); if (on) b.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' }); });
     panes.forEach(function (p) { p.hidden = p.getAttribute('data-pane') !== k; });
     if (k === 'doubts') loadDoubts();
+    if (k === 'discuss') loadDisc();
   }
   btns.forEach(function (b) { b.addEventListener('click', function () { show(b.getAttribute('data-lt')); }); });
   // notes: read inside the tab
@@ -403,5 +404,35 @@
       }).catch(function () { b.disabled = false; m.textContent = 'Could not send. Please try again.'; });
     });
     if (lt.querySelector('.lt-strip button.on[data-lt=doubts]')) loadDoubts();
+  }
+  // discussion: everyone in the course reads and writes (newest first); your own message can be removed
+  var dc = document.getElementById('ltDisc'), dLoaded = false;
+  function renderDisc(list) {
+    var box = dc.querySelector('.lt-dlist');
+    if (!list.length) { box.innerHTML = '<p class="lt-dl-empty">No messages yet — start the discussion for this lecture.</p>'; return; }
+    box.innerHTML = list.map(function (d) {
+      return '<div class="lt-d lt-dm' + (d.mine ? ' mine' : '') + (d.teacher ? ' tchr' : '') + '"><div class="lt-d-q"><span class="sp-av sp-av' + (d.id % 3) + '">' + esc(d.who.charAt(0)) + '</span><div><b>' + esc(d.who)
+        + (d.teacher ? ' <em class="lt-tb">Teacher</em>' : '') + (d.mine ? ' <em>you</em>' : '') + '</b><small>' + esc(d.at) + '</small><p>' + esc(d.m).replace(/\n/g, '<br>') + '</p></div>'
+        + (d.can_del ? '<button type="button" class="lt-del" data-del="' + d.id + '" aria-label="Remove">✕</button>' : '') + '</div></div>';
+    }).join('');
+  }
+  function loadDisc() {
+    if (!dc || dLoaded) return; dLoaded = true;
+    fetch('/store/discuss?l=' + dc.getAttribute('data-l'), { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (d) { if (d.error) { dc.querySelector('.lt-dlist').innerHTML = '<p class="lt-dl-empty">' + esc(d.error) + '</p>'; return; } renderDisc(d.list || []); }).catch(function () { dLoaded = false; });
+  }
+  if (dc) {
+    var df = dc.querySelector('.lt-ask'), dta = df.querySelector('textarea'), dm = df.querySelector('.lt-ask-m'), dbtn = df.querySelector('button'), dHint = dm.textContent;
+    var post = function (fd, ok) {
+      fd.append('l', dc.getAttribute('data-l')); fd.append('_t', dc.getAttribute('data-t'));
+      return fetch('/store/discuss', { method: 'POST', body: fd, credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (d) { if (d.error) { dm.textContent = d.error; return; } ok && ok(); renderDisc(d.list || []); });
+    };
+    df.addEventListener('submit', function () {
+      var m = dta.value.trim(); if (m.length < 2) { dm.textContent = 'Please write your message.'; dta.focus(); return; }
+      dbtn.disabled = true; dm.textContent = 'Posting…';
+      var fd = new FormData(); fd.append('m', m);
+      post(fd, function () { dta.value = ''; dm.textContent = dHint; }).catch(function () { dm.textContent = 'Could not post. Please try again.'; }).finally(function () { dbtn.disabled = false; });
+    });
+    dc.addEventListener('click', function (e) { var b = e.target.closest('[data-del]'); if (!b || !confirm('Remove this message?')) return; var fd = new FormData(); fd.append('del', b.getAttribute('data-del')); post(fd); });
+    if (lt.querySelector('.lt-strip button.on[data-lt=discuss]')) loadDisc();
   }
 })();

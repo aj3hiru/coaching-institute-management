@@ -32,7 +32,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             } elseif (!empty($_POST['photo_rm']) && $av !== '') { if (sh_avatar_url($u) !== '') @unlink($dir . $av); $av = ''; }
             $pdo->prepare("UPDATE sh_users SET name = ?, email = ?, address = ?, pincode = ?, avatar = ? WHERE id = ?")
                 ->execute([mb_substr($name, 0, 150), mb_substr($email, 0, 190), $addr !== '' ? mb_substr($addr, 0, 300) : null, $pin ?: null, $av ?: null, $u['id']]);
-            sh_mark_cookie(explode(' ', $name)[0], sh_avatar_url(['avatar' => $av]));
+            $__nm = preg_split('/\s+/', trim($name)); sh_mark_cookie($__nm[0], sh_avatar_url(['avatar' => $av]), count($__nm) > 1 ? (string)end($__nm) : '');
             header('Location: /account/profile?saved=1'); exit;
         }
         if ($a === 'password') {

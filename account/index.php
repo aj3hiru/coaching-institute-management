@@ -1,5 +1,5 @@
 <?php
-// My Courses: everything the student bought or was given (courses and notes, with progress) + Popular courses.
+// My Courses: everything the student bought or was given (courses and notes, with progress).
 //   /account/   (old links ?tab=orders / ?tab=profile go to their own pages)
 require_once dirname(__DIR__) . '/includes/config.php';
 require_once INCLUDES_PATH . '/shop.php';
@@ -16,7 +16,6 @@ $q->execute([$u['id']]);
 $mine = $q->fetchAll(PDO::FETCH_ASSOC);
 $courses = array_values(array_filter($mine, fn($p) => $p['type'] === 'course'));
 $notes = array_values(array_filter($mine, fn($p) => $p['type'] === 'notes'));
-$popular = sh_popular($pdo, array_column($mine, 'id'), 10);
 $stTitle = 'My Courses';
 require ROOT_PATH . '/components/store-open.php';
 $ico = fn($n) => sh_icon($n);
@@ -43,13 +42,6 @@ $card = function (array $p) use ($ico) {
       <?php if ($notes): ?><h2 class="ac-sub">PDF notes <small><?= count($notes) ?></small></h2><div class="ac-grid"><?php foreach ($notes as $p) echo $card($p); ?></div><?php endif; ?>
     <?php endif; ?>
 
-    <?php if ($popular): ?>
-    <section class="st-car" data-car>
-      <div class="st-car-h"><h2>Popular courses</h2><a href="/store/">View all ›</a></div>
-      <div class="st-car-track" tabindex="0" aria-label="Popular courses — swipe for more"><?php foreach ($popular as $p) echo '<div class="st-car-s">' . sh_card_html($p) . '</div>'; ?></div>
-      <div class="st-car-dots"><?php foreach ($popular as $i => $_): ?><button type="button" aria-label="Slide <?= $i + 1 ?>"<?= $i === 0 ? ' class="is-active"' : '' ?>></button><?php endforeach; ?></div>
-    </section>
-    <?php endif; ?>
   </div>
 </div>
 <?php require ROOT_PATH . '/components/store-close.php'; ?>

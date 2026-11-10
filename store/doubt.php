@@ -1,6 +1,6 @@
 <?php
 // Doubts & problems of a lecture (JSON). GET l=ID → the list; POST l, q → ask. Only students who have the course (or a
-// staff preview) see the tab. A student sees their own doubts and the answered doubts of others (shown with a short name).
+// staff preview) see the tab. Doubts are private: a student sees only their own (staff see all). Open talk is the Discussion tab.
 require_once dirname(__DIR__) . '/includes/config.php';
 require_once INCLUDES_PATH . '/shop.php';
 header('Content-Type: application/json; charset=utf-8'); header('Cache-Control: no-store');
@@ -17,8 +17,8 @@ if (!$owner && !$staff) $out(['error' => 'Only students of this course can ask d
 $uid = $u ? (int)$u['id'] : 0;
 $list = function () use ($pdo, $lid, $uid) {
     $q = $pdo->prepare("SELECT d.*, u.name, s.username AS by_user, a.name AS by_name FROM sh_doubts d JOIN sh_users u ON u.id = d.user_id LEFT JOIN users s ON s.id = d.answered_by LEFT JOIN authors a ON a.user_id = d.answered_by
-        WHERE d.lesson_id = ? AND d.status <> 'hidden' AND (d.user_id = ? OR d.answer IS NOT NULL) ORDER BY d.user_id = ? DESC, d.id DESC LIMIT 60");
-    $q->execute([$lid, $uid, $uid]);
+        WHERE d.lesson_id = ? AND d.status <> 'hidden' AND (d.user_id = ? OR ? = 1) ORDER BY d.id DESC LIMIT 100");
+    $q->execute([$lid, $uid, sh_staff() ? 1 : 0]);
     return array_map(function ($d) use ($uid) {
         $p = preg_split('/\s+/', trim(preg_replace('/\(.*?\)/', '', (string)$d['name'])));
         return ['id' => (int)$d['id'], 'mine' => (int)$d['user_id'] === $uid, 'who' => trim(($p[0] ?? 'Student') . (isset($p[1]) ? ' ' . mb_substr($p[1], 0, 1) . '.' : '')) ?: 'Student',
