@@ -186,7 +186,7 @@ tr.is-pending td:first-child{box-shadow:inset 3px 0 0 #f59e0b}
 <?php admin_shell_close(); ?>
 <script>
 (function () {
-  var token = <?= json_encode(csrf_token()) ?>;
+  var token = <?= json_encode(csrf_token(), JSON_HEX_TAG) ?>;
   function post(d) {
     var fd = new FormData(); fd.append('_csrf', token);
     Object.keys(d).forEach(function (k) { [].concat(d[k]).forEach(function (v) { fd.append(Array.isArray(d[k]) ? k + '[]' : k, v); }); });

@@ -309,7 +309,7 @@ $pushToken = $config['push_secret'];
 
 <?php admin_shell_close(); ?>
 <script>
-const PUSH_TOKEN = <?= json_encode($pushToken) ?>;
+const PUSH_TOKEN = <?= json_encode($pushToken, JSON_HEX_TAG) ?>;
 
 // Elements
 const composePreviewBox = document.getElementById('composePreviewBox');

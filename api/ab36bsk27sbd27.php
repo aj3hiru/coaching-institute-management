@@ -2,10 +2,10 @@
 // api/verify_email.php
 require $_SERVER['DOCUMENT_ROOT'] . '/includes/config.php';
 
-if (!defined('SECRET_KEY')) define('SECRET_KEY', 'CD_v1_9x2Lq5Vm8Zp3Rs7Kw4Yn1Jt6Hb0Gf_SecureHash_2025');
+if (!defined('SECRET_KEY')) define('SECRET_KEY', hash('sha256', 'edu-mail-verify|' . (defined('DB_PASS') ? DB_PASS : '') . '|' . (defined('DB_NAME') ? DB_NAME : ''))); // per site, not written in the code
 
-$data = $_GET['d'] ?? '';
-$hash = $_GET['h'] ?? '';
+$data = is_string($_GET['d'] ?? null) ? $_GET['d'] : '';
+$hash = is_string($_GET['h'] ?? null) ? $_GET['h'] : '';
 
 if (!$data || !$hash) {
     die("Invalid Request.");

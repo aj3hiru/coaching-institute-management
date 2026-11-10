@@ -104,7 +104,7 @@ $cfg = edu_ads_config();
 <?php admin_shell_close(); ?>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-  var cfg = <?= json_encode($cfg, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>, cur = 0, $ = function (id) { return document.getElementById(id); };
+  var cfg = <?= json_encode($cfg, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG) ?>, cur = 0, $ = function (id) { return document.getElementById(id); };
   var postOnly = ['before_post', 'before_featured_image', 'after_featured_image', 'before_paragraph', 'after_paragraph', 'after_post', 'before_comments', 'after_comments'];
   function status(b) { if (!b.enabled) return ''; var ok = b.code.trim() && b.insertion !== 'disabled' && b.pages.length && (postOnly.indexOf(b.insertion) < 0 || b.pages.indexOf('post') >= 0); return ok ? 'live' : 'broken'; }
   function tabs() { $('ai-block-tabs').innerHTML = cfg.blocks.map(function (b, i) { var s = status(b); return '<button type="button" class="ai-block-tab' + (i === cur ? ' active' : '') + (s ? ' ' + s : '') + '" data-i="' + i + '" title="Block ' + (i + 1) + ' — ' + (s === 'live' ? 'live' : s === 'broken' ? 'enabled, but will not show' : 'off') + '">' + (i + 1) + (s ? '<i class="ai-dot ' + s + '"></i>' : '') + '</button>'; }).join(''); }
@@ -127,7 +127,7 @@ document.addEventListener('DOMContentLoaded', function () {
   document.querySelectorAll('.ai-tab').forEach(function (t) { t.onclick = function () { document.querySelectorAll('.ai-tab').forEach(function (x) { x.classList.toggle('active', x === t); }); document.querySelectorAll('.ai-pane').forEach(function (p) { p.classList.toggle('active', p.dataset.pane === t.dataset.pane); }); }; });
   document.querySelectorAll('[data-save]').forEach(function (btn) { btn.onclick = function () {
     store(); cfg.global_header = $('ai-gh').value; cfg.global_footer = $('ai-gf').value; cfg.ads_txt = $('ai-adstxt').value; cfg.ads_txt_enabled = $('ai-adstxt-on').checked;
-    var fd = new FormData(); fd.append('_csrf', <?= json_encode(csrf_token()) ?>); fd.append('config', JSON.stringify(cfg));
+    var fd = new FormData(); fd.append('_csrf', <?= json_encode(csrf_token(), JSON_HEX_TAG) ?>); fd.append('config', JSON.stringify(cfg));
     btn.disabled = true; var msg = btn.parentNode.querySelector('[data-msg]'); msg.textContent = 'Saving…';
     fetch('/admin/ad-inserter.php', { method: 'POST', body: fd, credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function () { msg.textContent = 'Saved — live on the site now.'; }).catch(function () { msg.textContent = 'Could not save.'; msg.style.color = '#dc2626'; }).finally(function () { btn.disabled = false; });
   }; });

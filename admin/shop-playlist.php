@@ -135,7 +135,7 @@ $vids = $F && $F['list_id'] ? sh_yt_playlist_cached((string)$F['list_id']) : [];
 <script src="/assets/js/admin-media.js?v=<?= @filemtime(ROOT_PATH . '/assets/js/admin-media.js') ?>"></script>
 <script>
 (function () {
-  var own = document.getElementById('peOwn'), pic = document.getElementById('pePic'), yt = document.getElementById('peYt'), ytSrc = <?= json_encode($thumbYt) ?>;
+  var own = document.getElementById('peOwn'), pic = document.getElementById('pePic'), yt = document.getElementById('peYt'), ytSrc = <?= json_encode($thumbYt, JSON_HEX_TAG) ?>;
   function show(src) { pic.innerHTML = src ? '<img src="' + src.replace(/"/g, '&quot;') + '" alt="">' : '<span>YouTube\'s picture after saving</span>'; }
   document.getElementById('pePick').addEventListener('click', function () { EduMedia.pick(function (it) { own.value = it.path; show(it.path); yt.hidden = false; }); });
   yt.addEventListener('click', function () { own.value = ''; show(ytSrc); yt.hidden = true; });

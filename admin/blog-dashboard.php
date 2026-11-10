@@ -140,7 +140,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var apply = function () { document.querySelectorAll('[data-section="' + k + '"]').forEach(function (s) { s.classList.toggle('is-off', !c.checked); }); };
     apply(); c.onchange = function () { saved[k] = c.checked; try { localStorage.setItem('edu_dash_opts', JSON.stringify(saved)); } catch (e) {} apply(); };
   });
-  var hourly = <?= json_encode(array_values($hourly)) ?>, now = new Date().getHours();
+  var hourly = <?= json_encode(array_values($hourly), JSON_HEX_TAG) ?>, now = new Date().getHours();
   (function draw() {
     if (!window.Chart) return setTimeout(draw, 100);
     var ctx = document.getElementById('db-trend').getContext('2d'), g = ctx.createLinearGradient(0, 0, 0, 260);

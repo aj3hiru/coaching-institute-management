@@ -99,7 +99,7 @@ $cTkn = $_SESSION['cTkn'] ??= bin2hex(random_bytes(32));
             'availableLanguage' => ['en', 'hi'],
         ],
     ],
-], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) ?>
+], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_HEX_TAG) ?>
 </script>
 
 

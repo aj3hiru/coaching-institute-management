@@ -336,7 +336,7 @@ if (function_exists('sh_perm') && sh_perm($me, 'customers')) { sh_tables($pdo); 
   // Add to course / batch (popup on this page)
   (function () {
     var f = document.getElementById('ci-addc-f'); if (!f) return;
-    var B = <?= json_encode(array_values(array_map(fn($b, $bid) => ['id' => $bid, 'c' => (int)$b['course_id'], 'n' => $b['name'] . ($b['timing'] ? ' · ' . $b['timing'] : '') . ($b['session_name'] ? ' (' . $b['session_name'] . ')' : ''), 'a' => $b['status'] === 'active'], $L['batches'], array_keys($L['batches']))), JSON_UNESCAPED_UNICODE) ?>;
+    var B = <?= json_encode(array_values(array_map(fn($b, $bid) => ['id' => $bid, 'c' => (int)$b['course_id'], 'n' => $b['name'] . ($b['timing'] ? ' · ' . $b['timing'] : '') . ($b['session_name'] ? ' (' . $b['session_name'] . ')' : ''), 'a' => $b['status'] === 'active'], $L['batches'], array_keys($L['batches']))), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) ?>;
     var course = f.querySelector('#ac-course'), batch = f.querySelector('#ac-batch'), type = f.querySelector('#ac-type'), fin = f.querySelector('#ac-final'), sum = f.querySelector('#ac-sum');
     var inr = function (n) { return '₹' + (Math.round(n * 100) / 100).toLocaleString('en-IN'); };
     var fee = function () { var o = course.options[course.selectedIndex]; return o && o.value ? +o.dataset.fee : null; };

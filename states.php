@@ -141,7 +141,7 @@ $faqs = [
                 'hasPart' => array_map(fn($st) => array_filter(['@type' => 'WebPage', 'name' => $st['state_name'] . ' Government Jobs', 'url' => SITE_URL . '/state-jobs/' . $st['slug'],
                     'description' => trim(preg_replace('/\s+/u', ' ', strip_tags((string)$st['description'])))]), $states)],
         ],
-    ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) ?></script>
+    ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_TAG) ?></script>
 
 </head>
 <body>

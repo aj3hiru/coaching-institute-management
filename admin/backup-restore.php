@@ -193,7 +193,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function go(file) {
     if (!file || !/\.zip$/i.test(file.name)) { alert('Please choose a .zip backup file.'); return; }
     prog.hidden = false; uf.hidden = true; txt.textContent = 'Uploading ' + file.name + '…';
-    eduChunkUpload('/admin/backup-restore.php', file, { action: 'chunk', _csrf: <?= json_encode(csrf_token()) ?> }, function (p) { prog.firstElementChild.style.width = p + '%'; })
+    eduChunkUpload('/admin/backup-restore.php', file, { action: 'chunk', _csrf: <?= json_encode(csrf_token(), JSON_HEX_TAG) ?> }, function (p) { prog.firstElementChild.style.width = p + '%'; })
       .then(function (d) {
         txt.textContent = '✓ ' + d.name + ' (' + d.size + ' MB) is ready.';
         var c = d.counts || {}, list = Object.keys(c).map(function (k) { return Number(c[k]).toLocaleString('en-IN') + ' ' + k; }).join(' · ');

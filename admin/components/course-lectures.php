@@ -207,5 +207,5 @@ document.addEventListener('click', function (e) {
 });
 </script>
 <?php require __DIR__ . '/lecture-popup.php'; ?>
-<script>window.SHC = { pid: <?= $pid ?>, csrf: <?= json_encode(csrf_token()) ?>, self: <?= json_encode('/admin/shop-products.php?edit=' . $pid . '&type=' . $p['type']) ?> };</script>
+<script>window.SHC = { pid: <?= $pid ?>, csrf: <?= json_encode(csrf_token(), JSON_HEX_TAG) ?>, self: <?= json_encode('/admin/shop-products.php?edit=' . $pid . '&type=' . $p['type'], JSON_HEX_TAG) ?> };</script>
 <script src="/assets/js/shop-admin.js?v=<?= @filemtime(ROOT_PATH . '/assets/js/shop-admin.js') ?: 1 ?>" defer></script>

@@ -43,7 +43,10 @@ $isImage = isset($images[$mime]);
 if (!$isImage && !isset($others[$mime])) mu_fail(415, 'This file type is not allowed. Upload images, PDF, Word/Excel/PowerPoint, ZIP, MP3 or MP4 files.');
 $limit = $isImage ? 15 : 64;
 if ($_FILES['file']['size'] > $limit * 1024 * 1024) mu_fail(413, "The file is larger than $limit MB.");
-if ($mime === 'image/svg+xml' && preg_match('/<script|on\w+\s*=|javascript:/i', (string)file_get_contents($tmp))) mu_fail(415, 'This SVG contains scripts and was not accepted.');
+if ($mime === 'image/svg+xml') { // a drawing may not carry scripts, outside pages or links that run code (also written with &#…; codes)
+    $svg = (string)file_get_contents($tmp); $svgD = html_entity_decode(preg_replace('/&#x?0*([0-9a-f]+);?/i', '&#$1;', $svg), ENT_QUOTES | ENT_HTML5);
+    if (preg_match('/<\s*(script|foreignobject|iframe|embed|object|handler|animate|set\b)|\bon[a-z]+\s*=|javascript\s*:|vbscript\s*:|data\s*:\s*text\/html|<!entity|xlink:href\s*=\s*["\']?\s*(?!#|https?:|data:image\/)/i', $svg . "\n" . $svgD)) mu_fail(415, 'This SVG contains scripts and was not accepted.');
+}
 
 $title = mb_substr(trim((string)($_POST['title'] ?? '')), 0, 200);
 $alt = mb_substr(trim((string)($_POST['alt'] ?? '')), 0, 200);

@@ -152,7 +152,7 @@ $pre = ['type' => in_array((string)($_GET['type'] ?? ''), $types, true) ? (strin
 <?php admin_shell_close(); ?>
 <script>
 (function () {
-  var type = <?= json_encode($pre['type']) ?>, last = null, lastKey = '';
+  var type = <?= json_encode($pre['type'], JSON_HEX_TAG) ?>, last = null, lastKey = '';
   var out = document.getElementById('rpOut'), msg = { set textContent(v) { var m = document.querySelector('.rp-msg'); if (m) m.textContent = v; } };
   function show(t) {
     type = t;

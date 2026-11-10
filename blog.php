@@ -389,13 +389,13 @@ function homeExcerpt(string $html, int $len = 170): string {
    "@type": "ListItem",
    "position": 1,
    "name": "Home",
-   "item": <?= json_encode(SITE_URL) ?>
+   "item": <?= json_encode(SITE_URL, JSON_HEX_TAG) ?>
   },
   {
    "@type": "ListItem",
    "position": 2,
    "name": "Latest Update",
-   "item": <?= json_encode(rtrim(SITE_URL, '/') . '/blog') ?>
+   "item": <?= json_encode(rtrim(SITE_URL, '/') . '/blog', JSON_HEX_TAG) ?>
   }
  ]
 }
@@ -451,7 +451,7 @@ function homeExcerpt(string $html, int $len = 170): string {
         array_keys($recentPosts)
     ),
 
-], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>
+], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) ?>
 </script>
 
 

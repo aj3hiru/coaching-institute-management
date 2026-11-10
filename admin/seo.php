@@ -447,7 +447,7 @@ $tab = preg_replace('/[^a-z]/', '', $_GET['tab'] ?? '');
 <?php admin_shell_close(); ?>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-  var token = <?= json_encode(csrf_token()) ?>, SITE = <?= json_encode(edu_seo_site_name()) ?>;
+  var token = <?= json_encode(csrf_token(), JSON_HEX_TAG) ?>, SITE = <?= json_encode(edu_seo_site_name(), JSON_HEX_TAG) ?>;
   document.querySelectorAll('[data-module]').forEach(function (c) {
     c.addEventListener('change', function () {
       var fd = new FormData(); fd.append('_csrf', token); fd.append('action', 'module'); fd.append('module', c.dataset.module); fd.append('on', c.checked ? '1' : '');
@@ -457,7 +457,7 @@ document.addEventListener('DOMContentLoaded', function () {
   document.querySelectorAll('[data-pick]').forEach(function (b) { b.onclick = function () { var k = b.dataset.pick; EduMedia.pick(function (it) { document.querySelector('[name="' + k + '"]').value = it.path; var im = document.querySelector('[data-prev="' + k + '"]'); im.src = it.path; im.hidden = false; document.querySelector('[data-clear="' + k + '"]').hidden = false; }); }; });
   document.querySelectorAll('[data-clear]').forEach(function (b) { b.onclick = function () { var k = b.dataset.clear; document.querySelector('[name="' + k + '"]').value = ''; document.querySelector('[data-prev="' + k + '"]').hidden = true; b.hidden = true; }; });
   // live preview of title templates
-  var sepEl = function () { var r = document.querySelector('[name="sep"]:checked'); return r ? r.value : <?= json_encode((string)seo_opt('sep')) ?>; };
+  var sepEl = function () { var r = document.querySelector('[name="sep"]:checked'); return r ? r.value : <?= json_encode((string)seo_opt('sep'), JSON_HEX_TAG) ?>; };
   function prev(i) { var p = document.querySelector('[data-prevfor="' + i.id + '"]'); if (!p) return; var s = sepEl(); p.textContent = i.value ? 'Preview: ' + i.value.replace(/%title%/g, 'Your Post Title').replace(/%term%/g, 'Category Name').replace(/%name%/g, 'Author Name').replace(/%search_query%/g, 'search words').replace(/%excerpt%/g, 'The first lines of the post…').replace(/%sitename%/g, SITE).replace(/%sep%|%separator%/g, s).replace(/%currentyear%/g, new Date().getFullYear()).replace(/%[a-z_]+%/g, '').replace(/\s+/g, ' ').trim() : ''; }
   document.querySelectorAll('[data-tpl]').forEach(function (i) { i.addEventListener('input', function () { prev(i); }); prev(i); });
 });

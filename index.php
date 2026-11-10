@@ -88,7 +88,7 @@ $short0 = function (string $n) { $p = preg_split('/\s+/', trim(preg_replace('/\(
 <link rel="stylesheet" href="/assets/css/home.css?v=<?= @filemtime(ROOT_PATH . '/assets/css/home.css') ?: 1 ?>">
 <?php if ($slides): $s0 = $slides[0]; ?><link rel="preload" as="image" href="<?= sh_e(sh_upload_url($s0['image'])) ?>"<?= $s0['mobile_image'] ? ' media="(min-width:701px)"' : '' ?>><?php if ($s0['mobile_image']): ?><link rel="preload" as="image" href="<?= sh_e(sh_upload_url($s0['mobile_image'])) ?>" media="(max-width:700px)"><?php endif; ?><?php endif; ?>
 <script type="application/ld+json"><?= json_encode(array_filter(['@context' => 'https://schema.org', '@type' => 'EducationalOrganization', 'name' => $brand, 'url' => SITE_URL,
-    'address' => $inst['address'] ?: null, 'telephone' => $inst['phone'] ?: null, 'email' => $inst['email'] ?: null]), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) ?></script>
+    'address' => $inst['address'] ?: null, 'telephone' => $inst['phone'] ?: null, 'email' => $inst['email'] ?: null]), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_TAG) ?></script>
 </head>
 <body class="hm-home">
 <?php require_once ROOT_PATH . '/components/header.php'; ?>

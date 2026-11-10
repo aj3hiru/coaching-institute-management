@@ -44,7 +44,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$locked) {
         $error = 'Your session expired. Please try again.';
     } else {
         $password = (string)($_POST['pwd'] ?? '');
-        if ($login_value === '' || $password === '') {
+        $__ip = function_exists('edu_client_ip') ? edu_client_ip() : (string)($_SERVER['REMOTE_ADDR'] ?? '');
+        $__thr = function_exists('edu_throttle') && (!edu_throttle('alog-ip:' . $__ip, 15, 900, false) || !edu_throttle('alog-u:' . strtolower($login_value), 8, 900, false));
+        if ($__thr) {
+            $error = 'Too many failed attempts. Please wait 15 minutes and try again.';
+        } elseif ($login_value === '' || $password === '') {
             $error = 'Please enter your username or email address and your password.';
         } else {
             try {
@@ -92,6 +96,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$locked) {
                     }
                 } else {
                     $_SESSION['login_attempts']++;
+                    if (function_exists('edu_throttle')) { edu_throttle('alog-ip:' . $__ip, 15, 900); edu_throttle('alog-u:' . strtolower($login_value), 8, 900); }
                     if ($_SESSION['login_attempts'] >= MAX_ATTEMPTS) {
                         $_SESSION['lockout_until'] = time() + LOCKOUT_SECS;
                         $locked = true;

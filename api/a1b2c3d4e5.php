@@ -4,7 +4,7 @@ require $_SERVER['DOCUMENT_ROOT'] . '/includes/config.php';
 require $_SERVER['DOCUMENT_ROOT'] . '/includes/functions.php';
 // require_once $_SERVER['DOCUMENT_ROOT'] . '/mailers/CommentMailer.php';
 
-if (!hash_equals($_SESSION['cTkn'] ?? '', $_POST['cTkn'] ?? '')) {
+if (empty($_SESSION['cTkn']) || !is_string($_POST['cTkn'] ?? null) || !hash_equals((string)$_SESSION['cTkn'], $_POST['cTkn']) || (function_exists('edu_throttle') && !edu_throttle('comment:' . edu_client_ip(), 10, 600))) {
     http_response_code(403);
     exit('Bad token');
 }
@@ -41,9 +41,9 @@ if (!$id) {
 }
 
 try {
-    $name = trim($_POST['name'] ?? '');
-    $email = trim($_POST['email'] ?? '');
-    $content = trim($_POST['content'] ?? '');
+    $name = trim((string)(is_string($_POST['name'] ?? null) ? $_POST['name'] : ''));
+    $email = trim((string)(is_string($_POST['email'] ?? null) ? $_POST['email'] : ''));
+    $content = trim((string)(is_string($_POST['content'] ?? null) ? $_POST['content'] : ''));
     $parent_id = !empty($_POST['parent_id']) ? (int)$_POST['parent_id'] : null;
     
     if (empty($name) || empty($email) || empty($content)) {

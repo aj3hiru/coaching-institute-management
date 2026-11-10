@@ -852,7 +852,7 @@ html.ab-on body{margin-top:32px}html.ab-on body:not(:has(#wpadminbar))::before{c
 body:has(#wpadminbar) .nb-hr-login,body:has(#wpadminbar) .nb-hr-div,body:has(#wpadminbar) .nb-hc-login{display:none !important}html.nb-in-customizer body:has(#wpadminbar){margin-top:0 !important}html.nb-in-customizer body::before{display:none !important}
 </style>
 <script id="ab-boot">(function(){try{if(document.cookie.indexOf("edu_ab=1")<0||window.self!==window.top)return}catch(e){return}
-var C=<?= json_encode(array_filter(['kind' => (string)($seo_ctx['kind'] ?? ''), 'id' => (($seo_ctx['kind'] ?? '') === 'post' && isset($id)) ? (int)$id : null, 'slug' => (($seo_ctx['kind'] ?? '') === 'page' && isset($page['slug'])) ? (string)$page['slug'] : null, 'course' => !empty($stEditProduct) ? (int)$stEditProduct : null], fn($v) => $v !== null && $v !== '')) ?>;
+var C=<?= json_encode(array_filter(['kind' => (string)($seo_ctx['kind'] ?? ''), 'id' => (($seo_ctx['kind'] ?? '') === 'post' && isset($id)) ? (int)$id : null, 'slug' => (($seo_ctx['kind'] ?? '') === 'page' && isset($page['slug'])) ? (string)$page['slug'] : null, 'course' => !empty($stEditProduct) ? (int)$stEditProduct : null], fn($v) => $v !== null && $v !== ''), JSON_HEX_TAG) ?>;
 var R=document.documentElement,K="edu_ab_w",key=JSON.stringify(C),cached=null,fresh=false;R.classList.add("ab-on");
 try{cached=JSON.parse(sessionStorage.getItem(K)||"null")}catch(x){}
 function body(f){if(document.body)f();else{var t=setInterval(function(){if(document.body){clearInterval(t);f()}},15)}}
@@ -893,7 +893,7 @@ require_once INCLUDES_PATH . '/push.php';
 $__pk = null;
 try { if (edu_push_collecting()) $__pk = edu_push_active_key(); } catch (Throwable $e) { $__pk = null; }
 if ($__pk): ?>
-<script>window.EDU_PUSH=<?= json_encode(['on' => 1, 'key' => $__pk['public_key']], JSON_UNESCAPED_SLASHES) ?>;</script>
+<script>window.EDU_PUSH=<?= json_encode(['on' => 1, 'key' => $__pk['public_key']], JSON_UNESCAPED_SLASHES | JSON_HEX_TAG) ?>;</script>
 <script src="/assets/js/push-client.js?v=<?= @filemtime(ROOT_PATH . '/assets/js/push-client.js') ?>" defer></script>
 <?php endif; ?>
 
@@ -940,7 +940,7 @@ $org_schema = [
 ];
 ?>
 <script type="application/ld+json">
-<?= json_encode($org_schema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) ?>
+<?= json_encode($org_schema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_HEX_TAG) ?>
 </script>
 
 
@@ -960,6 +960,6 @@ $website_schema = [
 ];
 ?>
 <script type="application/ld+json">
-<?= json_encode($website_schema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) ?>
+<?= json_encode($website_schema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_HEX_TAG) ?>
 </script>
 <?php endif; ?>

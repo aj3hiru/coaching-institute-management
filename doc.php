@@ -306,7 +306,7 @@ if (isset($_GET['stream']) && $_GET['stream'] == '1') {
 
             const watermark = document.createElement('div');
             watermark.className = 'watermark';
-            watermark.textContent = <?= json_encode(edu_site_name()) ?>;
+            watermark.textContent = <?= json_encode(edu_site_name(), JSON_HEX_TAG) ?>;
             wrapper.appendChild(watermark);
 
             const shield = document.createElement('div');

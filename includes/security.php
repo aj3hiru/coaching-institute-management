@@ -19,3 +19,68 @@ if (!function_exists('edu_security_headers')) {
     }
 }
 edu_security_headers();
+
+// ---- the login cookie (PHPSESSID): HttpOnly (page scripts cannot read it), Secure on HTTPS, SameSite=Lax (other
+//      sites cannot post forms with it). config.php starts the session before this file loads, so the cookie headers
+//      are fixed just before they are sent — also after a log-in (session_regenerate_id) — and an older cookie
+//      without these flags is sent once again with them.
+if (!function_exists('edu_cookie_flags') && PHP_SAPI !== 'cli') {
+    function edu_cookie_flags(): void
+    {
+        $https = ($_SERVER['HTTPS'] ?? '') === 'on' || ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https';
+        $sn = session_name(); $cks = []; $changed = false;
+        foreach (headers_list() as $h) if (stripos($h, 'Set-Cookie:') === 0) $cks[] = ltrim(substr($h, 11));
+        foreach ($cks as &$c) {
+            if (stripos($c, $sn . '=') !== 0) continue;
+            if (stripos($c, 'httponly') === false) { $c .= '; HttpOnly'; $changed = true; }
+            if ($https && stripos($c, '; secure') === false) { $c .= '; Secure'; $changed = true; }
+            if (stripos($c, 'samesite') === false) { $c .= '; SameSite=Lax'; $changed = true; }
+        }
+        unset($c);
+        if (!$changed) return;
+        header_remove('Set-Cookie');
+        foreach ($cks as $c) header('Set-Cookie: ' . $c, false);
+    }
+    if (!headers_sent()) {
+        header_register_callback('edu_cookie_flags');
+        if (session_status() === PHP_SESSION_ACTIVE && !empty($_COOKIE[session_name()]) && empty($_SESSION['__ckf'])) {
+            $_SESSION['__ckf'] = 1; // once per session: send the visitor's cookie again, now with the flags
+            setcookie(session_name(), session_id(), ['expires' => 0, 'path' => '/', 'httponly' => true, 'samesite' => 'Lax',
+                'secure' => ($_SERVER['HTTPS'] ?? '') === 'on' || ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https']);
+        }
+    }
+}
+
+/** The visitor's IP address (the server is reached directly, no proxy in front). */
+if (!function_exists('edu_client_ip')) {
+    function edu_client_ip(): string { $ip = (string)($_SERVER['REMOTE_ADDR'] ?? ''); return filter_var($ip, FILTER_VALIDATE_IP) ? $ip : '0.0.0.0'; }
+}
+
+/** Rate limit kept in the database (works even when a bot drops its cookies): true = allowed, false = too many.
+    edu_throttle('login:' . $ip, 10, 900) → at most 10 tries in 15 minutes for that key. $hit = false only checks. */
+if (!function_exists('edu_throttle')) {
+    function edu_throttle(string $key, int $max, int $window, bool $hit = true): bool
+    {
+        $pdo = $GLOBALS['__edu_pdo'] ?? ($GLOBALS['pdo'] ?? null);
+        if (!$pdo instanceof PDO) return true;
+        $k = substr(hash('sha256', $key), 0, 40); $now = time();
+        try {
+            static $made = false;
+            if (!$made) { $made = true; $pdo->exec("CREATE TABLE IF NOT EXISTS edu_throttle (k CHAR(40) NOT NULL PRIMARY KEY, n INT UNSIGNED NOT NULL DEFAULT 0, t INT UNSIGNED NOT NULL, KEY idx_t (t)) ENGINE=InnoDB"); }
+            $q = $pdo->prepare("SELECT n, t FROM edu_throttle WHERE k = ?"); $q->execute([$k]); $r = $q->fetch(PDO::FETCH_ASSOC);
+            if ($r && $now - (int)$r['t'] < $window && (int)$r['n'] >= $max) return false;
+            if ($hit) {
+                if (!$r || $now - (int)$r['t'] >= $window) $pdo->prepare("REPLACE INTO edu_throttle (k, n, t) VALUES (?, 1, ?)")->execute([$k, $now]);
+                else $pdo->prepare("UPDATE edu_throttle SET n = n + 1 WHERE k = ?")->execute([$k]);
+                if (mt_rand(1, 200) === 1) $pdo->prepare("DELETE FROM edu_throttle WHERE t < ?")->execute([$now - 86400]); // old rows go now and then
+            }
+        } catch (Throwable $e) { return true; } // never lock people out because of a database hiccup
+        return true;
+    }
+    /** Clears a key (e.g. after a successful log-in). */
+    function edu_throttle_clear(string $key): void
+    {
+        $pdo = $GLOBALS['__edu_pdo'] ?? ($GLOBALS['pdo'] ?? null);
+        if ($pdo instanceof PDO) try { $pdo->prepare("DELETE FROM edu_throttle WHERE k = ?")->execute([substr(hash('sha256', $key), 0, 40)]); } catch (Throwable $e) {}
+    }
+}

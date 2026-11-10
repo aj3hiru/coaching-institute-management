@@ -476,9 +476,9 @@ foreach ($rows as $r) {
 <script>
 window.UM = (function () {
   var rows = <?= json_encode($jsRows, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE) ?>;
-  var roleDefaults = <?= json_encode(array_combine(array_keys(EDU_ROLES), array_map('um_role_perms', array_keys(EDU_ROLES)))) ?>;
+  var roleDefaults = <?= json_encode(array_combine(array_keys(EDU_ROLES), array_map('um_role_perms', array_keys(EDU_ROLES))), JSON_HEX_TAG) ?>;
   // which permission boxes belong to which role: blog roles → Blogs; teacher / accountant → Institute + Online Store; admin → everything
-  var ROLE_SCOPE = <?= json_encode(array_combine(array_keys(EDU_ROLES), array_map('edu_role_scope', array_keys(EDU_ROLES)))) ?>;
+  var ROLE_SCOPE = <?= json_encode(array_combine(array_keys(EDU_ROLES), array_map('edu_role_scope', array_keys(EDU_ROLES))), JSON_HEX_TAG) ?>;
   var m = document.getElementById('umModal'), f = document.getElementById('umForm'), permBox = document.getElementById('umPermBox');
   document.body.appendChild(m); document.body.appendChild(document.getElementById('umDel'));
   function setPerms(p) {

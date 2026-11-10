@@ -557,7 +557,7 @@ $__graph = edu_seo_module('schema'); // the combined @graph replaces this page's
               </div>
             <?php endforeach; ?>
           </div>
-          <?php if (!$__graph): ?><script type="application/ld+json"><?= json_encode($s) ?></script><?php endif; ?>
+          <?php if (!$__graph): ?><script type="application/ld+json"><?= json_encode($s, JSON_HEX_TAG) ?></script><?php endif; ?>
           <?php endif; ?>
 
           <?php if (!empty($post_tags) && th_on('p_tags')): ?>

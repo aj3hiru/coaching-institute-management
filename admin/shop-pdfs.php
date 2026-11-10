@@ -88,7 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <div class="pm-root" id="pmPage" data-mode="page"></div>
 </div>
 <?php admin_shell_close(); ?>
-<script>window.PM_CFG = { csrf: <?= json_encode(csrf_token()) ?> };</script>
+<script>window.PM_CFG = { csrf: <?= json_encode(csrf_token(), JSON_HEX_TAG) ?> };</script>
 <script src="/assets/js/pdf-media.js?v=<?= @filemtime(ROOT_PATH . '/assets/js/pdf-media.js') ?: 1 ?>"></script>
 <script>PdfMedia.mount(document.getElementById('pmPage'), { uploadButton: document.getElementById('pmUploadBtn') });</script>
 </body>

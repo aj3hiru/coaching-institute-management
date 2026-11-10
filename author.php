@@ -104,7 +104,7 @@ $seo_ctx = ['kind' => 'author', 'author' => $author ?? null];
       "@type": "ListItem",
       "position": 1,
       "name": "Home",
-      "item": <?= json_encode(SITE_URL) ?>
+      "item": <?= json_encode(SITE_URL, JSON_HEX_TAG) ?>
     },
     {
       "@type": "ListItem",
@@ -127,7 +127,7 @@ $seo_ctx = ['kind' => 'author', 'author' => $author ?? null];
     "name": "<?= htmlspecialchars($author['name']) ?>",
     "description": "<?= htmlspecialchars($author['bio'] ?? '') ?>",
     <?php if (!empty($sameAs)): ?>
-    "sameAs": <?= json_encode($sameAs, JSON_UNESCAPED_SLASHES) ?>
+    "sameAs": <?= json_encode($sameAs, JSON_UNESCAPED_SLASHES | JSON_HEX_TAG) ?>
     <?php endif; ?>
   },
   "hasPart": [

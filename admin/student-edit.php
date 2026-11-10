@@ -385,7 +385,7 @@ $v = fn($k) => ci_e($form[$k] ?? '');
 <?php admin_shell_close(); ?>
 <script>
 (function () {
-  var B = <?= json_encode($batchJs, JSON_UNESCAPED_UNICODE) ?>;
+  var B = <?= json_encode($batchJs, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) ?>;
   var rows = document.getElementById('ci-rows');
   var inr = function (n) { return '₹' + (Math.round(n * 100) / 100).toLocaleString('en-IN'); };
   function courseFee(row) { var s = row.querySelector('.ci-course'), o = s.options[s.selectedIndex]; return o && o.value ? +o.dataset.fee : null; }
@@ -511,7 +511,7 @@ $v = fn($k) => ci_e($form[$k] ?? '');
     var n = otpl.content.firstElementChild.cloneNode(true); orows.appendChild(n); wireO(n); if (hint) hint.hidden = true; focusRow(n, '.ci-oprod');
   });
   // the student type follows the rows: a batch → Institute, an online course → Online, both → Both (live)
-  var hadOnline = <?= json_encode((bool)array_filter($hasOnline, fn($a) => !(int)$a['revoked'])) ?>;
+  var hadOnline = <?= json_encode((bool)array_filter($hasOnline, fn($a) => !(int)$a['revoked']), JSON_HEX_TAG) ?>;
   function typeSync() {
     if (!stype) return;
     var inst = [].some.call(rows.querySelectorAll('.ci-enr-row'), function (r) { var c = r.querySelector('.ci-course'), rm = r.querySelector('.ci-enr-rm input'); return c && c.value && !(rm && rm.checked); });

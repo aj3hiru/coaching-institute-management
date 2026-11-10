@@ -3,11 +3,12 @@
 // Taki koi bhi URL open karke bar-bar DB hit na kare.
 
 date_default_timezone_set('Asia/Kolkata');
-ini_set('display_errors', 1); // Manual run me errors dikhna chahiye
-ini_set('log_errors', 1);
+ini_set('display_errors', '0'); // errors go to the log only (they showed the server's folders to anyone)
+ini_set('log_errors', '1');
 
-// 1. Config aur Paths Setup
-require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
+// 1. Config aur Paths Setup — admins only
+require_once $_SERVER['DOCUMENT_ROOT'] . '/admin/components/guard.php';
+admin_guard(['admin']);
 
 $cDir = $_SERVER['DOCUMENT_ROOT'] . '/cj_smart_cache';
 $cFile = $cDir . '/blog_views.json';

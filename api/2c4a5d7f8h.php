@@ -20,9 +20,12 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit('Method Not Allowed');
 }
 
-if (!hash_equals($_SESSION['cTkn'] ?? '', $_POST['cTkn'] ?? '')) {
+if (empty($_SESSION['cTkn']) || !is_string($_POST['cTkn'] ?? null) || !hash_equals((string)$_SESSION['cTkn'], $_POST['cTkn'])) {
  http_response_code(403); exit('Invalid CSRF token');
 }
+
+if (function_exists('edu_throttle') && !edu_throttle('contact:' . edu_client_ip(), 5, 3600)) { http_response_code(429); exit('Too many messages. Please try again later.'); }
+foreach (['name', 'email', 'subject', 'message', 'phone'] as $__k) if (isset($_POST[$__k]) && !is_string($_POST[$__k])) { http_response_code(400); exit('Bad request'); }
 
 // Collect & sanitize
 $nameRaw    = $_POST['name'] ?? '';

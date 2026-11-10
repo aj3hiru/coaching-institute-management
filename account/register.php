@@ -11,6 +11,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     $pass = (string)($_POST['pass'] ?? '');
     if (!sh_csrf_ok()) $err = 'This page had expired. Please try again.';
     elseif (!empty($_POST['website'])) $err = 'Please try again.'; // bots fill the hidden field
+    elseif (function_exists('edu_throttle') && !edu_throttle('reg:' . edu_client_ip(), 10, 3600)) $err = 'Too many new accounts from this network. Please try again later.';
     elseif ($pass !== (string)($_POST['pass2'] ?? '')) $err = 'The two passwords are not the same.';
     else {
         try {

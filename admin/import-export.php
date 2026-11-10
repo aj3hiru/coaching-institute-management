@@ -338,8 +338,8 @@ document.addEventListener('DOMContentLoaded', function () {
   var tabs = document.querySelectorAll('.ie-tabs [data-tab]');
   function showTab(k) { tabs.forEach(function (b) { b.classList.toggle('on', b.dataset.tab === k); }); document.querySelectorAll('.ie-pane').forEach(function (p) { p.hidden = p.dataset.pane !== k; }); }
   tabs.forEach(function (b) { b.onclick = function () { showTab(b.dataset.tab); }; });
-  showTab(<?= json_encode($tab) ?>);
-  var $ = function (id) { return document.getElementById(id); }, CSRF = <?= json_encode(csrf_token()) ?>, scan = null, decisions = {}, busy = false;
+  showTab(<?= json_encode($tab, JSON_HEX_TAG) ?>);
+  var $ = function (id) { return document.getElementById(id); }, CSRF = <?= json_encode(csrf_token(), JSON_HEX_TAG) ?>, scan = null, decisions = {}, busy = false;
   var drop = $('ie-drop'), input = $('ie-file'), prog = $('ie-prog'), txt = $('ie-text');
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function step(n) { [1, 2, 3].forEach(function (i) { $('st' + i).className = i < n ? 'done' : i === n ? 'on' : ''; }); }

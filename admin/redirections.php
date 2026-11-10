@@ -304,7 +304,7 @@ $jsItems = array_map(function ($r) use ($postTitles) {
 <?php admin_shell_close(); ?>
 <script>
 window.RD = (function () {
-  var items = <?= json_encode(array_column($jsItems, null, 'id'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_UNESCAPED_UNICODE) ?>, token = <?= json_encode(csrf_token()) ?>;
+  var items = <?= json_encode(array_column($jsItems, null, 'id'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_UNESCAPED_UNICODE) ?>, token = <?= json_encode(csrf_token(), JSON_HEX_TAG) ?>;
   var m = document.getElementById('rdModal'), f = document.getElementById('rdForm');
   document.body.appendChild(m);
   function esc(t) { var d = document.createElement('div'); d.textContent = t == null ? '' : t; return d.innerHTML; }

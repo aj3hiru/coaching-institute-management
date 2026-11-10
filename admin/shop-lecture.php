@@ -327,7 +327,7 @@ html.slc-embed .top-nav{padding:10px 16px!important;min-height:0!important}html.
   fit(); window.addEventListener('resize', fit); window.addEventListener('load', function () { fit(); setTimeout(function () { fit(); jump(); }, 400); });
 })();
 </script>
-<script>window.SHC = { pid: <?= (int)($P['id'] ?? 0) ?>, csrf: <?= json_encode(csrf_token()) ?>, self: '' };</script>
+<script>window.SHC = { pid: <?= (int)($P['id'] ?? 0) ?>, csrf: <?= json_encode(csrf_token(), JSON_HEX_TAG) ?>, self: '' };</script>
 <script src="/assets/js/admin-media.js?v=<?= @filemtime(ROOT_PATH . '/assets/js/admin-media.js') ?: 1 ?>" defer></script>
 <script src="/assets/js/pdf-media.js?v=<?= @filemtime(ROOT_PATH . '/assets/js/pdf-media.js') ?: 1 ?>" defer></script>
 <script src="/assets/js/shop-lecture.js?v=<?= @filemtime(ROOT_PATH . '/assets/js/shop-lecture.js') ?: 1 ?>" defer></script>

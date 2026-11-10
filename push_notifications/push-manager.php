@@ -358,8 +358,8 @@ tr.px-camp{cursor:pointer}tr.px-camp:hover td{background:#fafafa}tr.px-camp.open
 <?php admin_shell_close(); ?>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-  var $ = function (id) { return document.getElementById(id); }, CSRF = <?= json_encode(csrf_token()) ?>, PUBKEY = <?= json_encode($activeKey['public_key'] ?? '') ?>;
-  var DEFAULT_ICON = <?= json_encode($defaultIcon) ?>;
+  var $ = function (id) { return document.getElementById(id); }, CSRF = <?= json_encode(csrf_token(), JSON_HEX_TAG) ?>, PUBKEY = <?= json_encode($activeKey['public_key'] ?? '', JSON_HEX_TAG) ?>;
+  var DEFAULT_ICON = <?= json_encode($defaultIcon, JSON_HEX_TAG) ?>;
   var ask = window.adminConfirm || function (m) { return Promise.resolve(confirm(m)); };
   var tell = function (m, type) { (window.adminNotice || function (x) { alert(x); })(m, { type: type || 'info' }); };
   function post(action, data, file) {
@@ -372,7 +372,7 @@ document.addEventListener('DOMContentLoaded', function () {
   document.querySelectorAll('.pn-tabs button').forEach(function (b) { b.onclick = function () { show(b.dataset.tab); }; });
 
   /* ---- Send ---- */
-  var SITE = <?= json_encode($siteHost) ?>, site = SITE;
+  var SITE = <?= json_encode($siteHost, JSON_HEX_TAG) ?>, site = SITE;
   function all(sel, fn) { document.querySelectorAll(sel).forEach(fn); }
   function preview() {
     var t = $('pn-title').value, b = $('pn-body').value, img = $('pn-image').value, ico = $('pn-icon').value || DEFAULT_ICON;
@@ -484,7 +484,7 @@ document.addEventListener('DOMContentLoaded', function () {
   };
 
   /* ---- Analytics ---- */
-  var STATS = <?= json_encode(['growth' => $stats['growth'], 'platform' => $stats['platform']], JSON_UNESCAPED_UNICODE) ?>, drawn = false;
+  var STATS = <?= json_encode(['growth' => $stats['growth'], 'platform' => $stats['platform']], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) ?>, drawn = false;
   function charts() {
     if (drawn) return; if (!window.Chart) { setTimeout(charts, 150); return; } drawn = true;
     var g = STATS.growth, gc = $('pn-growth');
@@ -528,7 +528,7 @@ document.addEventListener('DOMContentLoaded', function () {
   /* ---- Settings ---- */
   var sv = $('set-save');
   if (sv) {
-    var setIco = function (p) { $('set-icon').value = p || ''; $('set-icon-prev').src = p || <?= json_encode((string)es('general', 'favicon', '') ?: '/assets/icons/android-icon-192x192.png') ?>; $('set-icon-reset').hidden = !p; };
+    var setIco = function (p) { $('set-icon').value = p || ''; $('set-icon-prev').src = p || <?= json_encode((string)es('general', 'favicon', '') ?: '/assets/icons/android-icon-192x192.png', JSON_HEX_TAG) ?>; $('set-icon-reset').hidden = !p; };
     $('set-icon-pick').onclick = function () { EduMedia.pick(function (it) { setIco(it.path); }); };
     $('set-icon-reset').onclick = function () { setIco(''); };
     sv.onclick = function () {
@@ -576,7 +576,7 @@ document.addEventListener('DOMContentLoaded', function () {
       });
     };
   }
-  show(<?= json_encode($tab) ?>);
+  show(<?= json_encode($tab, JSON_HEX_TAG) ?>);
 });
 </script>
 </body>

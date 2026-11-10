@@ -10,6 +10,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     $last = (int)($_SESSION['sh_reset_at'] ?? 0);
     if (!sh_csrf_ok()) $err = 'This page had expired. Please try again.';
     elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) $err = 'Please enter the email of your account.';
+    elseif (function_exists('edu_throttle') && !edu_throttle('forgot:' . edu_client_ip(), 5, 3600)) $err = 'Too many requests. Please try again in an hour.';
     elseif (time() - $last < 60) $err = 'Please wait a minute before asking again.';
     elseif (!edu_mail_ready()) $err = 'Email is not set up on this site yet. Please contact us to reset your password.';
     else { $_SESSION['sh_reset_at'] = time(); sh_send_reset($pdo, $email); $sent = true; }

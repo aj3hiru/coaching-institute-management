@@ -353,8 +353,8 @@ table.ls-t{width:100%;border-collapse:collapse;font-size:13.5px}
 })();
 </script>
 <script>
-window.LS = { pid: <?= $pid ?>, csrf: <?= json_encode(csrf_token()) ?>, secs: <?= json_encode(array_map(fn($k, $t) => ['id' => (int)$k, 'title' => $t], array_keys($secs), $secs), JSON_UNESCAPED_UNICODE) ?>,
-  units: <?= json_encode((object)$units, JSON_UNESCAPED_UNICODE) ?>, rows: <?= json_encode($rows, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE) ?> };
+window.LS = { pid: <?= $pid ?>, csrf: <?= json_encode(csrf_token(), JSON_HEX_TAG) ?>, secs: <?= json_encode(array_map(fn($k, $t) => ['id' => (int)$k, 'title' => $t], array_keys($secs), $secs), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) ?>,
+  units: <?= json_encode((object)$units, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) ?>, rows: <?= json_encode($rows, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE | JSON_HEX_TAG) ?> };
 </script>
 <script src="/assets/js/edu-dialog.js?v=<?= @filemtime(ROOT_PATH . '/assets/js/edu-dialog.js') ?: 1 ?>"></script>
 <script src="/assets/js/shop-lectures.js?v=<?= @filemtime(ROOT_PATH . '/assets/js/shop-lectures.js') ?: 1 ?>"></script>

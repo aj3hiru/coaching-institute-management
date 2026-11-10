@@ -154,7 +154,7 @@ function edu_seo_head_advanced(array $seo, string $canonical, array $ctx = []): 
                 $graph[] = ['@type' => 'FAQPage', '@id' => $canonical . '#faq', 'mainEntity' => array_values(array_map(fn($f) => ['@type' => 'Question', 'name' => $f['q'], 'acceptedAnswer' => ['@type' => 'Answer', 'text' => $f['a']]], array_filter($ctx['faq'], fn($f) => !empty($f['q']) && !empty($f['a']))))];
             }
         }
-        $o[] = '<script type="application/ld+json" class="edu-schema-graph">' . json_encode(['@context' => 'https://schema.org', '@graph' => $graph], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . '</script>';
+        $o[] = '<script type="application/ld+json" class="edu-schema-graph">' . json_encode(['@context' => 'https://schema.org', '@graph' => $graph], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) . '</script>';
     }
     return "<!-- Search Engine Optimization: " . $e(edu_site_name()) . " SEO -->\n" . implode("\n", $o) . "\n<!-- /SEO -->\n";
 }

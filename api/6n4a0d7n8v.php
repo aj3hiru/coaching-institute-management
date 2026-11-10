@@ -4,7 +4,7 @@ require $_SERVER['DOCUMENT_ROOT'] . '/includes/functions.php';
 
 header('Content-Type: application/json');
 
-$q = trim($_GET['q'] ?? '');
+$q = is_string($_GET['q'] ?? null) ? mb_substr(trim($_GET['q']), 0, 100) : '';
 
 if ($q === '') {
     echo json_encode([]);

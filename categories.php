@@ -120,7 +120,7 @@ $faqs = [
                     '@type' => 'ListItem', 'position' => $i + 1, 'name' => $c['name'], 'url' => SITE_URL . '/categories/' . $c['slug'],
                 ], $withPosts, array_keys($withPosts))]],
         ],
-    ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) ?></script>
+    ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_TAG) ?></script>
     <style>
     .dx-hero{margin:6px 0 22px}
     .dx-hero .page-title{margin:0 0 8px}

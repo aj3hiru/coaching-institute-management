@@ -35,7 +35,7 @@ class CommentMailer
 
     private function generateSecureLink($email): string
     {
-        if (!defined('SECRET_KEY')) define('SECRET_KEY', 'CD_v1_9x2Lq5Vm8Zp3Rs7Kw4Yn1Jt6Hb0Gf_SecureHash_2025');
+        if (!defined('SECRET_KEY')) define('SECRET_KEY', hash('sha256', 'edu-mail-verify|' . (defined('DB_PASS') ? DB_PASS : '') . '|' . (defined('DB_NAME') ? DB_NAME : ''))); // per site, not written in the code
         
         $encoded_email = str_replace(['+', '/'], ['-', '_'], base64_encode($email));
         $hash = hash_hmac('sha256', $email, SECRET_KEY);

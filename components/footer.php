@@ -124,7 +124,7 @@ else if(n){b.textContent=(n.charAt(0)+(l||'')).toUpperCase();b.classList.add('in
 <?php if (th_on('cc_sticky')): ?><button type="button" class="edu-cc-fab" id="eduCcFab" aria-label="Cookie settings" data-edu-consent hidden><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21.6 11.2a3.5 3.5 0 0 1-4.8-3.3 3.5 3.5 0 0 1-4.6-4.6A9.5 9.5 0 1 0 21.6 11.2ZM8 9.5A1.5 1.5 0 1 1 8 12.5 1.5 1.5 0 0 1 8 9.5Zm1 6a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm6.5 1a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Z"/></svg></button><?php endif; ?>
 <script>(function(){
 if(!window.__eduConsentApplies)return;
-var box=document.getElementById("eduCc"),fab=document.getElementById("eduCcFab"),days=<?= max(30, min(395, (int)th('cc_days', 180))) ?>,reask=<?= json_encode((string)th('cc_reask')) ?>;
+var box=document.getElementById("eduCc"),fab=document.getElementById("eduCcFab"),days=<?= max(30, min(395, (int)th('cc_days', 180))) ?>,reask=<?= json_encode((string)th('cc_reask'), JSON_HEX_TAG) ?>;
 var c=null;try{c=JSON.parse(localStorage.getItem("edu_consent")||"null")}catch(e){}
 var g=function(v){return v?"granted":"denied"};
 function show(){box.hidden=false;if(fab)fab.hidden=true;var a=document.getElementById("eduCcAn"),d=document.getElementById("eduCcAds"),p=document.getElementById("eduCcPers");if(c){a.checked=!!c.an;d.checked=!!c.ads;p.checked=!!c.pers}}

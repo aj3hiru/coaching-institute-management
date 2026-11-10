@@ -67,7 +67,7 @@ $ico = fn($n) => sh_icon($n);
   var MAX = 20 * 1024 * 1024, CH = 4 * 1024 * 1024;
   var pick = document.getElementById('acRepPick'), t = document.getElementById('acDropT'), x = document.getElementById('acDropX'), warn = document.getElementById('acWarn'),
       bar = document.getElementById('acUpBar'), hid = document.getElementById('acRepFile'), go = document.getElementById('acRepGo'), form = document.getElementById('acRep');
-  var tok = <?= json_encode(sh_csrf()) ?>, busy = false;
+  var tok = <?= json_encode(sh_csrf(), JSON_HEX_TAG) ?>, busy = false;
   function say(m) { warn.textContent = m; warn.hidden = !m; }
   function reset() { pick.value = ''; hid.value = ''; t.textContent = 'Add a screenshot or PDF'; x.hidden = true; bar.hidden = true; bar.firstChild.style.width = '0'; }
   x.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); reset(); say(''); });

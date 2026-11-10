@@ -217,7 +217,7 @@ $esc = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 <div class="fx-pager" id="fxPager"></div>
 <?php if ($canNotes): ?><div id="fxNotes" hidden></div>
 <link rel="stylesheet" href="/assets/css/pdf-media.css?v=<?= @filemtime(ROOT_PATH . '/assets/css/pdf-media.css') ?: 1 ?>">
-<script>window.FX_NOTES = true; window.PM_CFG = { csrf: <?= json_encode(csrf_token()) ?> };</script>
+<script>window.FX_NOTES = true; window.PM_CFG = { csrf: <?= json_encode(csrf_token(), JSON_HEX_TAG) ?> };</script>
 <script src="/assets/js/pdf-media.js?v=<?= @filemtime(ROOT_PATH . '/assets/js/pdf-media.js') ?: 1 ?>"></script><?php endif; ?>
 
 <div class="modal-overlay fx-modal" id="fxModal"><div class="modal">
@@ -239,7 +239,7 @@ $esc = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 <?php admin_shell_close(); ?>
 <script>
 (function () {
-  var token = <?= json_encode(csrf_token()) ?>, site = <?= json_encode(rtrim(SITE_URL, '/')) ?>;
+  var token = <?= json_encode(csrf_token(), JSON_HEX_TAG) ?>, site = <?= json_encode(rtrim(SITE_URL, '/'), JSON_HEX_TAG) ?>;
   var st = { type: /[?&]tab=notes\b/.test(location.search) && window.FX_NOTES ? 'notes' : '', page: 1, items: [], selecting: false, sel: new Set(), cur: null };
   var $ = function (id) { return document.getElementById(id); };
   var ICON = { pdf: '<i class="fas fa-file-pdf ic" style="color:#dc2626"></i>', video: '<i class="fas fa-file-video ic" style="color:#7c3aed"></i>', audio: '<i class="fas fa-file-audio ic" style="color:#0891b2"></i>', document: '<i class="fas fa-file-lines ic" style="color:#2563eb"></i>' };

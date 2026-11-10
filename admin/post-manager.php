@@ -163,7 +163,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['title'])) {
         $pdo->beginTransaction();
 
         // --- 9a. Sanitize inputs ---
-        $title                   = trim($_POST['title']);
+        $title                   = trim((string)($_POST['title'] ?? ''));
         $content                 = $_POST['content'];
         $faq_json                = !empty($_POST['faq_json'])        ? $_POST['faq_json']              : null;
         $last_date               = !empty($_POST['last_date'])       ? $_POST['last_date']             : null;
@@ -1165,8 +1165,8 @@ admin_shell_open($is_edit ? 'Edit Post' : 'Add New Post', $is_edit ? 'Update you
 <script>
 document.addEventListener('DOMContentLoaded', function () {
 const IS_EDIT = <?= $is_edit ? 'true' : 'false' ?>;
-const SITE_NAME = <?= json_encode(edu_site_name()) ?>;
-const HOST = <?= json_encode($host) ?>;
+const SITE_NAME = <?= json_encode(edu_site_name(), JSON_HEX_TAG) ?>;
+const HOST = <?= json_encode($host, JSON_HEX_TAG) ?>;
 const existingContent = <?= $is_edit ? json_encode($post_data['content']) : 'null' ?>;
 const form = document.getElementById('post-form');
 const $ = id => document.getElementById(id);
@@ -1397,7 +1397,7 @@ document.querySelectorAll('.table-template-card').forEach(card => card.addEventL
   if (e.target.closest('[data-del-tpl]')) return;
   useTemplate(card);
 }));
-const tplPost = d => { const fd = new FormData(); fd.append('_csrf', <?= json_encode(csrf_token()) ?>); Object.keys(d).forEach(k => fd.append(k, d[k])); return fetch('/admin/post-manager.php', { method: 'POST', body: fd, credentials: 'same-origin' }).then(r => r.json()); };
+const tplPost = d => { const fd = new FormData(); fd.append('_csrf', <?= json_encode(csrf_token(), JSON_HEX_TAG) ?>); Object.keys(d).forEach(k => fd.append(k, d[k])); return fetch('/admin/post-manager.php', { method: 'POST', body: fd, credentials: 'same-origin' }).then(r => r.json()); };
 $('saveTplBtn').addEventListener('click', () => {
   const node = editor && editor.selection ? editor.dom.getParent(editor.selection.getNode(), 'table') : null;
   if (!node) { adminNotice('Click inside a table in the post first, then save it as a template.', { type: 'info' }); return; }
@@ -1565,7 +1565,7 @@ const sumCount = () => { $('summary-count').textContent = $('summary').value.len
 $('summary').addEventListener('input', sumCount); sumCount();
 
 /* ---------- key points ---------- */
-const kpInit = <?= json_encode($v_kps, JSON_UNESCAPED_UNICODE) ?>;
+const kpInit = <?= json_encode($v_kps, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) ?>;
 function kpRender(values) {
   const list = $('kp-list'); list.innerHTML = '';
   (values.length ? values : ['']).forEach(v => kpAdd(v, false));
@@ -1804,7 +1804,7 @@ $('job-logo-clear').addEventListener('click', () => setJobLogo(''));
 (() => {
   const on = $('job_card'), box = $('jc-fields'), sel = $('job_qual_sel'), other = $('job_qual_other'), loc = $('job_location'), st = $('state_id'), seats = $('job_vacancies');
   on.addEventListener('change', () => { box.hidden = !on.checked; if (on.checked) syncLoc(); });
-  const saved = <?= json_encode((string)($pm['job_qualification'] ?? ''), JSON_UNESCAPED_UNICODE) ?>;
+  const saved = <?= json_encode((string)($pm['job_qualification'] ?? ''), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) ?>;
   if (saved && [...sel.options].some(o => o.value === saved)) sel.value = saved;
   sel.addEventListener('change', () => { other.hidden = sel.value !== '__other'; if (!other.hidden) other.focus(); });
   const pn = $('job_post_name'), tt = $('title');
@@ -1901,7 +1901,7 @@ faqCount();
 
 /* ---------- SEO panel (Rank Math style) ---------- */
 const HAS_SEO = !!$('rmx-groups');
-const SEO_POST_FORMAT = <?= json_encode((string)seo_opt('post_format')) ?>, SEO_SEP = <?= json_encode((string)seo_opt('sep')) ?>, SEO_SITE = <?= json_encode(edu_seo_site_name()) ?>;
+const SEO_POST_FORMAT = <?= json_encode((string)seo_opt('post_format'), JSON_HEX_TAG) ?>, SEO_SEP = <?= json_encode((string)seo_opt('sep'), JSON_HEX_TAG) ?>, SEO_SITE = <?= json_encode(edu_seo_site_name(), JSON_HEX_TAG) ?>;
 const POWER_WORDS = ['amazing','best','complete','easy','essential','exclusive','free','guide','latest','new','official','proven','quick','simple','secret','top','ultimate','urgent','important','big','huge','alert','breaking','last date','apply now','released','out','declared','big news','good news'];
 const strip = h => h.replace(/<(script|style)[\s\S]*?<\/\1>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim();
 let descTouched = !!(document.getElementById('meta_description') && $('meta_description').value.trim());
@@ -1959,7 +1959,7 @@ if (HAS_SEO) {
     snipClose(); isDirty = true; updateAll();
   });
 }
-function updateSchemaName() { if (!HAS_SEO) return; const v = document.querySelector('[name=schema_type]:checked')?.value || <?= json_encode((string)seo_opt('schema_default')) ?>; $('rmx-schema-name').textContent = { NewsArticle: 'News Article', BlogPosting: 'Blog Post', Article: 'Article' }[v] || v; }
+function updateSchemaName() { if (!HAS_SEO) return; const v = document.querySelector('[name=schema_type]:checked')?.value || <?= json_encode((string)seo_opt('schema_default'), JSON_HEX_TAG) ?>; $('rmx-schema-name').textContent = { NewsArticle: 'News Article', BlogPosting: 'Blog Post', Article: 'Article' }[v] || v; }
 function updateSocial() {
   if (!HAS_SEO) return;
   const img = $('og_image').value || ($('feat-img') ? $('feat-img').getAttribute('src') : '');

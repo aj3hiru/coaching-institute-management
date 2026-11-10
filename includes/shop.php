@@ -453,13 +453,22 @@ function sh_check_login(PDO $pdo, string $id, string $pass): ?array
 {
     $key = 'sh_fail_' . md5(($_SERVER['REMOTE_ADDR'] ?? '') . '|' . strtolower(trim($id)));
     $fails = (int)($_SESSION[$key] ?? 0);
-    if ($fails >= 5) usleep(min(5, $fails - 4) * 600000); // a little slower after 5 wrong tries
+    // wrong tries are counted in the database by IP and by account (a bot dropping its cookie is still counted):
+    // 20 from one IP or 8 for one account in 15 minutes, then wait
+    $ip = function_exists('edu_client_ip') ? edu_client_ip() : (string)($_SERVER['REMOTE_ADDR'] ?? '');
+    $acct = 'slog-u:' . strtolower(trim($id));
+    if (function_exists('edu_throttle') && (!edu_throttle('slog-ip:' . $ip, 20, 900, false) || !edu_throttle($acct, 8, 900, false))) { $GLOBALS['sh_login_locked'] = true; return null; }
     $id = trim($id);
     $mob = sh_clean_mobile($id);
     $q = $pdo->prepare("SELECT * FROM sh_users WHERE (email = ? OR mobile = ?) LIMIT 1");
     $q->execute([strtolower($id), $mob !== '' ? $mob : '-']);
     $u = $q->fetch(PDO::FETCH_ASSOC);
-    if (!$u || !password_verify($pass, $u['pass']) || $u['status'] !== 'active') { $_SESSION[$key] = $fails + 1; return null; }
+    if (!$u || !password_verify($pass, $u['pass']) || $u['status'] !== 'active') {
+        $_SESSION[$key] = $fails + 1;
+        if (function_exists('edu_throttle')) { edu_throttle('slog-ip:' . $ip, 20, 900); edu_throttle($acct, 8, 900); }
+        return null;
+    }
+    if (function_exists('edu_throttle_clear')) edu_throttle_clear($acct);
     unset($_SESSION[$key]);
     if (password_needs_rehash($u['pass'], PASSWORD_DEFAULT)) $pdo->prepare("UPDATE sh_users SET pass = ? WHERE id = ?")->execute([password_hash($pass, PASSWORD_DEFAULT), $u['id']]);
     if (!$u['student_id'] && ($sid = sh_find_student($pdo, $u['mobile']))) { $pdo->prepare("UPDATE sh_users SET student_id = ? WHERE id = ?")->execute([$sid, $u['id']]); $u['student_id'] = $sid; }

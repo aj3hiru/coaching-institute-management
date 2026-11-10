@@ -90,13 +90,13 @@ function luExcerpt(string $html, int $len = 150): string {
       "@type": "ListItem",
       "position": 1,
       "name": "Home",
-      "item": <?= json_encode(SITE_URL) ?>
+      "item": <?= json_encode(SITE_URL, JSON_HEX_TAG) ?>
     },
     {
       "@type": "ListItem",
       "position": 2,
       "name": "Latest Posts",
-      "item": <?= json_encode(SITE_URL . '/latest-posts') ?>
+      "item": <?= json_encode(SITE_URL . '/latest-posts', JSON_HEX_TAG) ?>
     }
   ]
 }
@@ -138,7 +138,7 @@ function luExcerpt(string $html, int $len = 150): string {
         array_keys($recentPosts)
     ),
 
-], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>
+], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) ?>
 </script>
 
 </head>

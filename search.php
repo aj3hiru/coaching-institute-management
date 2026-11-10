@@ -6,7 +6,8 @@ require_once INCLUDES_PATH . '/minify.php';
 require_once INCLUDES_PATH . '/functions.php';
 
 // 1. Get and Sanitize Query
-$query = isset($_GET['q']) ? trim($_GET['q']) : '';
+$query = isset($_GET['q']) && is_string($_GET['q']) ? mb_substr(trim($_GET['q']), 0, 100) : ''; // a string only (q[]=… used to crash the page), at most 100 letters
+if ($query !== '' && function_exists('edu_throttle') && !edu_throttle('search:' . edu_client_ip(), 30, 60)) { http_response_code(429); header('Retry-After: 60'); exit('Too many searches. Please wait a minute.'); }
 
 if (empty($query)) {
     header("Location: " . SITE_URL);

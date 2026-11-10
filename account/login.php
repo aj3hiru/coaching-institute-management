@@ -11,6 +11,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     if (!sh_csrf_ok()) $err = 'This page had expired. Please try again.';
     elseif ($id === '' || ($_POST['pass'] ?? '') === '') $err = 'Enter your mobile number or email, and your password.';
     elseif ($u = sh_check_login($pdo, $id, (string)$_POST['pass'])) { sh_login_user($u); header('Location: ' . $next); exit; }
+    elseif (!empty($GLOBALS['sh_login_locked'])) $err = 'Too many wrong tries. Please wait 15 minutes and try again.';
     elseif (($su = (function () use ($pdo, $id) { $m = sh_clean_mobile($id); $q = $pdo->prepare("SELECT status FROM sh_users WHERE email = ? OR mobile = ? LIMIT 1"); $q->execute([strtolower(trim($id)), $m !== '' ? $m : '-']); return (string)$q->fetchColumn(); })()) !== '' && $su !== 'active') $err = 'This account is suspended. Please contact the institute.'; // only after a wrong-or-blocked try
     else $err = 'Wrong mobile/email or password.';
 }

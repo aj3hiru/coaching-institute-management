@@ -72,7 +72,7 @@ $faqs = [
                     '@type' => 'ListItem', 'position' => ($page - 1) * EDU_JOBS_PER_PAGE + $i + 1, 'name' => $j['title'], 'url' => rtrim(SITE_URL, '/') . postUrl($j['slug'], (int)$j['id']),
                 ], $jobs, array_keys($jobs))]],
         ],
-    ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) ?></script>
+    ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_TAG) ?></script>
     <style>
     .lj-head{margin:6px 0 16px}
     .lj-head .page-title{margin:0 0 6px}

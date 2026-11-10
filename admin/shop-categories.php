@@ -78,7 +78,7 @@ $ci_url = fn(array $c): string => $c['icon'] ? ci_e(sh_upload_url($c['icon'])) :
 </div>
 <div class="ci-mfoot"><button type="button" class="ci-btn ci-ghost" data-close>Cancel</button><button class="ci-btn" type="submit"><i class="fas fa-check"></i> Save category</button></div>
 </form></div></div></div>
-<script>(function(){var n=document.getElementById('scgName'),sl=document.getElementById('scgSlug'),t=document.getElementById('scgT'),d=document.getElementById('scgD'),pv=document.getElementById('scgPrev'),fi=document.getElementById('scgIcon'),rm=document.getElementById('scgRm'),site=<?= json_encode(edu_site_name()) ?>;
+<script>(function(){var n=document.getElementById('scgName'),sl=document.getElementById('scgSlug'),t=document.getElementById('scgT'),d=document.getElementById('scgD'),pv=document.getElementById('scgPrev'),fi=document.getElementById('scgIcon'),rm=document.getElementById('scgRm'),site=<?= json_encode(edu_site_name(), JSON_HEX_TAG) ?>;
 var slug=function(v){return v.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');};
 function paint(){var s=sl.value.trim()||slug(n.value);document.getElementById('scgSlugV').textContent=s;document.getElementById('scgPS').textContent=s;
 var tt=t.value.trim()||(n.value.trim()?n.value.trim()+' — Online Courses & Notes | '+site:'');document.getElementById('scgPT').textContent=tt;document.getElementById('scgTc').textContent='('+tt.length+' / 60 best)';

@@ -378,22 +378,22 @@ body{margin:0;overflow:hidden}
 <button type="button" class="cz-show" id="cz-show" hidden><i class="fas fa-circle-chevron-right"></i> Show Controls</button>
 
 <script>
-const CSRF = <?= json_encode(csrf_token()) ?>;
-const DEFAULTS = <?= json_encode(edu_theme_defaults(), JSON_UNESCAPED_UNICODE) ?>;
-const state = { theme: <?= json_encode($theme, JSON_UNESCAPED_UNICODE) ?>, general: <?= json_encode($general, JSON_UNESCAPED_UNICODE) ?>, home: <?= json_encode($homeState, JSON_UNESCAPED_UNICODE) ?> };
-const HOME_SECTIONS = <?= json_encode(SH_HOME_SECTIONS, JSON_UNESCAPED_UNICODE) ?>;
-const PICK_ICONS = <?= json_encode(array_combine(SH_PICK_ICONS, array_map('sh_icon', SH_PICK_ICONS)), JSON_UNESCAPED_SLASHES) ?>;
+const CSRF = <?= json_encode(csrf_token(), JSON_HEX_TAG) ?>;
+const DEFAULTS = <?= json_encode(edu_theme_defaults(), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) ?>;
+const state = { theme: <?= json_encode($theme, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) ?>, general: <?= json_encode($general, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) ?>, home: <?= json_encode($homeState, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) ?> };
+const HOME_SECTIONS = <?= json_encode(SH_HOME_SECTIONS, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) ?>;
+const PICK_ICONS = <?= json_encode(array_combine(SH_PICK_ICONS, array_map('sh_icon', SH_PICK_ICONS)), JSON_UNESCAPED_SLASHES | JSON_HEX_TAG) ?>;
 const HOME_BRAND = <?php require_once INCLUDES_PATH . '/institute.php'; $hb = ci_institute()['brand']['title'] ?? ''; echo json_encode($hb !== '' ? $hb : edu_site_name(), JSON_UNESCAPED_UNICODE); ?>; // same name as the homepage heading
-const START_PANEL = <?= json_encode((string)($_GET['panel'] ?? '')) ?>;
-const CZ_ONLY = <?= json_encode($czBlog ? CZ_BLOG_PANELS : null) ?>; // Blog Admin: blog panels only
+const START_PANEL = <?= json_encode((string)($_GET['panel'] ?? ''), JSON_HEX_TAG) ?>;
+const CZ_ONLY = <?= json_encode($czBlog ? CZ_BLOG_PANELS : null, JSON_HEX_TAG) ?>; // Blog Admin: blog panels only
 const HAS_BACKUP = <?= !empty($backup['theme']) ? 'true' : 'false' ?>;
-const BACKUP_AT = <?= json_encode($backup['at'] ?? '') ?>;
+const BACKUP_AT = <?= json_encode($backup['at'] ?? '', JSON_HEX_TAG) ?>;
 const FONTS = [['system', 'System font (fastest)'], ['Inter', 'Inter'], ['Roboto', 'Roboto'], ['Poppins', 'Poppins'], ['Noto Sans', 'Noto Sans (Hindi too)'], ['Mukta', 'Mukta (Hindi)'], ['Hind', 'Hind (Hindi)'], ['Open Sans', 'Open Sans'], ['Lato', 'Lato'], ['Merriweather', 'Merriweather (serif)'], ['Georgia', 'Georgia (serif)']];
-const SITE_NAME_DEFAULT = <?= json_encode(SITE_NAME) ?>;
-const ID_ADDRESS = <?= json_encode(trim((string)es('general', 'address', ''))) ?>;
-const COLOR_GROUPS = <?= json_encode(EDU_COLOR_GROUPS, JSON_UNESCAPED_UNICODE) ?>;
-const TYPO_TARGETS = <?= json_encode(array_map(fn($x) => $x[0], EDU_TYPO_TARGETS), JSON_UNESCAPED_UNICODE) ?>;
-const SHORTCODES = <?= json_encode(edu_shortcode_help(), JSON_UNESCAPED_UNICODE) ?>;
+const SITE_NAME_DEFAULT = <?= json_encode(SITE_NAME, JSON_HEX_TAG) ?>;
+const ID_ADDRESS = <?= json_encode(trim((string)es('general', 'address', '')), JSON_HEX_TAG) ?>;
+const COLOR_GROUPS = <?= json_encode(EDU_COLOR_GROUPS, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) ?>;
+const TYPO_TARGETS = <?= json_encode(array_map(fn($x) => $x[0], EDU_TYPO_TARGETS), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) ?>;
+const SHORTCODES = <?= json_encode(edu_shortcode_help(), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) ?>;
 
 // --- panel definitions: [type, key, label, extra] ; keys starting with "g." edit General Settings (identity) ---
 const PANELS = [
@@ -478,7 +478,7 @@ const CZ_NAV = ['identity', { id: 'global', label: 'Global', items: ['typography
   { id: 'posttypes', label: 'Post Types', items: ['home', 'post', 'alsoread', 'progress'] }, 'homepage', 'sidebar',
   { id: 'footer', label: 'Footer', items: ['footer', 'f_copy', 'bnav'] }, { id: 'general', label: 'General', items: ['f_scroll', 'nf', 'consent', 'shortcodes'] },
   'menus', 'css'];
-const CZ_STORE = <?= json_encode(is_file(ROOT_PATH . '/account/login.php')) ?>;
+const CZ_STORE = <?= json_encode(is_file(ROOT_PATH . '/account/login.php'), JSON_HEX_TAG) ?>;
 if (CZ_STORE) { const oc = PANELS.find(x => x.id === 'h_offcanvas'); if (oc) oc.fields = oc.fields.filter(f => f[1] !== 'h_drawer_sub').map(f => f[1] === 'h_drawer_login' ? ['toggle', 'h_drawer_login', 'Courses & Student Login buttons'] : f); }
 const CZ_DEP = { bnav_home: 'bnav', bnav_explore: 'bnav', bnav_orders: 'bnav', bnav_courses: 'bnav', bnav_profile: 'bnav', bnav_home_t: 'bnav_home', bnav_explore_t: 'bnav_explore', bnav_orders_t: 'bnav_orders', bnav_courses_t: 'bnav_courses', bnav_profile_t: 'bnav_profile', sb_search: 'sb_post', sb_cats: 'sb_post', sb_search_heading: 'sb_search', sb_cats_heading: 'sb_cats', sb_cats_count: 'sb_cats', h_voice: 'h_search', h_search_placeholder: 'h_search', h_login_text: 'h_login', h_login_url: 'h_login', h_sub_text: 'h_sub', h_sub_icon: 'h_sub', h_sub_url: 'h_sub',
   h_drawer_title: 'h_drawer_hello', h_drawer_text: 'h_drawer_hello', h_drawer_sub: 'h_sub', h_topbar_text: 'h_topbar', sb_heading: 'sb_post', sb_count: 'sb_post', sb_source: 'sb_post', sb_sticky: 'sb_post',
@@ -1638,7 +1638,7 @@ function hmWhy(wrap, H) {
 }
 
 function showHome() {
-  panel = null; addingFor = null; document.querySelectorAll('.cz-additems').forEach(x => x.remove()); $('cz-back').hidden = true; $('cz-head-small').textContent = 'You are customizing'; $('cz-head-title').textContent = <?= json_encode(edu_site_name()) ?>;
+  panel = null; addingFor = null; document.querySelectorAll('.cz-additems').forEach(x => x.remove()); $('cz-back').hidden = true; $('cz-head-small').textContent = 'You are customizing'; $('cz-head-title').textContent = <?= json_encode(edu_site_name(), JSON_HEX_TAG) ?>;
   const b = $('cz-body'); b.innerHTML = ''; b.classList.remove('hm-bg');
   const nav = document.createElement('nav'); nav.className = 'cz-nav';
   const navItems = [];
@@ -1696,7 +1696,7 @@ function showPanel(p, keep) {
   $('cz-head-title').dataset.trail = '';
   b.appendChild(wrap);
   if (keep) return;
-  if (p.id === 'post' || p.id === 'alsoread' || p.id === 'progress' || p.id === 'sidebar' || p.id === 'typography') goTo(<?= json_encode($latestUrl) ?>);
+  if (p.id === 'post' || p.id === 'alsoread' || p.id === 'progress' || p.id === 'sidebar' || p.id === 'typography') goTo(<?= json_encode($latestUrl, JSON_HEX_TAG) ?>);
   else if (p.id === 'home') goTo('/blog');
   else if (p.id === 'homepage') goTo('/');
   else if (p.id === 'nf') goTo('/page-that-does-not-exist');

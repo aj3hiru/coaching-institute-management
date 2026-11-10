@@ -229,7 +229,7 @@ $esc = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 <script>
 (function () {
   var msgs = <?= json_encode($data, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_UNESCAPED_UNICODE) ?>;
-  var token = <?= json_encode(csrf_token()) ?>, smtp = <?= $smtp ? 'true' : 'false' ?>, cur = null;
+  var token = <?= json_encode(csrf_token(), JSON_HEX_TAG) ?>, smtp = <?= $smtp ? 'true' : 'false' ?>, cur = null;
   var $ = function (id) { return document.getElementById(id); };
   function post(data) {
     var fd = new FormData(); fd.append('_csrf', token);

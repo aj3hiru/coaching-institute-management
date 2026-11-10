@@ -185,7 +185,7 @@ $link = fn(array $o) => '/admin/tag-manager.php' . (($p = http_build_query(array
 <?php admin_shell_close(); ?>
 <script>
 (function () {
-  var token = <?= json_encode(csrf_token()) ?>;
+  var token = <?= json_encode(csrf_token(), JSON_HEX_TAG) ?>;
   function post(d) { var fd = new FormData(); fd.append('_csrf', token); fd.append('ajax', '1'); Object.keys(d).forEach(function (k) { fd.append(k, d[k]); }); return fetch('/admin/tag-manager.php', { method: 'POST', body: fd, credentials: 'same-origin' }).then(function (r) { return r.json(); }); }
   var name = document.getElementById('txName'), slug = document.getElementById('txSlug'), prev = document.getElementById('txSlugPrev');
   function s(v) { return (v || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''); }

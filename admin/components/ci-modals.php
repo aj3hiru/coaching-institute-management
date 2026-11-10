@@ -47,8 +47,8 @@ $__canAdd = ci_perm($me, 'edit_student') || ci_perm($me, 'add_student');
 <script>
 (function () {
   var inr = function (n) { return '₹' + (Math.round(n * 100) / 100).toLocaleString('en-IN'); };
-  var C = <?= json_encode(array_values(array_map(fn($c, $cid) => ['id' => $cid, 'n' => $c['name'], 'f' => (float)$c['fee'], 'k' => (int)$c['class_id']], array_filter($__L['courses'], fn($c) => $c['status'] === 'active'), array_keys(array_filter($__L['courses'], fn($c) => $c['status'] === 'active')))), JSON_UNESCAPED_UNICODE) ?>;
-  var B = <?= json_encode(array_values(array_map(fn($b, $bid) => ['id' => $bid, 'c' => (int)$b['course_id'], 'n' => $b['name'] . ($b['timing'] ? ' · ' . $b['timing'] : '') . ($b['session_name'] ? ' (' . $b['session_name'] . ')' : ''), 'a' => $b['status'] === 'active'], $__L['batches'], array_keys($__L['batches']))), JSON_UNESCAPED_UNICODE) ?>;
+  var C = <?= json_encode(array_values(array_map(fn($c, $cid) => ['id' => $cid, 'n' => $c['name'], 'f' => (float)$c['fee'], 'k' => (int)$c['class_id']], array_filter($__L['courses'], fn($c) => $c['status'] === 'active'), array_keys(array_filter($__L['courses'], fn($c) => $c['status'] === 'active')))), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) ?>;
+  var B = <?= json_encode(array_values(array_map(fn($b, $bid) => ['id' => $bid, 'c' => (int)$b['course_id'], 'n' => $b['name'] . ($b['timing'] ? ' · ' . $b['timing'] : '') . ($b['session_name'] ? ' (' . $b['session_name'] . ')' : ''), 'a' => $b['status'] === 'active'], $__L['batches'], array_keys($__L['batches']))), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) ?>;
   function openM(m) { m.hidden = false; (window.ciLock ? ciLock(true) : null); }
   function closeM(m) { m.hidden = true; (window.ciLock ? ciLock(false) : null); }
   document.querySelectorAll('#ci-lc, #ci-la').forEach(function (m) { m.addEventListener('click', function (e) { if (e.target === m || e.target.closest('[data-close]')) closeM(m); }); });
