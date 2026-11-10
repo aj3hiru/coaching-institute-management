@@ -1031,3 +1031,13 @@ a.st-li:hover{background:#f7fbfc}a.st-li:hover svg{color:var(--sa)}
   .sp-sec{margin-top:28px}
 }
 .ac-main>.ac-grid+.ac-sub{margin-top:36px!important}
+/* lecture tabs: a round number badge after the icon; an empty tab says so in one line */
+.lt-strip button .lt-n{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;margin-left:5px;border-radius:99px!important;background:var(--sa,#0c6878);color:#fff;font:700 10.5px/1 inherit;font-family:inherit;font-style:normal}
+.lt-strip button .lt-n[hidden]{display:none}
+.lt-strip button:not(.lt-main):not(.on):not(:hover) .lt-n{margin-left:4px}
+.lt-strip button .lt-lb{margin-left:6px}
+.lt-strip button:not(.lt-main):not(.on):not(:hover) .lt-lb{margin-left:0}
+.lt-none{display:flex;align-items:center;gap:10px;padding:16px;color:#6b7280;font-size:14px;background:#f8fafc;border:1px dashed #d1d5db;border-radius:5px}
+.lt-none svg{width:20px;height:20px;flex:0 0 auto;color:#9ca3af}
+.lt-ask-m:empty{display:none}
+.lt-strip button,.lt-strip button:not(.lt-main):not(.on):not(:hover){gap:0}

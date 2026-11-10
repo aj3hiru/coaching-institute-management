@@ -102,14 +102,22 @@ $ico = fn($n) => sh_icon($n);
     $lNotes = sh_lesson_notes($pdo, (int)$lesson['id']);
     $lVvi = sh_vvi($lesson); $lQuiz = sh_quiz($lesson);
     $canAsk = ($owner || $staff) && !empty($lesson['doubts_on']);
-    // under the video: Discussion first (icon + text), then the rest as icons — a tab's name shows on hover / when open
-    $tabs = array_filter([
-        'discuss' => ['Discussion', 'chat'],
-        'notes' => $lNotes ? ['PDF Notes', 'notes'] : null,
-        'quiz' => ($lQuiz['items'] || $lQuiz['links']) ? ['MCQ Quiz', 'quiz'] : null,
-        'vvi' => ($lVvi['qa'] || $lVvi['links']) ? ['VVI Questions', 'flag'] : null,
-        'doubts' => $canAsk ? ['Doubts & Problems', 'pen'] : null,
-    ]);
+    // how many: messages in the discussion, and doubts (a student counts their own; staff count all)
+    $nDisc = $nDbt = 0;
+    try {
+        $c = $pdo->prepare("SELECT COUNT(*) FROM sh_discuss WHERE lesson_id = ? AND status = 'visible'"); $c->execute([(int)$lesson['id']]); $nDisc = (int)$c->fetchColumn();
+        if ($owner || $staff) { $c = $pdo->prepare("SELECT COUNT(*) FROM sh_doubts WHERE lesson_id = ? AND status <> 'hidden'" . ($staff ? '' : ' AND user_id = ?')); $c->execute($staff ? [(int)$lesson['id']] : [(int)$lesson['id'], $uid]); $nDbt = (int)$c->fetchColumn(); }
+    } catch (Throwable $e) {}
+    // under the video, always all five: Discussion (icon + text), the rest as icons — a tab's name shows on hover / when open;
+    // a number badge after the icon when there is something inside, an empty tab says so when opened
+    $tabs = [
+        'discuss' => ['Discussion', 'chat', $nDisc],
+        'notes' => ['PDF Notes', 'notes', count($lNotes)],
+        'quiz' => ['MCQ Quiz', 'quiz', count($lQuiz['items']) + count($lQuiz['links'])],
+        'vvi' => ['VVI Questions', 'flag', count($lVvi['qa']) + count($lVvi['links'])],
+        'doubts' => ['Doubts', 'pen', $nDbt],
+    ];
+    $emptyBox = fn(string $icon, string $t) => '<div class="lt-none">' . $ico($icon) . '<span>' . $t . '</span></div>';
     $linkBox = function (array $links, string $kind) use ($ico) {
         $h = '';
         foreach ($links as [$t, $u]) $h .= '<a class="lt-link" href="' . sh_e($u) . '" target="_blank" rel="noopener"><span class="lt-link-i">' . $ico($kind === 'quiz' ? 'check' : 'file') . '</span><span><b>' . sh_e($t) . '</b><small>' . sh_e(parse_url($u, PHP_URL_HOST) ?: '') . '</small></span><span class="lt-link-go">Open ›</span></a>';
@@ -119,26 +127,29 @@ $ico = fn($n) => sh_icon($n);
     <?php // Discussion / PDF notes / MCQ / VVI / doubts: right under the video and its title ?>
     <?php if ($tabs): ?>
     <div class="lt" id="lt">
-      <div class="lt-strip" role="tablist"><?php $first = true; foreach ($tabs as $k => [$lab, $ic]): ?><button type="button" role="tab" data-lt="<?= $k ?>" aria-selected="<?= $first ? 'true' : 'false' ?>" aria-label="<?= sh_e($lab) ?>" title="<?= sh_e($lab) ?>" class="<?= $first ? 'on' : '' ?><?= $k === 'discuss' ? ' lt-main' : '' ?>"><?= $ico($ic) ?><span class="lt-lb"><?= $lab ?></span><?php if ($k === 'notes'): ?><em><?= count($lNotes) ?></em><?php elseif ($k === 'vvi' && $lVvi['qa']): ?><em><?= count($lVvi['qa']) ?></em><?php elseif ($k === 'quiz' && $lQuiz['items']): ?><em><?= count($lQuiz['items']) ?></em><?php endif; ?></button><?php $first = false; endforeach; ?></div>
+      <div class="lt-strip" role="tablist"><?php $first = true; foreach ($tabs as $k => [$lab, $ic, $cnt]): ?><button type="button" role="tab" data-lt="<?= $k ?>" aria-selected="<?= $first ? 'true' : 'false' ?>" aria-label="<?= sh_e($lab) ?>" title="<?= sh_e($lab) ?>" class="<?= $first ? 'on' : '' ?><?= $k === 'discuss' ? ' lt-main' : '' ?>"><?= $ico($ic) ?><i class="lt-n" data-n="<?= $k ?>"<?= $cnt ? '' : ' hidden' ?>><?= $cnt > 99 ? '99+' : $cnt ?></i><span class="lt-lb"><?= $lab ?></span></button><?php $first = false; endforeach; ?></div>
       <?php $first = true; foreach ($tabs as $k => $_): ?><div class="lt-pane" data-pane="<?= $k ?>"<?= $first ? '' : ' hidden' ?>>
         <?php if ($k === 'discuss'): ?>
           <?php if ($owner || $staff): ?>
           <div class="lt-disc" id="ltDisc" data-l="<?= (int)$lesson['id'] ?>" data-t="<?= sh_e(sh_csrf()) ?>">
-            <form class="lt-ask" onsubmit="return false"><textarea maxlength="2000" rows="3" placeholder="Write something for everyone in this course — a thought, a tip, a question for the class…"></textarea>
-              <div class="lt-ask-b"><span class="lt-ask-m">Everyone in this course can read this. For a private question use Doubts.</span><button type="submit" class="lp-btn"><?= $ico('chat') ?> Post</button></div></form>
+            <form class="lt-ask" onsubmit="return false"><textarea maxlength="2000" rows="3" placeholder="Write a message for the class…"></textarea>
+              <div class="lt-ask-b"><span class="lt-ask-m"></span><button type="submit" class="lp-btn"><?= $ico('chat') ?> Post</button></div></form>
             <div class="lt-dlist"><p class="lt-dl-empty">Loading…</p></div>
           </div>
-          <?php else: ?><div class="lt-locked"><?= $ico('lock') ?><div><b>Join the course to take part in the discussion</b><span>Students of this course talk about every lecture here.</span></div><a class="lp-btn" href="<?= sh_e(sh_url($p)) ?>#buy"><?= (float)$p['price'] > 0 ? 'Buy for ' . sh_money($p['price']) : 'Join free' ?></a></div><?php endif; ?>
+          <?php else: ?><div class="lt-locked"><?= $ico('lock') ?><div><b>Join the course to discuss</b></div><a class="lp-btn" href="<?= sh_e(sh_url($p)) ?>#buy"><?= (float)$p['price'] > 0 ? 'Buy for ' . sh_money($p['price']) : 'Join free' ?></a></div><?php endif; ?>
         <?php elseif ($k === 'about'): ?><div class="lt-about"><?= nl2br(sh_e($lesson['notes'])) ?></div>
         <?php elseif ($k === 'notes'): ?>
+          <?php if (!$lNotes) echo $emptyBox('notes', 'No PDF notes for this lecture'); ?>
           <?php foreach ($lNotes as $nf): $nUrl = sh_media_link('f', (int)$nf['id'], $uid); ?><div class="lt-note lt-nc">
             <div class="lt-nc-top"><span class="lt-nc-i"><?= $ico('pdf') ?></span><span class="lt-nc-t"><b><?= sh_e($nf['title']) ?></b><small><?= $nf['pages'] ? (int)$nf['pages'] . ' pages · ' : '' ?>PDF<?= !empty($nf['size']) ? ' · ' . ((int)$nf['size'] >= 1048576 ? round((int)$nf['size'] / 1048576, 1) . ' MB' : max(1, (int)round((int)$nf['size'] / 1024)) . ' KB') : '' ?></small></span></div>
             <div class="lt-nc-b"><button type="button" class="lt-note-h lt-nc-v" data-pdf="<?= sh_e($nUrl) ?>"><?= $ico('eye') ?><span class="lt-nc-o">View</span><span class="lt-nc-c">Close</span></button><a class="lt-dl lt-nc-d" href="<?= sh_e($nUrl) ?>&amp;dl=1" download title="Download <?= sh_e($nf['title']) ?>"><?= $ico('download') ?><span>Download</span></a></div>
             <div class="st-pdfv lt-pdf" hidden></div></div><?php endforeach; ?>
         <?php elseif ($k === 'vvi'): ?>
+          <?php if (!$lVvi['qa'] && !$lVvi['links']) echo $emptyBox('flag', 'No VVI questions for this lecture'); ?>
           <?php if ($lVvi['qa']): ?><div class="sp-faq lt-faq"><?php foreach ($lVvi['qa'] as $n => [$qq, $aa]): ?><details><summary><span class="lt-qn">Q<?= $n + 1 ?>.</span> <?= sh_e($qq) ?></summary><div class="sp-faq-b"><p><?= $aa !== '' ? nl2br(sh_e($aa)) : '<em>Answer will be added soon.</em>' ?></p></div></details><?php endforeach; ?></div><?php endif; ?>
           <?php if ($lVvi['links']): ?><div class="lt-links"><?= $linkBox($lVvi['links'], 'vvi') ?></div><?php endif; ?>
         <?php elseif ($k === 'quiz'): ?>
+          <?php if (!$lQuiz['items'] && !$lQuiz['links']) echo $emptyBox('quiz', 'No quiz for this lecture'); ?>
           <?php if ($lQuiz['items']): ?><div class="lt-quiz" data-quiz='<?= sh_e(json_encode(array_map(fn($x) => [$x[2], $x[3]], $lQuiz['items']), JSON_UNESCAPED_UNICODE | JSON_HEX_APOS)) ?>'>
             <?php foreach ($lQuiz['items'] as $n => [$qq, $oo, $_a, $_e]): ?><div class="lt-q" data-n="<?= $n ?>"><b><span class="lt-qn">Q<?= $n + 1 ?>.</span> <?= sh_e($qq) ?></b>
               <div class="lt-opts"><?php foreach ($oo as $oi => $ov): ?><label class="lt-opt"><input type="radio" name="lq<?= (int)$lesson['id'] ?>_<?= $n ?>" value="<?= $oi ?>"><span class="lt-ol"><?= chr(65 + $oi) ?></span><span><?= sh_e($ov) ?></span></label><?php endforeach; ?></div>
@@ -147,11 +158,15 @@ $ico = fn($n) => sh_icon($n);
           </div><?php endif; ?>
           <?php if ($lQuiz['links']): ?><div class="lt-links"><?= $linkBox($lQuiz['links'], 'quiz') ?></div><?php endif; ?>
         <?php elseif ($k === 'doubts'): ?>
+          <?php if (!$owner && !$staff): ?><div class="lt-locked"><?= $ico('lock') ?><div><b>Join the course to ask doubts</b></div><a class="lp-btn" href="<?= sh_e(sh_url($p)) ?>#buy"><?= (float)$p['price'] > 0 ? 'Buy for ' . sh_money($p['price']) : 'Join free' ?></a></div>
+          <?php elseif (!$canAsk): ?><?= $emptyBox('pen', 'Doubts are closed for this lecture') ?>
+          <?php else: ?>
           <div class="lt-doubts" id="ltDoubts" data-l="<?= (int)$lesson['id'] ?>" data-t="<?= sh_e(sh_csrf()) ?>">
-            <form class="lt-ask" onsubmit="return false"><textarea maxlength="2000" rows="3" placeholder="Stuck somewhere? Write your doubt or problem about this lecture — the teacher will answer."></textarea>
+            <form class="lt-ask" onsubmit="return false"><textarea maxlength="2000" rows="3" placeholder="Write your doubt — only you and the teacher see it"></textarea>
               <div class="lt-ask-b"><span class="lt-ask-m"></span><button type="submit" class="lp-btn"><?= $ico('pen') ?> Ask your doubt</button></div></form>
             <div class="lt-dlist"><p class="lt-dl-empty">Loading…</p></div>
           </div>
+          <?php endif; ?>
         <?php endif; ?>
       </div><?php $first = false; endforeach; ?>
     </div>

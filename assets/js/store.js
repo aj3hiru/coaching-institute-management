@@ -380,9 +380,10 @@
   // doubts
   var db = document.getElementById('ltDoubts'), loaded = false;
   function esc(s) { return String(s || '').replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function badge(k, n) { var b = lt.querySelector('.lt-n[data-n=' + k + ']'); if (!b) return; b.textContent = n > 99 ? '99+' : n; b.hidden = !n; }
   function render(list) {
-    var box = db.querySelector('.lt-dlist');
-    if (!list.length) { box.innerHTML = '<p class="lt-dl-empty">No doubts yet. Ask the first one — the teacher will answer here.</p>'; return; }
+    var box = db.querySelector('.lt-dlist'); badge('doubts', list.length);
+    if (!list.length) { box.innerHTML = '<p class="lt-dl-empty">No doubts yet.</p>'; return; }
     box.innerHTML = list.map(function (d) {
       return '<div class="lt-d' + (d.mine ? ' mine' : '') + '"><div class="lt-d-q"><span class="sp-av sp-av' + (d.id % 3) + '">' + esc(d.who.charAt(0)) + '</span><div><b>' + esc(d.who) + (d.mine ? ' <em>you</em>' : '') + '</b><small>' + esc(d.at) + '</small><p>' + esc(d.q).replace(/\n/g, '<br>') + '</p></div></div>'
         + (d.a ? '<div class="lt-d-a"><b>Teacher' + (d.by ? ' · ' + esc(d.by) : '') + '</b><p>' + esc(d.a).replace(/\n/g, '<br>') + '</p></div>' : '<div class="lt-d-w">Waiting for the teacher\'s answer</div>') + '</div>';
@@ -400,7 +401,7 @@
       var fd = new FormData(); fd.append('l', db.getAttribute('data-l')); fd.append('q', q); fd.append('_t', db.getAttribute('data-t'));
       fetch('/store/doubt', { method: 'POST', body: fd, credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (d) {
         b.disabled = false; if (d.error) { m.textContent = d.error; return; }
-        ta.value = ''; m.textContent = 'Sent! The teacher will answer soon.'; render(d.list || []);
+        ta.value = ''; m.textContent = 'Sent.'; render(d.list || []);
       }).catch(function () { b.disabled = false; m.textContent = 'Could not send. Please try again.'; });
     });
     if (lt.querySelector('.lt-strip button.on[data-lt=doubts]')) loadDoubts();
@@ -408,8 +409,8 @@
   // discussion: everyone in the course reads and writes (newest first); your own message can be removed
   var dc = document.getElementById('ltDisc'), dLoaded = false;
   function renderDisc(list) {
-    var box = dc.querySelector('.lt-dlist');
-    if (!list.length) { box.innerHTML = '<p class="lt-dl-empty">No messages yet — start the discussion for this lecture.</p>'; return; }
+    var box = dc.querySelector('.lt-dlist'); badge('discuss', list.length);
+    if (!list.length) { box.innerHTML = '<p class="lt-dl-empty">No messages yet.</p>'; return; }
     box.innerHTML = list.map(function (d) {
       return '<div class="lt-d lt-dm' + (d.mine ? ' mine' : '') + (d.teacher ? ' tchr' : '') + '"><div class="lt-d-q"><span class="sp-av sp-av' + (d.id % 3) + '">' + esc(d.who.charAt(0)) + '</span><div><b>' + esc(d.who)
         + (d.teacher ? ' <em class="lt-tb">Teacher</em>' : '') + (d.mine ? ' <em>you</em>' : '') + '</b><small>' + esc(d.at) + '</small><p>' + esc(d.m).replace(/\n/g, '<br>') + '</p></div>'
