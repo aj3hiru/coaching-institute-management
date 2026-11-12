@@ -33,6 +33,22 @@ if (!$file && !$lesson) { // nothing asked (or not found): the first lesson / PD
 $item = $lesson ?: $file;
 if (!$item || (!$own && empty($item['free']))) { // a paid lesson for someone who has not bought it
     // a shared lecture link opened by WhatsApp / Facebook / Google …: they get the course page (its picture and name)
+    // a FREE course's lecture (opens after "Join free"): the preview robot gets that lecture's own name and picture
+    if (!$u && $item && sh_is_bot() && (float)$p['price'] <= 0) {
+        $isV = $lesson && ($lesson['kind'] ?? 'video') !== 'pdf'; $y = $isV && !empty($lesson['video_url']) ? sh_yt_id((string)$lesson['video_url']) : null;
+        $img = $lesson && !empty($lesson['thumb']) ? (string)$lesson['thumb'] : ($y ? sh_yt_thumb($y, 'maxres') : sh_share_image($p));
+        if ($img !== '' && str_starts_with($img, '/')) $img = rtrim(SITE_URL, '/') . $img;
+        $selfUrl = rtrim(SITE_URL, '/') . sh_learn_url($p['slug'], $lesson ? 'l=' . (int)$lesson['id'] : 'f=' . (int)$file['id']);
+        $t = $item['title'] . ' | ' . edu_site_name(); $d = ($isV ? 'Free video lecture' : 'Free PDF') . ' from ' . $p['title'] . ' — study free on ' . edu_site_name() . '.';
+        $e = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
+        header('Content-Type: text/html; charset=utf-8'); header('X-Robots-Tag: noindex');
+        exit('<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>' . $e($t) . '</title><meta name="robots" content="noindex, follow"><meta name="description" content="' . $e($d) . '">'
+            . '<link rel="canonical" href="' . $e(rtrim(SITE_URL, '/') . sh_url($p)) . '"><meta property="og:type" content="website"><meta property="og:site_name" content="' . $e(edu_site_name()) . '">'
+            . '<meta property="og:title" content="' . $e($t) . '"><meta property="og:description" content="' . $e($d) . '"><meta property="og:url" content="' . $e($selfUrl) . '">'
+            . ($img !== '' ? '<meta property="og:image" content="' . $e($img) . '"><meta name="twitter:image" content="' . $e($img) . '">' : '')
+            . '<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="' . $e($t) . '"><meta name="twitter:description" content="' . $e($d) . '"></head>'
+            . '<body><h1>' . $e($item['title']) . '</h1><p>' . $e($d) . '</p><p><a href="' . $e(rtrim(SITE_URL, '/') . sh_url($p)) . '">' . $e($p['title']) . '</a></p></body></html>');
+    }
     if (!$u && sh_is_bot()) { header('Location: ' . rtrim(SITE_URL, '/') . sh_url($p), true, 302); exit; }
     if (!$u && $item) { header('Location: /account/login?next=' . rawurlencode($_SERVER['REQUEST_URI'])); exit; }
     header('Location: ' . sh_url($p) . '#content'); exit;
@@ -52,15 +68,37 @@ $lockedLeft = count($all) - count($openList) + count(array_filter($files, fn($f)
 
 $wm = ''; // no watermark on videos or PDFs
 $stTitle = ($item['title'] ?? $p['title']) . ' — ' . $p['title'];
-// a lecture is not a search result of its own (noindex) — its course page is (canonical); a shared lecture link shows
-// the course: its name, its short text and its picture
+// a paid lecture is not a search result of its own (noindex) — its course page is (canonical); a shared paid lecture link
+// shows the course: its name, its short text and its picture
 $stRobots = 'noindex, follow';
 $stCanonical = rtrim(SITE_URL, '/') . sh_url($p);
 $stOgTitle = $p['title'] . ' | ' . edu_site_name();
 $stOgDesc = trim((string)($p['subtitle'] ?? '')) !== '' ? (string)$p['subtitle'] : mb_substr(trim(preg_replace('/\s+/', ' ', strip_tags((string)($p['description'] ?? '')))), 0, 160);
 $stDesc = $stOgDesc;
 $stImage = sh_share_image($p);
+// a FREE lecture / PDF is an ordinary public page: its own name, text and picture when the link is shared (WhatsApp,
+// Facebook, Telegram, X …), its own address for Google, and (a video) the video's details for Google's video results
+$ldVideo = null;
+if (!empty($item['free'])) {
+    $selfQ = $lesson ? 'l=' . (int)$lesson['id'] : 'f=' . (int)$file['id'];
+    $stCanonical = rtrim(SITE_URL, '/') . sh_learn_url($p['slug'], $selfQ);
+    $stRobots = 'index, follow, max-snippet:-1, max-video-preview:-1, max-image-preview:large'; $stIndex = true;
+    $isVid = $lesson && ($lesson['kind'] ?? 'video') !== 'pdf';
+    $stOgTitle = $item['title'] . ' | ' . edu_site_name();
+    $about = $lesson ? trim(preg_replace('/\s+/', ' ', strip_tags((string)($lesson['notes'] ?? '')))) : '';
+    $stOgDesc = $about !== '' ? mb_substr($about, 0, 160) : ($isVid ? 'Free video lecture' : 'Free PDF') . ' from ' . $p['title'] . ' — study free on ' . edu_site_name() . '.';
+    $stDesc = $stOgDesc;
+    $ytF = $isVid && !empty($lesson['video_url']) ? sh_yt_id((string)$lesson['video_url']) : null;
+    $lThumb = $lesson && !empty($lesson['thumb']) ? (string)$lesson['thumb'] : '';
+    $big = $lThumb !== '' ? $lThumb : ($ytF ? sh_yt_thumb($ytF, 'maxres') : '');
+    if ($big !== '') $stImage = str_starts_with($big, '/') ? rtrim(SITE_URL, '/') . $big : $big;
+    if ($ytF) $ldVideo = array_filter(['@context' => 'https://schema.org', '@type' => 'VideoObject', 'name' => (string)$lesson['title'], 'description' => $stOgDesc,
+        'thumbnailUrl' => [$stImage], 'uploadDate' => !empty($lesson['created_at']) ? date('c', strtotime((string)$lesson['created_at'])) : null,
+        'embedUrl' => 'https://www.youtube.com/embed/' . $ytF, 'url' => $stCanonical, 'isAccessibleForFree' => true,
+        'publisher' => ['@type' => 'Organization', 'name' => edu_site_name(), 'url' => rtrim(SITE_URL, '/') . '/']]);
+}
 require ROOT_PATH . '/components/store-open.php';
+if ($ldVideo) echo '<script type="application/ld+json">' . json_encode($ldVideo, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) . '</script>';
 $ico = fn($n) => sh_icon($n);
 ?>
 <?php /* (no course bar above the video — progress shows on the lesson list) */ ?>

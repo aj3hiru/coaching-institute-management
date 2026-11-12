@@ -214,6 +214,12 @@ function edu_sm_store_rows(PDO $pdo, string $b): array
         $img = function_exists('sh_share_image') ? sh_share_image($p) : '';
         $rows[] = [$b . sh_url($p), $p['m'], $img !== '' ? [$img] : []];
     }
+    // free lectures / free PDFs are public pages of their own (with the video's picture)
+    try { foreach ($pdo->query("SELECT l.id, l.kind, l.video_url, l.thumb, p.slug, COALESCE(p.updated_at, p.created_at) m FROM sh_lessons l JOIN sh_products p ON p.id = l.product_id WHERE l.free = 1 AND p.status = 'published' ORDER BY p.id DESC, l.sort, l.id LIMIT 2000") as $l) {
+        $img = !empty($l['thumb']) ? (string)$l['thumb'] : (($l['kind'] ?? 'video') !== 'pdf' && $l['video_url'] && function_exists('sh_yt_id') && ($y = sh_yt_id((string)$l['video_url'])) ? sh_yt_thumb($y, 'maxres') : '');
+        if ($img !== '' && str_starts_with($img, '/')) $img = $b . $img;
+        $rows[] = [$b . sh_learn_url($l['slug'], 'l=' . (int)$l['id']), $l['m'], $img !== '' ? [$img] : []];
+    } } catch (Throwable) {}
     try { foreach ($pdo->query("SELECT c.slug, MAX(COALESCE(p.updated_at, p.created_at)) m FROM sh_categories c JOIN sh_products p ON p.category_id = c.id AND p.status = 'published' WHERE c.status = 'active' GROUP BY c.id") as $c) $rows[] = [$b . sh_cat_url($c['slug']), $c['m']]; } catch (Throwable) {}
     try { $fr = $pdo->query("SELECT MAX(COALESCE(updated_at, created_at)) FROM sh_products WHERE type = 'course' AND status = 'published' AND free_list = 1")->fetchColumn(); // the free courses themselves are listed with the courses
         if ($fr) $rows[] = [$b . '/free-courses/', $fr]; } catch (Throwable) {}
