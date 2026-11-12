@@ -12,3 +12,13 @@
 }
 @media(max-width:1024px){.ftx-grid--many .ftx-columns,.ftx-grid--three .ftx-columns{grid-column:1/-1}}
 .ftx-columns{row-gap:24px}
+/* copyright row: the copyright on the left, "Developed by <name> ↗" on the right (stacked and centred on phones) */
+.ftx-copy:has(.ftx-dev){justify-content:space-between;align-items:center}
+.ftx-dev{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.ftx-dev-a,.ftx-dev-a:hover,.ftx-dev-a:focus{display:inline-flex;align-items:center;gap:3px;color:inherit!important;font-weight:700;text-decoration:none!important;border:0!important}
+.ftx-dev-a svg{flex:0 0 auto;transition:transform .2s ease}
+.ftx-dev-a:hover svg,.ftx-dev-a:focus-visible svg{transform:translate(2px,-2px)}
+.ftx-dev-a:hover{opacity:.85}
+.ftx-dev b{font-weight:700}
+.ftx-copy .screen-reader-text{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+@media(max-width:767px){.ftx-copy:has(.ftx-dev){justify-content:center;text-align:center;flex-direction:column;gap:4px}}

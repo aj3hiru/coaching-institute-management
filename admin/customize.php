@@ -418,7 +418,9 @@ const PANELS = [
     ['range', 'box_radius', 'Corner radius (boxes, buttons, drop-downs)', { min: 0, max: 30, step: 1, unit: 'px' }],
   ]},
   { id: 'menus', icon: 'fa-bars', label: 'Menus', sub: 'Primary menu and the menu strip', render: renderMenus },
-  { id: 'f_copy', icon: 'fa-copyright', label: 'Copyright', sub: '', design: ['footer_bar'], fields: [['text', 'f_copyright', 'Copyright text', { hint: 'Shortcodes: [year] [site_title] [site_link]' }]] },
+  { id: 'f_copy', icon: 'fa-copyright', label: 'Copyright', sub: '', design: ['footer_bar'], fields: [['text', 'f_copyright', 'Copyright text', { hint: 'Shortcodes: [year] [site_title] [site_link]' }],
+    ['toggle', 'f_dev', 'Show “Developed by” in this row'], ['text', 'f_dev_label', 'Text before the name', { placeholder: 'Developed by' }],
+    ['text', 'f_dev_name', 'Developer name', { placeholder: 'Digifuwu' }], ['text', 'f_dev_url', 'Developer link (opens in a new tab)', { placeholder: 'https://…', hint: 'Empty = the name shows without a link.' }]] },
   { id: 'nf', icon: 'fa-triangle-exclamation', label: '404 Page', sub: '', fields: [
     ['text', 'nf_title', 'Heading'], ['textarea', 'nf_text', 'Text'],
     ['text', 'nf_post_title', 'Heading (missing post)'], ['textarea', 'nf_post_text', 'Text (missing post)'],
@@ -481,7 +483,7 @@ const CZ_NAV = ['identity', { id: 'global', label: 'Global', items: ['typography
   'menus', 'css'];
 const CZ_STORE = <?= json_encode(is_file(ROOT_PATH . '/account/login.php'), JSON_HEX_TAG) ?>;
 if (CZ_STORE) { const oc = PANELS.find(x => x.id === 'h_offcanvas'); if (oc) oc.fields = oc.fields.filter(f => f[1] !== 'h_drawer_sub').map(f => f[1] === 'h_drawer_login' ? ['toggle', 'h_drawer_login', 'Courses & Student Login buttons'] : f); }
-const CZ_DEP = { bnav_home: 'bnav', bnav_explore: 'bnav', bnav_orders: 'bnav', bnav_courses: 'bnav', bnav_profile: 'bnav', bnav_home_t: 'bnav_home', bnav_explore_t: 'bnav_explore', bnav_orders_t: 'bnav_orders', bnav_courses_t: 'bnav_courses', bnav_profile_t: 'bnav_profile', sb_search: 'sb_post', sb_cats: 'sb_post', sb_search_heading: 'sb_search', sb_cats_heading: 'sb_cats', sb_cats_count: 'sb_cats', h_voice: 'h_search', h_search_placeholder: 'h_search', h_login_text: 'h_login', h_login_url: 'h_login', h_sub_text: 'h_sub', h_sub_icon: 'h_sub', h_sub_url: 'h_sub',
+const CZ_DEP = { f_dev_label: 'f_dev', f_dev_name: 'f_dev', f_dev_url: 'f_dev', bnav_home: 'bnav', bnav_explore: 'bnav', bnav_orders: 'bnav', bnav_courses: 'bnav', bnav_profile: 'bnav', bnav_home_t: 'bnav_home', bnav_explore_t: 'bnav_explore', bnav_orders_t: 'bnav_orders', bnav_courses_t: 'bnav_courses', bnav_profile_t: 'bnav_profile', sb_search: 'sb_post', sb_cats: 'sb_post', sb_search_heading: 'sb_search', sb_cats_heading: 'sb_cats', sb_cats_count: 'sb_cats', h_voice: 'h_search', h_search_placeholder: 'h_search', h_login_text: 'h_login', h_login_url: 'h_login', h_sub_text: 'h_sub', h_sub_icon: 'h_sub', h_sub_url: 'h_sub',
   h_drawer_title: 'h_drawer_hello', h_drawer_text: 'h_drawer_hello', h_drawer_sub: 'h_sub', h_topbar_text: 'h_topbar', sb_heading: 'sb_post', sb_count: 'sb_post', sb_source: 'sb_post', sb_sticky: 'sb_post',
   rp_label: 'rp_button', rp_desktop: 'rp_button', f_play_url: 'f_play' };
 if (!CZ_STORE) CZ_DEP.h_drawer_login = 'h_login';

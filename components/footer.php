@@ -73,7 +73,13 @@ $__fsoc[] = ['RSS Feed', '/feed/', 'M6.503 20.752c0 1.794-1.456 3.248-3.251 3.24
       </div>
       <?php endif; ?>
     </div>
-    <div class="ftx-copy"><?= edu_shortcodes(htmlspecialchars(strtr((string)th('f_copyright'), ['{year}' => date('Y'), '{site}' => edu_site_name()]))) ?></div>
+    <div class="ftx-copy"><span class="ftx-copy-t"><?= edu_shortcodes(htmlspecialchars(strtr((string)th('f_copyright'), ['{year}' => date('Y'), '{site}' => edu_site_name()]))) ?></span>
+      <?php // Customize → Footer → Copyright: "Developed by <name> ↗" in the same row (only when switched on)
+      $__dn = trim((string)th('f_dev_name')); $__du = trim((string)th('f_dev_url'));
+      if (th_on('f_dev') && $__dn !== ''): $__dl = trim((string)th('f_dev_label')); $__ok = (bool)preg_match('#^https?://#i', $__du); ?>
+      <span class="ftx-dev"><?= $__dl !== '' ? htmlspecialchars($__dl) . ' ' : '' ?><?php if ($__ok): ?><a class="ftx-dev-a" href="<?= htmlspecialchars($__du) ?>" target="_blank" rel="noopener"><?= htmlspecialchars($__dn) ?><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg><span class="screen-reader-text"> (opens in a new tab)</span></a><?php else: ?><b><?= htmlspecialchars($__dn) ?></b><?php endif; ?></span>
+      <?php endif; ?>
+    </div>
     <?php if (th_on('cc_enabled') && th_on('cc_footer_link')): ?><p class="ftx-cookie"><button type="button" data-edu-consent>Cookie settings</button></p><?php endif; ?>
   </div>
 </footer>
