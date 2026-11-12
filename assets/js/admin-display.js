@@ -1,7 +1,8 @@
 /* Display options (top of every admin page): show / hide each section of the page and each element inside it —
  * summary tiles, table columns, buttons, list rows, optional form fields. Choices are kept per page in this browser.
  * Sections are found automatically (cards and blocks of the page); a page can name one with data-ds="Name",
- * mark a block deeper inside as its own section with data-ds-section (named by data-ds), and list its parts with data-ds-item="Name".
+ * mark a block deeper inside as its own section with data-ds-section (named by data-ds), mark a row of cards with data-ds-wrap
+ * (each card is then a section), and list its parts with data-ds-item="Name".
  */
 (function () {
   'use strict';
@@ -75,7 +76,7 @@
     [].forEach.call(parent.children, function (el) {
       if (!isBlock(el)) return;
       var kids = [].filter.call(el.children, isBlock);
-      var wrapper = depth < 4 && (el.matches('form:not(.ci-filters), section.ci-pane, .ci-grid2, .ci-grid3, .dashboard-grid, .grid, .row, .editor-layout, .editor-main, .editor-sidebar-panel') && kids.length > 1 && !el.matches('.ci-card, .card'));
+      var wrapper = depth < 4 && (el.matches('[data-ds-wrap], form:not(.ci-filters), section.ci-pane, .ci-grid2, .ci-grid3, .dashboard-grid, .grid, .row, .editor-layout, .editor-main, .editor-sidebar-panel') && kids.length > 1 && !el.matches('.ci-card, .card'));
       if (wrapper) collect(el, out, depth + 1); else out.push(el);
     });
   }
