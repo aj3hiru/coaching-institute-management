@@ -1,0 +1,84 @@
+/* Locked the host player (assets/js/vp-box.js) */
+.vp-box{position:relative;width:100%;height:100%;background:#000;overflow:hidden;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
+  --plyr-color-main:var(--sa,#0c6878);--plyr-video-control-background-hover:var(--sa,#0c6878);--plyr-range-fill-background:var(--sa,#0c6878)}
+.vp-ph{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.55}
+.vp-box .plyr{height:100%;width:100%}
+.vp-box .plyr__video-wrapper{overflow:hidden;height:100%}
+/* the the host frame itself can never be clicked or tapped (Plyr's controls sit on top) */
+.vp-box iframe{pointer-events:none!important}
+/* make the frame twice as tall and centre it: the host's title bar, channel logo, share / "Watch on the host" and the
+   "More videos" strip fall outside the box — only the picture shows */
+.vp-box .plyr__video-embed iframe,.vp-box .plyr__video-wrapper iframe{top:-50%!important;height:200%!important}
+/* before play and after the video ends: our cover picture, not the host's end screen */
+.vp-box .plyr--stopped .plyr__poster,.vp-box.is-ended .plyr__poster{opacity:1!important}
+.vp-box .plyr__poster{background-size:cover}
+.vp-box .plyr--full-ui.plyr--video .plyr__control--overlaid{width:68px;height:68px;padding:0;display:grid;place-items:center;background:var(--sa,#0c6878);box-shadow:0 6px 22px rgba(0,0,0,.35)}
+.vp-box .plyr__control--overlaid svg{left:2px;width:24px;height:24px}
+.vp-box .plyr__controls{padding-top:28px}
+.vp-box .plyr__menu__container{border-radius:6px}
+@media (max-width:560px){.vp-box .plyr__controls{padding:18px 6px 6px}.vp-box .plyr__controls .plyr__control{padding:6px}.vp-box .plyr__volume{display:none}}
+
+/* quality button + menu (next to the settings gear) */
+.vp-box .vpq{position:relative;display:flex;align-items:center}
+.vp-box .vpq[hidden]{display:none}
+.vp-box .vpq-btn{display:inline-flex;align-items:flex-start;gap:1px;font-size:13px;font-weight:600;line-height:1;padding:7px 8px}
+.vp-box .vpq-hd{font-size:8.5px;font-weight:800;line-height:1;padding:1px 2px;border-radius:2px;background:#e11d48;color:#fff;margin:-3px 0 0 1px}
+.vp-box .vpq-menu{position:absolute;right:0;bottom:calc(100% + 10px);z-index:5;min-width:150px;padding:6px;border-radius:6px;background:rgba(255,255,255,.97);box-shadow:0 6px 24px rgba(0,0,0,.25);color:#1f2937}
+.vp-box .vpq-menu[hidden]{display:none}
+.vp-box .vpq-h{padding:6px 10px 8px;margin-bottom:4px;border-bottom:1px solid #e5e7eb;font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.05em}
+.vp-box .vpq-menu button{display:flex;align-items:center;gap:6px;width:100%;padding:7px 10px 7px 26px;border:0;border-radius:4px;background:none;color:inherit;font:inherit;font-size:13.5px;text-align:left;cursor:pointer;position:relative}
+.vp-box .vpq-menu button:hover{background:#f1f5f9}
+.vp-box .vpq-menu button.on{font-weight:700;color:var(--sa,#0c6878)}
+.vp-box .vpq-menu button.on::before{content:"";position:absolute;left:10px;top:50%;width:7px;height:7px;margin-top:-4px;border-radius:50%;background:var(--sa,#0c6878)}
+.vp-box .vpq-menu small{color:#6b7280;font-weight:400}.vp-box .vpq-menu sup{font-size:9px;font-weight:800;color:#e11d48}
+
+/* ---- Start screen exactly like the host's: the video picture (not zoomed) and the host's red button, same shape and size —
+   no fade, no animation. It stays until the host is really playing, then disappears at once (so nothing flashes behind it).
+   the host's own start screen is never used: it would show the title, channel and "Watch on the host". ---- */
+.vp-box .vp-ph{display:none}
+.vp-box .plyr__poster{display:block!important;opacity:1!important;transition:none!important;background-size:cover;z-index:1}
+.vp-box.vp-started .plyr__poster{opacity:0!important;visibility:hidden}
+/* before play: only the picture — no logo / button drawn; the whole picture is the (invisible) play button */
+.vp-box .plyr--full-ui.plyr--video .plyr__control--overlaid.vpb{left:0;top:0;width:100%;height:100%;padding:0;border-radius:0;background:transparent!important;box-shadow:none!important;opacity:1!important;transition:none!important;transform:none!important;cursor:pointer}
+.vp-box .plyr__control--overlaid.vpb .vpb-ic{position:absolute;left:50%;top:50%;width:68px;height:68px;margin:-34px 0 0 -34px;border-radius:50%;background:rgba(0,0,0,.55);display:grid;place-items:center;transition:none}
+.vp-box .plyr__control--overlaid.vpb .vpb-ic svg{position:static;width:34px;height:34px;margin-left:3px;display:block}
+.vp-box .plyr__control--overlaid.vpb:hover .vpb-ic{background:rgba(0,0,0,.72)}
+@media (max-width:560px){.vp-box .plyr__control--overlaid.vpb .vpb-ic{width:56px;height:56px;margin:-28px 0 0 -28px}.vp-box .plyr__control--overlaid.vpb .vpb-ic svg{width:28px;height:28px}}
+.vp-box .plyr__control--overlaid.vpb:hover,.vp-box .plyr__control--overlaid.vpb:focus{background:transparent!important}
+.vp-box.vp-started .plyr__control--overlaid,.vp-box.vp-go .plyr__control--overlaid{display:none!important}
+/* ---- menus (speed, quality) never taller than the video: they scroll inside on phones ---- */
+.vp-box .plyr__menu__container > div{max-height:var(--vp-menu-h,420px)!important;overflow-y:auto!important;overscroll-behavior:contain;scrollbar-width:thin}
+.vp-box .vpq-menu{max-height:var(--vp-menu-h,420px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+@media (max-width:560px){
+  .vp-box .plyr__menu__container .plyr__control{padding:5px 10px 5px 8px;font-size:13px}
+  .vp-box .plyr__menu__container [role=menu]{padding:4px}
+  .vp-box .vpq-menu{min-width:128px;padding:4px}.vp-box .vpq-menu button{padding:5px 8px 5px 24px;font-size:13px}.vp-box .vpq-h{padding:4px 8px 6px;margin-bottom:2px}
+}
+
+/* phone full screen held upright (iPhone, or when the screen cannot be locked): the player is turned 90° to fill it */
+.vp-box .plyr.vp-rot{position:fixed!important;top:0!important;left:100%!important;width:var(--vp-w,100vh)!important;height:var(--vp-h,100vw)!important;max-width:none!important;max-height:none!important;
+  transform-origin:0 0;transform:rotate(90deg);z-index:2147483000;margin:0!important;border-radius:0!important}
+.vp-box .plyr.vp-rot .plyr__video-wrapper{height:100%!important;padding-bottom:0!important}
+.vp-box:fullscreen{width:100%;height:100%;background:#000}
+.vp-box:fullscreen .plyr:not(.vp-rot){width:100%;height:100%}
+.vp-box:fullscreen .plyr:not(.vp-rot) .plyr__video-wrapper{height:100%!important;padding-bottom:0!important}
+
+/* a video inside a post or page */
+.vp-embed{position:relative;width:100%;aspect-ratio:16/9;margin:18px 0;border-radius:5px;overflow:hidden;background:#000}
+.sp-intro-box{background:#000}
+/* small players (the course card): fewer buttons so the time and the bar fit */
+.sp-intro-box .plyr__controls [data-plyr="rewind"],.sp-intro-box .plyr__controls [data-plyr="fast-forward"]{display:none}
+
+/* our picture (course thumbnail / video thumbnail) instead of the host's poster: shown at once, over the player while
+   the host loads, gone when the video plays, back when it ends. It never takes clicks (the play button stays on top). */
+.vp-box .vp-ph{display:block!important;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:1!important;z-index:1;pointer-events:none;background:#000}
+.vp-box.vp-started:not(.is-ended) .vp-ph{display:none!important}
+.vp-box .plyr__poster{display:none!important}
+/* while the player is getting ready (and after Play until the host really plays): a spinning ring over the picture,
+   so nobody taps a picture that cannot play yet */
+.vp-box:not(.vp-ready)::after,.vp-box.vp-go:not(.vp-started)::after{content:"";position:absolute;left:50%;top:50%;z-index:6;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%!important;border:4px solid rgba(255,255,255,.3);border-top-color:#fff;animation:vpSpin .8s linear infinite;pointer-events:none;box-shadow:0 0 0 999px rgba(0,0,0,.18)}
+.vp-box:not(.vp-ready){cursor:progress}
+@keyframes vpSpin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.vp-box:not(.vp-ready)::after,.vp-box.vp-go:not(.vp-started)::after{animation-duration:2s}}
+/* the video could not be given (e.g. logged out, or no access): a short message over the picture */
+.vp-box.vp-err::before{content:attr(data-msg);position:absolute;left:12px;right:12px;top:50%;transform:translateY(-50%);z-index:7;padding:10px 12px;border-radius:6px;background:rgba(0,0,0,.72);color:#fff;font-size:14px;text-align:center}

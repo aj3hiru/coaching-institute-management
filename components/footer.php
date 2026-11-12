@@ -41,7 +41,7 @@ $__fsoc[] = ['RSS Feed', '/feed/', 'M6.503 20.752c0 1.794-1.456 3.248-3.251 3.24
 ?>
 <footer class="ftx-footer" role="contentinfo">
   <div class="ftx-wrap">
-    <div class="ftx-grid">
+    <div class="ftx-grid<?= count($__fcols) >= 4 ? ' ftx-grid--many' : (count($__fcols) === 3 ? ' ftx-grid--three' : '') ?>">
       <div class="ftx-brand">
         <div class="ftx-brand-row">
           <?php if (trim((string)th('f_logo')) !== ''): ?><img class="ftx-logo" src="<?= htmlspecialchars((string)th('f_logo')) ?>" alt="<?= htmlspecialchars(edu_site_name()) ?>" loading="lazy" decoding="async"><?php else: ?><span class="ftx-site-name"><?= htmlspecialchars(edu_site_name()) ?></span><?php endif; ?>
@@ -52,7 +52,7 @@ $__fsoc[] = ['RSS Feed', '/feed/', 'M6.503 20.752c0 1.794-1.456 3.248-3.251 3.24
         </div>
         <?php if (trim((string)th('f_desc')) !== ''): ?><div class="ftx-desc"><?= edu_shortcodes((string)th('f_desc')) ?></div><?php else: ?><p class="ftx-desc"><?= htmlspecialchars(es('general', 'footer_tagline', SITE_FOOTER_TAGLINE), ENT_QUOTES, 'UTF-8') ?></p><?php endif; ?>
       </div>
-      <div class="ftx-columns">
+      <div class="ftx-columns" style="--fc:<?= max(1, min(4, count($__fcols))) ?>">
         <?php foreach ($__fcols as $i => [$heading, $items]): ?>
         <nav class="ftx-col" aria-label="<?= htmlspecialchars($heading !== '' ? $heading : 'Footer links ' . ($i + 1)) ?>">
           <?php if ($heading !== ''): ?><h2 class="ftx-heading"><?= htmlspecialchars($heading) ?></h2><?php endif; ?>

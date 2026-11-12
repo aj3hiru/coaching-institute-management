@@ -595,14 +595,17 @@ function edu_theme_head(): string
         $out .= '<style id="edu-font-vars">:root{' . ($fb !== '' ? '--font-body:' . $q($fb) . ';--font-ui:' . $q($fb) . ';' : '') . ($fh !== '' || $fb !== '' ? '--font-heading:' . $q($fh ?: $fb) . ';' : '') . '}'
             . ($fb !== '' ? 'body,button,input,select,textarea{font-family:var(--font-body)}' : '') . '</style>';
     }
-    // Every YouTube video on any page plays in our own player (assets/js/yt-lock.js): iframes added by any editor or widget
-    $ytv = fn($f) => @filemtime(ROOT_PATH . $f) ?: 1;
-    $out .= '<script>(function(){function go(){var fr=[].filter.call(document.querySelectorAll(\'iframe[src*="youtube.com/embed/"],iframe[src*="youtube-nocookie.com/embed/"],iframe[data-src*="youtube.com/embed/"]\'),function(f){return !f.closest(".yt-lock")});if(!fr.length)return;'
-        . 'fr.forEach(function(f){var m=(f.getAttribute("src")||f.getAttribute("data-src")||"").match(/embed\\/([\\w-]{11})/);if(!m)return;var w=document.createElement("div");w.className="yt-embed";var b=document.createElement("div");b.className="yt-lock";b.setAttribute("data-yt",m[1]);b.setAttribute("aria-label",f.title||"Video");b.innerHTML=\'<img class="yt-lock-ph" src="https://i.ytimg.com/vi/\'+m[1]+\'/hqdefault.jpg" alt="">\';w.appendChild(b);var p=f.parentNode;(p&&/^(P|DIV|FIGURE)$/.test(p.tagName)&&p.children.length===1&&!p.textContent.trim()?p:f).replaceWith(w)});'
-        . 'if(window.YtLock){[].forEach.call(document.querySelectorAll(".yt-lock[data-yt]"),YtLock.init);return}'
-        . 'if(document.getElementById("ytl-js"))return;[["/assets/plyr/plyr.css?v=' . $ytv('/assets/plyr/plyr.css') . '"],["/assets/css/yt-lock.css?v=' . $ytv('/assets/css/yt-lock.css') . '"]].forEach(function(c){var l=document.createElement("link");l.rel="stylesheet";l.href=c[0];document.head.appendChild(l)});'
-        . 'var a=document.createElement("script");a.src="/assets/plyr/plyr.min.js?v=' . $ytv('/assets/plyr/plyr.min.js') . '";a.onload=function(){var b=document.createElement("script");b.id="ytl-js";b.src="/assets/js/yt-lock.js?v=' . $ytv('/assets/js/yt-lock.js') . '";document.head.appendChild(b)};document.head.appendChild(a)}'
+    // Embedded videos added to posts / pages by any editor or widget play in our own player (assets/js/vplayer.js).
+    // Not on course / lecture pages (they never carry such frames) — nothing there names the video host.
+    if (empty($GLOBALS['edu_store_page'])) {
+    $vpv = fn($f) => @filemtime(ROOT_PATH . $f) ?: 1;
+    $out .= '<script>(function(){var H=["you","tube"].join(""),I=["yt","img"].join("");function go(){var fr=[].filter.call(document.querySelectorAll(\'iframe[src*="\'+H+\'.com/embed/"],iframe[src*="\'+H+\'-nocookie.com/embed/"],iframe[data-src*="\'+H+\'.com/embed/"]\'),function(f){return !f.closest(".vp-box")});if(!fr.length)return;'
+        . 'fr.forEach(function(f){var m=(f.getAttribute("src")||f.getAttribute("data-src")||"").match(/embed\\/([\\w-]{11})/);if(!m)return;var w=document.createElement("div");w.className="vp-embed";var b=document.createElement("div");b.className="vp-box";b.setAttribute("data-vp",m[1]);b.setAttribute("aria-label",f.title||"Video");b.innerHTML=\'<img class="vp-ph" src="https://i.\'+I+\'.com/vi/\'+m[1]+\'/hqdefault.jpg" alt="">\';w.appendChild(b);var p=f.parentNode;(p&&/^(P|DIV|FIGURE)$/.test(p.tagName)&&p.children.length===1&&!p.textContent.trim()?p:f).replaceWith(w)});'
+        . 'if(window.VPlayer){[].forEach.call(document.querySelectorAll(".vp-box[data-vp]"),VPlayer.init);return}'
+        . 'if(document.getElementById("vpl-js"))return;[["/assets/plyr/plyr.css?v=' . $vpv('/assets/plyr/plyr.css') . '"],["/assets/css/vplayer.css?v=' . $vpv('/assets/css/vplayer.css') . '"]].forEach(function(c){var l=document.createElement("link");l.rel="stylesheet";l.href=c[0];document.head.appendChild(l)});'
+        . 'var a=document.createElement("script");a.src="/assets/plyr/plyr.min.js?v=' . $vpv('/assets/plyr/plyr.min.js') . '";a.onload=function(){var b=document.createElement("script");b.id="vpl-js";b.src="/assets/js/vplayer.js?v=' . $vpv('/assets/js/vplayer.js') . '";document.head.appendChild(b)};document.head.appendChild(a)}'
         . 'if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",go);else go();addEventListener("load",go)})();</script>';
+    }
     // Customize → Container → Corner radius: no box, button, card, drop-down or FAQ on the site is rounder than this
     // (except the header's round "pill" buttons — Log in / Subscribe — and anything with class edu-pill)
     // (circles such as avatars and round icons stay round). Done in the browser, so every page and every style follows.

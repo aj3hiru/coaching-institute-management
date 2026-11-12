@@ -1,17 +1,17 @@
 <?php
 // YouTube without ids in the page (see sh_yt_tok in includes/shop.php).
-//   ?thumb=TOKEN&s=hq|mq|maxres → the video's picture; our server keeps a copy in cache/yt/ (fetched once).
-//   ?play=TOKEN → {"v": id} for the player — only for a script on this site (not a typed address), and a lecture's id
+//   ?c=TOKEN&s=l|m|x → the lesson picture (large / medium / extra large); our server keeps a copy in cache/lv/.
+//   ?k=TOKEN → {"v": id} for the player — only for a script on this site (not a typed address), and a lecture's id
 //                 only for a buyer of that course, its free preview, or staff. At most 300 a minute from one IP.
 require_once dirname(__DIR__) . '/includes/config.php';
 require_once INCLUDES_PATH . '/shop.php';
 if (session_status() === PHP_SESSION_ACTIVE) session_write_close();
 
-if (isset($_GET['thumb'])) {
-    $t = sh_yt_open(is_string($_GET['thumb']) ? $_GET['thumb'] : '');
-    $size = in_array($_GET['s'] ?? '', ['mq', 'maxres'], true) ? $_GET['s'] : 'hq';
+if (isset($_GET['c'])) {
+    $t = sh_yt_open(is_string($_GET['c']) ? $_GET['c'] : '');
+    $size = ['m' => 'mq', 'x' => 'maxres'][$_GET['s'] ?? ''] ?? 'hq';
     if (!$t) { http_response_code(404); exit; }
-    $dir = ROOT_PATH . '/cache/yt';
+    $dir = ROOT_PATH . '/cache/lv';
     $file = $dir . '/' . substr(hash('sha256', $t[0] . '|' . $size . '|' . sh_yt_key()), 0, 32) . '.jpg'; // the file name does not give the id away either
     if (!is_file($file) || filesize($file) < 500) {
         if (!is_dir($dir)) @mkdir($dir, 0755, true);
@@ -30,9 +30,9 @@ if (isset($_GET['thumb'])) {
 header('Content-Type: application/json; charset=utf-8'); header('Cache-Control: no-store, private'); header('X-Robots-Tag: noindex');
 $no = function (int $c, string $m) { http_response_code($c); exit(json_encode(['error' => $m])); };
 // only the site's own player script: it sends this header, and the browser marks the request as coming from this site
-if (($_SERVER['HTTP_X_YT'] ?? '') !== '1' || !in_array($_SERVER['HTTP_SEC_FETCH_SITE'] ?? 'same-origin', ['same-origin'], true)) $no(403, 'Not allowed');
+if (($_SERVER['HTTP_X_LV'] ?? '') !== '1' || !in_array($_SERVER['HTTP_SEC_FETCH_SITE'] ?? 'same-origin', ['same-origin'], true)) $no(403, 'Not allowed');
 if (function_exists('edu_throttle') && !edu_throttle('yt:' . edu_client_ip(), 300, 60)) $no(429, 'Too many requests');
-$t = sh_yt_open(is_string($_GET['play'] ?? null) ? $_GET['play'] : '');
+$t = sh_yt_open(is_string($_GET['k'] ?? null) ? $_GET['k'] : '');
 if (!$t) $no(404, 'Not found');
 [$vid, $ctx, $ref] = $t;
 if ($ctx === 'l') { // a lecture: free preview, a buyer of the course, or staff

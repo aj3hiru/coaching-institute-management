@@ -41,10 +41,10 @@ $ico = fn($n) => sh_icon($n);
       function pick(btn, play) {
         [].forEach.call(list.querySelectorAll('button'), function (b) { b.classList.toggle('on', b === btn); b.removeAttribute('aria-current'); });
         btn.setAttribute('aria-current', 'true'); btn.scrollIntoView({ block: 'nearest' });
-        if (window.YtLock) YtLock.load(box, btn.getAttribute('data-v'), play);
+        if (window.VPlayer) VPlayer.load(box, btn.getAttribute('data-v'), play);
       }
       list.addEventListener('click', function (e) { var b = e.target.closest('button'); if (b) { pick(b, true); if (window.innerWidth < 900) box.scrollIntoView({ behavior: 'smooth', block: 'start' }); } });
-      box.addEventListener('yt-ended', function () { var on = list.querySelector('button.on'), li = on && on.parentNode.nextElementSibling; if (li) pick(li.querySelector('button'), true); });
+      box.addEventListener('vp-ended', function () { var on = list.querySelector('button.on'), li = on && on.parentNode.nextElementSibling; if (li) pick(li.querySelector('button'), true); });
     })();
     </script>
     <?php endif; ?>

@@ -85,3 +85,5 @@ footer.ftx-footer .ftx-copy{padding-top:12px;padding-bottom:12px}
   body:has(.dk-bnav):has(.st-mbar){padding-bottom:calc(132px + env(safe-area-inset-bottom))!important}
   html.mnav-lock .dk-bnav{display:none!important}
 }
+/* phones: the body already leaves room for the Buy bar + bottom bar, so the footer does not add its own (it made a big empty gap) */
+@media (max-width:768px){body:has(.dk-bnav) footer.ftx-footer{padding-bottom:0!important}}

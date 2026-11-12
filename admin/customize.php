@@ -46,7 +46,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && (isset($_GET['src']) || isset($_GET[
             $st->execute($q !== '' ? [$like] : []);
             foreach ($st as $r) $out[] = ['label' => $r['title'], 'url' => postUrl($r['slug'], $r['id']), 'kind' => 'Post'];
         } elseif ($src === 'categories') {
-            $st = $pdo->prepare("SELECT name, slug FROM categories" . ($q !== '' ? " WHERE name LIKE ?" : '') . " ORDER BY name LIMIT 60");
+            $top = max(0, min(20, (int)($_GET['top'] ?? 0))); // top=N: the N most-read (as the footer's automatic list)
+            $st = $pdo->prepare("SELECT name, slug FROM categories" . ($q !== '' ? " WHERE name LIKE ?" : '') . ($top ? " ORDER BY views DESC, name ASC LIMIT $top" : " ORDER BY name LIMIT 60"));
             $st->execute($q !== '' ? [$like] : []);
             foreach ($st as $r) $out[] = ['label' => $r['name'], 'url' => '/categories/' . $r['slug'], 'kind' => 'Category'];
         } elseif ($src === 'tags') {
@@ -1196,13 +1197,25 @@ function renderFooter(wrap) {
     T.f_columns.forEach((col, i) => {
       const cb = html('<div class="cz-colbox"><div class="cz-item-row"><input class="cz-inline-input" placeholder="Column heading"></div></div>');
       const ti = cb.querySelector('input'); ti.value = col.title || ''; ti.oninput = () => { col.title = ti.value; touch(); };
-      cb.querySelector('.cz-item-row').appendChild(circleBtn('fa-trash-can', 'Remove column', () => { T.f_columns.splice(i, 1); touch(); rerender(); }, true));
-      cb.appendChild(cToggle('List the most-read categories automatically', () => col.auto === 'categories', v => { col.auto = v ? 'categories' : ''; if (!Array.isArray(col.links)) col.links = []; rerender(); }));
+      const row = cb.querySelector('.cz-item-row');
+      const mv = d => { const j = i + d; if (j < 0 || j >= T.f_columns.length) return; [T.f_columns[i], T.f_columns[j]] = [T.f_columns[j], T.f_columns[i]]; touch(); rerender(); };
+      if (i > 0) row.appendChild(circleBtn('fa-arrow-up', 'Move column up', () => mv(-1)));
+      if (i < T.f_columns.length - 1) row.appendChild(circleBtn('fa-arrow-down', 'Move column down', () => mv(1)));
+      row.appendChild(circleBtn('fa-trash-can', 'Remove column', () => { T.f_columns.splice(i, 1); touch(); rerender(); }, true));
+      // off = your own links (like a menu); a column that listed categories starts with those same categories as links
+      cb.appendChild(cToggle('List the most-read categories automatically', () => col.auto === 'categories', v => {
+        const was = col.auto === 'categories'; col.auto = v ? 'categories' : ''; if (!Array.isArray(col.links)) col.links = [];
+        if (!v && was && !col.links.length) {
+          fetch('/admin/customize.php?src=categories&top=' + (col.count || 6), { credentials: 'same-origin' }).then(r => r.json())
+            .then(rows => { col.links = (rows || []).map(r => ({ label: r.label, url: r.url })); touch(); rerender(); }).catch(() => rerender());
+        }
+        touch(); rerender();
+      }));
       if (col.auto === 'categories') cb.appendChild(cRange('How many categories', () => col.count || 6, v => col.count = v, 1, 20));
       else { if (!Array.isArray(col.links)) col.links = []; menuEditor(cb, () => col.links, v => col.links = v, false, 'fcol' + i); }
       b.appendChild(cb);
     });
-    if (T.f_columns.length < 4) {
+    if (T.f_columns.length < 12) { // as many columns as needed (phones show two in a row)
       const add = html('<button type="button" class="cz-btn-outline"><i class="fas fa-plus"></i> Add column</button>');
       add.onclick = () => { T.f_columns.push({ title: 'Links', auto: '', count: 6, links: [] }); touch(); rerender(); };
       b.appendChild(add);

@@ -612,7 +612,7 @@ function sh_secret(): string
 }
 /* ---------- YouTube ids never written into the page ----------
    A video id is sealed (AES-256-GCM with this site's secret) into a token; the page only carries tokens.
-   Pictures come through /store/yt?thumb=TOKEN (our server keeps a copy), and the player asks /store/yt?play=TOKEN
+   Pictures come through /store/lv?c=TOKEN (our server keeps a copy), and the player asks /store/lv?k=TOKEN
    for the id only when it starts — for a lecture only a buyer / free preview / staff gets it. The same id always
    gives the same token (cached pages keep working). $ctx: 'l' = a lecture (ref = lesson id), 'p' = public, 't' = picture. */
 function sh_yt_key(): string { static $k = null; return $k ??= hash('sha256', 'yt-seal|' . sh_secret(), true); }
@@ -622,20 +622,20 @@ function sh_yt_tok(string $id, string $ctx = 'p', int $ref = 0): string
     $plain = $id . '|' . $ctx . '|' . $ref;
     $iv = substr(hash_hmac('sha256', $plain, sh_yt_key(), true), 0, 12); $tag = '';
     $ct = openssl_encrypt($plain, 'aes-256-gcm', sh_yt_key(), OPENSSL_RAW_DATA, $iv, $tag, '', 16);
-    return sh_b64u($iv . $tag . $ct);
+    return bin2hex($iv . $tag . $ct); // hex: only 0-9 a-f, so a token never spells anything
 }
 /** [id, ctx, ref] from a token, or null. */
 function sh_yt_open(string $t): ?array
 {
-    if (!preg_match('/^[A-Za-z0-9_-]{40,120}$/', $t)) return null;
-    $b = base64_decode(strtr($t, '-_', '+/') . str_repeat('=', (4 - strlen($t) % 4) % 4), true);
+    if (!preg_match('/^[a-f0-9]{60,240}$/', $t) || strlen($t) % 2) return null;
+    $b = hex2bin($t);
     if ($b === false || strlen($b) < 29) return null;
     $plain = openssl_decrypt(substr($b, 28), 'aes-256-gcm', sh_yt_key(), OPENSSL_RAW_DATA, substr($b, 0, 12), substr($b, 12, 16));
     if ($plain === false || !preg_match('/^([\w-]{11})\|([a-z])\|(\d+)$/', $plain, $m)) return null;
     return [$m[1], $m[2], (int)$m[3]];
 }
 /** Last step of a page: any YouTube picture address still in it (e.g. a course picture saved as a YouTube link)
-    becomes our own /store/yt?thumb=… address, so no video id is left in the HTML. */
+    becomes our own /store/lv?c=… address, so no video id is left in the HTML. */
 function sh_hide_yt(string $html): string
 {
     if (stripos($html, 'ytimg.com') === false) return $html;
@@ -661,7 +661,7 @@ function sh_is_bot(): bool
     return (bool)preg_match('~bot\b|crawler|spider|facebookexternalhit|facebookcatalog|whatsapp|telegram|twitterbot|slackbot|linkedinbot|discordbot|pinterest|skypeuripreview|embedly|googlebot|google-inspectiontool|bingbot|yandex|duckduckbot|applebot|snapchat|redditbot~i', (string)($_SERVER['HTTP_USER_AGENT'] ?? ''));
 }
 /** The video's picture through our own address (no id in the page). $size: hq | mq | maxres. */
-function sh_yt_thumb(string $id, string $size = 'hq'): string { return '/store/yt?thumb=' . sh_yt_tok($id, 't') . '&s=' . $size; }
+function sh_yt_thumb(string $id, string $size = 'hq'): string { return '/store/lv?c=' . sh_yt_tok($id, 't') . '&s=' . (['mq' => 'm', 'maxres' => 'x'][$size] ?? 'l'); }
 
 /** A link to a lesson video or a PDF, valid for $ttl seconds, for this buyer only. */
 function sh_media_link(string $kind, int $id, int $uid, int $ttl = 14400, string $q = ''): string
@@ -1170,28 +1170,27 @@ function sh_yt_lock_html(string $id, string $title = '', string $extra = '', str
     if (!$assets) {
         $assets = true;
         $v = fn($f) => @filemtime(ROOT_PATH . $f) ?: 1;
-        // the player starts sooner: talk to YouTube while the page is still loading
-        $h = '<link rel="preconnect" href="https://www.youtube-nocookie.com"><link rel="preconnect" href="https://www.google.com"><link rel="preconnect" href="https://s.ytimg.com">'
-            . '<link rel="stylesheet" href="/assets/plyr/plyr.css?v=' . $v('/assets/plyr/plyr.css') . '"><link rel="stylesheet" href="/assets/css/yt-lock.css?v=' . $v('/assets/css/yt-lock.css') . '">'
-            . '<script src="/assets/plyr/plyr.min.js?v=' . $v('/assets/plyr/plyr.min.js') . '" defer></script><script src="/assets/js/yt-lock.js?v=' . $v('/assets/js/yt-lock.js') . '" defer></script>';
+                $h = ''
+            . '<link rel="stylesheet" href="/assets/plyr/plyr.css?v=' . $v('/assets/plyr/plyr.css') . '"><link rel="stylesheet" href="/assets/css/vplayer.css?v=' . $v('/assets/css/vplayer.css') . '">'
+            . '<script src="/assets/plyr/plyr.min.js?v=' . $v('/assets/plyr/plyr.min.js') . '" defer></script><script src="/assets/js/vplayer.js?v=' . $v('/assets/js/vplayer.js') . '" defer></script>';
     }
     $poster = trim($poster);
     $src = $poster !== '' ? $poster : sh_yt_thumb($id, 'hq');
     $tok = sh_yt_tok($id, $lesson ? 'l' : 'p', $lesson); // the page carries this token, never the video id
-    return $h . '<div class="yt-lock" data-yt="' . sh_e($tok) . '"' . ($poster !== '' ? ' data-poster="' . sh_e($poster) . '" data-poster-id="' . sh_e($tok) . '"' : '') . ' aria-label="' . sh_e($title ?: 'Video') . '"' . $extra . '><img class="yt-lock-ph" src="' . sh_e($src) . '" alt="" decoding="async"></div>';
+    return $h . '<div class="vp-box" data-vp="' . sh_e($tok) . '"' . ($poster !== '' ? ' data-poster="' . sh_e($poster) . '" data-poster-id="' . sh_e($tok) . '"' : '') . ' aria-label="' . sh_e($title ?: 'Video') . '"' . $extra . '><img class="vp-ph" src="' . sh_e($src) . '" alt="" decoding="async"></div>';
 }
 /** Post / page content: every YouTube video (an <iframe> embed, a WordPress embed block, or a link alone on its line)
     plays in our own locked player (sh_yt_lock_html) instead of YouTube's. */
 function sh_yt_lock_content(string $html): string
 {
     if ($html === '' || !preg_match('~youtu\.?be|youtube~i', $html)) return $html;
-    $box = function (string $id, string $title = '') { return '<div class="yt-embed">' . sh_yt_lock_html($id, $title) . '</div>'; };
+    $box = function (string $id, string $title = '') { return '<div class="vp-embed">' . sh_yt_lock_html($id, $title) . '</div>'; };
     $yt = '(?:https?:)?//(?:www\.)?(?:youtube(?:-nocookie)?\.com/(?:embed/|watch\?(?:[^"\'<\s]*&)?v=|shorts/|live/)|youtu\.be/)([\w-]{11})[^"\'<\s]*';
     // 1. WordPress embed blocks
     $html = preg_replace_callback('~<figure[^>]*wp-block-embed[^>]*>.*?(' . $yt . ').*?</figure>~is', fn($m) => $box($m[2]), $html);
     // 2. iframes (with the <p> / <div> that only holds them)
     $html = preg_replace_callback('~(?:<(p|div)[^>]*>\s*)?<iframe[^>]*\bsrc=["\'][^"\']*youtube(?:-nocookie)?\.com/embed/([\w-]{11})[^"\']*["\'][^>]*>\s*</iframe>(?:\s*</\1>)?~is',
-        function ($m) { $t = preg_match('~title=["\']([^"\']*)~i', $m[0], $tm) ? html_entity_decode($tm[1], ENT_QUOTES) : ''; return '<div class="yt-embed">' . sh_yt_lock_html($m[2], $t) . '</div>'; }, $html);
+        function ($m) { $t = preg_match('~title=["\']([^"\']*)~i', $m[0], $tm) ? html_entity_decode($tm[1], ENT_QUOTES) : ''; return '<div class="vp-embed">' . sh_yt_lock_html($m[2], $t) . '</div>'; }, $html);
     // 3. a YouTube link alone in a paragraph (plain text or a link)
     $html = preg_replace_callback('~<p[^>]*>\s*(?:<a[^>]*href=["\'](' . $yt . ')["\'][^>]*>[^<]*</a>|(' . $yt . '))\s*</p>~is', fn($m) => $box($m[2] !== '' ? $m[2] : $m[4]), $html);
     return $html;
