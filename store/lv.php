@@ -20,6 +20,9 @@ if (isset($_GET['c'])) {
         if (strlen($img) < 500 || !str_starts_with($img, "\xFF\xD8")) { http_response_code(404); header('Cache-Control: max-age=300'); exit; }
         @file_put_contents($file . '.tmp', $img, LOCK_EX); @rename($file . '.tmp', $file);
     }
+    // the session start adds "Pragma: no-cache" / an old Expires (and a cookie): with them the browser asks the server again
+    // for every picture instead of showing it from its cache at once — not wanted for a picture that never changes
+    header_remove('Pragma'); header_remove('Expires'); header_remove('Set-Cookie');
     $et = '"' . substr(md5_file($file), 0, 16) . '"';
     header('Content-Type: image/jpeg'); header('Cache-Control: public, max-age=2592000, immutable'); header('ETag: ' . $et); // pictures may be indexed (Google Images / Discover)
     if (($_SERVER['HTTP_IF_NONE_MATCH'] ?? '') === $et) { http_response_code(304); exit; }
