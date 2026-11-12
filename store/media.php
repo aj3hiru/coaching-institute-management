@@ -1,6 +1,6 @@
 <?php
-// Sends an uploaded lesson video (k=v) — only with a valid signed link from the learn page, only in the browser that
-// opened that page (b), only to the same logged-in buyer (or anyone for a free preview), and only while the buyer has access.
+// Sends an uploaded lesson video (k=v) with a signed link from the learn page. Free lessons: for everyone (the link can be
+// shared). Paid: only in the browser that opened the page (b), only to the logged-in buyer, only while they have access.
 // PDFs go through store/pf.php (no signed links in pages any more).
 require_once dirname(__DIR__) . '/includes/config.php';
 require_once INCLUDES_PATH . '/shop.php';
@@ -9,10 +9,7 @@ $sessUid = (int)($_SESSION['sh_uid'] ?? 0); $mark = sh_sess_mark(); $b = (string
 session_write_close(); // a long video must not hold the visitor's session
 $deny = function (int $code = 403) { http_response_code($code); header('Content-Type: text/plain'); exit($code === 410 ? 'This link has expired. Please reload the page.' : 'Not allowed'); };
 if ($k !== 'v' || !$id) $deny(404); // lecture videos only (PDFs: store/pf.php)
-if ($exp < time()) $deny(410);
-if (!sh_media_check($k, $id, $uid, $exp, $sig, $qual, $b)) $deny();
-if (!hash_equals($mark, $b)) $deny(); // a link copied to another browser / device
-if ($uid && $uid !== $sessUid) $deny(); // the link only works in the buyer's own logged-in browser
+if (!hash_equals(substr(hash_hmac('sha256', "$k|$id|$uid|$exp|$qual|$b", sh_secret()), 0, 32), $sig)) $deny(); // made by this site
 $pdo = sh_db();
 if ($k === 'v') { $q = $pdo->prepare("SELECT product_id, free, video_file AS file, variants, title FROM sh_lessons WHERE id = ?"); }
 elseif ($k === 'p') { $q = $pdo->prepare("SELECT product_id, free, pdf_file AS file, title FROM sh_lessons WHERE id = ?"); }
@@ -24,7 +21,14 @@ if ($k === 'v' && $qual !== '') { $vv = sh_variants($r); if (!isset($vv[$qual]))
 $p = sh_product($pdo, (int)$r['product_id'], false);
 if ($p && $p['status'] === 'draft' && !sh_staff()) $p = null; // drafts only for staff previews
 if (!$p) $deny(404);
-if (!$r['free'] && !sh_has_access($pdo, $uid, (int)$p['id']) && !($uid === 0 && sh_staff())) $deny(); // staff preview links are made for user 0
+// a free lesson works for everyone, also as a shared link; a paid one only for the buyer, only in the browser that
+// opened the page, and only for a few hours
+if (!$r['free']) {
+    if ($exp < time()) $deny(410);
+    if (!hash_equals($mark, $b)) $deny(); // a link copied to another browser / device
+    if ($uid && $uid !== $sessUid) $deny(); // the buyer's own logged-in browser
+    if (!sh_has_access($pdo, $uid, (int)$p['id']) && !($uid === 0 && sh_staff())) $deny(); // staff preview links are made for user 0
+}
 $path = sh_media_path((string)$r['file']);
 if (!is_file($path)) $deny(404);
 $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));

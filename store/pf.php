@@ -2,12 +2,10 @@
 // Sends a PDF (course / notes PDF, lecture notes, a PDF lecture) for /store/pf?t=TOKEN (sh_pdf_url in includes/shop.php).
 // No signed link and no file name in the page: the token is sealed and is not a key — the file goes only to a browser whose
 // own login may read it (a buyer with access, staff, or anyone for a free one), checked again on every request.
-// &dl=1 downloads it (same checks). Pages of other websites cannot load it.
+// &dl=1 downloads it (same checks). Free PDFs open for anyone (shareable); paid ones never load on other websites.
 require_once dirname(__DIR__) . '/includes/config.php';
 require_once INCLUDES_PATH . '/shop.php';
 $deny = function (int $code = 403, string $msg = 'Not allowed') { http_response_code($code); header('Content-Type: text/plain; charset=utf-8'); header('Cache-Control: no-store'); header('X-Robots-Tag: noindex'); exit($msg); };
-$site = (string)($_SERVER['HTTP_SEC_FETCH_SITE'] ?? 'same-origin');
-if (!in_array($site, ['same-origin', 'none'], true)) $deny(); // only from this site's own pages (or the address typed by the student)
 $t = sh_pdf_open(is_string($_GET['t'] ?? null) ? $_GET['t'] : '');
 if (!$t) $deny(404, 'Not found');
 [$k, $id] = $t;
@@ -23,7 +21,12 @@ if (!$r || !$r['file']) $deny(404, 'Not found');
 $p = sh_product($pdo, (int)$r['product_id'], false);
 if ($p && $p['status'] === 'draft' && !$staff) $p = null; // drafts only for staff previews
 if (!$p) $deny(404, 'Not found');
-if (!$r['free'] && !$staff && !sh_has_access($pdo, $uid, (int)$p['id'])) $deny(403, 'Please log in with the account that has this course.');
+// free PDFs: for everyone, from anywhere (a shared link opens normally). Paid: only the buyer's own logged-in browser,
+// and only from this site's pages (or the address typed in that browser) — never loaded by another website
+if (!$r['free']) {
+    if (!in_array((string)($_SERVER['HTTP_SEC_FETCH_SITE'] ?? 'same-origin'), ['same-origin', 'none'], true)) $deny();
+    if (!$staff && !sh_has_access($pdo, $uid, (int)$p['id'])) $deny(403, 'Please log in with the account that has this course.');
+}
 $path = sh_media_path((string)$r['file']);
 if (!is_file($path) || strtolower(pathinfo($path, PATHINFO_EXTENSION)) !== 'pdf') $deny(404, 'Not found');
 header('X-Robots-Tag: noindex');
