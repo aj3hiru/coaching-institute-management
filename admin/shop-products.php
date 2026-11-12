@@ -148,7 +148,7 @@ $isC = $fType === 'course';
 $classesL = ci_lists($pdo)['classes'];
 $teachers = sh_teachers($pdo);
 $F = ['q' => trim((string)($_GET['q'] ?? '')), 'status' => (string)($_GET['status'] ?? ''), 'cat' => (int)($_GET['cat'] ?? 0), 'teacher' => (int)($_GET['teacher'] ?? 0),
-    'price' => (string)($_GET['price'] ?? ''), 'batch' => array_key_exists('batch', $_GET) ? (string)$_GET['batch'] : 'running', // Course Status: Running unless another is picked 'content' => (string)($_GET['content'] ?? ''), 'access' => (string)($_GET['access'] ?? ''),
+    'price' => (string)($_GET['price'] ?? ''), 'batch' => array_key_exists('batch', $_GET) ? (string)$_GET['batch'] : 'running', /* Course Status: Running unless another is picked */ 'content' => (string)($_GET['content'] ?? ''), 'access' => (string)($_GET['access'] ?? ''),
     'sales' => (string)($_GET['sales'] ?? ''), 'sort' => (string)($_GET['sort'] ?? '')];
 $fStatus = in_array($F['status'], ['draft', 'published', 'hidden'], true) ? $F['status'] : '';
 $w = ["p.type = " . $pdo->quote($fType)]; $hv = [];
