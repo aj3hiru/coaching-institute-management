@@ -52,7 +52,26 @@ $pre = ['type' => in_array((string)($_GET['type'] ?? ''), $types, true) ? (strin
 .rp-two{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:12px}
 @media (max-width:700px){.rp-two{grid-template-columns:1fr}}
 .rp-go{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
-.rp-out{margin-top:16px}
+.rp-out{margin-top:16px;overflow-x:auto}
+.rp-pdf:disabled{opacity:.45;cursor:not-allowed;pointer-events:none}
+/* the preview sits in the right column: it never widens the page; wide tables scroll inside, cells stay on one line */
+.rp-main{min-width:0}
+.rp-main .rp-doc{max-width:none;padding:18px 18px;font-size:12.5px}
+.rp-main .rp-tw{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.rp-main .rp-t th,.rp-main .rp-t td{white-space:nowrap}
+@media (max-width:820px){.rp-main .rp-doc{padding:12px}.rp-opts{padding:10px}}
+.rp-opts{margin-top:14px;border:1px solid var(--ci-b,#e5e7eb);background:#fafafa;padding:12px 14px}
+.rp-opts-h{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 8px}
+.rp-opts-h b{font-size:13.5px}.rp-opts-h span{font-size:12px;color:#6b7280}
+.rp-opts-g{display:flex;flex-wrap:wrap;gap:6px 14px;padding:8px 0;border-top:1px dashed #e5e7eb}
+.rp-opts-g:first-of-type{border-top:0}
+.rp-opts-g > em{flex-basis:100%;font-style:normal;font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#6b7280}
+.rp-opts label{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:#374151;cursor:pointer;user-select:none}
+.rp-opts label.rp-sec-l{font-weight:700;flex-basis:100%}
+.rp-opts .rp-cols{display:flex;flex-wrap:wrap;gap:4px 12px;padding-left:22px;flex-basis:100%}
+.rp-opts .rp-cols.off{opacity:.45;pointer-events:none}
+.rp-opts input{width:15px;height:15px;accent-color:var(--ci-acc,#4a3369)}
+.rp-sign{display:flex;justify-content:flex-end;margin-top:26px}.rp-sign span{display:inline-block;min-width:170px;padding-top:6px;border-top:1px solid #141414;text-align:center;font-size:12px;color:#6e6e6e}
 .rp-out:empty{display:none}
 .rp-doc{background:#fff;border:1px solid #9ca3af;padding:26px 28px;max-width:1100px;margin:0 auto;color:#2d2d2d;font-size:13px}
 .rp-top{display:flex;justify-content:space-between;gap:20px;padding-bottom:12px;border-bottom:2.5px solid #141414;flex-wrap:wrap}
@@ -144,10 +163,12 @@ $pre = ['type' => in_array((string)($_GET['type'] ?? ''), $types, true) ? (strin
       <div class="ci-f"><label>Category</label><select name="category"><option value="0">All categories</option><?php foreach ($storeCats as $k => $l): ?><option value="<?= (int)$k ?>"><?= ci_e($l) ?></option><?php endforeach; ?></select></div>
       <div class="ci-f"><label>Sold in</label><select name="period"><?= $periodOpts('all') ?></select></div><?= $dates ?>
     </form><?php endif; ?>
-    <div class="rp-go"><button type="button" class="ci-btn rp-view"><i class="fas fa-eye"></i> View report</button><button type="button" class="ci-btn ci-ghost rp-pdf"><i class="fas fa-file-pdf"></i> Download PDF</button><span class="ci-muted rp-msg" style="align-self:center"></span></div>
+    <div class="rp-go"><button type="button" class="ci-btn rp-view"><i class="fas fa-eye"></i> View report</button><button type="button" class="ci-btn ci-ghost rp-pdf" disabled title="View the report first"><i class="fas fa-file-pdf"></i> Download PDF</button><span class="ci-muted rp-msg" style="align-self:center"></span></div>
+    <?php // after View report: what goes into the PDF (the header always stays), then the preview — right under the filters ?>
+    <div class="rp-opts" id="rpOpts" hidden></div>
+    <div class="rp-out" id="rpOut"></div>
   </div>
 </div></div></div>
-<div class="rp-out" id="rpOut"></div>
 </div>
 <?php admin_shell_close(); ?>
 <script>
@@ -158,8 +179,34 @@ $pre = ['type' => in_array((string)($_GET['type'] ?? ''), $types, true) ? (strin
     type = t;
     document.querySelectorAll('.rp-types button').forEach(function (b) { b.classList.toggle('on', b.dataset.type === t); });
     document.querySelectorAll('.rp-pane').forEach(function (p) { p.hidden = p.dataset.pane !== t; });
-    out.innerHTML = ''; last = null;
+    out.innerHTML = ''; last = null; reset();
   }
+  // ---- after View report: tick what goes into the PDF (header always); preview and download follow the ticks ----
+  var opts = document.getElementById('rpOpts'), pdfBtns = document.querySelectorAll('.rp-pdf'), shown = null, sel = {};
+  function reset() { shown = null; sel = {}; opts.hidden = true; opts.innerHTML = ''; pdfBtns.forEach(function (b) { b.disabled = true; b.title = 'View the report first'; }); }
+  function esc(t) { return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function box(path, label, cls) { return '<label' + (cls ? ' class="' + cls + '"' : '') + '><input type="checkbox" checked data-p="' + path + '"> ' + esc(label) + '</label>'; }
+  function paint() { out.innerHTML = window.ciReportHtml(window.ciReportPick(shown, sel)); }
+  function buildOpts(d) {
+    sel = {}; var h = '<div class="rp-opts-h"><b>What goes into the PDF</b><span>The header always stays. Untick to leave a part or a column out.</span></div>';
+    if ((d.boxes || []).length) h += '<div class="rp-opts-g"><em>Info boxes</em>' + d.boxes.map(function (b, i) { return box('boxes.' + i, b.head); }).join('') + '</div>';
+    (d.sections || []).forEach(function (s, i) {
+      h += '<div class="rp-opts-g"><em>Table</em>' + box('sec.' + i, s.title + (s.right_text ? ' (' + s.right_text + ')' : ''), 'rp-sec-l')
+        + ((s.body || []).length && (s.head || []).length > 1 ? '<div class="rp-cols" data-cols="' + i + '">' + s.head.map(function (c, j) { return box('cols.' + i + '.' + j, c || 'Column ' + (j + 1)); }).join('') + '</div>' : '') + '</div>';
+    });
+    h += '<div class="rp-opts-g"><em>End of the report</em>' + ((d.notes || []).length ? box('notes', 'Notes') : '') + box('sign', 'Authorised Signatory') + '</div>';
+    opts.innerHTML = h; opts.hidden = false;
+  }
+  opts.addEventListener('change', function (e) {
+    var c = e.target; if (!c.dataset || !c.dataset.p) return;
+    var p = c.dataset.p.split('.'), v = c.checked ? undefined : false;
+    if (p[0] === 'notes' || p[0] === 'sign') sel[p[0]] = v;
+    else if (p[0] === 'cols') { sel.cols = sel.cols || {}; sel.cols[p[1]] = sel.cols[p[1]] || {}; sel.cols[p[1]][p[2]] = v;
+      // at least one column stays in a table
+      var cs = opts.querySelectorAll('[data-cols="' + p[1] + '"] input'); if (![].some.call(cs, function (x) { return x.checked; })) { c.checked = true; delete sel.cols[p[1]][p[2]]; msg.textContent = 'A table keeps at least one column.'; return; } }
+    else { sel[p[0]] = sel[p[0]] || {}; sel[p[0]][p[1]] = v; if (p[0] === 'sec') { var g = opts.querySelector('[data-cols="' + p[1] + '"]'); if (g) g.classList.toggle('off', !c.checked); } }
+    msg.textContent = ''; paint();
+  });
   document.querySelectorAll('.rp-types button').forEach(function (b) { b.addEventListener('click', function () { show(b.dataset.type); }); });
   function url() {
     if (type === 'fees') {
@@ -193,10 +240,15 @@ $pre = ['type' => in_array((string)($_GET['type'] ?? ''), $types, true) ? (strin
       .then(function (d) { if (d.error) throw new Error(d.error); last = d.kind === 'students' ? window.ciReportFromStudents(d) : d; lastKey = u; msg.textContent = ''; then(last); })
       .catch(function (e) { msg.textContent = 'Could not load the report: ' + e.message; });
   }
-  document.querySelectorAll('.rp-view').forEach(function (b) { b.addEventListener('click', function () { load(function (d) { out.innerHTML = window.ciReportHtml(d); out.scrollIntoView({ behavior: 'smooth', block: 'start' }); }); }); });
+  document.querySelectorAll('.rp-view').forEach(function (b) { b.addEventListener('click', function () { load(function (d) {
+    var fresh = shown !== d; shown = d; if (fresh) buildOpts(d); paint();
+    pdfBtns.forEach(function (x) { x.disabled = false; x.title = ''; });
+    (window.innerWidth < 821 ? opts : b).scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }); }); });
   document.querySelectorAll('.rp-pdf').forEach(function (b) { b.addEventListener('click', function () {
+    if (!shown) { msg.textContent = 'View the report first.'; return; }
     if (!window.jspdf || !window.jspdf.jsPDF) { msg.textContent = 'The PDF tool is still loading, try again in a moment.'; return; }
-    load(function (d) { window.ciReportPdf(d); if (!out.innerHTML) out.innerHTML = window.ciReportHtml(d); });
+    window.ciReportPdf(window.ciReportPick(shown, sel)); // exactly what the preview shows
   }); });
   // the Status filter shows only for "All courses / All batches"
   function syncAll() {
@@ -207,7 +259,7 @@ $pre = ['type' => in_array((string)($_GET['type'] ?? ''), $types, true) ? (strin
     document.querySelectorAll('.rp-custom').forEach(function (c) { c.hidden = !custom; });
     document.querySelectorAll('.rp-pane[data-generic]').forEach(function (f) { var on = f.elements.period && f.elements.period.value === 'custom'; f.querySelectorAll('.rp-cd').forEach(function (c) { c.hidden = !on; }); });
   }
-  document.addEventListener('change', function (e) { if (e.target.closest('.rp-pane')) { last = null; syncAll(); } });
+  document.addEventListener('change', function (e) { if (e.target.closest('.rp-pane')) { last = null; out.innerHTML = ''; reset(); syncAll(); } }); // new filters: view again before downloading
   syncAll();
   show(type);
   if (<?= $pre['id'] ? 'true' : 'false' ?>) document.addEventListener('DOMContentLoaded', function () { var v = document.querySelector('.rp-view'); if (v) v.click(); }); // the report scripts load deferred

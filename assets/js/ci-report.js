@@ -131,8 +131,10 @@
             wrapped.forEach(function (w) { font('normal', 8.8, TEXT); doc.text(w, M + 10, ty); ty += w.length * 12 + 3; });
             y += nh + 34;
         } else { need(90); y += 10; }
-        rule(W - M - 170, y + 14, W - M, y + 14, 0.6, INK);
-        font('normal', 8.5, MUTE); doc.text('Authorised Signatory', W - M - 85, y + 27, { align: 'center' });
+        if (!d.nosign) { // the sign-off line (can be left out on the Reports page)
+            rule(W - M - 170, y + 14, W - M, y + 14, 0.6, INK);
+            font('normal', 8.5, MUTE); doc.text('Authorised Signatory', W - M - 85, y + 27, { align: 'center' });
+        }
 
         // ---------- running header + footer ----------
         var pages = doc.internal.getNumberOfPages();
@@ -190,7 +192,31 @@
             h += '</tbody>' + (sct.foot ? '<tfoot>' + sct.foot.map(function (r) { return '<tr>' + r.map(function (v, i) { return cell('td', v, i); }).join('') + '</tr>'; }).join('') + '</tfoot>' : '') + '</table></div></div>';
         });
         if ((d.notes || []).length) h += '<div class="rp-sec"><div class="rp-st"><b>Notes</b></div><ol class="rp-notes">' + d.notes.map(function (n) { return '<li>' + esc(n) + '</li>'; }).join('') + '</ol></div>';
+        if (!d.nosign) h += '<div class="rp-sign"><span>Authorised Signatory</span></div>';
         return h + '</div>';
+    };
+
+    /** A copy of a report with only the chosen parts: sel = {boxes: {i: false}, sec: {i: false}, cols: {i: {j: false}},
+        notes: false, sign: false} (missing = shown). The header is always kept. Used by the Reports page for the
+        preview and the download, so both show exactly the same. */
+    window.ciReportPick = function (d, sel) {
+        sel = sel || {}; var on = function (o, k) { return !o || o[k] !== false; };
+        var out = Object.assign({}, d);
+        out.boxes = (d.boxes || []).filter(function (b, i) { return on(sel.boxes, i); });
+        out.sections = [];
+        (d.sections || []).forEach(function (s, i) {
+            if (!on(sel.sec, i)) return;
+            var keep = s.head.map(function (h, j) { return on((sel.cols || {})[i], j); });
+            if (keep.indexOf(true) < 0) return; // no column left = no table
+            var map = []; keep.forEach(function (k, j) { if (k) map.push(j); });
+            var cut = function (r) { return map.map(function (j) { return r[j]; }); };
+            var w = {}; Object.keys(s.w || {}).forEach(function (j) { var n = map.indexOf(+j); if (n >= 0) w[n] = s.w[j]; });
+            out.sections.push(Object.assign({}, s, { head: cut(s.head), body: (s.body || []).map(cut), foot: s.foot ? s.foot.map(cut) : s.foot,
+                right: (s.right || []).map(function (j) { return map.indexOf(j); }).filter(function (n) { return n >= 0; }), w: w }));
+        });
+        out.notes = sel.notes === false ? [] : (d.notes || []);
+        out.nosign = sel.sign === false;
+        return out;
     };
 
     document.addEventListener('click', function (e) {
