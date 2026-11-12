@@ -2,7 +2,7 @@
 // Course player: watch a lesson / read a PDF of a course or notes pack the student owns (free previews for everyone).
 //   /learn/slug (?l=lessonId | ?f=fileId) (&preview=1 = staff preview)   (old: /store/learn?s=slug …)
 // Paid lessons are only shown to owners: anyone else is sent to the course page (or to log in), and the media links
-// themselves are checked again in /store/media.
+// themselves are checked again in /store/media (videos) and /store/pf (PDFs).
 require_once dirname(__DIR__) . '/includes/config.php';
 require_once INCLUDES_PATH . '/shop.php';
 $pdo = sh_db();
@@ -71,7 +71,7 @@ $ico = fn($n) => sh_icon($n);
   <div class="lp-main">
   <?php if ($lesson): ?>
     <?php $isPdfL = ($lesson['kind'] ?? 'video') === 'pdf'; $directUrl = !$lesson['video_file'] && $lesson['video_url'] && sh_is_direct_video((string)$lesson['video_url']); ?>
-    <?php if ($isPdfL): $pdfUrl = $lesson['pdf_file'] ? sh_media_link('p', (int)$lesson['id'], $uid) : ''; ?>
+    <?php if ($isPdfL): $pdfUrl = $lesson['pdf_file'] ? sh_pdf_url('p', (int)$lesson['id']) : ''; ?>
     <?php if ($pdfUrl): ?><div class="lp-pdfbar"><span><?= $ico('file') ?> <b>PDF lecture</b><span class="lp-sub" id="stPdfInfo" hidden></span></span><span class="lp-pdfbar-b"><a class="lp-pdfbtn ghost" href="<?= sh_e($pdfUrl) ?>" target="_blank" rel="noopener"><?= $ico('eye') ?> Open full screen</a><a class="lp-pdfbtn" href="<?= sh_e($pdfUrl) ?>&amp;dl=1" download><?= $ico('download') ?> Download PDF</a></span></div><?php endif; ?>
     <div class="st-pdfv lp-pdfl" id="stPdf" data-src="<?= sh_e($pdfUrl) ?>"><?= $lesson['pdf_file'] ? '' : '<div class="st-empty">The PDF of this lecture is being uploaded.</div>' ?></div>
     <?php if (!$pdfUrl): ?><span class="lp-sub" id="stPdfInfo" hidden></span><?php endif; ?>
@@ -150,7 +150,7 @@ $ico = fn($n) => sh_icon($n);
         <?php elseif ($k === 'about'): ?><div class="lt-about"><?= nl2br(sh_e($lesson['notes'])) ?></div>
         <?php elseif ($k === 'notes'): ?>
           <?php if (!$lNotes) echo $emptyBox('notes', 'No PDF notes for this lecture'); ?>
-          <?php foreach ($lNotes as $nf): $nUrl = sh_media_link('f', (int)$nf['id'], $uid); ?><div class="lt-note lt-nc">
+          <?php foreach ($lNotes as $nf): $nUrl = sh_pdf_url('f', (int)$nf['id']); ?><div class="lt-note lt-nc">
             <div class="lt-nc-top"><span class="lt-nc-i"><?= $ico('pdf') ?></span><span class="lt-nc-t"><b><?= sh_e($nf['title']) ?></b><small><?= $nf['pages'] ? (int)$nf['pages'] . ' pages · ' : '' ?>PDF<?= !empty($nf['size']) ? ' · ' . ((int)$nf['size'] >= 1048576 ? round((int)$nf['size'] / 1048576, 1) . ' MB' : max(1, (int)round((int)$nf['size'] / 1024)) . ' KB') : '' ?></small></span></div>
             <div class="lt-nc-b"><button type="button" class="lt-note-h lt-nc-v" data-pdf="<?= sh_e($nUrl) ?>"><?= $ico('eye') ?><span class="lt-nc-o">View</span><span class="lt-nc-c">Close</span></button><a class="lt-dl lt-nc-d" href="<?= sh_e($nUrl) ?>&amp;dl=1" download title="Download <?= sh_e($nf['title']) ?>"><?= $ico('download') ?><span>Download</span></a></div>
             <div class="st-pdfv lt-pdf" hidden></div></div><?php endforeach; ?>
@@ -183,7 +183,7 @@ $ico = fn($n) => sh_icon($n);
     <?php endif; ?>
     <?php $moreHtml = ''; ?>
   <?php else: ?>
-    <?php $fUrl = sh_media_link('f', (int)$file['id'], $uid); ?>
+    <?php $fUrl = sh_pdf_url('f', (int)$file['id']); ?>
     <div class="lp-head"><div><span class="lp-ch">PDF notes</span><h1><?= sh_e($file['title']) ?></h1><span class="lp-sub" id="stPdfInfo">Loading…</span></div>
       <div class="lp-pdfbar-b"><a class="lp-pdfbtn ghost" href="<?= sh_e($fUrl) ?>" target="_blank" rel="noopener"><?= $ico('eye') ?> Open full screen</a><a class="lp-pdfbtn" href="<?= sh_e($fUrl) ?>&amp;dl=1" download><?= $ico('download') ?> Download PDF</a></div></div>
     <div class="st-pdfv" id="stPdf" data-src="<?= sh_e($fUrl) ?>"></div>

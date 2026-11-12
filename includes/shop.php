@@ -9,7 +9,7 @@
  *  sh_orders     one purchase attempt (Razorpay order → paid)   sh_access  who may open what (bought / given by admin)
  *  sh_progress   lessons a buyer has finished
  *
- * Videos and PDFs live outside the public folder (sh_media_dir) and are only sent through /store/media with a
+ * Videos and PDFs live outside the public folder (sh_media_dir); videos are sent through /store/media with a
  * short-lived signed link, after checking the buyer's access. Tables are created on first use (additive only).
  */
 require_once __DIR__ . '/settings.php';
@@ -663,17 +663,43 @@ function sh_is_bot(): bool
 /** The video's picture through our own address (no id in the page). $size: hq | mq | maxres. */
 function sh_yt_thumb(string $id, string $size = 'hq'): string { return '/store/lv?c=' . sh_yt_tok($id, 't') . '&s=' . (['mq' => 'm', 'maxres' => 'x'][$size] ?? 'l'); }
 
-/** A link to a lesson video or a PDF, valid for $ttl seconds, for this buyer only. */
+/** A link to an uploaded lesson video, valid for $ttl seconds, for this buyer only — and only in the browser that opened
+    the page (b = a mark of its login session), so a copied link does not play anywhere else. */
 function sh_media_link(string $kind, int $id, int $uid, int $ttl = 14400, string $q = ''): string
 {
-    $exp = time() + $ttl;
-    $sig = substr(hash_hmac('sha256', "$kind|$id|$uid|$exp|$q", sh_secret()), 0, 32);
-    return '/store/media?k=' . $kind . '&i=' . $id . '&u=' . $uid . '&e=' . $exp . ($q !== '' ? '&q=' . $q : '') . '&s=' . $sig;
+    $exp = time() + $ttl; $b = sh_sess_mark();
+    $sig = substr(hash_hmac('sha256', "$kind|$id|$uid|$exp|$q|$b", sh_secret()), 0, 32);
+    return '/store/media?k=' . $kind . '&i=' . $id . '&u=' . $uid . '&e=' . $exp . ($q !== '' ? '&q=' . $q : '') . '&b=' . $b . '&s=' . $sig;
 }
-function sh_media_check(string $kind, int $id, int $uid, int $exp, string $sig, string $q = ''): bool
+function sh_media_check(string $kind, int $id, int $uid, int $exp, string $sig, string $q = '', string $b = ''): bool
 {
     if ($exp < time()) return false;
-    return hash_equals(substr(hash_hmac('sha256', "$kind|$id|$uid|$exp|$q", sh_secret()), 0, 32), $sig);
+    return hash_equals(substr(hash_hmac('sha256', "$kind|$id|$uid|$exp|$q|$b", sh_secret()), 0, 32), $sig);
+}
+/** A short mark of this browser's session (not the session id itself). */
+function sh_sess_mark(): string
+{
+    $sid = session_id();
+    return $sid === '' ? '0' : substr(hash_hmac('sha256', 'sess|' . $sid, sh_secret()), 0, 16);
+}
+/** A PDF's address in the page: /store/pf?t=TOKEN (k: f = notes / course PDF, p = a PDF lecture). The token is sealed (it
+    names no file or number) and is not a key: store/pf.php sends the file only to a browser whose own login may read it. */
+function sh_pdf_key(): string { static $k = null; return $k ??= hash('sha256', 'pdf-seal|' . sh_secret(), true); }
+function sh_pdf_url(string $k, int $id): string
+{
+    $plain = $k . '|' . $id;
+    $iv = substr(hash_hmac('sha256', $plain, sh_pdf_key(), true), 0, 12); $tag = '';
+    $ct = openssl_encrypt($plain, 'aes-256-gcm', sh_pdf_key(), OPENSSL_RAW_DATA, $iv, $tag, '', 16);
+    return '/store/pf?t=' . bin2hex($iv . $tag . $ct);
+}
+/** [k, id] from a PDF token, or null. */
+function sh_pdf_open(string $t): ?array
+{
+    if (!preg_match('/^[a-f0-9]{60,120}$/', $t) || strlen($t) % 2) return null;
+    $b = hex2bin($t);
+    $plain = openssl_decrypt(substr($b, 28), 'aes-256-gcm', sh_pdf_key(), OPENSSL_RAW_DATA, substr($b, 0, 12), substr($b, 12, 16));
+    if ($plain === false || !preg_match('/^([fp])\|(\d{1,10})$/', $plain, $m)) return null;
+    return [$m[1], (int)$m[2]];
 }
 /** Qualities of an uploaded lesson video: ['720' => 'path', …] (the original is not in the list). */
 function sh_variants(array $l): array

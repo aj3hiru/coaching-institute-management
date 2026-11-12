@@ -76,7 +76,7 @@ function edu_health_boot(): void
         $ms = (int)round((microtime(true) - (float)($_SERVER['REQUEST_TIME_FLOAT'] ?? microtime(true))) * 1000);
         $mb = round(memory_get_peak_usage(true) / 1048576, 1);
         $path = (string)parse_url((string)($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH);
-        $long = preg_match('#/(cron|push_notifications/cron|admin/backup-restore|admin/import-export|admin/api/media-upload|account/report-upload|store/media|store/webhook|admin/site-health)#', $path); // long by design
+        $long = preg_match('#/(cron|push_notifications/cron|admin/backup-restore|admin/import-export|admin/api/media-upload|account/report-upload|store/media|store/pf|store/webhook|admin/site-health)#', $path); // long by design
         if (!$long && ($ms >= EDU_HEALTH_SLOW_MS || $mb >= EDU_HEALTH_MEM_MB)) edu_health_add(['k' => 'slow', 'ms' => $ms, 'mb' => $mb, 'm' => ($_SERVER['REQUEST_METHOD'] ?? 'GET') . ' ' . $path]);
         edu_health_write();
     });

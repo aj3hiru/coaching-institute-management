@@ -1,15 +1,17 @@
 <?php
-// Sends a lesson video (k=v) or a PDF (k=f) — only with a valid signed link from the learn page, only to the same
-// logged-in buyer (or anyone for a free preview), and only while the buyer still has access.
+// Sends an uploaded lesson video (k=v) — only with a valid signed link from the learn page, only in the browser that
+// opened that page (b), only to the same logged-in buyer (or anyone for a free preview), and only while the buyer has access.
+// PDFs go through store/pf.php (no signed links in pages any more).
 require_once dirname(__DIR__) . '/includes/config.php';
 require_once INCLUDES_PATH . '/shop.php';
 $k = (string)($_GET['k'] ?? ''); $id = (int)($_GET['i'] ?? 0); $uid = (int)($_GET['u'] ?? 0); $exp = (int)($_GET['e'] ?? 0); $sig = (string)($_GET['s'] ?? ''); $qual = preg_match('/^\d{3,4}$/', (string)($_GET['q'] ?? '')) ? (string)$_GET['q'] : '';
-$sessUid = (int)($_SESSION['sh_uid'] ?? 0);
+$sessUid = (int)($_SESSION['sh_uid'] ?? 0); $mark = sh_sess_mark(); $b = (string)($_GET['b'] ?? '');
 session_write_close(); // a long video must not hold the visitor's session
 $deny = function (int $code = 403) { http_response_code($code); header('Content-Type: text/plain'); exit($code === 410 ? 'This link has expired. Please reload the page.' : 'Not allowed'); };
-if (!in_array($k, ['v', 'f', 'p'], true) || !$id) $deny(404); // v = lecture video, f = a PDF (course / notes / lecture notes), p = a PDF lecture
+if ($k !== 'v' || !$id) $deny(404); // lecture videos only (PDFs: store/pf.php)
 if ($exp < time()) $deny(410);
-if (!sh_media_check($k, $id, $uid, $exp, $sig, $qual)) $deny();
+if (!sh_media_check($k, $id, $uid, $exp, $sig, $qual, $b)) $deny();
+if (!hash_equals($mark, $b)) $deny(); // a link copied to another browser / device
 if ($uid && $uid !== $sessUid) $deny(); // the link only works in the buyer's own logged-in browser
 $pdo = sh_db();
 if ($k === 'v') { $q = $pdo->prepare("SELECT product_id, free, video_file AS file, variants, title FROM sh_lessons WHERE id = ?"); }

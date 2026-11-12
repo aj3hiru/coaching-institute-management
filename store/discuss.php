@@ -25,7 +25,7 @@ $list = function (int $before = 0, int $only = 0) use ($pdo, $lid, $uid, $staffI
     $q = $pdo->prepare("SELECT d.*, u.name, s.username, a.name AS aname FROM sh_discuss d LEFT JOIN sh_users u ON u.id = d.user_id LEFT JOIN users s ON s.id = d.staff_id
         LEFT JOIN authors a ON a.user_id = d.staff_id WHERE d.lesson_id = ? AND d.status = 'visible'" . ($only ? ' AND d.id = ' . $only : ($before ? ' AND d.id < ' . $before : '')) . " ORDER BY d.id DESC LIMIT " . (DISC_PAGE + 1));
     $q->execute([$lid]);
-    return array_map(fn($d) => ['id' => (int)$d['id'], 'teacher' => (bool)$d['staff_id'], 'who' => $d['staff_id'] ? trim((string)($d['aname'] ?: $d['username'])) ?: 'Teacher' : $short((string)$d['name']),
+    return array_map(fn($d) => ['id' => (int)$d['id'], 'teacher' => (bool)$d['staff_id'], 'who' => $d['staff_id'] ? (trim((string)$d['aname']) ?: 'Teacher') : $short((string)$d['name']),
         'mine' => ($uid && (int)$d['user_id'] === $uid) || ($staffId && (int)$d['staff_id'] === $staffId), 'can_del' => ($uid && (int)$d['user_id'] === $uid) || $staffId > 0,
         'at' => date('d M Y, h:i A', strtotime($d['created_at'])), 'm' => $d['body']], $q->fetchAll(PDO::FETCH_ASSOC));
 };

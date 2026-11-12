@@ -22,7 +22,7 @@ $list = function () use ($pdo, $lid, $uid) {
     return array_map(function ($d) use ($uid) {
         $p = preg_split('/\s+/', trim(preg_replace('/\(.*?\)/', '', (string)$d['name'])));
         return ['id' => (int)$d['id'], 'mine' => (int)$d['user_id'] === $uid, 'who' => trim(($p[0] ?? 'Student') . (isset($p[1]) ? ' ' . mb_substr($p[1], 0, 1) . '.' : '')) ?: 'Student',
-            'at' => date('d M Y', strtotime($d['created_at'])), 'q' => $d['question'], 'a' => $d['answer'], 'by' => trim((string)($d['by_name'] ?: $d['by_user']))];
+            'at' => date('d M Y', strtotime($d['created_at'])), 'q' => $d['question'], 'a' => $d['answer'], 'by' => $d['answer'] !== null && $d['answer'] !== '' ? (trim((string)$d['by_name']) ?: 'Teacher') : ''];
     }, $q->fetchAll(PDO::FETCH_ASSOC));
 };
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
