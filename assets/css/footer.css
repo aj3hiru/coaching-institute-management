@@ -22,3 +22,5 @@
 .ftx-dev b{font-weight:700}
 .ftx-copy .screen-reader-text{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 @media(max-width:767px){.ftx-copy:has(.ftx-dev){justify-content:center;text-align:center;flex-direction:column;gap:4px}}
+/* "Developed by" did not fit on the copyright line: each on its own line, centred (any screen size) */
+.ftx-copy.is-stacked{flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:4px}
