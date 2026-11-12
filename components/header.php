@@ -80,8 +80,10 @@ if ($__school) {
     $__bl = trim((string)es('general', 'tagline', '')) ?: trim((string)es('general', 'address', ''));
     $__embH = max(36, min(80, (int)th('id_emblem_h', 52) ?: 52));
     $__logo = $__emb !== '' ? '<img src="' . htmlspecialchars($__emb) . '" alt="" class="nb-emblem" width="52" height="60" style="--emb-h:' . $__embH . 'px">' : '';
-    $__brandText = '<span class="nb-site-branding nb-sb-school"><span class="site-title">' . htmlspecialchars($__bt) . '</span>'
-        . ($__bl !== '' ? '<span class="site-tagline nb-brand-line">' . htmlspecialchars($__bl) . '</span>' : '') . '</span>';
+    // Customize → Site Identity: "Show site title" / "Show tagline". With no logo the title always shows (the header is never empty).
+    $__showT = !th_on('id_title_off') || $__emb === ''; $__showL = !th_on('id_line_off') && $__bl !== '';
+    $__brandText = $__showT || $__showL ? '<span class="nb-site-branding nb-sb-school">' . ($__showT ? '<span class="site-title">' . htmlspecialchars($__bt) . '</span>' : '')
+        . ($__showL ? '<span class="site-tagline nb-brand-line">' . htmlspecialchars($__bl) . '</span>' : '') . '</span>' : '';
 }
 // the header brand, also used on the log in / sign up card (sh_auth_side) so both always look the same
 $GLOBALS['edu_brand_html'] = $__school ? '<a href="/" rel="home" class="nb-brand-link nb-brand-school' . (th_on('id_brand_bg') ? '' : ' nb-brand-plain') . '" aria-label="' . htmlspecialchars(edu_site_name()) . ' home">' . $__logo . $__brandText . '</a>' : '';

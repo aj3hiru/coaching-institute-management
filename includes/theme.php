@@ -83,7 +83,7 @@ function edu_theme_defaults(): array
         ],
         'f_logo' => '', 'f_desc' => '', 'f_play' => '0', 'f_play_url' => '',
         // Site Identity extras
-        'id_hide_title' => '1', 'id_hide_tagline' => '1', 'id_retina_logo' => '',
+        'id_hide_title' => '1', 'id_hide_tagline' => '1', 'id_title_off' => '0', 'id_line_off' => '0', // school header: title / line under it shown unless switched off 'id_retina_logo' => '',
         // header brand: 'logo' (logo + optional title/tagline) or 'school' (round emblem + big name + a line such as the address)
         'id_brand_style' => 'school', 'id_emblem_h' => 52, 'id_brand_bg' => '1', 'id_brand_emblem' => '', 'id_header_title' => '', 'id_header_line' => '',
         'id_school_phone' => '', 'id_school_wa' => '', 'id_school_bar_text' => '', 'id_school_login_text' => 'Student Login',

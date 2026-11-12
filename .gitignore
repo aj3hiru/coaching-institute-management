@@ -4,3 +4,4 @@ cache/*.html
 cj_smart_cache/
 vendor/
 .DS_Store
+/logo.webp

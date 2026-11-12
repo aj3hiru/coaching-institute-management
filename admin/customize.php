@@ -648,6 +648,8 @@ function renderIdentity(wrap) { // the same values as Settings → General (site
     pv.querySelector('img').style.height = Math.max(36, Math.min(80, +T.id_emblem_h || 52)) * .85 + 'px';
     pv.querySelector('b').textContent = G.site_title || SITE_NAME_DEFAULT;
     pv.querySelector('small').textContent = G.tagline || ID_ADDRESS || '';
+    pv.querySelector('b').hidden = String(T.id_title_off) === '1' && !!G.logo;
+    pv.querySelector('small').hidden = String(T.id_line_off) === '1';
     pv.classList.toggle('is-plain', String(T.id_brand_bg) === '0');
   };
   const g1 = html('<div class="id-grp"></div>'); g1.appendChild(pv); wrap.appendChild(g1);
@@ -662,7 +664,9 @@ function renderIdentity(wrap) { // the same values as Settings → General (site
   const ln = html('<label class="cz-field"><span class="cz-label">Tagline</span><input type="text" maxlength="200"></label>');
   const li = ln.querySelector('input'); li.value = G.tagline || ''; li.placeholder = ID_ADDRESS || '';
   li.oninput = () => { G.tagline = li.value; touch(); paint(); };
-  g3.append(tt, ln); wrap.appendChild(g3);
+  const st = field(['toggle', 'id_title_off', 'Hide the site title in the header', { hint: 'Shown anyway when there is no logo.' }]);
+  const sl = field(['toggle', 'id_line_off', 'Hide the tagline / line under it']);
+  g3.append(tt, ln, st, sl); wrap.appendChild(g3);
   const g4 = html('<div class="id-grp"></div>'); g4.appendChild(field(['media', 'g.favicon', 'Site Icon'])); wrap.appendChild(g4);
   [lg, sz, bg].forEach(el => { el.addEventListener('input', () => setTimeout(paint)); el.addEventListener('change', () => setTimeout(paint)); });
   new MutationObserver(paint).observe(lg, { subtree: true, childList: true });

@@ -45,8 +45,48 @@ if (!function_exists('edu_settings')) {
     }
 
     /** Saves a whole group (merged over what is stored) and clears the page cache so visitors see it at once. */
+    /** The site logo always lives at /logo.webp. Any picture chosen as the logo (JPG, PNG, GIF, WebP — from the media
+        library, a path or a link) is turned into WebP and written there, replacing the previous logo; an empty logo
+        removes the file. Returns what is stored: '/logo.webp?v=TIME' (the time makes browsers fetch the new one), '' when
+        removed, or the chosen path unchanged when it cannot be turned into WebP (e.g. an SVG). */
+    function edu_logo_store(string $val): string
+    {
+        $val = trim($val); $dest = ROOT_PATH . '/logo.webp';
+        if ($val === '') { if (is_file($dest)) @unlink($dest); return ''; }
+        if (preg_match('#^/logo\.webp(\?|$)#', $val)) return $val; // already the logo
+        $path = (string)parse_url($val, PHP_URL_PATH); $host = (string)parse_url($val, PHP_URL_HOST);
+        $own = $host === '' || strcasecmp(preg_replace('/^www\./', '', $host), preg_replace('/^www\./', '', (string)parse_url(SITE_URL, PHP_URL_HOST))) === 0;
+        $data = '';
+        if ($own && $path !== '' && !str_contains($path, '..')) { $f = ROOT_PATH . '/' . ltrim(rawurldecode($path), '/'); if (is_file($f) && filesize($f) <= 8 * 1048576) $data = (string)file_get_contents($f); }
+        elseif (preg_match('#^https?://#i', $val) && function_exists('curl_init')) {
+            $ch = curl_init($val); curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_FOLLOWLOCATION => true, CURLOPT_MAXREDIRS => 3, CURLOPT_TIMEOUT => 10, CURLOPT_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS]);
+            $data = (string)curl_exec($ch); curl_close($ch); if (strlen($data) > 8 * 1048576) $data = '';
+        }
+        if ($data === '') { if (is_file($dest)) @unlink($dest); return $val; }
+        $isWebp = substr($data, 0, 4) === 'RIFF' && substr($data, 8, 4) === 'WEBP';
+        $out = '';
+        if (function_exists('imagecreatefromstring') && function_exists('imagewebp') && ($im = @imagecreatefromstring($data))) {
+            $w = imagesx($im); $h = imagesy($im); $max = 1200;
+            if ($w > $max) { $nh = max(1, (int)round($h * $max / $w)); $n = imagecreatetruecolor($max, $nh); imagealphablending($n, false); imagesavealpha($n, true);
+                imagefill($n, 0, 0, imagecolorallocatealpha($n, 0, 0, 0, 127)); imagecopyresampled($n, $im, 0, 0, 0, 0, $max, $nh, $w, $h); imagedestroy($im); $im = $n; }
+            if (!imageistruecolor($im)) imagepalettetotruecolor($im);
+            imagealphablending($im, false); imagesavealpha($im, true); // keep a see-through background
+            ob_start(); imagewebp($im, null, 90); $out = (string)ob_get_clean(); imagedestroy($im);
+        } elseif ($isWebp) $out = $data; // no image library: a WebP logo is used as it is
+        if ($out === '') { if (is_file($dest)) @unlink($dest); return $val; } // e.g. an SVG: kept at its own address (the old /logo.webp goes)
+        $tmp = $dest . '.tmp' . bin2hex(random_bytes(3));
+        if (@file_put_contents($tmp, $out) === false || !@rename($tmp, $dest)) { @unlink($tmp); return $val; }
+        @chmod($dest, 0644);
+        return '/logo.webp?v=' . time();
+    }
+
     function edu_settings_save(string $group, array $values): void
     {
+        if ($group === 'general' && array_key_exists('logo', $values)) { // the logo always goes to /logo.webp
+            $old = (string)(edu_settings('general')['logo'] ?? '');
+            $new = trim((string)$values['logo']);
+            $values['logo'] = $new === $old && preg_match('#^/logo\.webp(\?|$)#', $new) ? $new : edu_logo_store($new);
+        }
         $pdo = edu_db();
         $merged = array_merge(edu_settings($group), $values);
         $json = json_encode($merged, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
