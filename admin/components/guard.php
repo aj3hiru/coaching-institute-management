@@ -44,7 +44,8 @@ function edu_maintenance_page(): void
         . '<g class="gear2"><path fill="#a78bfa" d="M92 22l2 .5 1-3.5 4 1.5-1 3.5 1.5 1.5 3.5-1 1.5 4-3.5 1v2l3.5 1-1.5 4-3.5-1-1.5 1.5 1 3.5-4 1.5-1-3.5h-2l-1 3.5-4-1.5 1-3.5-1.5-1.5-3.5 1-1.5-4 3.5-1v-2l-3.5-1 1.5-4 3.5 1 1.5-1.5-1-3.5 4-1.5 1 3.5z"/><circle cx="92" cy="34" r="4.5" fill="#eef2ff"/></g>'
         . '<path d="M30 92h60" stroke="#c7d2fe" stroke-width="4" stroke-linecap="round"/></svg>'
         . '<span class="tag">Scheduled maintenance</span><h1>Software is under maintenance</h1>'
-        . '<p>We are updating ' . $site . ' to make it better. The admin area is closed for a short while.</p><p>Please try again in a few minutes — your data is safe.</p>'
+        . '<p>We are carrying out scheduled maintenance to improve the performance, security and reliability of ' . $site . '. During this time, access to the admin area is temporarily paused.</p>'
+        . '<p>All your records and data are safe and fully protected. Please check back shortly — we appreciate your patience.</p>'
         . '<div class="bar"><i></i></div><a href="/">Go to the website</a><small>' . $site . ' · Admin</small></main></body></html>';
     exit;
 }
