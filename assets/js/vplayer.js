@@ -1,6 +1,7 @@
 /* Locked the host player (Plyr): our own controls, the host's title / logo / share / "Watch on the host" / suggestions are
    cut off and cannot be clicked, no right-click. Every [data-vp="TOKEN"] box on the page becomes one player: the page holds only a sealed token, the video id is asked
-   from /store/lv?k=TOKEN when the player starts (lectures: only for the buyer) and is kept in memory, never written into the page.
+   from /store/lv?k=TOKEN only when the visitor presses Play (lectures: only for the buyer) and is kept in memory; until then
+   the page has no video frame at all.
    window.VPlayer.load(box, id, play) switches the video (free-course playlists). */
 (function () {
   var PV = ['you', 'tube'].join(''); // the player library's name for the host
@@ -213,13 +214,33 @@
       .then(function (r) { return r.json(); }).then(function (d) { if (!d || !d.v) throw new Error((d && d.error) || 'no video'); ids[tok] = d.v; return d.v; });
   }
   function failed(box, msg) { box.classList.add('vp-ready', 'vp-err'); box.setAttribute('data-msg', msg || 'This video could not be loaded. Please reload the page.'); }
-  function init(box) {
-    if (box._p || box._busy || !window.Plyr) return; var tok = box.getAttribute('data-vp'); if (!tok) return;
-    box._busy = true;
-    resolve(tok).then(function (id) { box._busy = false; make(box, id, /^[\w-]{11}$/.test(tok) ? '' : tok); }).catch(function (e) { box._busy = false; failed(box, e && e.message); });
+  // Before the first Play the box holds only our picture and a play button: no player, no video frame, so the page
+  // (view-source, a saved copy, Inspect) has no video id at all. The frame is made only when the visitor presses Play.
+  function cover(box) {
+    if (box._p || box._cov || !box.getAttribute('data-vp')) return;
+    box._cov = true; box.classList.add('vp-ready', 'vp-wait');
+    var b = document.createElement('button'); b.type = 'button'; b.className = 'vp-start'; b.setAttribute('aria-label', 'Play');
+    b.innerHTML = PLAY_BTN; box.appendChild(b);
+    b.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); go(box); });
   }
+  function go(box) { // Play pressed: get the id, make the player and start it
+    if (box._p || box._busy || !window.Plyr) return; var tok = box.getAttribute('data-vp'); if (!tok) return;
+    box._busy = true; box.classList.remove('vp-wait'); box.classList.add('vp-go');
+    var s = box.querySelector('.vp-start'); if (s) s.remove();
+    resolve(tok).then(function (id) {
+      box._busy = false; var p = make(box, id, /^[\w-]{11}$/.test(tok) ? '' : tok);
+      p.once('ready', function () { try { p.play(); } catch (e) {} });
+    }).catch(function (e) { box._busy = false; failed(box, e && e.message); });
+  }
+  function init(box) { cover(box); }
   function load(box, tok, play) { // another video in the same box (tok = a token, or an old plain id)
     if (!tok) return;
+    if (!box._p && !play) { // not started yet: only the picture changes
+      box.setAttribute('data-vp', tok); var ph = box.querySelector('.vp-ph');
+      if (ph && !/^[\w-]{11}$/.test(tok)) ph.setAttribute('src', '/store/lv?c=' + encodeURIComponent(tok) + '&s=l');
+      return;
+    }
+    var s = box.querySelector('.vp-start'); if (s) s.remove(); box.classList.remove('vp-wait');
     resolve(tok).then(function (id) {
       if (box._p) { try { box._p.destroy(); } catch (e) {} box._p = null; }
       box._qSeen = false;

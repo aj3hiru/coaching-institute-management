@@ -82,3 +82,10 @@
 @media (prefers-reduced-motion:reduce){.vp-box:not(.vp-ready)::after,.vp-box.vp-go:not(.vp-started)::after{animation-duration:2s}}
 /* the video could not be given (e.g. logged out, or no access): a short message over the picture */
 .vp-box.vp-err::before{content:attr(data-msg);position:absolute;left:12px;right:12px;top:50%;transform:translateY(-50%);z-index:7;padding:10px 12px;border-radius:6px;background:rgba(0,0,0,.72);color:#fff;font-size:14px;text-align:center}
+
+/* before the first Play: our picture + a play button only (no player yet) */
+.vp-box .vp-start{position:absolute;inset:0;z-index:3;width:100%;height:100%;padding:0;border:0;background:transparent;cursor:pointer}
+.vp-box .vp-start .vpb-ic{position:absolute;left:50%;top:50%;width:68px;height:68px;margin:-34px 0 0 -34px;border-radius:50%;background:rgba(0,0,0,.55);display:grid;place-items:center}
+.vp-box .vp-start .vpb-ic svg{width:34px;height:34px;margin-left:3px;display:block}
+.vp-box .vp-start:hover .vpb-ic,.vp-box .vp-start:focus-visible .vpb-ic{background:rgba(0,0,0,.72)}
+@media (max-width:560px){.vp-box .vp-start .vpb-ic{width:56px;height:56px;margin:-28px 0 0 -28px}.vp-box .vp-start .vpb-ic svg{width:28px;height:28px}}
