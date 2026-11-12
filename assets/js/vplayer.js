@@ -158,7 +158,11 @@
     var want = own ? box.getAttribute('data-poster') : (tok ? '/store/lv?c=' + encodeURIComponent(tok) + '&s=l' : '');
     if (ph.getAttribute('src') !== want) ph.setAttribute('src', want);
     box.classList.remove('vp-started');
-    box.innerHTML = ''; box.appendChild(el); box.appendChild(ph);
+    // the picture is never taken out of the page (that showed a black frame for a moment): everything else is cleared
+    // and the new player goes in under it
+    [].slice.call(box.children).forEach(function (c) { if (c !== ph) box.removeChild(c); });
+    if (ph.parentNode !== box) box.appendChild(ph);
+    box.insertBefore(el, ph);
     var p = new Plyr(el, {
       controls: ['play-large', 'rewind', 'play', 'fast-forward', 'progress', 'current-time', 'duration', 'mute', 'volume', 'settings', 'fullscreen'],
       settings: ['speed'], speed: { selected: 1, options: [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2] }, seekTime: 10, ratio: '16:9',
@@ -191,8 +195,8 @@
     // Quality is left to the host (Auto): it picks the best for the internet and screen. Our own quality menu scaled
     // the host's frame, and with it the host's middle play / pause icon changed size — so it is switched off.
     box._q = 'auto'; store.set('auto');
-    box.classList.remove('vp-started', 'vp-go', 'vp-ready');
-    p.on('ready', function () { box.classList.add('vp-ready'); el.removeAttribute('data-plyr-embed-id'); dress(box); sizeFrame(box); var wr = box.querySelector('.plyr__video-wrapper'); if (wr && ph.parentNode !== wr) wr.appendChild(ph); }); // under the controls
+    box.classList.remove('vp-started', 'vp-ready'); // vp-go (Play pressed) stays: the ring keeps turning until the video really plays
+    p.on('ready', function () { box.classList.add('vp-ready'); el.removeAttribute('data-plyr-embed-id'); dress(box); sizeFrame(box); });
     // our cover stays until the host really plays, so the host's own start screen / button never shows through
     p.on('play', function () { box.classList.add('vp-go'); });          // red button goes at the click, like the host
     p.on('playing', function () { box.classList.add('vp-started'); }); // the picture goes when the host really plays
@@ -219,18 +223,32 @@
   function cover(box) {
     if (box._p || box._cov || !box.getAttribute('data-vp')) return;
     box._cov = true; box.classList.add('vp-ready', 'vp-wait');
-    var b = document.createElement('button'); b.type = 'button'; b.className = 'vp-start'; b.setAttribute('aria-label', 'Play');
-    b.innerHTML = PLAY_BTN; box.appendChild(b);
+    var b = box.querySelector('.vp-start'); // the page already has it (no button popping in); old pages: made here
+    if (!b) { b = document.createElement('button'); b.type = 'button'; b.className = 'vp-start'; b.setAttribute('aria-label', 'Play'); b.innerHTML = PLAY_BTN; box.appendChild(b); }
     b.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); go(box); });
+    // a finger / mouse on the video: get its id and the host's script ready now, so Play starts sooner
+    var warm = function () { box.removeEventListener('pointerenter', warm); box.removeEventListener('touchstart', warm); box.removeEventListener('focusin', warm); prep(); resolve(box.getAttribute('data-vp')).catch(function () {}); };
+    box.addEventListener('pointerenter', warm); box.addEventListener('touchstart', warm, { passive: true }); box.addEventListener('focusin', warm);
+  }
+  var prepped = false;
+  function prep() { // connect to the host early and load its player script (Plyr uses it when it is there)
+    if (prepped) return; prepped = true;
+    ['https://www.' + PV + '-nocookie.com', 'https://www.' + PV + '.com', 'https://i.' + ['yt', 'img'].join('') + '.com'].forEach(function (u) { var l = document.createElement('link'); l.rel = 'preconnect'; l.href = u; document.head.appendChild(l); });
+    if (!(window.YT && window.YT.Player)) { var s = document.createElement('script'); s.src = 'https://www.' + PV + '.com/iframe_api'; s.async = true; document.head.appendChild(s); }
+  }
+  function kick(box, p) { // start it; if the browser does not let it start by itself, the ring goes and the Play button shows
+    p.once('ready', function () {
+      try { p.play(); } catch (e) {}
+      setTimeout(function () { var e = p.embed, st = e && e.getPlayerState ? e.getPlayerState() : 1; if (box._p === p && (st === -1 || st === 5)) box.classList.remove('vp-go'); }, 4000);
+    });
   }
   function go(box) { // Play pressed: get the id, make the player and start it
     if (box._p || box._busy || !window.Plyr) return; var tok = box.getAttribute('data-vp'); if (!tok) return;
     box._busy = true; box.classList.remove('vp-wait'); box.classList.add('vp-go');
     var s = box.querySelector('.vp-start'); if (s) s.remove();
     resolve(tok).then(function (id) {
-      box._busy = false; var p = make(box, id, /^[\w-]{11}$/.test(tok) ? '' : tok);
-      p.once('ready', function () { try { p.play(); } catch (e) {} });
-    }).catch(function (e) { box._busy = false; failed(box, e && e.message); });
+      box._busy = false; prep(); kick(box, make(box, id, /^[\w-]{11}$/.test(tok) ? '' : tok));
+    }).catch(function (e) { box._busy = false; box.classList.remove('vp-go'); failed(box, e && e.message); });
   }
   function init(box) { cover(box); }
   function load(box, tok, play) { // another video in the same box (tok = a token, or an old plain id)
@@ -240,13 +258,13 @@
       if (ph && !/^[\w-]{11}$/.test(tok)) ph.setAttribute('src', '/store/lv?c=' + encodeURIComponent(tok) + '&s=l');
       return;
     }
-    var s = box.querySelector('.vp-start'); if (s) s.remove(); box.classList.remove('vp-wait');
+    var s = box.querySelector('.vp-start'); if (s) s.remove(); box.classList.remove('vp-wait'); if (play) box.classList.add('vp-go');
     resolve(tok).then(function (id) {
       if (box._p) { try { box._p.destroy(); } catch (e) {} box._p = null; }
       box._qSeen = false;
       var p = make(box, id, /^[\w-]{11}$/.test(tok) ? '' : tok);
-      if (play) p.once('ready', function () { try { p.play(); } catch (e) {} });
-    }).catch(function (e) { failed(box, e && e.message); });
+      if (play) kick(box, p);
+    }).catch(function (e) { box.classList.remove('vp-go'); failed(box, e && e.message); });
   }
   // no right-click, no dragging, no text selection inside a player
   document.addEventListener('contextmenu', function (e) { if (e.target.closest && e.target.closest('.vp-box')) e.preventDefault(); });

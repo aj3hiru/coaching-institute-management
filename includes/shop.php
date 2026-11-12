@@ -1177,7 +1177,11 @@ function sh_yt_lock_html(string $id, string $title = '', string $extra = '', str
     $poster = trim($poster);
     $src = $poster !== '' ? $poster : sh_yt_thumb($id, 'hq');
     $tok = sh_yt_tok($id, $lesson ? 'l' : 'p', $lesson); // the page carries this token, never the video id
-    return $h . '<div class="vp-box" data-vp="' . sh_e($tok) . '"' . ($poster !== '' ? ' data-poster="' . sh_e($poster) . '" data-poster-id="' . sh_e($tok) . '"' : '') . ' aria-label="' . sh_e($title ?: 'Video') . '"' . $extra . '><img class="vp-ph" src="' . sh_e($src) . '" alt="" decoding="async"></div>';
+    // behind the big picture: the small one the lesson list / course cards already loaded (from the browser's cache), so the
+    // box never shows black while the big picture comes; the Play button is in the page from the start
+    $bg = $poster === '' ? ' style="background-image:url(\'' . sh_e(sh_yt_thumb($id, 'mq')) . '\')"' : '';
+    $play = '<button type="button" class="vp-start" aria-label="Play"><span class="vpb-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="#fff"/></svg></span></button>';
+    return $h . '<div class="vp-box" data-vp="' . sh_e($tok) . '"' . ($poster !== '' ? ' data-poster="' . sh_e($poster) . '" data-poster-id="' . sh_e($tok) . '"' : '') . $bg . ' aria-label="' . sh_e($title ?: 'Video') . '"' . $extra . '><img class="vp-ph" src="' . sh_e($src) . '" alt="" fetchpriority="high">' . $play . '</div>';
 }
 /** Post / page content: every YouTube video (an <iframe> embed, a WordPress embed block, or a link alone on its line)
     plays in our own locked player (sh_yt_lock_html) instead of YouTube's. */

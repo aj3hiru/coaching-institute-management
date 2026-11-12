@@ -76,10 +76,10 @@
 .vp-box .plyr__poster{display:none!important}
 /* while the player is getting ready (and after Play until the host really plays): a spinning ring over the picture,
    so nobody taps a picture that cannot play yet */
-.vp-box:not(.vp-ready)::after,.vp-box.vp-go:not(.vp-started)::after{content:"";position:absolute;left:50%;top:50%;z-index:6;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%!important;border:4px solid rgba(255,255,255,.3);border-top-color:#fff;animation:vpSpin .8s linear infinite;pointer-events:none;box-shadow:0 0 0 999px rgba(0,0,0,.18)}
-.vp-box:not(.vp-ready){cursor:progress}
+.vp-box.vp-go:not(.vp-started):not(.vp-err)::after{content:"";position:absolute;left:50%;top:50%;z-index:6;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%!important;border:4px solid rgba(255,255,255,.3);border-top-color:#fff;animation:vpSpin .8s linear infinite;pointer-events:none;box-shadow:0 0 0 999px rgba(0,0,0,.18)}
+.vp-box.vp-go:not(.vp-started){cursor:progress}
 @keyframes vpSpin{to{transform:rotate(360deg)}}
-@media (prefers-reduced-motion:reduce){.vp-box:not(.vp-ready)::after,.vp-box.vp-go:not(.vp-started)::after{animation-duration:2s}}
+@media (prefers-reduced-motion:reduce){.vp-box.vp-go:not(.vp-started):not(.vp-err)::after{animation-duration:2s}}
 /* the video could not be given (e.g. logged out, or no access): a short message over the picture */
 .vp-box.vp-err::before{content:attr(data-msg);position:absolute;left:12px;right:12px;top:50%;transform:translateY(-50%);z-index:7;padding:10px 12px;border-radius:6px;background:rgba(0,0,0,.72);color:#fff;font-size:14px;text-align:center}
 
@@ -89,3 +89,7 @@
 .vp-box .vp-start .vpb-ic svg{width:34px;height:34px;margin-left:3px;display:block}
 .vp-box .vp-start:hover .vpb-ic,.vp-box .vp-start:focus-visible .vpb-ic{background:rgba(0,0,0,.72)}
 @media (max-width:560px){.vp-box .vp-start .vpb-ic{width:56px;height:56px;margin:-28px 0 0 -28px}.vp-box .vp-start .vpb-ic svg{width:28px;height:28px}}
+/* the picture stays in the box itself (never moved): the player goes under it, the controls above it */
+.vp-box{isolation:isolate;background-size:cover;background-position:center}
+.vp-box .plyr{z-index:auto}
+.vp-box .plyr.vp-rot~.vp-ph{display:none!important}
