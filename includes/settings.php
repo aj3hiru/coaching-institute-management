@@ -48,8 +48,9 @@ if (!function_exists('edu_settings')) {
     /** The site logo always lives at /logo.webp. Any picture chosen as the logo (JPG, PNG, GIF, WebP — from the media
         library, a path or a link) is turned into WebP and written there, replacing the previous logo; an empty logo
         removes the file. Returns what is stored: '/logo.webp?v=TIME' (the time makes browsers fetch the new one), '' when
-        removed, or the chosen path unchanged when it cannot be turned into WebP (e.g. an SVG). */
-    function edu_logo_store(string $val): string
+        removed, the chosen path when it cannot be turned into WebP (e.g. an SVG), or the current logo when the picture
+        cannot be read at all. */
+    function edu_logo_store(string $val, string $old = ''): string
     {
         $val = trim($val); $dest = ROOT_PATH . '/logo.webp';
         if ($val === '') { if (is_file($dest)) @unlink($dest); return ''; }
@@ -62,7 +63,7 @@ if (!function_exists('edu_settings')) {
             $ch = curl_init($val); curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_FOLLOWLOCATION => true, CURLOPT_MAXREDIRS => 3, CURLOPT_TIMEOUT => 10, CURLOPT_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS]);
             $data = (string)curl_exec($ch); curl_close($ch); if (strlen($data) > 8 * 1048576) $data = '';
         }
-        if ($data === '') { if (is_file($dest)) @unlink($dest); return $val; }
+        if ($data === '') return $old; // the picture could not be read (wrong path, missing file): the current logo stays
         $isWebp = substr($data, 0, 4) === 'RIFF' && substr($data, 8, 4) === 'WEBP';
         $out = '';
         if (function_exists('imagecreatefromstring') && function_exists('imagewebp') && ($im = @imagecreatefromstring($data))) {
@@ -85,7 +86,7 @@ if (!function_exists('edu_settings')) {
         if ($group === 'general' && array_key_exists('logo', $values)) { // the logo always goes to /logo.webp
             $old = (string)(edu_settings('general')['logo'] ?? '');
             $new = trim((string)$values['logo']);
-            $values['logo'] = $new === $old && preg_match('#^/logo\.webp(\?|$)#', $new) ? $new : edu_logo_store($new);
+            $values['logo'] = $new === $old && preg_match('#^/logo\.webp(\?|$)#', $new) ? $new : edu_logo_store($new, $old);
         }
         $pdo = edu_db();
         $merged = array_merge(edu_settings($group), $values);
