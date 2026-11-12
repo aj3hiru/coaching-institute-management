@@ -1,6 +1,7 @@
 <?php
 // Page frame for the online store and buyer account pages: site head, header, <main>. Set $stTitle (and $stDesc, $stIndex) first.
 require_once INCLUDES_PATH . '/minify.php';
+ob_start(fn($h) => function_exists('sh_hide_yt') ? sh_hide_yt($h) : $h); // no YouTube ids in store / lecture pages
 require_once INCLUDES_PATH . '/functions.php';
 require_once INCLUDES_PATH . '/seo.php';
 require_once INCLUDES_PATH . '/ads.php';

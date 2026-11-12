@@ -1,6 +1,7 @@
 <?php
 
 function minifyHTML($html) {
+    if (function_exists('sh_hide_yt')) $html = sh_hide_yt((string)$html); // YouTube pictures through our own address
 
     $protected = [];
     $html = preg_replace_callback(

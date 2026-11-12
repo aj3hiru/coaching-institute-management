@@ -1,5 +1,6 @@
 /* Locked YouTube player (Plyr): our own controls, YouTube's title / logo / share / "Watch on YouTube" / suggestions are
-   cut off and cannot be clicked, no right-click. Every [data-yt="VIDEO_ID"] box on the page becomes one player.
+   cut off and cannot be clicked, no right-click. Every [data-yt="TOKEN"] box on the page becomes one player: the page holds only a sealed token, the video id is asked
+   from /store/yt?play=TOKEN when the player starts (lectures: only for the buyer) and is kept in memory, never written into the page.
    window.YtLock.load(box, id, play) switches the video (free-course playlists). */
 (function () {
   'use strict';
@@ -45,7 +46,7 @@
   function reloadAt(box) {
     var p = box._p, e = p.embed, t = e.getCurrentTime(), rate = p.speed, wasPaused = !p.playing;
     box._reloading = true;
-    e.loadVideoById({ videoId: box.getAttribute('data-yt'), startSeconds: t });
+    e.loadVideoById({ videoId: box._vid, startSeconds: t });
     var done = function () { box._reloading = false; };
     p.once('playing', function () { try { if (rate !== 1) p.speed = rate; if (wasPaused) p.pause(); } catch (x) {} setTimeout(done, 300); });
     setTimeout(done, 8000);
@@ -143,7 +144,7 @@
     }
   }
 
-  function make(box, id) {
+  function make(box, id, tok) {
     var el = document.createElement('div');
     el.className = 'plyr__video-embed';
     el.setAttribute('data-plyr-provider', 'youtube'); el.setAttribute('data-plyr-embed-id', id);
@@ -151,8 +152,8 @@
     // It shows at once and stays over the player until YouTube really plays (no black box while YouTube loads).
     var ph = box.querySelector('.yt-lock-ph') || document.createElement('img');
     ph.className = 'yt-lock-ph'; ph.alt = '';
-    var own = box.getAttribute('data-poster') && box.getAttribute('data-poster-id') === id;
-    var want = own ? box.getAttribute('data-poster') : 'https://i.ytimg.com/vi/' + id + '/hqdefault.jpg';
+    var key = tok || id, own = box.getAttribute('data-poster') && box.getAttribute('data-poster-id') === key;
+    var want = own ? box.getAttribute('data-poster') : (tok ? '/store/yt?thumb=' + encodeURIComponent(tok) + '&s=hq' : 'https://i.ytimg.com/vi/' + id + '/hqdefault.jpg');
     if (ph.getAttribute('src') !== want) ph.setAttribute('src', want);
     box.classList.remove('yt-started');
     box.innerHTML = ''; box.appendChild(el); box.appendChild(ph);
@@ -164,7 +165,7 @@
       fullscreen: { enabled: true, fallback: true, iosNative: false, container: '.yt-lock' }, // full screen on our box (the lock stays, and the player inside can be turned sideways)
       youtube: { noCookie: true, rel: 0, showinfo: 0, iv_load_policy: 3, modestbranding: 1, playsinline: 1, disablekb: 1, cc_load_policy: 0, fs: 0 }
     });
-    box._p = p; box.setAttribute('data-yt', id);
+    box._p = p; box._vid = id; box.setAttribute('data-yt', key);
     // Tap on the picture = play / pause on phones too. Plyr does this itself only with a mouse (on touch screens a tap
     // just shows its controls), so this runs exactly when Plyr's own click does not — never both.
     // a menu is open and the visitor clicks / taps the video: just close the menu (no play / pause)
@@ -189,7 +190,7 @@
     // YouTube's frame, and with it YouTube's middle play / pause icon changed size — so it is switched off.
     box._q = 'auto'; store.set('auto');
     box.classList.remove('yt-started', 'yt-go', 'yt-ready');
-    p.on('ready', function () { box.classList.add('yt-ready'); dress(box); sizeFrame(box); var wr = box.querySelector('.plyr__video-wrapper'); if (wr && ph.parentNode !== wr) wr.appendChild(ph); }); // under the controls
+    p.on('ready', function () { box.classList.add('yt-ready'); el.removeAttribute('data-plyr-embed-id'); dress(box); sizeFrame(box); var wr = box.querySelector('.plyr__video-wrapper'); if (wr && ph.parentNode !== wr) wr.appendChild(ph); }); // under the controls
     // our cover stays until YouTube really plays, so YouTube's own start screen / button never shows through
     p.on('play', function () { box.classList.add('yt-go'); });          // red button goes at the click, like YouTube
     p.on('playing', function () { box.classList.add('yt-started'); }); // the picture goes when YouTube really plays
@@ -202,13 +203,28 @@
     p.on('playing', function () { box.classList.remove('is-ended'); });
     return p;
   }
-  function init(box) { if (box._p || !window.Plyr) return; var id = box.getAttribute('data-yt'); if (/^[\w-]{11}$/.test(id || '')) make(box, id); }
-  function load(box, id, play) {
-    if (!/^[\w-]{11}$/.test(id)) return;
-    if (box._p) { try { box._p.destroy(); } catch (e) {} box._p = null; }
-    box._qSeen = false;
-    var p = make(box, id);
-    if (play) p.once('ready', function () { try { p.play(); } catch (e) {} });
+  // the id behind a token (asked once per token, kept only in this script's memory)
+  var ids = {};
+  function resolve(tok) {
+    if (/^[\w-]{11}$/.test(tok || '')) return Promise.resolve(tok); // an old page with a plain id
+    if (ids[tok]) return Promise.resolve(ids[tok]);
+    return fetch('/store/yt?play=' + encodeURIComponent(tok), { credentials: 'same-origin', headers: { 'X-YT': '1' } })
+      .then(function (r) { return r.json(); }).then(function (d) { if (!d || !d.v) throw new Error((d && d.error) || 'no video'); ids[tok] = d.v; return d.v; });
+  }
+  function failed(box, msg) { box.classList.add('yt-ready', 'yt-err'); box.setAttribute('data-msg', msg || 'This video could not be loaded. Please reload the page.'); }
+  function init(box) {
+    if (box._p || box._busy || !window.Plyr) return; var tok = box.getAttribute('data-yt'); if (!tok) return;
+    box._busy = true;
+    resolve(tok).then(function (id) { box._busy = false; make(box, id, /^[\w-]{11}$/.test(tok) ? '' : tok); }).catch(function (e) { box._busy = false; failed(box, e && e.message); });
+  }
+  function load(box, tok, play) { // another video in the same box (tok = a token, or an old plain id)
+    if (!tok) return;
+    resolve(tok).then(function (id) {
+      if (box._p) { try { box._p.destroy(); } catch (e) {} box._p = null; }
+      box._qSeen = false;
+      var p = make(box, id, /^[\w-]{11}$/.test(tok) ? '' : tok);
+      if (play) p.once('ready', function () { try { p.play(); } catch (e) {} });
+    }).catch(function (e) { failed(box, e && e.message); });
   }
   // no right-click, no dragging, no text selection inside a player
   document.addEventListener('contextmenu', function (e) { if (e.target.closest && e.target.closest('.yt-lock')) e.preventDefault(); });

@@ -58,7 +58,7 @@ $stEditProduct = (int)$p['id']; // admin bar: "Edit Course" / "Edit Notes"
 $stDesc = $p['subtitle'] ?: mb_substr(trim(strip_tags($desc)), 0, 160);
 // the picture shared on WhatsApp / Facebook / Google: the course's own thumbnail, else its intro video's picture
 $__shareImg = (string)($p['thumb'] ?? '');
-if ($__shareImg === '' && ($__iy = sh_yt_id((string)($p['intro_url'] ?? '')))) $__shareImg = 'https://i.ytimg.com/vi/' . $__iy . '/hqdefault.jpg';
+if ($__shareImg === '' && ($__iy = sh_yt_id((string)($p['intro_url'] ?? '')))) $__shareImg = sh_yt_thumb($__iy, 'hq');
 if ($__shareImg !== '') $stImage = str_starts_with($__shareImg, '/') ? rtrim(SITE_URL, '/') . $__shareImg : $__shareImg;
 $stIndex = $p['status'] === 'published';
 require ROOT_PATH . '/components/store-open.php';
@@ -88,7 +88,7 @@ $tabs = array_filter(['about' => $desc !== '' ? 'About' : '', 'content' => $isCo
 
 <div class="sp-wrap sp-body">
   <aside class="sp-card" id="buy">
-    <?php $introYt = $isCourse && !empty($p['intro_url']) ? sh_yt_id((string)$p['intro_url']) : null; $cardImg = $p['thumb'] ?: ($introYt ? 'https://i.ytimg.com/vi/' . $introYt . '/hqdefault.jpg' : ''); ?>
+    <?php $introYt = $isCourse && !empty($p['intro_url']) ? sh_yt_id((string)$p['intro_url']) : null; $cardImg = $p['thumb'] ?: ($introYt ? sh_yt_thumb($introYt, 'hq') : ''); ?>
     <?php if ($introYt): // the intro video plays right in the card ?>
     <div class="sp-media sp-intro-box"><?= sh_yt_lock_html($introYt, 'Intro: ' . $p['title'], '', (string)($p['thumb'] ?? '')) ?></div>
     <?php else: ?>

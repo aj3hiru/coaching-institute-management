@@ -80,3 +80,5 @@
 .yt-lock:not(.yt-ready){cursor:progress}
 @keyframes ytSpin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.yt-lock:not(.yt-ready)::after,.yt-lock.yt-go:not(.yt-started)::after{animation-duration:2s}}
+/* the video could not be given (e.g. logged out, or no access): a short message over the picture */
+.yt-lock.yt-err::before{content:attr(data-msg);position:absolute;left:12px;right:12px;top:50%;transform:translateY(-50%);z-index:7;padding:10px 12px;border-radius:6px;background:rgba(0,0,0,.72);color:#fff;font-size:14px;text-align:center}

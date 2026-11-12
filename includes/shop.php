@@ -557,6 +557,41 @@ function sh_secret(): string
     if (strlen($s) < 32) { $s = bin2hex(random_bytes(32)); edu_settings_save('shop', ['secret' => $s]); }
     return $s;
 }
+/* ---------- YouTube ids never written into the page ----------
+   A video id is sealed (AES-256-GCM with this site's secret) into a token; the page only carries tokens.
+   Pictures come through /store/yt?thumb=TOKEN (our server keeps a copy), and the player asks /store/yt?play=TOKEN
+   for the id only when it starts — for a lecture only a buyer / free preview / staff gets it. The same id always
+   gives the same token (cached pages keep working). $ctx: 'l' = a lecture (ref = lesson id), 'p' = public, 't' = picture. */
+function sh_yt_key(): string { static $k = null; return $k ??= hash('sha256', 'yt-seal|' . sh_secret(), true); }
+function sh_b64u(string $b): string { return rtrim(strtr(base64_encode($b), '+/', '-_'), '='); }
+function sh_yt_tok(string $id, string $ctx = 'p', int $ref = 0): string
+{
+    $plain = $id . '|' . $ctx . '|' . $ref;
+    $iv = substr(hash_hmac('sha256', $plain, sh_yt_key(), true), 0, 12); $tag = '';
+    $ct = openssl_encrypt($plain, 'aes-256-gcm', sh_yt_key(), OPENSSL_RAW_DATA, $iv, $tag, '', 16);
+    return sh_b64u($iv . $tag . $ct);
+}
+/** [id, ctx, ref] from a token, or null. */
+function sh_yt_open(string $t): ?array
+{
+    if (!preg_match('/^[A-Za-z0-9_-]{40,120}$/', $t)) return null;
+    $b = base64_decode(strtr($t, '-_', '+/') . str_repeat('=', (4 - strlen($t) % 4) % 4), true);
+    if ($b === false || strlen($b) < 29) return null;
+    $plain = openssl_decrypt(substr($b, 28), 'aes-256-gcm', sh_yt_key(), OPENSSL_RAW_DATA, substr($b, 0, 12), substr($b, 12, 16));
+    if ($plain === false || !preg_match('/^([\w-]{11})\|([a-z])\|(\d+)$/', $plain, $m)) return null;
+    return [$m[1], $m[2], (int)$m[3]];
+}
+/** Last step of a page: any YouTube picture address still in it (e.g. a course picture saved as a YouTube link)
+    becomes our own /store/yt?thumb=… address, so no video id is left in the HTML. */
+function sh_hide_yt(string $html): string
+{
+    if (stripos($html, 'ytimg.com') === false) return $html;
+    return preg_replace_callback('~(?:https?:)?//i\d?\.ytimg\.com/vi(?:_webp)?/([\w-]{11})/(maxres|hq|mq|sd)?default\.(?:jpg|webp)~i',
+        fn($m) => sh_yt_thumb($m[1], strtolower($m[2] ?? '') === 'mq' ? 'mq' : 'hq'), $html);
+}
+/** The video's picture through our own address (no id in the page). $size: hq | mq | maxres. */
+function sh_yt_thumb(string $id, string $size = 'hq'): string { return '/store/yt?thumb=' . sh_yt_tok($id, 't') . '&s=' . $size; }
+
 /** A link to a lesson video or a PDF, valid for $ttl seconds, for this buyer only. */
 function sh_media_link(string $kind, int $id, int $uid, int $ttl = 14400, string $q = ''): string
 {
@@ -1022,7 +1057,7 @@ function sh_video_probe(string $url): array
     if ($id = sh_yt_id($url)) {
         $j = json_decode(sh_http_get('https://www.youtube.com/oembed?format=json&url=' . rawurlencode('https://www.youtube.com/watch?v=' . $id), 8), true);
         if (empty($j['title'])) return ['ok' => false, 'kind' => 'youtube', 'error' => 'This YouTube video could not be found. Check that it is Public or Unlisted (not Private).'];
-        return ['ok' => true, 'kind' => 'youtube', 'title' => (string)$j['title'], 'by' => (string)($j['author_name'] ?? ''), 'duration' => sh_yt_duration($id), 'thumb' => 'https://i.ytimg.com/vi/' . $id . '/hqdefault.jpg'];
+        return ['ok' => true, 'kind' => 'youtube', 'title' => (string)$j['title'], 'by' => (string)($j['author_name'] ?? ''), 'duration' => sh_yt_duration($id), 'thumb' => sh_yt_thumb($id, 'hq')];
     }
     if (preg_match('~vimeo\.com/(?:video/)?(\d+)~', $url, $m)) {
         $j = json_decode(sh_http_get('https://vimeo.com/api/oembed.json?url=' . rawurlencode('https://vimeo.com/' . $m[1]), 8), true);
@@ -1057,7 +1092,7 @@ function sh_embed_url(string $url): string
 /** Locked YouTube player (our controls; YouTube's links, logo and suggestions cut off and not clickable). Prints Plyr once per page. */
 /** $poster: the picture shown at once (before YouTube has loaded) until the video plays — e.g. the course thumbnail;
     empty = the video's own YouTube thumbnail. */
-function sh_yt_lock_html(string $id, string $title = '', string $extra = '', string $poster = ''): string
+function sh_yt_lock_html(string $id, string $title = '', string $extra = '', string $poster = '', int $lesson = 0): string
 {
     static $assets = false;
     $h = '';
@@ -1065,13 +1100,14 @@ function sh_yt_lock_html(string $id, string $title = '', string $extra = '', str
         $assets = true;
         $v = fn($f) => @filemtime(ROOT_PATH . $f) ?: 1;
         // the player starts sooner: talk to YouTube while the page is still loading
-        $h = '<link rel="preconnect" href="https://www.youtube-nocookie.com"><link rel="preconnect" href="https://www.google.com"><link rel="preconnect" href="https://i.ytimg.com"><link rel="preconnect" href="https://s.ytimg.com">'
+        $h = '<link rel="preconnect" href="https://www.youtube-nocookie.com"><link rel="preconnect" href="https://www.google.com"><link rel="preconnect" href="https://s.ytimg.com">'
             . '<link rel="stylesheet" href="/assets/plyr/plyr.css?v=' . $v('/assets/plyr/plyr.css') . '"><link rel="stylesheet" href="/assets/css/yt-lock.css?v=' . $v('/assets/css/yt-lock.css') . '">'
             . '<script src="/assets/plyr/plyr.min.js?v=' . $v('/assets/plyr/plyr.min.js') . '" defer></script><script src="/assets/js/yt-lock.js?v=' . $v('/assets/js/yt-lock.js') . '" defer></script>';
     }
     $poster = trim($poster);
-    $src = $poster !== '' ? $poster : 'https://i.ytimg.com/vi/' . $id . '/hqdefault.jpg';
-    return $h . '<div class="yt-lock" data-yt="' . sh_e($id) . '"' . ($poster !== '' ? ' data-poster="' . sh_e($poster) . '" data-poster-id="' . sh_e($id) . '"' : '') . ' aria-label="' . sh_e($title ?: 'Video') . '"' . $extra . '><img class="yt-lock-ph" src="' . sh_e($src) . '" alt="" decoding="async"></div>';
+    $src = $poster !== '' ? $poster : sh_yt_thumb($id, 'hq');
+    $tok = sh_yt_tok($id, $lesson ? 'l' : 'p', $lesson); // the page carries this token, never the video id
+    return $h . '<div class="yt-lock" data-yt="' . sh_e($tok) . '"' . ($poster !== '' ? ' data-poster="' . sh_e($poster) . '" data-poster-id="' . sh_e($tok) . '"' : '') . ' aria-label="' . sh_e($title ?: 'Video') . '"' . $extra . '><img class="yt-lock-ph" src="' . sh_e($src) . '" alt="" decoding="async"></div>';
 }
 /** Post / page content: every YouTube video (an <iframe> embed, a WordPress embed block, or a link alone on its line)
     plays in our own locked player (sh_yt_lock_html) instead of YouTube's. */
@@ -1139,7 +1175,7 @@ function sh_embed_card(array $p, bool $big): string
 {
     $pdo = sh_db(); $isC = ($p['type'] ?? 'course') === 'course';
     $thumb = (string)($p['thumb'] ?? '');
-    if ($thumb === '' && ($iy = sh_yt_id((string)($p['intro_url'] ?? '')))) $thumb = 'https://i.ytimg.com/vi/' . $iy . '/hqdefault.jpg';
+    if ($thumb === '' && ($iy = sh_yt_id((string)($p['intro_url'] ?? '')))) $thumb = sh_yt_thumb($iy, 'hq');
     $n = $isC ? (int)$pdo->query("SELECT COUNT(*) FROM sh_lessons WHERE product_id = " . (int)$p['id'])->fetchColumn() : (int)$pdo->query("SELECT COUNT(*) FROM sh_files WHERE product_id = " . (int)$p['id'])->fetchColumn();
     $cat = sh_category_name($pdo, (int)($p['category_id'] ?? 0));
     $up = !empty($p['starts_at']) && strtotime((string)$p['starts_at']) >= strtotime('today');
@@ -1186,7 +1222,7 @@ function sh_lesson_thumb(array $l, array $p): string
 {
     if (!empty($l['thumb'])) return (string)$l['thumb']; // the lecture's own featured image
     if (($l['kind'] ?? 'video') === 'pdf') return '';
-    if (!empty($l['video_url']) && ($yid = sh_yt_id((string)$l['video_url']))) return 'https://i.ytimg.com/vi/' . $yid . '/mqdefault.jpg';
+    if (!empty($l['video_url']) && ($yid = sh_yt_id((string)$l['video_url']))) return sh_yt_thumb($yid, 'mq');
     return (string)($p['thumb'] ?? '');
 }
 /** The FREE badge (with the light sweep) for free lessons / PDFs. */
@@ -1288,8 +1324,8 @@ function sh_free_courses(PDO $pdo, int $limit = 0, int $cat = 0): array
     } catch (Throwable) { return []; }
     foreach ($rows as &$r) {
         $r['href'] = sh_url($r);
-        if (!$r['thumb'] && ($iy = sh_yt_id((string)($r['intro_url'] ?? '')))) $r['thumb'] = 'https://i.ytimg.com/vi/' . $iy . '/hqdefault.jpg';
-        if (!$r['thumb'] && ($v = $pdo->query("SELECT video_url FROM sh_lessons WHERE product_id = " . (int)$r['id'] . " AND video_url IS NOT NULL ORDER BY sort, id LIMIT 1")->fetchColumn()) && ($y = sh_yt_id((string)$v))) $r['thumb'] = 'https://i.ytimg.com/vi/' . $y . '/hqdefault.jpg';
+        if (!$r['thumb'] && ($iy = sh_yt_id((string)($r['intro_url'] ?? '')))) $r['thumb'] = sh_yt_thumb($iy, 'hq');
+        if (!$r['thumb'] && ($v = $pdo->query("SELECT video_url FROM sh_lessons WHERE product_id = " . (int)$r['id'] . " AND video_url IS NOT NULL ORDER BY sort, id LIMIT 1")->fetchColumn()) && ($y = sh_yt_id((string)$v))) $r['thumb'] = sh_yt_thumb($y, 'hq');
     }
     unset($r);
     return sh_free_teachers($pdo, $rows);
@@ -1389,7 +1425,7 @@ function sh_yt_video_info(string $url): array
     if (!$id) return ['error' => 'Paste a YouTube video link (youtube.com/watch?v=… or youtu.be/…).'];
     $o = json_decode(sh_http_get('https://www.youtube.com/oembed?format=json&url=' . rawurlencode('https://www.youtube.com/watch?v=' . $id), 10), true) ?: [];
     if (empty($o['title'])) return ['error' => 'Could not read this video. It must be Public or Unlisted.'];
-    return ['id' => $id, 'title' => (string)$o['title'], 'channel' => (string)($o['author_name'] ?? ''), 'thumb' => 'https://i.ytimg.com/vi/' . $id . '/hqdefault.jpg', 'duration' => sh_yt_duration($id)];
+    return ['id' => $id, 'title' => (string)$o['title'], 'channel' => (string)($o['author_name'] ?? ''), 'thumb' => sh_yt_thumb($id, 'hq'), 'duration' => sh_yt_duration($id)];
 }
 /** Course pages call this: chapters linked to a playlist look for new videos at most every 6 hours. */
 function sh_yt_autosync(PDO $pdo, int $pid): void
@@ -1424,7 +1460,7 @@ function sh_yt_free_info(string $url): array
     if (empty($o['title'])) return ['error' => 'Could not read this link. Make sure the playlist is Public or Unlisted on YouTube, then try again.'];
     $videos = null;
     if ($list !== '') { $pl = sh_yt_playlist($list); if ($pl) { $videos = count($pl); if ($vid === '') $vid = (string)array_values($pl)[0][0]; } }
-    $thumb = (string)($o['thumbnail_url'] ?? ''); if ($thumb === '' && $vid !== '') $thumb = 'https://i.ytimg.com/vi/' . $vid . '/hqdefault.jpg';
+    $thumb = (string)($o['thumbnail_url'] ?? ''); if ($thumb === '' && $vid !== '') $thumb = sh_yt_thumb($vid, 'hq');
     return ['list' => $list, 'video' => $vid, 'title' => (string)$o['title'], 'thumb' => $thumb, 'channel' => (string)($o['author_name'] ?? ''), 'videos' => $videos, 'error' => ''];
 }
 /** Homepage sections in their default order: id => default heading (Customize → Homepage changes order, headings, show / hide). */

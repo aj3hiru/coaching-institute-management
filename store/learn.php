@@ -77,7 +77,7 @@ $ico = fn($n) => sh_icon($n);
           <div class="st-menu" hidden><div class="st-menu-h">Speed</div><div class="st-menu-r" data-speed><?php foreach (['0.5', '0.75', '1', '1.25', '1.5', '1.75', '2'] as $sp): ?><button type="button" data-v="<?= $sp ?>"<?= $sp === '1' ? ' class="on"' : '' ?>><?= $sp === '1' ? 'Normal' : $sp . 'x' ?></button><?php endforeach; ?></div>
           <div class="st-menu-h">Quality</div><div class="st-menu-r" data-quality><button type="button" data-v="auto" class="on">Auto</button><?php foreach ($srcs as $sx): ?><button type="button" data-v="<?= sh_e($sx['q']) ?>"><?= sh_e($sx['label']) ?></button><?php endforeach; ?></div></div></div>
       <?php elseif ($lesson['video_url'] && ($ytL = sh_yt_id((string)$lesson['video_url']))): ?>
-        <?= sh_yt_lock_html($ytL, (string)$lesson['title']) ?>
+        <?= sh_yt_lock_html($ytL, (string)$lesson['title'], '', '', (int)$lesson['id']) ?>
       <?php elseif ($lesson['video_url']): ?>
         <iframe src="<?= sh_e(sh_embed_url((string)$lesson['video_url'])) ?>" title="<?= sh_e($lesson['title']) ?>" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
       <?php else: ?><div class="lp-novid">The video for this lesson is being uploaded.</div><?php endif; ?>

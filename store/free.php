@@ -33,7 +33,7 @@ $ico = fn($n) => sh_icon($n);
     <div class="fr-play"><?= sh_yt_lock_html($first, (string)$f['title'], ' id="frPlayer"') ?></div>
     <?php if (count($vids) > 1): ?>
     <aside class="fr-list" aria-label="Lessons"><div class="fr-list-h"><b>Lessons</b><span><?= count($vids) ?> videos</span></div>
-      <ol id="frList"><?php foreach ($vids as $k => [$vid, $vt]): ?><li><button type="button" data-v="<?= sh_e($vid) ?>"<?= $vid === $first ? ' class="on" aria-current="true"' : '' ?>><span class="fr-n"><?= $k + 1 ?></span><img src="https://i.ytimg.com/vi/<?= sh_e($vid) ?>/mqdefault.jpg" alt="" loading="lazy"><span class="fr-t"><?= sh_e($vt !== '' ? $vt : 'Lesson ' . ($k + 1)) ?></span></button></li><?php endforeach; ?></ol>
+      <ol id="frList"><?php foreach ($vids as $k => [$vid, $vt]): ?><li><button type="button" data-v="<?= sh_e(sh_yt_tok($vid)) ?>"<?= $vid === $first ? ' class="on" aria-current="true"' : '' ?>><span class="fr-n"><?= $k + 1 ?></span><img src="<?= sh_e(sh_yt_thumb($vid, 'mq')) ?>" alt="" loading="lazy"><span class="fr-t"><?= sh_e($vt !== '' ? $vt : 'Lesson ' . ($k + 1)) ?></span></button></li><?php endforeach; ?></ol>
     </aside>
     <script>
     (function () { // pick a lesson / next lesson plays by itself at the end
