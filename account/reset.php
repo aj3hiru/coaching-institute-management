@@ -17,7 +17,7 @@ if ($u && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     elseif (strlen($p1) < 4) $err = 'The password must have at least 4 characters.';
     elseif ($p1 !== (string)($_POST['pass2'] ?? '')) $err = 'The two passwords are not the same.';
     else {
-        $pdo->prepare("UPDATE sh_users SET pass = ?, reset_hash = NULL, reset_until = NULL WHERE id = ?")->execute([password_hash($p1, PASSWORD_DEFAULT), $u['id']]);
+        $pdo->prepare("UPDATE sh_users SET pass = ?, reset_hash = NULL, reset_until = NULL, sess_key = NULL WHERE id = ?")->execute([password_hash($p1, PASSWORD_DEFAULT), $u['id']]);
         header('Location: /account/login?reset=1'); exit;
     }
 }

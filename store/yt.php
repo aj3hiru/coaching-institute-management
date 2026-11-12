@@ -21,8 +21,7 @@ if (isset($_GET['thumb'])) {
         @file_put_contents($file . '.tmp', $img, LOCK_EX); @rename($file . '.tmp', $file);
     }
     $et = '"' . substr(md5_file($file), 0, 16) . '"';
-    header('Content-Type: image/jpeg'); header('Cache-Control: public, max-age=2592000, immutable'); header('ETag: ' . $et);
-    header('X-Robots-Tag: noindex');
+    header('Content-Type: image/jpeg'); header('Cache-Control: public, max-age=2592000, immutable'); header('ETag: ' . $et); // pictures may be indexed (Google Images / Discover)
     if (($_SERVER['HTTP_IF_NONE_MATCH'] ?? '') === $et) { http_response_code(304); exit; }
     header('Content-Length: ' . filesize($file));
     readfile($file); exit;

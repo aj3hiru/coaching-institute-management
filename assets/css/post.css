@@ -20,3 +20,5 @@
 .single-post .blog-comment-item.blog-comment-reply{width:auto;box-sizing:border-box;margin-left:18px;padding-left:14px}@media (max-width:767px){.single-post .blog-comment-item.blog-comment-reply{margin-left:10px;padding-left:12px}}
 /* Tables inside the scroll wrapper stay real tables: the title row, header and body share one width (phones scroll the wrapper, not the table) */
 @media (max-width:767px){.entry-content .nb-tw>table{display:table;width:100%;overflow:visible;white-space:normal}.entry-content .nb-tw>table>thead,.entry-content .nb-tw>table>tbody,.entry-content .nb-tw>table>tfoot{display:revert;width:auto;min-width:0}}
+/* phones: lists in a post keep room for their bullets / numbers (they were flush against the screen edge) */
+@media (max-width:767px){.single-post .content.entry-content ul,.single-post .content.entry-content ol{margin:0 0 16px;padding-left:1.5em}.single-post .content.entry-content li{margin:0 0 .4em;padding-left:.15em}.single-post .content.entry-content li>ul,.single-post .content.entry-content li>ol{margin:.4em 0 .2em;padding-left:1.2em}}

@@ -22,6 +22,7 @@ require ROOT_PATH . '/components/store-open.php';
   <?= sh_auth_side('login') ?>
   <section class="au-main">
     <?php if (isset($_GET['reset'])): ?><div class="st-msg ok">Your new password is saved. Please log in.</div><?php endif; ?>
+    <?php if (($_SESSION['sh_kicked'] ?? '') === 'another'): unset($_SESSION['sh_kicked']); ?><div class="st-msg err">You were logged out because your account was opened on another device. Log in again to continue here.</div><?php endif; ?>
     <?php if ($err): ?><div class="st-msg err"><?= sh_e($err) ?></div><?php endif; ?>
     <form method="post" novalidate class="au-form"><?= sh_csrf_field() ?><input type="hidden" name="next" value="<?= sh_e($next) ?>">
       <div class="au-f"><label class="au-sr" for="li-id">Mobile number or email</label><div class="au-in"><?= sh_auth_icon('user') ?><input id="li-id" placeholder="Mobile number or email" name="id" autocomplete="username" required autofocus></div></div>

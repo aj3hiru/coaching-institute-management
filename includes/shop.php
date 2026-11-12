@@ -14,7 +14,7 @@
  */
 require_once __DIR__ . '/settings.php';
 
-const SH_SCHEMA = 20;
+const SH_SCHEMA = 21;
 
 function sh_db(): PDO
 {
@@ -91,6 +91,7 @@ function sh_tables(PDO $pdo): void
     $add = function (string $tb, string $c, string $def) use ($pdo, $col) { if (!$col($tb, $c)) $pdo->exec("ALTER TABLE `$tb` ADD COLUMN $c $def"); };
     $add('sh_products', 'teacher_id', 'INT UNSIGNED NULL');
     $add('sh_products', 'faq', 'TEXT NULL');
+    $add('sh_users', 'sess_key', 'CHAR(64) NULL'); // 21: the one device the student is logged in on (hash of its token)
     $add('sh_products', 'includes', 'TEXT NULL');
     $add('sh_lessons', 'unit_id', 'INT UNSIGNED NULL');
     $add('sh_lessons', 'lecture_no', 'INT UNSIGNED NULL');
@@ -305,17 +306,69 @@ function sh_csrf_ok(?string $t = null): bool
 
 /* ---------- buyers (accounts) ---------- */
 
+/* Student log-in that lasts, on one device at a time.
+   - At log-in the browser gets a long random token in the sh_rm cookie (HttpOnly, 1 year); only its hash is kept
+     (sh_users.sess_key). When the PHP session is gone (idle), the token logs the student in again silently.
+   - Logging in on another phone / computer makes a new token, so the old device's token and session stop working:
+     its next page logs it out ("opened on another device"). Any number of logins are allowed — the newest wins.
+   - Log out and a new password (reset link) end it everywhere. */
+const SH_RM_COOKIE = 'sh_rm';
+function sh_rm_cookie(string $v, int $exp): void
+{
+    if (headers_sent()) return;
+    $sec = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
+    setcookie(SH_RM_COOKIE, $v, ['expires' => $exp, 'path' => '/', 'secure' => $sec, 'httponly' => true, 'samesite' => 'Lax']);
+}
+/** This device becomes the student's one logged-in device. */
+function sh_session_bind(int $uid): void
+{
+    $tok = bin2hex(random_bytes(32)); $hash = hash('sha256', $tok);
+    sh_db()->prepare("UPDATE sh_users SET sess_key = ? WHERE id = ?")->execute([$hash, $uid]);
+    $_SESSION['sh_uid'] = $uid; $_SESSION['sh_sk'] = $hash;
+    sh_rm_cookie($uid . '.' . $tok, time() + 365 * 86400);
+}
+function sh_session_end(string $why = ''): void
+{
+    unset($_SESSION['sh_uid'], $_SESSION['sh_sk']);
+    if ($why !== '') $_SESSION['sh_kicked'] = $why;
+    sh_rm_cookie('', time() - 3600);
+    if (!headers_sent()) sh_mark_cookie(null);
+}
 function sh_user(): ?array
 {
     static $u = false;
     if ($u !== false) return $u;
+    $pdo = sh_db();
     $id = (int)($_SESSION['sh_uid'] ?? 0);
-    if (!$id) return $u = null;
-    $q = sh_db()->prepare("SELECT * FROM sh_users WHERE id = ? AND status = 'active'");
-    $q->execute([$id]);
-    $u = $q->fetch(PDO::FETCH_ASSOC) ?: null;
-    if (!$u) { unset($_SESSION['sh_uid']); if (!headers_sent()) sh_mark_cookie(null); }
-    return $u;
+    if ($id) {
+        $q = $pdo->prepare("SELECT * FROM sh_users WHERE id = ? AND status = 'active'"); $q->execute([$id]);
+        $u = $q->fetch(PDO::FETCH_ASSOC) ?: null;
+        if (!$u) { sh_session_end(); return $u = null; }
+        $mine = (string)($_SESSION['sh_sk'] ?? '');
+        if ($mine === '') {
+            // logged in before this check existed: this device takes the account (only if no device has it yet)
+            if (empty($u['sess_key'])) {
+                if (session_status() === PHP_SESSION_ACTIVE) { sh_session_bind($id); $u['sess_key'] = $_SESSION['sh_sk']; } // (a closed session waits for the next page)
+                return $u;
+            }
+            sh_session_end('another'); return $u = null;
+        }
+        if (empty($u['sess_key']) || !hash_equals((string)$u['sess_key'], $mine)) { sh_session_end('another'); return $u = null; }
+        return $u;
+    }
+    // no session (it expired): the device's token logs the student in again
+    $c = (string)($_COOKIE[SH_RM_COOKIE] ?? '');
+    if (!preg_match('/^(\d{1,10})\.([a-f0-9]{64})$/', $c, $m)) return $u = null;
+    $q = $pdo->prepare("SELECT * FROM sh_users WHERE id = ? AND status = 'active'"); $q->execute([(int)$m[1]]);
+    $row = $q->fetch(PDO::FETCH_ASSOC);
+    if (!$row || empty($row['sess_key']) || !hash_equals((string)$row['sess_key'], hash('sha256', $m[2]))) {
+        sh_session_end($row && !empty($row['sess_key']) ? 'another' : ''); return $u = null;
+    }
+    if (session_status() === PHP_SESSION_ACTIVE && !headers_sent()) session_regenerate_id(true);
+    $_SESSION['sh_uid'] = (int)$row['id']; $_SESSION['sh_sk'] = (string)$row['sess_key'];
+    $__nm = preg_split('/\s+/', trim((string)$row['name'])); sh_mark_cookie($__nm[0], sh_avatar_url($row), count($__nm) > 1 ? (string)end($__nm) : '');
+    sh_rm_cookie($c, time() + 365 * 86400); // a full year again from now
+    return $u = $row;
 }
 
 /** A small cookie (no secrets) so cached pages can show "My Library" instead of "Log in" in this browser. */
@@ -360,7 +413,7 @@ function sh_avatar_save(array $file, int $uid): array
 function sh_login_user(array $u): void
 {
     session_regenerate_id(true);
-    $_SESSION['sh_uid'] = (int)$u['id'];
+    sh_session_bind((int)$u['id']); // this device now holds the account; any other device is logged out on its next page
     $__nm = preg_split('/\s+/', trim((string)$u['name'])); sh_mark_cookie($__nm[0], sh_avatar_url($u), count($__nm) > 1 ? (string)end($__nm) : '');
     sh_db()->prepare("UPDATE sh_users SET last_login = NOW() WHERE id = ?")->execute([$u['id']]);
 }
@@ -588,6 +641,24 @@ function sh_hide_yt(string $html): string
     if (stripos($html, 'ytimg.com') === false) return $html;
     return preg_replace_callback('~(?:https?:)?//i\d?\.ytimg\.com/vi(?:_webp)?/([\w-]{11})/(maxres|hq|mq|sd)?default\.(?:jpg|webp)~i',
         fn($m) => sh_yt_thumb($m[1], strtolower($m[2] ?? '') === 'mq' ? 'mq' : 'hq'), $html);
+}
+/** The picture a shared link of a course / notes / its lectures shows: its own thumbnail, else its intro video's picture,
+    else its first lecture's picture (absolute address), else ''. */
+function sh_share_image(array $p): string
+{
+    $img = (string)($p['thumb'] ?? '');
+    if ($img === '' && ($iy = sh_yt_id((string)($p['intro_url'] ?? '')))) $img = sh_yt_thumb($iy, 'hq');
+    if ($img === '' && ($p['type'] ?? '') === 'course') {
+        try { $v = sh_db()->prepare("SELECT video_url FROM sh_lessons WHERE product_id = ? AND video_url LIKE '%you%' ORDER BY sort, id LIMIT 1"); $v->execute([(int)$p['id']]);
+            if ($y = sh_yt_id((string)$v->fetchColumn())) $img = sh_yt_thumb($y, 'hq'); } catch (Throwable) {}
+    }
+    if ($img !== '' && str_starts_with($img, 'https://i.ytimg.com/')) $img = sh_hide_yt($img);
+    return $img === '' ? '' : (str_starts_with($img, '/') ? rtrim(SITE_URL, '/') . $img : $img);
+}
+/** Link-preview and search robots (WhatsApp, Facebook, X, Telegram, LinkedIn, Google, Bing …). */
+function sh_is_bot(): bool
+{
+    return (bool)preg_match('~bot\b|crawler|spider|facebookexternalhit|facebookcatalog|whatsapp|telegram|twitterbot|slackbot|linkedinbot|discordbot|pinterest|skypeuripreview|embedly|googlebot|google-inspectiontool|bingbot|yandex|duckduckbot|applebot|snapchat|redditbot~i', (string)($_SERVER['HTTP_USER_AGENT'] ?? ''));
 }
 /** The video's picture through our own address (no id in the page). $size: hq | mq | maxres. */
 function sh_yt_thumb(string $id, string $size = 'hq'): string { return '/store/yt?thumb=' . sh_yt_tok($id, 't') . '&s=' . $size; }

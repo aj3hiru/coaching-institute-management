@@ -56,11 +56,11 @@ $short = function (string $n) { $p = preg_split('/\s+/', trim(preg_replace('/\(.
 $stTitle = $p['title'];
 $stEditProduct = (int)$p['id']; // admin bar: "Edit Course" / "Edit Notes"
 $stDesc = $p['subtitle'] ?: mb_substr(trim(strip_tags($desc)), 0, 160);
-// the picture shared on WhatsApp / Facebook / Google: the course's own thumbnail, else its intro video's picture
-$__shareImg = (string)($p['thumb'] ?? '');
-if ($__shareImg === '' && ($__iy = sh_yt_id((string)($p['intro_url'] ?? '')))) $__shareImg = sh_yt_thumb($__iy, 'hq');
-if ($__shareImg !== '') $stImage = str_starts_with($__shareImg, '/') ? rtrim(SITE_URL, '/') . $__shareImg : $__shareImg;
+// the picture shared on WhatsApp / Facebook / Google: the course's own thumbnail, else its intro video's / first lecture's picture
+if (($__img = sh_share_image($p)) !== '') $stImage = $__img;
 $stIndex = $p['status'] === 'published';
+$stCanonical = rtrim(SITE_URL, '/') . sh_url($p); // one address for Google (no ?s= / tracking copies)
+$stOgTitle = $p['title'] . ' | ' . edu_site_name();
 require ROOT_PATH . '/components/store-open.php';
 $ico = fn($n) => sh_icon($n);
 $tabs = array_filter(['about' => $desc !== '' ? 'About' : '', 'content' => $isCourse || $files ? 'Content' : '', 'included' => 'Included', 'reviews' => 'Reviews' . ($rt['count'] ? ' (' . $rt['count'] . ')' : '')]);
@@ -218,4 +218,28 @@ $tabs = array_filter(['about' => $desc !== '' ? 'About' : '', 'content' => $isCo
 <div class="st-mbar"><div class="sp-price"><?= $own ? '<span class="sp-owned">' . $ico('check') . ' In your library</span>' : ($off ? '<s>' . sh_money($p['mrp']) . '</s>' : '') . ($isFree ? $priceTxt : '<b>' . $priceTxt . '</b>') ?></div>
   <?php if ($own): ?><a class="sp-btn" href="<?= sh_e($lu()) ?>"><?= $isCourse ? 'Continue' : 'Open notes' ?></a><?php else: ?><button type="button" class="sp-btn" onclick="var b=document.querySelector('.sp-card [data-buy], .sp-card a.sp-btn');b.scrollIntoView({block:'center'});b.click();"><?= $joinTxt ?></button><?php endif; ?></div>
 <?php if ($u && !$own): ?><script>window.ST_BUYER = <?= json_encode(['name' => $u['name'], 'email' => $u['email'], 'contact' => $u['mobile']], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) ?>; window.ST_SITE = <?= json_encode(edu_site_name(), JSON_HEX_TAG) ?>;</script><?php endif; ?>
+<?php // structured data for Google: the course (or notes pack) with its price, the path to it, and its own FAQ
+$__url = rtrim(SITE_URL, '/') . sh_url($p); $__site = edu_site_name();
+$__org = ['@type' => 'EducationalOrganization', '@id' => rtrim(SITE_URL, '/') . '/#organization', 'name' => $__site, 'url' => rtrim(SITE_URL, '/')];
+$__offer = ['@type' => 'Offer', 'category' => (float)$p['price'] > 0 ? 'Paid' : 'Free', 'price' => number_format(max(0, (float)$p['price']), 2, '.', ''), 'priceCurrency' => 'INR',
+    'availability' => 'https://schema.org/InStock', 'url' => $__url];
+$__rating = $rt['count'] ? ['@type' => 'AggregateRating', 'ratingValue' => number_format($rt['avg'], 1), 'reviewCount' => (string)$rt['count'], 'bestRating' => '5', 'worstRating' => '1'] : null;
+$__desc = $stDesc ?: $p['title'];
+if ($isCourse) {
+    $__inst = ['@type' => 'CourseInstance', 'courseMode' => 'Online'];
+    if ($total) $__inst['courseWorkload'] = 'PT' . max(1, (int)round($total / 3600)) . 'H';
+    $__main = array_filter(['@type' => 'Course', '@id' => $__url . '#course', 'name' => $p['title'], 'description' => $__desc, 'url' => $__url, 'image' => $stImage ?? null,
+        'provider' => $__org, 'publisher' => $__org, 'offers' => [$__offer], 'hasCourseInstance' => [$__inst], 'aggregateRating' => $__rating,
+        'educationalLevel' => $className !== '' ? $className : null, 'isAccessibleForFree' => (float)$p['price'] <= 0]);
+} else {
+    $__main = array_filter(['@type' => 'Product', '@id' => $__url . '#product', 'name' => $p['title'], 'description' => $__desc, 'url' => $__url, 'image' => $stImage ?? null,
+        'brand' => ['@type' => 'Brand', 'name' => $__site], 'category' => 'Study material (PDF)', 'offers' => $__offer, 'aggregateRating' => $__rating]);
+}
+$__graph = [$__main, ['@type' => 'BreadcrumbList', '@id' => $__url . '#breadcrumb', 'itemListElement' => [
+    ['@type' => 'ListItem', 'position' => 1, 'name' => 'Home', 'item' => rtrim(SITE_URL, '/') . '/'],
+    ['@type' => 'ListItem', 'position' => 2, 'name' => $isCourse ? 'Courses' : 'PDF Notes', 'item' => rtrim(SITE_URL, '/') . ($isCourse ? '/courses/' : '/notes/')],
+    ['@type' => 'ListItem', 'position' => 3, 'name' => $p['title'], 'item' => $__url]]]];
+if ($myFaq) $__graph[] = ['@type' => 'FAQPage', '@id' => $__url . '#faq', 'mainEntity' => array_map(fn($f) => ['@type' => 'Question', 'name' => $f['q'], 'acceptedAnswer' => ['@type' => 'Answer', 'text' => $f['a']]], $myFaq)];
+?>
+<script type="application/ld+json"><?= json_encode(['@context' => 'https://schema.org', '@graph' => $__graph], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) ?></script>
 <?php require ROOT_PATH . '/components/store-close.php'; ?>

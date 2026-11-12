@@ -11,8 +11,13 @@ $seo = [
     'description' => $stDesc ?? ($stTitle ?? 'Courses and notes'),
     'image' => !empty($stImage) ? $stImage : (defined('SEO_DEFAULT_IMAGE') ? SEO_DEFAULT_IMAGE : ''),
     'type' => 'website',
-    'robots' => !empty($stIndex) ? 'index, follow' : 'noindex, nofollow',
+    // indexed store pages may show a large picture in Google Search / Discover
+    'robots' => !empty($stRobots) ? $stRobots : (!empty($stIndex) ? 'index, follow, max-snippet:-1, max-video-preview:-1, max-image-preview:large' : 'noindex, nofollow'),
 ];
+if (!empty($stOgTitle)) $seo['og_title'] = $stOgTitle;          // what a shared link shows (e.g. a lecture shows its course)
+if (!empty($stOgDesc)) $seo['og_description'] = $stOgDesc;
+if (!empty($stCanonical)) $seo_canonical = $stCanonical;       // the page Google should count (e.g. a lecture → its course page)
+if (empty($stIndex) && !headers_sent()) header('X-Robots-Tag: noindex');
 ?>
 <!DOCTYPE html>
 <html lang="en">

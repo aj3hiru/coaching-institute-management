@@ -32,6 +32,8 @@ if (!$file && !$lesson) { // nothing asked (or not found): the first lesson / PD
 }
 $item = $lesson ?: $file;
 if (!$item || (!$own && empty($item['free']))) { // a paid lesson for someone who has not bought it
+    // a shared lecture link opened by WhatsApp / Facebook / Google …: they get the course page (its picture and name)
+    if (!$u && sh_is_bot()) { header('Location: ' . rtrim(SITE_URL, '/') . sh_url($p), true, 302); exit; }
     if (!$u && $item) { header('Location: /account/login?next=' . rawurlencode($_SERVER['REQUEST_URI'])); exit; }
     header('Location: ' . sh_url($p) . '#content'); exit;
 }
@@ -50,6 +52,14 @@ $lockedLeft = count($all) - count($openList) + count(array_filter($files, fn($f)
 
 $wm = ''; // no watermark on videos or PDFs
 $stTitle = ($item['title'] ?? $p['title']) . ' — ' . $p['title'];
+// a lecture is not a search result of its own (noindex) — its course page is (canonical); a shared lecture link shows
+// the course: its name, its short text and its picture
+$stRobots = 'noindex, follow';
+$stCanonical = rtrim(SITE_URL, '/') . sh_url($p);
+$stOgTitle = $p['title'] . ' | ' . edu_site_name();
+$stOgDesc = trim((string)($p['subtitle'] ?? '')) !== '' ? (string)$p['subtitle'] : mb_substr(trim(preg_replace('/\s+/', ' ', strip_tags((string)($p['description'] ?? '')))), 0, 160);
+$stDesc = $stOgDesc;
+$stImage = sh_share_image($p);
 require ROOT_PATH . '/components/store-open.php';
 $ico = fn($n) => sh_icon($n);
 ?>

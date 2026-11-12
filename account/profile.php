@@ -41,6 +41,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             if (strlen($new) < 4) throw new RuntimeException('The new password must have at least 4 characters.');
             $pdo->prepare("UPDATE sh_users SET pass = ? WHERE id = ?")->execute([password_hash($new, PASSWORD_DEFAULT), $u['id']]);
             session_regenerate_id(true);
+            sh_session_bind((int)$u['id']); // a new password: only this device stays logged in
             header('Location: /account/profile?pw=1'); exit;
         }
     } catch (RuntimeException $e) {

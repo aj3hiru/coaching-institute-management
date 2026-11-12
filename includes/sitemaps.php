@@ -209,7 +209,11 @@ function edu_sm_store_rows(PDO $pdo, string $b): array
 {
     $last = edu_sm_store_last($pdo);
     $rows = [[$b . '/courses/', $last], [$b . '/notes/', $last]];
-    foreach ($pdo->query("SELECT slug, type, COALESCE(updated_at, created_at) m FROM sh_products WHERE status = 'published' ORDER BY id DESC") as $p) $rows[] = [$b . sh_url($p), $p['m']];
+    // each course / notes pack with its picture (Google Images / Discover)
+    foreach ($pdo->query("SELECT id, slug, type, thumb, intro_url, COALESCE(updated_at, created_at) m FROM sh_products WHERE status = 'published' ORDER BY id DESC") as $p) {
+        $img = function_exists('sh_share_image') ? sh_share_image($p) : '';
+        $rows[] = [$b . sh_url($p), $p['m'], $img !== '' ? [$img] : []];
+    }
     try { foreach ($pdo->query("SELECT c.slug, MAX(COALESCE(p.updated_at, p.created_at)) m FROM sh_categories c JOIN sh_products p ON p.category_id = c.id AND p.status = 'published' WHERE c.status = 'active' GROUP BY c.id") as $c) $rows[] = [$b . sh_cat_url($c['slug']), $c['m']]; } catch (Throwable) {}
     try { $fr = $pdo->query("SELECT MAX(COALESCE(updated_at, created_at)) FROM sh_products WHERE type = 'course' AND status = 'published' AND free_list = 1")->fetchColumn(); // the free courses themselves are listed with the courses
         if ($fr) $rows[] = [$b . '/free-courses/', $fr]; } catch (Throwable) {}

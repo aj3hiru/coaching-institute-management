@@ -8,8 +8,9 @@ $site = (string)($_SERVER['HTTP_SEC_FETCH_SITE'] ?? '');
 $ref = (string)parse_url((string)($_SERVER['HTTP_REFERER'] ?? ''), PHP_URL_HOST);
 $same = $site === 'same-origin' || ($site === '' && $ref !== '' && strcasecmp($ref, (string)($_SERVER['HTTP_HOST'] ?? '')) === 0);
 if ($post || (($_SERVER['REQUEST_METHOD'] ?? '') === 'GET' && $same)) {
-    unset($_SESSION['sh_uid']);
+    $__id = (int)($_SESSION['sh_uid'] ?? 0);
+    if ($__id) try { sh_db()->prepare("UPDATE sh_users SET sess_key = NULL WHERE id = ? AND sess_key = ?")->execute([$__id, (string)($_SESSION['sh_sk'] ?? '')]); } catch (Throwable) {}
+    sh_session_end();
     session_regenerate_id(true);
-    sh_mark_cookie(null);
 }
 header('Location: /store/');
