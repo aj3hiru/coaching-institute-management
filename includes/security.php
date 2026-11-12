@@ -113,3 +113,6 @@ if (!function_exists('edu_is_super')) {
     /** Admin-area maintenance mode (switched by the superadmin from the admin bar). */
     function edu_maintenance_on(): bool { return function_exists('es') && (string)es('general', 'maint_admin', '0') === '1'; }
 }
+
+// Site Health: watch every web request for PHP problems and slow / heavy pages (see includes/health.php)
+if (PHP_SAPI !== 'cli' && is_file(__DIR__ . '/health.php')) { require_once __DIR__ . '/health.php'; edu_health_boot(); }

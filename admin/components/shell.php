@@ -153,6 +153,7 @@ function admin_shell_nav(): array
                 $link($isAdmin, 'Cron Manager', '/admin/cron-manager.php', 'fa-clock'),
             ])],
             $link(admin_can('security.view_logs'), 'Activity Logs', '/admin/activity-logs.php', 'fa-history'),
+            $link(function_exists('edu_is_super') && edu_is_super(), 'Site Health', '/admin/site-health.php', 'fa-heart-pulse'), // superadmin only
         ]],
         ['label' => 'System', 'items' => [
             $link(true, 'My Profile', '/admin/my-profile.php', 'fa-user-circle'),
@@ -209,6 +210,7 @@ function admin_shell_head(): void
     $v = @filemtime(($_SERVER['DOCUMENT_ROOT'] ?? '') . '/assets/css/admin-ui.css') ?: 1;
     $fav = function_exists('es') ? (string)es('general', 'favicon', '') : '';
     echo '<link rel="icon" href="' . htmlspecialchars($fav ?: '/assets/icons/favicon.ico') . '">' . "\n";
+    if (function_exists('edu_health_js_tag')) echo edu_health_js_tag() . "\n"; // Site Health: browser errors
     echo '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">' . "\n";
     echo '<link rel="stylesheet" href="/assets/css/admin-ui.css?v=' . $v . '">' . "\n";
     // WordPress-style toolbar (includes/wpbar.php)

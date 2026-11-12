@@ -1,6 +1,7 @@
 <?php require_once INCLUDES_PATH . '/settings.php'; require_once INCLUDES_PATH . '/theme.php';
 // shortcodes ([site_title], [year] …) work in SEO titles and descriptions too
 if (isset($seo) && is_array($seo) && function_exists('edu_shortcodes')) foreach (['title', 'description', 'og_title', 'og_description'] as $__k) if (isset($seo[$__k]) && is_string($seo[$__k])) $seo[$__k] = edu_shortcodes($seo[$__k], true); ?>
+<?php if (function_exists('edu_health_js_tag')) echo edu_health_js_tag(); // Site Health: browser errors (at most 3 per page) ?>
 <?php require_once INCLUDES_PATH . '/seo.php'; if (edu_seo_advanced()): require_once INCLUDES_PATH . '/seo_head.php'; echo edu_seo_head_advanced($seo, (string)$seo_canonical, $seo_ctx ?? []); else: ?>
 <!-- SEO Meta Tags -->
 <meta name="description" content="<?= htmlspecialchars($seo['description'], ENT_QUOTES, 'UTF-8') ?>">
