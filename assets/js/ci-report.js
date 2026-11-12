@@ -33,15 +33,18 @@
         };
     }
 
-    function draw(d) {
-        var doc = new window.jspdf.jsPDF({ unit: 'pt', format: 'a4', orientation: d.landscape ? 'landscape' : 'portrait' });
+    // K = how tight the layout is (1 = normal). ciReportPdf tries a tighter K when that saves a page (a report that
+    // only spills a few rows / the sign-off onto page 2 then fits on one page); save = false only builds the document.
+    function draw(d, K, save) {
+        K = K || 1;
+        var doc = new window.jspdf.jsPDF({ unit: 'pt', format: 'a4', orientation: d.landscape ? 'landscape' : 'portrait', compress: true });
         var W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight(), M = 40, CW = W - 2 * M, y;
         var inst = d.institute || {};
         function font(style, size, color) { doc.setFont('helvetica', style); doc.setFontSize(size); doc.setTextColor.apply(doc, color || INK); }
         function rule(x1, y1, x2, y2, w, c) { doc.setDrawColor.apply(doc, c || RULE); doc.setLineWidth(w || 0.6); doc.line(x1, y1, x2, y2); }
-        function need(h) { if (y + h > H - 60) { doc.addPage(); y = 64; } }
+        function need(h) { if (y + h > H - 54) { doc.addPage(); y = 60; } }
         function sectionTitle(t, right, rows) {
-            need(rows ? 40 + 22 + Math.min(rows, 4) * 19 : 40);
+            need(rows ? (40 + 22 + Math.min(rows, 4) * 19) * K : 40 * K);
             font('bold', 10, INK); doc.text(clean(t).toUpperCase(), M, y);
             if (right) { font('normal', 8.5, MUTE); doc.text(clean(right), W - M, y, { align: 'right' }); }
             rule(M, y + 5, W - M, y + 5, 0.8, INK);
@@ -72,41 +75,41 @@
             font('normal', 8.5, MUTE); doc.text(m[0] + ':', W - M - valW - 10, my, { align: 'right' });
             font('bold', 8.5, INK); doc.text(m[1], W - M - valW, my);
         });
-        y += ph + (contact ? 22 : 10);
+        y += ph + (contact ? 20 : 10 * K); // the phone / email line keeps its room above the rule
         rule(M, y, W - M, y, 1.4, INK);
-        y += 18;
+        y += 18 * K;
 
         // ---------- two info boxes ----------
         var boxes = d.boxes || [];
         if (boxes.length) {
             var half = (CW - 16) / 2, top = y, n = Math.max.apply(null, boxes.map(function (b) { return b.rows.length; }));
-            var bh = 28 + n * 14.5 + 6;
+            var RH = 14.5 * Math.max(K, 0.82), bh = 28 + n * RH + 6;
             boxes.slice(0, 2).forEach(function (b, bi) {
                 var x = M + bi * (half + 16);
                 doc.setDrawColor.apply(doc, RULE); doc.setLineWidth(0.6); doc.rect(x, top, half, bh, 'S');
                 doc.setFillColor.apply(doc, HEAD); doc.rect(x + 0.3, top + 0.3, half - 0.6, 19.4, 'F'); rule(x, top + 20, x + half, top + 20, 0.6);
                 font('bold', 8.5, INK); doc.text(clean(b.head), x + 9, top + 13.5);
                 b.rows.forEach(function (r, i) {
-                    var ry = top + 35 + i * 14.5;
+                    var ry = top + 35 + i * RH;
                     font('normal', 8.6, MUTE); doc.text(clean(r[0]), x + 9, ry);
                     font('bold', 8.6, INK); doc.text(doc.splitTextToSize(clean(r[1]) || '-', half - 110)[0] || '-', x + 100, ry);
                 });
             });
-            y = top + bh + 24;
+            y = top + bh + 24 * K;
         }
 
         // ---------- tables ----------
         (d.sections || []).forEach(function (s) {
             var body = (s.body || []).map(function (r) { return r.map(function (c) { return clean(c); }); });
             sectionTitle(s.title, s.right_text, body.length);
-            if (!body.length) { font('italic', 9, MUTE); doc.text(clean(s.empty || 'Nothing to show.'), M, y + 8); y += 30; return; }
+            if (!body.length) { font('italic', 9, MUTE); doc.text(clean(s.empty || 'Nothing to show.'), M, y + 8); y += 30 * K; return; }
             var right = s.right || [], cs = {};
             right.forEach(function (i) { cs[i] = { halign: 'right', minCellWidth: s.small ? 50 : 70 }; }); // money stays on one line
             Object.keys(s.w || {}).forEach(function (i) { cs[i] = Object.assign(cs[i] || {}, { cellWidth: s.w[i] }); });
             doc.autoTable({
-                startY: y, margin: { left: M, right: M, top: 64, bottom: 60 }, head: [s.head.map(clean)], body: body, foot: s.foot ? s.foot.map(function (r) { return r.map(clean); }) : undefined,
+                startY: y, margin: { left: M, right: M, top: 60, bottom: 54 }, head: [s.head.map(clean)], body: body, foot: s.foot ? s.foot.map(function (r) { return r.map(clean); }) : undefined,
                 theme: 'grid', showHead: 'everyPage', showFoot: 'lastPage', rowPageBreak: 'avoid',
-                styles: { font: 'helvetica', fontSize: s.small ? 7.8 : 8.6, cellPadding: { top: 4, right: 5, bottom: 4, left: 5 }, textColor: TEXT, lineColor: LIGHT, lineWidth: 0.5, overflow: 'linebreak', valign: 'middle' },
+                styles: { font: 'helvetica', fontSize: Math.max(6.8, (s.small ? 7.8 : 8.6) * (K < 1 ? 0.94 : 1)), cellPadding: { top: 4 * K, right: 5, bottom: 4 * K, left: 5 }, textColor: TEXT, lineColor: LIGHT, lineWidth: 0.5, overflow: 'linebreak', valign: 'middle' },
                 headStyles: { fillColor: HEAD, textColor: INK, fontStyle: 'bold', lineColor: RULE, lineWidth: 0.6 },
                 footStyles: { fillColor: HEAD, textColor: INK, fontStyle: 'bold', lineColor: RULE, lineWidth: 0.6 },
                 alternateRowStyles: { fillColor: ZEBRA }, tableLineColor: RULE, tableLineWidth: 0.6, columnStyles: cs,
@@ -115,23 +118,31 @@
                     if (c.section === 'body' && /^(Left|Dropped)( \(|$)/.test(String(c.cell.raw))) { c.cell.styles.fontStyle = 'bold'; }
                 }
             });
-            y = doc.lastAutoTable.finalY + 22;
+            y = doc.lastAutoTable.finalY + 22 * K;
         });
 
         // ---------- notes + sign-off ----------
-        var notes = (d.notes || []).map(clean).filter(Boolean);
+        // normal: notes across the page, the sign-off under them; tighter (K < 1): notes on the left and the sign-off
+        // beside them on the right, smaller lines — so a report that only spilled its notes / sign-off fits one page
+        var notes = (d.notes || []).map(clean).filter(Boolean), side = K < 1 && !d.nosign, SW = 190;
+        var nfs = K < 1 ? 8.2 : 8.8, nlh = K < 1 ? 10.5 : 12;
         if (notes.length) {
-            font('normal', 8.8, TEXT);
-            var wrapped = notes.map(function (t, i) { return doc.splitTextToSize((i + 1) + '.  ' + t, CW - 20); });
-            var nh = 14 + wrapped.reduce(function (a, w) { return a + w.length * 12 + 3; }, 0);
-            need(13 + nh + 90);
+            var nw = side ? CW - SW - 16 : CW;
+            font('normal', nfs, TEXT);
+            var wrapped = notes.map(function (t, i) { return doc.splitTextToSize((i + 1) + '.  ' + t, nw - 20); });
+            var nh = (K < 1 ? 10 : 14) + wrapped.reduce(function (a, w) { return a + w.length * nlh + 3; }, 0);
+            need(13 + nh + (d.nosign || side ? 6 : 50));
             sectionTitle('Notes');
-            doc.setDrawColor.apply(doc, RULE); doc.setLineWidth(0.6); doc.rect(M, y, CW, nh, 'S');
-            var ty = y + 15;
-            wrapped.forEach(function (w) { font('normal', 8.8, TEXT); doc.text(w, M + 10, ty); ty += w.length * 12 + 3; });
-            y += nh + 34;
-        } else { need(90); y += 10; }
-        if (!d.nosign) { // the sign-off line (can be left out on the Reports page)
+            doc.setDrawColor.apply(doc, RULE); doc.setLineWidth(0.6); doc.rect(M, y, nw, nh, 'S');
+            var ty = y + (K < 1 ? 12 : 15);
+            wrapped.forEach(function (w) { font('normal', nfs, TEXT); doc.text(w, M + 10, ty); ty += w.length * nlh + 3; });
+            if (side) { // the sign-off beside the notes, level with their bottom
+                rule(W - M - 170, y + nh - 12, W - M, y + nh - 12, 0.6, INK);
+                font('normal', 8.5, MUTE); doc.text('Authorised Signatory', W - M - 85, y + nh, { align: 'center' });
+            }
+            y += nh + 30 * K;
+        } else { need(d.nosign ? 0 : 50); y += 10 * K; }
+        if (!d.nosign && !(side && notes.length)) { // the sign-off line (can be left out on the Reports page)
             rule(W - M - 170, y + 14, W - M, y + 14, 0.6, INK);
             font('normal', 8.5, MUTE); doc.text('Authorised Signatory', W - M - 85, y + 27, { align: 'center' });
         }
@@ -151,7 +162,18 @@
             doc.text('Page ' + pg + ' of ' + pages, W - M, H - 28, { align: 'right' });
         }
         var slug = clean(d.file || 'report').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'report';
+        if (save !== false) doc.save(slug + '.pdf');
+        return doc;
+    }
+    /** Builds the report with the fewest pages: normal spacing first; when it runs onto more pages, a tighter
+        spacing is tried and kept only if it saves a page (most reports that just spill over then fit on one page). */
+    function best(d) {
+        var pages = function (doc) { return doc.internal.getNumberOfPages(); };
+        var doc = draw(d, 1, false), n = pages(doc);
+        if (n > 1) [0.86, 0.74, 0.64].some(function (k) { var t = draw(d, k, false), tn = pages(t); if (tn < n) { doc = t; n = tn; } return n === 1; });
+        var slug = clean(d.file || 'report').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'report';
         doc.save(slug + '.pdf');
+        return n;
     }
     window.ciReportDraw = draw;
     var logoCache = {};
@@ -168,7 +190,7 @@
     }
     /** Draws and downloads the PDF once the emblem is ready. */
     window.ciReportPdf = function (d) {
-        return logo(d.institute && d.institute.brand && d.institute.brand.emblem).then(function (img) { d._logo = img; draw(d); });
+        return logo(d.institute && d.institute.brand && d.institute.brand.emblem).then(function (img) { d._logo = img; return best(d); });
     };
     window.ciReportFromStudents = fromStudents;
 
