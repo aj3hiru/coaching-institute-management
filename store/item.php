@@ -205,16 +205,13 @@ $tabs = array_filter(['about' => $desc !== '' ? 'About' : '', 'content' => $isCo
       <?php endif; ?>
     </section>
 
+    <?php if ($myFaq): // only the questions written for this course (Course form → FAQ); nothing when none are added ?>
     <section class="sp-sec" id="faq"><h2>Frequently asked questions</h2>
       <div class="sp-faq">
         <?php foreach ($myFaq as $f): ?><details><summary><?= sh_e($f['q']) ?></summary><div class="sp-faq-b"><p><?= nl2br(sh_e($f['a'])) ?></p></div></details><?php endforeach; ?>
-        <details><summary>How do I start after paying?</summary><div class="sp-faq-b"><p>Right after the payment the <?= $isCourse ? 'course' : 'notes pack' ?> opens in <b>My Library</b>. Log in any time with your mobile number or email to continue where you stopped.</p></div></details>
-        <details><summary>Can I study on my phone?</summary><div class="sp-faq-b"><p>Yes — videos and PDFs open in the browser on any phone, tablet or computer. No app is needed.</p></div></details>
-        <details><summary>How long can I use it?</summary><div class="sp-faq-b"><p><?= $vd ? 'You get ' . sh_e($validity) . ' from the day you buy.' : 'For as long as you like — the access never ends.' ?></p></div></details>
-        <?php if ($isCourse): ?><details><summary>Can I change the video speed and quality?</summary><div class="sp-faq-b"><p>Yes. Use the ⚙ button on the video: speed from 0.5x to 2x, and a lower quality for slow internet.</p></div></details><?php endif; ?>
-        <details><summary>I'm a student of the institute — do I pay again?</summary><div class="sp-faq-b"><p>Ask the office — our staff can add courses to your account. Sign up with the same mobile number you gave the institute.</p></div></details>
       </div>
     </section>
+    <?php endif; ?>
   </div>
 </div>
 

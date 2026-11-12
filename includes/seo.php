@@ -54,10 +54,10 @@ function seo_opt(string $k)
     return es('seo', $k, edu_seo_defaults()[$k] ?? '');
 }
 
-/** True when the Rank Math-style SEO is switched on (false = only the original EduMint SEO runs). */
+/** The Rank Math-style (Advanced) SEO is always on — the old "Original / Basic" mode was removed. */
 function edu_seo_advanced(): bool
 {
-    return seo_opt('mode') !== 'original';
+    return true;
 }
 
 function edu_seo_module(string $m): bool

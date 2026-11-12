@@ -5,7 +5,9 @@ require_once __DIR__ . '/components/guard.php';
 $me = admin_guard(['admin', 'editor', 'author']);
 if (!admin_can('security.view_logs')) { http_response_code(403); exit('Access Denied'); }
 $isAdmin = $me['role'] === 'admin';
-const AL_SCOPE = "l.action_type NOT LIKE 'ecom\\_%'";
+// Only what the site's users (staff) do — entries about students (their records, fees, enrolments, online accounts,
+// orders) are kept in the database but not listed here, and "Clear" leaves them alone.
+const AL_SCOPE = "l.action_type NOT LIKE 'ecom\\_%' AND l.action_type NOT IN ('ci_student','ci_student_delete','ci_payment','ci_payment_delete','ci_promote','ci_enroll','shop_customer','shop_access','shop_order')";
 
 // Friendly names for the actions this site records (anything else is shown as its own words).
 const AL_LABELS = [

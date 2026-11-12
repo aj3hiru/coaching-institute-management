@@ -148,7 +148,7 @@ $isC = $fType === 'course';
 $classesL = ci_lists($pdo)['classes'];
 $teachers = sh_teachers($pdo);
 $F = ['q' => trim((string)($_GET['q'] ?? '')), 'status' => (string)($_GET['status'] ?? ''), 'cat' => (int)($_GET['cat'] ?? 0), 'teacher' => (int)($_GET['teacher'] ?? 0),
-    'price' => (string)($_GET['price'] ?? ''), 'batch' => (string)($_GET['batch'] ?? ''), 'content' => (string)($_GET['content'] ?? ''), 'access' => (string)($_GET['access'] ?? ''),
+    'price' => (string)($_GET['price'] ?? ''), 'batch' => array_key_exists('batch', $_GET) ? (string)$_GET['batch'] : 'running', // Course Status: Running unless another is picked 'content' => (string)($_GET['content'] ?? ''), 'access' => (string)($_GET['access'] ?? ''),
     'sales' => (string)($_GET['sales'] ?? ''), 'sort' => (string)($_GET['sort'] ?? '')];
 $fStatus = in_array($F['status'], ['draft', 'published', 'hidden'], true) ? $F['status'] : '';
 $w = ["p.type = " . $pdo->quote($fType)]; $hv = [];
@@ -162,7 +162,7 @@ $w[] = ['lifetime' => 'p.validity_days = 0', 'limited' => 'p.validity_days > 0']
 $hv = array_filter([($isC ? ['playlist' => 'ytl > 0', 'noplaylist' => 'ytl = 0 AND lessons > 0', 'empty' => 'lessons = 0', 'pdfs' => 'files > 0'] : ['has' => 'files > 0', 'empty' => 'files = 0'])[$F['content']] ?? '',
     ['buyers' => 'buyers > 0', 'nobuyers' => 'buyers = 0', 'sales' => 'sales > 0'][$F['sales']] ?? '']);
 $order = ['new' => 'id DESC', 'old' => 'id ASC', 'az' => 'title', 'za' => 'title DESC', 'buyers' => 'buyers DESC, id DESC', 'sales' => 'sales DESC, id DESC', 'plow' => 'price, id DESC', 'phigh' => 'price DESC, id DESC', 'start' => 'starts_at IS NULL, starts_at, id DESC'][$F['sort']] ?? 'sort, id DESC';
-$fOn = count(array_filter($F, fn($v, $k) => $k !== 'sort' && $v !== '' && $v !== 0, ARRAY_FILTER_USE_BOTH));
+$fOn = count(array_filter($F, fn($v, $k) => $k !== 'sort' && $v !== '' && $v !== 0 && !($k === 'batch' && $v === 'running'), ARRAY_FILTER_USE_BOTH)); // Running is the normal view, not a filter
 $rows = $pdo->query("SELECT * FROM (SELECT p.*, (SELECT COUNT(*) FROM sh_lessons l WHERE l.product_id = p.id) AS lessons, (SELECT COUNT(*) FROM sh_files f WHERE f.product_id = p.id) AS files,
     (SELECT COUNT(*) FROM sh_access a WHERE a.product_id = p.id AND a.revoked = 0 AND a.source <> 'block') AS buyers, (SELECT COALESCE(SUM(o.amount),0) FROM sh_orders o WHERE o.product_id = p.id AND o.status = 'paid') AS sales,
     ((SELECT COUNT(*) FROM sh_sections s WHERE s.product_id = p.id AND s.yt_list IS NOT NULL) + (p.yt_list IS NOT NULL)) AS ytl
@@ -317,7 +317,7 @@ $tchF = ['0' => 'All teachers', '-1' => 'No teacher']; foreach ($teachers as $k 
   <div class="ci-f"><label>Category</label><select name="cat" data-search><?= $fo('cat', $catsF) ?></select></div>
   <?php if ($isC): ?><div class="ci-f"><label>Teacher</label><select name="teacher"><?= $fo('teacher', $tchF) ?></select></div><?php endif; ?>
   <div class="ci-f"><label>Price</label><select name="price"><?= $fo('price', ['' => 'Free & paid', 'free' => 'Free', 'paid' => 'Paid', 'offer' => 'Paid with discount']) ?></select></div>
-  <?php if ($isC): ?><div class="ci-f"><label>Batch</label><select name="batch"><?= $fo('batch', ['' => 'All batches', 'upcoming' => 'Upcoming', 'running' => 'Running', 'completed' => 'Completed', 'nodate' => 'No batch date']) ?></select></div><?php endif; ?>
+  <?php if ($isC): ?><div class="ci-f"><label>Course Status</label><select name="batch"><?= $fo('batch', ['running' => 'Running', 'upcoming' => 'Upcoming', 'completed' => 'Completed', 'nodate' => 'No start / end date', '' => 'All courses']) ?></select></div><?php endif; ?>
   <div class="ci-f"><label>Status</label><select name="status"><?= $fo('status', ['' => 'All', 'published' => 'Published', 'draft' => 'Draft', 'hidden' => 'Hidden']) ?></select></div>
   <div class="ci-f"><label>Content</label><select name="content"><?= $fo('content', $isC ? ['' => 'Any', 'playlist' => 'YouTube playlist linked', 'noplaylist' => 'Lectures, no playlist', 'pdfs' => 'Has course PDFs', 'empty' => 'No lectures yet'] : ['' => 'Any', 'has' => 'Has PDFs', 'empty' => 'No PDFs yet']) ?></select></div>
   <div class="ci-f"><label>Access</label><select name="access"><?= $fo('access', ['' => 'Any', 'lifetime' => 'Lifetime', 'limited' => 'Limited days']) ?></select></div>

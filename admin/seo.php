@@ -165,7 +165,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header('Content-Type: application/json'); exit('{"ok":true}');
     }
     if ($act === 'mode') {
-        $mode = ($_POST['mode'] ?? '') === 'original' ? 'original' : 'advanced';
+        $mode = 'advanced'; // only Advanced SEO now
         edu_settings_save('seo', ['mode' => $mode]);
         seo_robots_sync($mode);
         admin_log('seo_update', 'SEO mode: ' . ($mode === 'original' ? 'Basic SEO' : 'Advanced SEO'));
@@ -352,9 +352,9 @@ $tab = preg_replace('/[^a-z]/', '', $_GET['tab'] ?? '');
 <script src="/assets/js/admin-media.js?v=<?= @filemtime(ROOT_PATH . '/assets/js/admin-media.js') ?>" defer></script>
 </head>
 <body>
-<?php admin_shell_open('SEO', 'Titles, schema, sitemaps &amp; indexing', '<form method="POST" style="margin:0">' . csrf_field() . '<input type="hidden" name="action" value="mode"><input type="hidden" name="back" value="' . $esc($_SERVER['REQUEST_URI']) . '"><div class="rm-mode" title="Which SEO the site uses"><button name="mode" value="advanced" class="' . ($adv ? 'on' : '') . '">Advanced</button><button name="mode" value="original" class="' . (!$adv ? 'on' : '') . '">Original</button></div></form>'); ?>
+<?php admin_shell_open('SEO', 'Titles, schema, sitemaps &amp; indexing'); // Advanced SEO only (the Original / Basic switch was removed) ?>
 <?= admin_flash() ?>
-<?php if (!$adv): ?><div class="rm-warn" style="margin:0 0 14px;max-width:1060px"><b>Basic SEO is on.</b> The site uses exactly its original titles, descriptions, schema and /sitemap.xml. The settings here are saved but only used after switching to <b>Advanced</b> (top right).</div><?php endif; ?>
+
 <div class="rm-top"><div class="rm-crumbs"><a href="/admin/seo.php">Dashboard</a><?= $view !== 'dashboard' ? ' / ' . $esc($viewNames[$view]) : ' / Modules' ?></div></div>
 
 <?php if ($view === 'dashboard'): ?>

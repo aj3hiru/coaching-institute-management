@@ -80,6 +80,44 @@ if ($tab === 'payments') {
     }
     $sum = array_sum(array_column($rows, 'due'));
 }
+// Export as a PDF (same business-document look as the other institute reports; assets/js/ci-report.js draws it)
+if (($_GET['export'] ?? '') === 'pdf') {
+    $money = fn($n) => 'Rs. ' . number_format((float)$n, 2);
+    $flt = [['Period', $periodTxt]];
+    if ($fCourse && isset($L['courses'][$fCourse])) $flt[] = ['Course', $L['courses'][$fCourse]['name']];
+    if ($fBatch && isset($L['batches'][$fBatch])) $flt[] = ['Batch', $L['batches'][$fBatch]['name']];
+    if ($fSession && isset($L['sessions'][$fSession])) $flt[] = ['Session', $L['sessions'][$fSession]];
+    if ($q !== '') $flt[] = ['Search', $q];
+    $no = ($tab === 'dues' ? 'DU-' : 'FE-') . date('Ymd') . '-' . count($rows);
+    if ($tab === 'payments') {
+        if (!empty($method)) $flt[] = ['Paid by', CI_METHODS[$method]];
+        $body = []; $i = 0;
+        foreach ($rows as $r) $body[] = [++$i, $r['receipt_no'], ci_date($r['paid_on']), $r['reg_no'], $r['name'], $r['mobile'], trim(($r['course_name'] ?? '') . ($r['batch_name'] ? ' / ' . $r['batch_name'] : ''), ' /') ?: '-',
+            ci_pay_mode($r), $money($r['amount']), $r['due_now'] === null ? '-' : ((float)$r['due_now'] > 0.004 ? $money($r['due_now']) : 'Full paid'), $r['username'] ?: '-'];
+        $mode = []; foreach ($byMethod as $m => $v) $mode[] = [CI_METHODS[$m] ?? ucfirst($m), $money($v)];
+        $doc = ['title' => 'FEE COLLECTION REPORT', 'subtitle' => 'Fees received', 'no' => $no, 'file' => 'fees-report_' . ($from ?: 'all') . '_' . ($to ?: 'all'), 'landscape' => true,
+            'boxes' => [['head' => 'REPORT FOR', 'rows' => array_slice($flt, 0, 6)], ['head' => 'FIGURES', 'rows' => array_slice(array_merge([['Receipts', (string)count($rows)], ['Total received', $money($sum)]], $mode), 0, 6)]],
+            'sections' => [['title' => 'Fees received', 'right_text' => count($rows) . ' receipt(s)', 'head' => ['No.', 'Receipt', 'Date', 'Reg. No.', 'Student', 'Mobile', 'Course / batch', 'Paid by', 'Amount', 'Due now', 'Entered by'],
+                'body' => $body, 'foot' => $body ? [['', '', '', '', 'Total', '', '', '', $money($sum), '', '']] : null, 'right' => [8, 9], 'small' => true, 'empty' => 'No fees in this period.']],
+            'notes' => [count($rows) . ' receipt(s), ' . $money($sum) . ' received (' . $periodTxt . ').', 'Due now = what is still left on that course today.']];
+    } else {
+        if (!empty($late)) $flt[] = ['Show', 'Late only (due date passed)'];
+        $body = []; $i = 0; $tf = $tp = 0;
+        foreach ($rows as $r) { $tf += (float)$r['fee'] - (float)$r['discount']; $tp += (float)$r['paid'];
+            $body[] = [++$i, $r['reg_no'], $r['name'], $r['mobile'] . ($r['alt_mobile'] ? ' / ' . $r['alt_mobile'] : ''), trim(($r['course_name'] ?? '') . ($r['batch_name'] ? ' / ' . $r['batch_name'] : ''), ' /') ?: '-',
+                $money((float)$r['fee'] - (float)$r['discount']), $money($r['paid']), $money($r['due']), $r['due_date'] ? ci_date($r['due_date']) . ($r['due_date'] < date('Y-m-d') ? ' (late)' : '') : '-'];
+        }
+        $doc = ['title' => 'FEE DUES REPORT', 'subtitle' => 'Fee still to come', 'no' => $no, 'file' => 'dues-report_' . ($from ?: 'all') . '_' . ($to ?: 'all'), 'landscape' => true,
+            'boxes' => [['head' => 'REPORT FOR', 'rows' => array_slice($flt, 0, 6)], ['head' => 'FIGURES', 'rows' => [['Students with due', (string)count($rows)], ['Fee (after discount)', $money($tf)], ['Paid', $money($tp)], ['Due', $money($sum)]]]],
+            'sections' => [['title' => 'Dues', 'right_text' => count($rows) . ' course(s)', 'head' => ['No.', 'Reg. No.', 'Student', 'Mobile', 'Course / batch', 'Fee', 'Paid', 'Due', 'Next due date'],
+                'body' => $body, 'foot' => $body ? [['', '', 'Total', '', '', $money($tf), $money($tp), $money($sum), '']] : null, 'right' => [5, 6, 7], 'small' => true, 'empty' => 'No dues for these filters.']],
+            'notes' => [count($rows) . ' course(s) with fee still due: ' . $money($sum) . ' in total (' . $periodTxt . ').']];
+    }
+    admin_log('ci_export', ($tab === 'dues' ? 'Dues' : 'Fees') . ' PDF (' . count($rows) . ' rows)');
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode($doc + ['kind' => 'doc', 'institute' => ci_institute(), 'viewer' => ['name' => $me['username'], 'role' => $me['role']], 'generated' => date('d M Y, h:i A')], JSON_UNESCAPED_UNICODE);
+    exit;
+}
 $qs = function (array $over = []) {
     $p = array_merge($_GET, $over);
     unset($p['page']);
@@ -126,7 +164,7 @@ $qs = function (array $over = []) {
   <div class="ci-f"><label>Batch</label><select name="batch"><option value="0">All batches</option><?php foreach ($L['batches'] as $id => $b): ?><option value="<?= $id ?>" <?= $fBatch === $id ? 'selected' : '' ?>><?= ci_e($b['name']) ?></option><?php endforeach; ?></select></div>
   <div class="ci-f"><label>Session</label><select name="session"><option value="0">All sessions</option><?php foreach ($L['sessions'] as $id => $n): ?><option value="<?= $id ?>" <?= $fSession === $id ? 'selected' : '' ?>><?= ci_e($n) ?></option><?php endforeach; ?></select></div>
   <?php if ($tab === 'dues'): ?><div class="ci-f"><label style="display:flex;gap:6px;align-items:center;height:38px;font-weight:400"><input type="checkbox" name="late" value="1" style="width:auto;height:auto" <?= $late ? 'checked' : '' ?>> Only due date passed</label></div><?php endif; ?>
-  <div class="ci-fbtn"><button class="ci-btn" type="submit"><i class="fas fa-filter"></i> Filter</button><a class="ci-btn ci-ghost" href="?<?= $qs(['export' => 'csv']) ?>"><i class="fas fa-file-excel"></i> Export</a></div>
+  <div class="ci-fbtn"><button class="ci-btn" type="submit"><i class="fas fa-filter"></i> Filter</button><button type="button" class="ci-btn ci-ghost" data-report="fees" data-src="<?= ci_e($self . '?' . $qs(['export' => 'pdf'])) ?>"><i class="fas fa-file-pdf"></i> Export PDF</button></div>
 </form></div></div>
 <script>(function(){var s=document.getElementById('cfPeriod');if(!s)return;s.addEventListener('change',function(){var c=s.value==='custom';[].forEach.call(document.querySelectorAll('.cf-custom'),function(d){d.hidden=!c;var i=d.querySelector('input');if(i)i.disabled=!c;});if(!c)s.form.submit();});})();</script>
 
@@ -162,6 +200,7 @@ $qs = function (array $over = []) {
 <?php endif; ?>
 </div>
 <?php require __DIR__ . '/components/ci-modals.php'; ?>
+<?php ci_report_assets(); ?>
 <?php admin_shell_close(); ?>
 </body>
 </html>
