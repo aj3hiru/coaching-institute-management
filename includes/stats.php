@@ -89,6 +89,7 @@ function edu_stats_record(PDO $pdo, int $postId, string $referrer = '', string $
     $source = edu_stats_source($referrer, $query);
     $device = edu_stats_device((string)($_SERVER['HTTP_USER_AGENT'] ?? ''));
     if ($device === 'bot') return; // crawlers are not readers
+    if (function_exists('edu_is_super') && edu_is_super()) return; // the superadmin's visits are not counted
     $pdo->prepare("INSERT INTO post_stats_daily (post_id, stat_date, source, country, device, views) VALUES (?, ?, ?, ?, ?, 1) ON DUPLICATE KEY UPDATE views = views + 1")
         ->execute([$postId, $day, $source, $country, $device]);
     // A visitor who came from a push notification counts as a click on that notification.

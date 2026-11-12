@@ -55,3 +55,7 @@ body:has(#wpadminbar){margin-top:var(--wp-admin--admin-bar--height,32px)!importa
 @media (max-width:1023px){
   body:has(#nb-drawer.open) #wpadminbar{visibility:hidden}
 }
+/* superadmin maintenance switch */
+#wpadminbar .dk-maint .ab-icon:before{content:"\f107";top:2px}
+#wpadminbar .dk-maint.is-on > .ab-item{background:#b32d2e!important;color:#fff!important}
+#wpadminbar .dk-maint.is-on .ab-icon:before{color:#fff!important}

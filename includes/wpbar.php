@@ -109,6 +109,14 @@ function wpbar_html(array $ctx = []): string
             . wpbar_e($_SESSION['edu_csrf'] ??= bin2hex(random_bytes(32))) . '" title="Clear all cached pages"><span class="ab-icon" aria-hidden="true"></span><span class="ab-label">Clear Cache</span></a></li>';
     }
 
+    // 4b. Superadmin only: admin-area maintenance mode switch (everyone else sees a maintenance page while it is on)
+    if (function_exists('edu_is_super') && edu_is_super((int)$u['id'])) {
+        $mOn = edu_maintenance_on();
+        $left .= '<li role="group" id="wp-admin-bar-dk-maint" class="dk-maint' . ($mOn ? ' is-on' : '') . '"><a class="ab-item" role="menuitem" href="#" data-wpbar-maint="' . ($mOn ? '0' : '1') . '" data-csrf="'
+            . wpbar_e($_SESSION['edu_csrf'] ??= bin2hex(random_bytes(32))) . '" title="' . ($mOn ? 'Admin area is closed for everyone else — click to open it' : 'Close the admin area for everyone else') . '"><span class="ab-icon" aria-hidden="true"></span><span class="ab-label">'
+            . ($mOn ? 'Maintenance mode: ON' : 'Maintenance mode on') . '</span></a></li>';
+    }
+
     // 5. Comments waiting for approval
     if (admin_can('blogs.manage_comments') && $has('/admin/comments-manager.php')) {
         $pending = 0;

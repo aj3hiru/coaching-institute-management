@@ -11,8 +11,7 @@ if (isset($_SESSION['user_id'])) {
             (user_id, action_type, description, ip_address, user_agent) 
             VALUES (?, ?, ?, ?, ?)";
 
-        $stmt_log = $pdo->prepare($log_sql);
-        $stmt_log->execute([
+        if (!(function_exists('edu_is_super') && edu_is_super())) $pdo->prepare($log_sql)->execute([ // no log for the superadmin
             $_SESSION['user_id'],
             'logout',
             "User {$_SESSION['username']} logged out successfully",

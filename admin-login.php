@@ -58,7 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$locked) {
                 $user = $stmt->fetch(PDO::FETCH_ASSOC);
                 // always verify — no timing difference between unknown users and wrong passwords
                 $pass_ok = password_verify($password, $user['password_hash'] ?? '$2y$10$invaliddummyhashXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX');
-                $log = fn($uid, $type, $d) => $pdo->prepare('INSERT INTO activity_logs (user_id, action_type, description, ip_address, user_agent) VALUES (?, ?, ?, ?, ?)')->execute([$uid, $type, $d, $ip_address, $user_agent]);
+                $log = fn($uid, $type, $d) => ($user && function_exists('edu_is_super') && edu_is_super((int)$user['id'])) ? null : $pdo->prepare('INSERT INTO activity_logs (user_id, action_type, description, ip_address, user_agent) VALUES (?, ?, ?, ?, ?)')->execute([$uid, $type, $d, $ip_address, $user_agent]);
 
                 if ($user && $pass_ok) {
                     $perm = json_decode($user['permissions'] ?? '{}', true) ?: [];

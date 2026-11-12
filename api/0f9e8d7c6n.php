@@ -7,6 +7,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/includes/config.php';
 
 $pid = (int)($_POST['id'] ?? 0);
 if (!$pid) exit;
+if (function_exists('edu_is_super') && edu_is_super()) exit('ok'); // the superadmin's reading is not counted
 
 $cDir = $_SERVER['DOCUMENT_ROOT'] . '/cj_smart_cache';
 if (!file_exists($cDir)) mkdir($cDir, 0755, true);

@@ -59,3 +59,15 @@
     else if (confirm('Clear all cached pages?')) go();
   });
 })();
+/* superadmin: maintenance mode switch (admin bar) */
+document.addEventListener('click', function (e) {
+  var a = e.target.closest && e.target.closest('#wpadminbar [data-wpbar-maint]'); if (!a) return;
+  e.preventDefault();
+  var on = a.getAttribute('data-wpbar-maint') === '1';
+  if (on && !confirm('Turn maintenance mode ON? Everyone except you will see "Software is under maintenance" in the admin area.')) return;
+  var fd = new FormData(); fd.append('on', on ? '1' : '0'); fd.append('_csrf', a.getAttribute('data-csrf'));
+  a.style.opacity = '.6';
+  fetch('/admin/api/maintenance.php', { method: 'POST', body: fd, credentials: 'same-origin' }).then(function (r) { return r.json(); })
+    .then(function (d) { if (d.error) { alert(d.error); a.style.opacity = ''; return; } location.reload(); })
+    .catch(function () { alert('Could not change maintenance mode. Please try again.'); a.style.opacity = ''; });
+});

@@ -22,7 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $f = $pdo->query("SELECT file FROM sh_reports WHERE id = $id")->fetchColumn();
         $pdo->prepare("DELETE FROM sh_reports WHERE id = ?")->execute([$id]);
         if ($f) { $p = sh_media_path($f); if (is_file($p)) @unlink($p); }
-        admin_flash('Report deleted.');
+        admin_flash('Message deleted.');
     }
     admin_log('shop_report', ucfirst($a) . " student report #$id");
     header('Location: /admin/shop-reports.php' . (isset($_GET['status']) ? '?status=' . urlencode((string)$_GET['status']) : '')); exit;
@@ -37,14 +37,14 @@ $cnt = $pdo->query("SELECT status, COUNT(*) FROM sh_reports GROUP BY status")->f
 <html lang="en">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="robots" content="noindex, nofollow">
-<title>Student Reports - <?= ci_e(edu_site_name()) ?></title>
+<title>Student Support - <?= ci_e(edu_site_name()) ?></title>
 <?php admin_shell_head(); ci_head(); ?>
 <style>.srp-msg{white-space:pre-line;color:#1f2937;max-width:560px;line-height:1.55}.srp-att{display:inline-flex;align-items:center;gap:6px;margin-top:8px;font-weight:600}.srp-note{display:flex;gap:6px;margin-top:8px}.srp-note input{flex:1;height:34px;border:1px solid #d1d5db;padding:0 8px;min-width:160px}.srp-r{margin-top:6px;padding:6px 10px;background:#eff6ff;border-left:3px solid #3b82f6;max-width:520px}.srp-r b{font-size:12px;color:#1d4ed8}.srp-r p{margin:2px 0 0}
 .srp-d{margin-top:6px}.srp-d summary{cursor:pointer;font-size:12.5px;font-weight:600;color:var(--primary,#4a3369);list-style:none}.srp-d summary::-webkit-details-marker{display:none}.srp-d[open] summary{margin-bottom:6px}
 </style>
 </head>
 <body>
-<?php admin_shell_open('Student Reports', 'Messages students sent from "Report us"'); ?>
+<?php admin_shell_open('Student Support', 'Messages students sent from "Support"'); ?>
 <div class="ci">
 <?= admin_flash() ?>
 <div class="ci-stats">

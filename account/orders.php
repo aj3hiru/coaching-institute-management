@@ -58,7 +58,7 @@ $ico = fn($n) => sh_icon($n);
       </div>
     <?php endforeach; ?>
     </div>
-    <p class="ac-hint" style="margin-top:12px">Money taken but the item is not in My Courses? Use <a href="/account/report">Report us</a> with the payment id from Razorpay's SMS / email.</p>
+    <p class="ac-hint" style="margin-top:12px">Money taken but the item is not in My Courses? Use <a href="/account/report">Support</a> with the payment id from Razorpay's SMS / email.</p>
     <?php endif; ?>
   </div>
 </div>

@@ -61,7 +61,10 @@ $pre = ['type' => in_array((string)($_GET['type'] ?? ''), $types, true) ? (strin
 .rp-main .rp-t th,.rp-main .rp-t td{white-space:nowrap}
 @media (max-width:820px){.rp-main .rp-doc{padding:12px}.rp-opts{padding:10px}}
 .rp-opts{margin-top:14px;border:1px solid var(--ci-b,#e5e7eb);background:#fafafa;padding:12px 14px}
-.rp-opts-h{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 8px}
+.rp-opts-h{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin:0;cursor:pointer;list-style:none;padding-right:26px;position:relative}
+.rp-opts-h::-webkit-details-marker{display:none}
+.rp-opts-h::after{content:"";position:absolute;right:4px;top:50%;width:8px;height:8px;border-right:2px solid #6b7280;border-bottom:2px solid #6b7280;transform:translateY(-70%) rotate(45deg);transition:transform .2s}
+.rp-opts[open] > .rp-opts-h{margin-bottom:8px}.rp-opts[open] > .rp-opts-h::after{transform:translateY(-30%) rotate(-135deg)}
 .rp-opts-h b{font-size:13.5px}.rp-opts-h span{font-size:12px;color:#6b7280}
 .rp-opts-g{display:flex;flex-wrap:wrap;gap:6px 14px;padding:8px 0;border-top:1px dashed #e5e7eb}
 .rp-opts-g:first-of-type{border-top:0}
@@ -165,7 +168,7 @@ $pre = ['type' => in_array((string)($_GET['type'] ?? ''), $types, true) ? (strin
     </form><?php endif; ?>
     <div class="rp-go"><button type="button" class="ci-btn rp-view"><i class="fas fa-eye"></i> View report</button><button type="button" class="ci-btn ci-ghost rp-pdf" disabled title="View the report first"><i class="fas fa-file-pdf"></i> Download PDF</button><span class="ci-muted rp-msg" style="align-self:center"></span></div>
     <?php // after View report: what goes into the PDF (the header always stays), then the preview — right under the filters ?>
-    <div class="rp-opts" id="rpOpts" hidden></div>
+    <details class="rp-opts" id="rpOpts" hidden></details>
     <div class="rp-out" id="rpOut"></div>
   </div>
 </div></div></div>
@@ -188,14 +191,14 @@ $pre = ['type' => in_array((string)($_GET['type'] ?? ''), $types, true) ? (strin
   function box(path, label, cls) { return '<label' + (cls ? ' class="' + cls + '"' : '') + '><input type="checkbox" checked data-p="' + path + '"> ' + esc(label) + '</label>'; }
   function paint() { out.innerHTML = window.ciReportHtml(window.ciReportPick(shown, sel)); }
   function buildOpts(d) {
-    sel = {}; var h = '<div class="rp-opts-h"><b>What goes into the PDF</b><span>The header always stays. Untick to leave a part or a column out.</span></div>';
+    sel = {}; var h = '<summary class="rp-opts-h"><b><i class="fas fa-sliders-h"></i> What goes into the PDF</b><span>Closed by default — open to leave a part or a column out. The header always stays.</span></summary>';
     if ((d.boxes || []).length) h += '<div class="rp-opts-g"><em>Info boxes</em>' + d.boxes.map(function (b, i) { return box('boxes.' + i, b.head); }).join('') + '</div>';
     (d.sections || []).forEach(function (s, i) {
       h += '<div class="rp-opts-g"><em>Table</em>' + box('sec.' + i, s.title + (s.right_text ? ' (' + s.right_text + ')' : ''), 'rp-sec-l')
         + ((s.body || []).length && (s.head || []).length > 1 ? '<div class="rp-cols" data-cols="' + i + '">' + s.head.map(function (c, j) { return box('cols.' + i + '.' + j, c || 'Column ' + (j + 1)); }).join('') + '</div>' : '') + '</div>';
     });
     h += '<div class="rp-opts-g"><em>End of the report</em>' + ((d.notes || []).length ? box('notes', 'Notes') : '') + box('sign', 'Authorised Signatory') + '</div>';
-    opts.innerHTML = h; opts.hidden = false;
+    opts.innerHTML = h; opts.open = false; opts.hidden = false; // a new report: the choices start closed
   }
   opts.addEventListener('change', function (e) {
     var c = e.target; if (!c.dataset || !c.dataset.p) return;

@@ -111,9 +111,14 @@ $roleOptions = $isAdmin
     : array_intersect_key(['author' => 'Author', 'editor' => 'Editor'], array_flip($canGive));
 
 // ─── Save / delete ────────────────────────────────────────────────────────────────────────────────────────────
+// the superadmin account is not shown to — and cannot be changed by — anyone else
+$umSuper = function_exists('edu_is_super') && edu_super_column($pdo) && edu_is_super();
+$umHide = $umSuper || !function_exists('edu_super_column') || !edu_super_column($pdo) ? '' : 'COALESCE(u.is_super, 0) = 0';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_check();
     $act = $_POST['action'] ?? '';
+    $__tid = (int)($_POST['id'] ?? 0);
+    if ($__tid && !$umSuper && function_exists('edu_is_super') && edu_is_super($__tid)) { header('Location: /admin/user-manager.php'); exit; }
     $back = '/admin/user-manager.php' . (($_POST['view'] ?? '') === 'authors' ? '?view=authors' : '');
     try {
         if ($act === 'save') {
@@ -260,10 +265,10 @@ $st = $pdo->prepare("SELECT u.id, u.username, u.email, u.role, u.status, u.permi
         a.instagram, a.threads, a.linkedin, a.facebook, a.twitter, a.is_featured, a.status author_status,
         (SELECT COUNT(*) FROM posts p WHERE p.author_id = a.id) posts
     FROM users u LEFT JOIN authors a ON a.id = (SELECT MIN(id) FROM authors WHERE user_id = u.id)
-    " . ($where ? 'WHERE ' . implode(' AND ', $where) : '') . " ORDER BY FIELD(u.role, 'admin', 'blog_admin', 'editor', 'author', 'teacher', 'accountant'), u.username");
+    " . (($where = array_merge($where, $umHide !== '' ? [$umHide] : [])) ? 'WHERE ' . implode(' AND ', $where) : '') . " ORDER BY FIELD(u.role, 'admin', 'blog_admin', 'editor', 'author', 'teacher', 'accountant'), u.username");
 $st->execute($args);
 $rows = $st->fetchAll(PDO::FETCH_ASSOC);
-$all = $pdo->query("SELECT u.id, u.username, u.role, u.status, (SELECT COUNT(*) FROM authors WHERE user_id = u.id) has_author FROM users u ORDER BY u.username")->fetchAll(PDO::FETCH_ASSOC);
+$all = $pdo->query("SELECT u.id, u.username, u.role, u.status, (SELECT COUNT(*) FROM authors WHERE user_id = u.id) has_author FROM users u" . ($umHide !== '' ? " WHERE $umHide" : '') . " ORDER BY u.username")->fetchAll(PDO::FETCH_ASSOC);
 $cnt = ['users' => count($all), 'admins' => 0, 'active' => 0, 'pending' => 0, 'authors' => 0];
 foreach ($all as $u) { $cnt['admins'] += $u['role'] === 'admin'; $cnt['active'] += $u['status'] === 'active'; $cnt['pending'] += $u['status'] === 'pending'; $cnt['authors'] += $u['has_author'] > 0; }
 $img = fn($p) => $p ? '/' . ltrim($p, '/') : '';

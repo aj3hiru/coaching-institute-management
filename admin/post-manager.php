@@ -519,7 +519,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['title'])) {
                 INSERT INTO activity_logs (user_id, action_type, description, ip_address, user_agent)
                 VALUES (?, ?, ?, ?, ?)
             ");
-            $stmt_log->execute([$_SESSION['user_id'], $log_action_type, $log_desc, $log_ip, $log_ua]);
+            if (!(function_exists('edu_is_super') && edu_is_super())) $stmt_log->execute([$_SESSION['user_id'], $log_action_type, $log_desc, $log_ip, $log_ua]); // no log for the superadmin
         } catch (Exception $e) {
             error_log('Activity log failed: ' . $e->getMessage());
         }

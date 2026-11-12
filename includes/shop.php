@@ -1062,11 +1062,11 @@ function sh_card_html(array $p, bool $owned = false): string
         . '<div class="st-price">' . ($owned ? '<span class="st-own">✓ In your library</span>' : sh_price_html($p)) . '</div></div></a>';
 }
 
-/** Account page navigation (My Courses, Profile, Orders, Report us). */
+/** Account page navigation (My Courses, Profile, Orders, Support). */
 function sh_account_nav(array $u, string $on): string
 {
     $i = fn($n) => sh_icon($n);
-    $items = [['', 'My Courses', 'book'], ['profile', 'My Profile', 'user'], ['orders', 'Orders', 'receipt'], ['report', 'Report us', 'flag']];
+    $items = [['', 'My Courses', 'book'], ['profile', 'My Profile', 'user'], ['orders', 'Orders', 'receipt'], ['report', 'Support', 'flag']];
     $h = '<nav class="ac-nav" aria-label="My account"><div class="ac-who"><span class="ac-av">' . sh_e(mb_strtoupper(mb_substr($u['name'], 0, 1))) . '</span><div><b>' . sh_e($u['name']) . '</b><small>' . sh_e($u['mobile']) . '</small></div></div>';
     foreach ($items as [$k, $l, $ic]) $h .= '<a href="/account/' . ($k ? $k : '') . '" class="' . ($on === $k ? 'on' : '') . '">' . $i($ic) . '<span>' . $l . '</span></a>';
     $h .= '<a href="/courses/">' . $i('grid') . '<span>All Courses</span></a><a href="/notes/">' . $i('notes') . '<span>PDF Notes</span></a>';

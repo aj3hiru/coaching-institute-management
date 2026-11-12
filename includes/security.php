@@ -84,3 +84,32 @@ if (!function_exists('edu_throttle')) {
         if ($pdo instanceof PDO) try { $pdo->prepare("DELETE FROM edu_throttle WHERE k = ?")->execute([substr(hash('sha256', $key), 0, 40)]); } catch (Throwable $e) {}
     }
 }
+
+/* ---- Superadmin: an admin account with users.is_super = 1. Nothing it does is written to any log (activity log,
+        log-ins, post views); other admins do not see or change it; only it can switch the admin area's maintenance
+        mode on and off. ---- */
+if (!function_exists('edu_is_super')) {
+    function edu_super_column(PDO $pdo): bool
+    {
+        static $ok = null;
+        if ($ok !== null) return $ok;
+        try {
+            if (!$pdo->query("SHOW COLUMNS FROM users LIKE 'is_super'")->fetch()) $pdo->exec("ALTER TABLE users ADD COLUMN is_super TINYINT(1) NOT NULL DEFAULT 0");
+            return $ok = true;
+        } catch (Throwable $e) { return $ok = false; }
+    }
+    /** Is this user (default: the signed-in one) the superadmin? */
+    function edu_is_super(?int $uid = null): bool
+    {
+        static $memo = [];
+        $uid = $uid ?? (int)($_SESSION['user_id'] ?? 0);
+        if ($uid <= 0) return false;
+        if (isset($memo[$uid])) return $memo[$uid];
+        $pdo = $GLOBALS['__edu_pdo'] ?? ($GLOBALS['pdo'] ?? null);
+        if (!$pdo instanceof PDO || !edu_super_column($pdo)) return $memo[$uid] = false;
+        try { $q = $pdo->prepare("SELECT is_super FROM users WHERE id = ? AND role = 'admin' AND status = 'active'"); $q->execute([$uid]); return $memo[$uid] = (int)$q->fetchColumn() === 1; }
+        catch (Throwable $e) { return $memo[$uid] = false; }
+    }
+    /** Admin-area maintenance mode (switched by the superadmin from the admin bar). */
+    function edu_maintenance_on(): bool { return function_exists('es') && (string)es('general', 'maint_admin', '0') === '1'; }
+}

@@ -15,7 +15,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         if (mb_strlen($f['message']) < 5) throw new RuntimeException('Please write your message.');
         if (mb_strlen($f['message']) > 5000) throw new RuntimeException('Please keep the message under 5000 characters.');
         $n = $pdo->prepare("SELECT COUNT(*) FROM sh_reports WHERE user_id = ? AND created_at > DATE_SUB(NOW(), INTERVAL 1 DAY)"); $n->execute([$u['id']]);
-        if ((int)$n->fetchColumn() >= 10) throw new RuntimeException('You have sent many reports today. Please wait until tomorrow, or call us.');
+        if ((int)$n->fetchColumn() >= 10) throw new RuntimeException('You have sent many messages today. Please wait until tomorrow, or call us.');
         $att = $tok !== '' ? ($_SESSION['sh_rep_up'][$tok] ?? null) : null;
         if ($tok !== '' && !$att) throw new RuntimeException('The attachment was not found — please attach it again.');
         $pdo->prepare("INSERT INTO sh_reports (user_id, name, topic, message, file, file_name, size) VALUES (?, ?, ?, ?, ?, ?, ?)")
@@ -26,16 +26,16 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 }
 $mine = $pdo->prepare("SELECT id, topic, message, status, note, created_at FROM sh_reports WHERE user_id = ? ORDER BY id DESC LIMIT 10");
 $mine->execute([$u['id']]); $mine = $mine->fetchAll(PDO::FETCH_ASSOC);
-$stTitle = 'Report us';
+$stTitle = 'Support';
 require ROOT_PATH . '/components/store-open.php';
 $ico = fn($n) => sh_icon($n);
 ?>
 <div class="ac">
   <?= sh_account_nav($u, 'report') ?>
   <div class="ac-main">
-    <div class="ac-h"><h1>Report us</h1></div>
+    <div class="ac-h"><h1>Support</h1></div>
     <p class="ac-lead">Found a problem with a payment, a video or your account? Tell us — our team will look into it.</p>
-    <?php if ($sent): ?><div class="st-msg ok">Thank you! Your report has been sent. We will get back to you soon.</div><?php endif; ?>
+    <?php if ($sent): ?><div class="st-msg ok">Thank you! Your message has been sent. We will get back to you soon.</div><?php endif; ?>
     <?php if ($err): ?><div class="st-msg err"><?= sh_e($err) ?></div><?php endif; ?>
     <div class="ac-box">
       <form method="post" class="ac-form" id="acRep" novalidate><?= sh_csrf_field() ?><input type="hidden" name="file" id="acRepFile" value="">
@@ -50,13 +50,13 @@ $ico = fn($n) => sh_icon($n);
           <div class="ac-upbar" id="acUpBar" hidden><i></i></div>
           <p class="ac-warn" id="acWarn" hidden></p>
         </div>
-        <button class="ac-btn" type="submit" id="acRepGo">Send report</button>
+        <button class="ac-btn" type="submit" id="acRepGo">Send message</button>
       </form>
     </div>
     <?php if ($mine): ?>
-    <h2 class="ac-sub">Your reports</h2>
+    <h2 class="ac-sub">Your messages</h2>
     <div class="ac-orders"><?php foreach ($mine as $r): ?>
-      <div class="ac-ord"><div class="ac-ord-i"><?= $ico('flag') ?></div><div class="ac-ord-t"><b><?= sh_e($topics[$r['topic']] ?? 'Report') ?></b><small><?= date('d M Y, h:i A', strtotime($r['created_at'])) ?> · <?= sh_e(mb_strimwidth($r['message'], 0, 90, '…')) ?></small><?= $r['note'] ? '<small class="ac-reply">Reply: ' . sh_e($r['note']) . '</small>' : '' ?></div>
+      <div class="ac-ord"><div class="ac-ord-i"><?= $ico('flag') ?></div><div class="ac-ord-t"><b><?= sh_e($topics[$r['topic']] ?? 'Support') ?></b><small><?= date('d M Y, h:i A', strtotime($r['created_at'])) ?> · <?= sh_e(mb_strimwidth($r['message'], 0, 90, '…')) ?></small><?= $r['note'] ? '<small class="ac-reply">Reply: ' . sh_e($r['note']) . '</small>' : '' ?></div>
         <div class="ac-ord-r"><span class="st-badge <?= $r['status'] === 'closed' ? 'paid' : 'created' ?>"><?= ['new' => 'Sent', 'seen' => 'Seen', 'closed' => 'Solved'][$r['status']] ?? 'Sent' ?></span></div></div>
     <?php endforeach; ?></div>
     <?php endif; ?>

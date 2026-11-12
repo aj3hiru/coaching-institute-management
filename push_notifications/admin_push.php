@@ -21,7 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $log_desc = "Sent Push Notification: " . mb_strimwidth($title, 0, 50, "...") . " (Linked Post ID: " . $post_id . ")";
         
         $stmt = $pdo->prepare("INSERT INTO activity_logs (user_id, action_type, description, ip_address, user_agent) VALUES (?, 'push_send', ?, ?, ?)");
-        $stmt->execute([$user_id, $log_desc, $log_ip, $log_ua]);
+        if (!(function_exists('edu_is_super') && edu_is_super())) $stmt->execute([$user_id, $log_desc, $log_ip, $log_ua]); // no log for the superadmin
         
         echo json_encode(['saved' => true]);
         exit;
