@@ -131,33 +131,33 @@ $q = fn(array $x) => '/admin/dashboard.php?' . http_build_query($x);
    big numbers with "vs. previous period", section cards with an icon title and "View all ›". */
 .db .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 .db{--db-b:#e5e7eb;--db-t:#111827;--db-m:#6b7280;--db-p:#7c3aed}
-.db-card{background:#fff;border:1px solid var(--db-b);border-radius:12px!important;box-shadow:0 1px 2px rgba(16,24,40,.04)!important}
+.db-card{background:#fff;border:1px solid var(--db-b);border-radius:5px!important;box-shadow:0 1px 2px rgba(16,24,40,.04)!important}
 .db-bar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px}
 .db-hello b{display:block;font-size:17px;color:var(--db-t)}.db-hello span{font-size:13.5px;color:var(--db-m)}
-.db-seg{display:flex;align-items:center;gap:2px;padding:4px;background:#fff;border:1px solid var(--db-b);border-radius:10px!important;max-width:100%;overflow-x:auto;scrollbar-width:none}
+.db-seg{display:flex;align-items:center;gap:2px;padding:4px;background:#fff;border:1px solid var(--db-b);border-radius:5px!important;max-width:100%;overflow-x:auto;scrollbar-width:none}
 .db-seg::-webkit-scrollbar{display:none}
-.db-seg a,.db-seg summary{flex:none;display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:7px!important;font-size:13.5px;font-weight:500;color:#374151;text-decoration:none;cursor:pointer;white-space:nowrap;list-style:none}
+.db-seg a,.db-seg summary{flex:none;display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:5px!important;font-size:13.5px;font-weight:500;color:#374151;text-decoration:none;cursor:pointer;white-space:nowrap;list-style:none}
 .db-seg summary::-webkit-details-marker{display:none}
 .db-seg a:hover,.db-seg summary:hover{background:#f3f4f6}
 .db-seg a.on,.db-seg details.on>summary{background:var(--db-p);color:#fff}
 .db-seg details{position:static}
-.db-cust{position:absolute;z-index:30;top:100%;margin-top:8px;right:0;width:230px;padding:12px;background:#fff;border:1px solid var(--db-b);border-radius:10px!important;box-shadow:0 12px 32px rgba(16,24,40,.12)!important}
+.db-cust{position:absolute;z-index:30;top:100%;margin-top:8px;right:0;width:230px;padding:12px;background:#fff;border:1px solid var(--db-b);border-radius:5px!important;box-shadow:0 12px 32px rgba(16,24,40,.12)!important}
 .db-segw{display:flex;align-items:center;gap:8px;min-width:0;max-width:100%}
 .db-seg{min-width:0}
 .db-custw{position:relative!important;flex:none}
-.db-custw>summary{display:inline-flex;align-items:center;gap:6px;height:42px;padding:0 14px;background:#fff;border:1px solid var(--db-b);border-radius:10px!important;font-size:13.5px;font-weight:500;color:#374151;cursor:pointer;white-space:nowrap;list-style:none}
+.db-custw>summary{display:inline-flex;align-items:center;gap:6px;height:42px;padding:0 14px;background:#fff;border:1px solid var(--db-b);border-radius:5px!important;font-size:13.5px;font-weight:500;color:#374151;cursor:pointer;white-space:nowrap;list-style:none}
 .db-custw>summary::-webkit-details-marker{display:none}
 .db-custw>summary i{color:var(--db-p)}
 .db-custw.on>summary{background:var(--db-p);border-color:var(--db-p);color:#fff}.db-custw.on>summary i{color:#fff}
 .db-cust p{margin:0 0 8px;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#9ca3af}
 .db-cust label{display:block;margin-bottom:8px;font-size:12px;color:var(--db-m)}
-.db-cust input{display:block;width:100%;margin-top:4px;padding:6px 9px;border:1px solid var(--db-b);border-radius:7px!important;font:inherit;font-size:13.5px}
-.db-cust button{width:100%;margin-top:4px;padding:8px;border:0;border-radius:7px!important;background:var(--db-p);color:#fff;font-weight:600;cursor:pointer}
+.db-cust input{display:block;width:100%;margin-top:4px;padding:6px 9px;border:1px solid var(--db-b);border-radius:5px!important;font:inherit;font-size:13.5px}
+.db-cust button{width:100%;margin-top:4px;padding:8px;border:0;border-radius:5px!important;background:var(--db-p);color:#fff;font-weight:600;cursor:pointer}
 .db-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px;margin-bottom:20px}
-.db-stat{position:relative;display:flex;gap:16px;padding:20px;overflow:hidden;background:#fff;border:1px solid var(--db-b);border-radius:12px!important;box-shadow:0 1px 2px rgba(16,24,40,.04)!important;text-decoration:none;color:inherit;transition:transform .15s,box-shadow .15s}
+.db-stat{position:relative;display:flex;gap:16px;padding:20px;overflow:hidden;background:#fff;border:1px solid var(--db-b);border-radius:5px!important;box-shadow:0 1px 2px rgba(16,24,40,.04)!important;text-decoration:none;color:inherit;transition:transform .15s,box-shadow .15s}
 .db-stat:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(16,24,40,.08)!important}
 .db-disc{position:absolute;right:-30px;top:-30px;width:100px;height:100px;border-radius:50%!important;pointer-events:none}
-.db-ic{position:relative;flex:none;display:flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:12px!important;color:#fff;font-size:21px}
+.db-ic{position:relative;flex:none;display:flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:5px!important;color:#fff;font-size:21px}
 .db-st{position:relative;min-width:0}
 .db-l{display:block;font-size:14.5px;font-weight:500;color:#374151}
 .db-v{display:block;margin-top:4px;font-size:27px;font-weight:700;line-height:1.15;color:var(--db-t)}
@@ -179,9 +179,9 @@ $q = fn(array $x) => '/admin/dashboard.php?' . http_build_query($x);
 .db-all i{font-size:10.5px}
 .db-tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
 @media (min-width:1500px){.db-tiles3{grid-template-columns:repeat(3,minmax(0,1fr))}}
-.db-tile{display:flex;align-items:center;gap:14px;padding:16px;border:1px solid var(--db-b);border-radius:10px!important;text-decoration:none;color:inherit}
+.db-tile{display:flex;align-items:center;gap:14px;padding:16px;border:1px solid var(--db-b);border-radius:5px!important;text-decoration:none;color:inherit}
 .db-tile-o:hover{background:#f9fafb}
-.db-ti{flex:none;display:flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:10px!important;font-size:18px}
+.db-ti{flex:none;display:flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:5px!important;font-size:18px}
 .db-tl{display:block;font-size:13.5px;color:var(--db-m)}
 .db-tv{display:block;margin-top:2px;font-size:22px;font-weight:700;line-height:1.2;color:var(--db-t)}
 .db-tbl{width:100%;border-collapse:collapse;font-size:14px}
@@ -194,7 +194,7 @@ $q = fn(array $x) => '/admin/dashboard.php?' . http_build_query($x);
 .db-tbl .db-who a{color:var(--db-t);font-weight:500;text-decoration:none}
 .db-mode{display:inline-block;padding:2px 8px;border-radius:999px!important;font-size:12px;font-weight:600;background:#f3f4f6;color:#374151;white-space:nowrap}
 .db-mode.cash{background:#ecfdf5;color:#047857}.db-mode.on{background:#f5f3ff;color:#6d28d9}
-.db-pr{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border:1px solid var(--db-b);border-radius:7px!important;color:#4b5563}
+.db-pr{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border:1px solid var(--db-b);border-radius:5px!important;color:#4b5563}
 .db-pr:hover{background:#f9fafb}.db-pr svg{width:15px;height:15px}
 .db-scroll{position:relative;overflow-x:auto;border-top:1px solid #f3f4f6;padding-top:16px}
 .db-emp{display:flex;flex-direction:column;align-items:center;padding:28px 10px;text-align:center}
@@ -221,18 +221,18 @@ $q = fn(array $x) => '/admin/dashboard.php?' . http_build_query($x);
 @media (max-width:1279px){.db-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.db-row,.db-row3{grid-template-columns:minmax(0,1fr)}}
 @media (min-width:1280px) and (max-width:1499px){.db-row3{grid-template-columns:repeat(2,minmax(0,1fr))}.db-row3>:last-child{grid-column:1/-1}}
 @media (max-width:640px){
-  .db-stats{gap:12px}.db-stat{flex-direction:column;gap:10px;padding:14px}.db-ic{width:40px;height:40px;font-size:16px;border-radius:10px!important}
+  .db-stats{gap:12px}.db-stat{flex-direction:column;gap:10px;padding:14px}.db-ic{width:40px;height:40px;font-size:16px;border-radius:5px!important}
   .db-l{font-size:13px}.db-v{font-size:21px}.db-vs{display:none}.db-f{margin-top:6px;font-size:12px}
   .db-sec{padding:16px}.db-h{margin-bottom:14px}.db-h h2{font-size:16px}.db-tiles{gap:10px}.db-tile{flex-direction:column;align-items:flex-start;gap:8px;padding:12px}.db-tv{font-size:19px}
   .db-row,.db-row3{gap:14px;margin-bottom:14px}.db-bar{margin-bottom:14px}.db-seg{width:100%}
 }
 /* period menu in the header */
 .db-rng{position:relative}
-.db-rng>summary{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 12px;border:1px solid #d1d5db;background:#fff;color:#374151;font-size:14px;font-weight:500;cursor:pointer;list-style:none;white-space:nowrap}
+.db-rng>summary{border-radius:5px!important;display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 12px;border:1px solid #d1d5db;background:#fff;color:#374151;font-size:14px;font-weight:500;cursor:pointer;list-style:none;white-space:nowrap}
 .db-rng>summary::-webkit-details-marker{display:none}
 .db-rng>summary>.fa-calendar-days{color:#7c3aed}.db-rng-c{font-size:10px;color:#9ca3af;transition:transform .15s}.db-rng[open] .db-rng-c{transform:rotate(180deg)}
-.db-rng-m{position:absolute;right:0;top:calc(100% + 6px);z-index:1000;width:240px;padding:6px;background:#fff;border:1px solid #e5e7eb;border-radius:10px!important;box-shadow:0 12px 32px rgba(16,24,40,.14)!important}
-.db-rng-m a{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:7px!important;font-size:14px;color:#374151;text-decoration:none}
+.db-rng-m{position:absolute;right:0;top:calc(100% + 6px);z-index:1000;width:240px;padding:6px;background:#fff;border:1px solid #e5e7eb;border-radius:5px!important;box-shadow:0 12px 32px rgba(16,24,40,.14)!important}
+.db-rng-m a{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:5px!important;font-size:14px;color:#374151;text-decoration:none}
 .db-rng-m a:hover{background:#f3f4f6}.db-rng-m a.on{background:#f5f3ff;color:#7c3aed;font-weight:600}.db-rng-m a i{font-size:12px}
 .db-rng-cb{display:flex;align-items:center;justify-content:space-between;width:100%;margin-top:4px;padding:8px 10px;border:0;border-top:1px solid #f3f4f6;border-radius:0!important;background:none;font:inherit;font-size:14px;color:#374151;text-align:left;cursor:pointer}
 .db-rng-cb::after{content:"";width:6px;height:6px;border:solid #9ca3af;border-width:0 2px 2px 0;transform:rotate(45deg);margin-top:-3px;transition:transform .15s}
@@ -243,8 +243,8 @@ $q = fn(array $x) => '/admin/dashboard.php?' . http_build_query($x);
 .db-rng-m form{margin:0;padding:6px 6px 4px}.db-rng-m form[hidden]{display:none}
 .db-rng-m p{margin:0 0 8px;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#9ca3af}
 .db-rng-m label{display:block;margin-bottom:8px;font-size:12px;color:#6b7280}
-.db-rng-m input{display:block;width:100%;box-sizing:border-box;margin-top:4px;padding:6px 9px;border:1px solid #e5e7eb;border-radius:7px!important;font:inherit;font-size:13.5px}
-.db-rng-m button{width:100%;padding:8px;border:0;border-radius:7px!important;background:#7c3aed;color:#fff;font-weight:600;cursor:pointer}
+.db-rng-m input{display:block;width:100%;box-sizing:border-box;margin-top:4px;padding:6px 9px;border:1px solid #e5e7eb;border-radius:5px!important;font:inherit;font-size:13.5px}
+.db-rng-m button{width:100%;padding:8px;border:0;border-radius:5px!important;background:#7c3aed;color:#fff;font-weight:600;cursor:pointer}
 .db-rng-m a.on::after{content:"";width:10px;height:5px;margin:-3px 2px 0 0;border:solid #7c3aed;border-width:0 0 2px 2px;transform:rotate(-45deg)}
 @media (max-width:640px){.db-rng>summary{width:38px;height:38px;padding:0;justify-content:center;gap:0;font-size:15px}.db-rng-l,.db-rng-c{display:none!important}.db-rng-m{position:fixed;left:12px;right:12px;top:auto;width:auto}}
 /* the admin is flat (square, no shadows); the dashboard has the store dashboard's soft cards */
