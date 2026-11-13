@@ -199,33 +199,33 @@ $tab = in_array($_GET['tab'] ?? '', ['content', 'store', 'students', 'orders'], 
 <?php admin_shell_head(); ?>
 <style>
 .ie-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
-.ie-card{background:#fff;border:1px solid var(--gray-200,#e5e7eb);border-radius:14px;padding:20px}
+.ie-card{background:#fff;border:1px solid var(--gray-200,#e5e7eb);border-radius:5px;padding:20px}
 .ie-card h3{margin:0 0 4px;display:flex;align-items:center;gap:8px}.ie-card h3 i{color:var(--primary)}
-.ie-card>p{margin:0 0 14px;color:var(--gray-500,#6b7280);font-size:.9rem}
-.ie-cats{max-height:260px;overflow:auto;border:1px solid #e5e7eb;border-radius:10px;padding:8px 12px;margin:8px 0 12px}
+.ie-card h3{margin-bottom:14px!important}
+.ie-cats{max-height:260px;overflow:auto;border:1px solid #e5e7eb;border-radius:5px;padding:8px 12px;margin:8px 0 12px}
 .ie-cats label{display:flex;justify-content:space-between;gap:8px;padding:4px 0;font-size:.88rem;cursor:pointer}.ie-cats small{color:#9ca3af}
 .ie-steps{display:flex;gap:6px;margin:0 0 14px;font-size:.8rem;flex-wrap:wrap}
-.ie-steps span{padding:4px 10px;border-radius:99px;background:#f1f5f9;color:#64748b;font-weight:600}.ie-steps span.on{background:var(--primary);color:#fff}.ie-steps span.done{background:#dcfce7;color:#166534}
-.ie-drop{display:block;border:2px dashed #cbd5e1;border-radius:12px;padding:26px;text-align:center;color:#64748b;cursor:pointer;transition:border-color .15s,background .15s}
+.ie-steps span{padding:4px 10px;border-radius:5px;background:#f1f5f9;color:#64748b;font-weight:600}.ie-steps span.on{background:var(--primary);color:#fff}.ie-steps span.done{background:#dcfce7;color:#166534}
+.ie-drop{display:block;border:2px dashed #cbd5e1;border-radius:5px;padding:26px;text-align:center;color:#64748b;cursor:pointer;transition:border-color .15s,background .15s}
 .ie-drop:hover,.ie-drop.drag{border-color:var(--primary);background:var(--primary-lighter,#f5f3ff)}
-.ie-prog{height:8px;border-radius:99px;background:#e5e7eb;overflow:hidden;margin:10px 0}.ie-prog span{display:block;height:100%;width:0;background:var(--primary);transition:width .25s}
+.ie-prog{height:8px;border-radius:5px;background:#e5e7eb;overflow:hidden;margin:10px 0}.ie-prog span{display:block;height:100%;width:0;background:var(--primary);transition:width .25s}
 .ie-sum{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 0 12px}
-.ie-sum div{padding:10px;border-radius:10px;background:#f8fafc;border:1px solid #eef2f7;text-align:center}.ie-sum b{display:block;font-size:1.3rem;color:#0f172a}.ie-sum span{font-size:.75rem;color:#64748b}
+.ie-sum div{padding:10px;border-radius:5px;background:#f8fafc;border:1px solid #eef2f7;text-align:center}.ie-sum b{display:block;font-size:1.3rem;color:#0f172a}.ie-sum span{font-size:.75rem;color:#64748b}
 .ie-src{font-size:.85rem;color:#475569;margin:0 0 10px}
 .ie-titles{margin:0 0 12px;padding-left:18px;font-size:.84rem;color:#334155}
-.ie-conf{border:1px solid #fde68a;background:#fffbeb;border-radius:10px;padding:10px;margin:0 0 12px}
+.ie-conf{border:1px solid #fde68a;background:#fffbeb;border-radius:5px;padding:10px;margin:0 0 12px}
 .ie-conf h4{margin:0 0 6px;font-size:.88rem;color:#92400e;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
 .ie-conf h4 span button{border:0;background:none;color:var(--primary);font-weight:600;cursor:pointer;font-size:.8rem}
 .ie-conf-row{display:grid;grid-template-columns:1fr 150px;gap:8px;align-items:center;padding:6px 0;border-top:1px dashed #fde68a;font-size:.84rem}
 .ie-conf-row small{display:block;color:#92400e}
 .ie-opts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 0 14px}
 .ie-opts label{font-size:.8rem;font-weight:600;color:#334155}.ie-opts select{margin-top:4px}
-.ie-log{margin-top:14px;max-height:320px;overflow:auto;border:1px solid #e5e7eb;border-radius:10px;font-size:.84rem}
+.ie-log{margin-top:14px;max-height:320px;overflow:auto;border:1px solid #e5e7eb;border-radius:5px;font-size:.84rem}
 .ie-log div{display:flex;gap:8px;align-items:flex-start;padding:7px 10px;border-bottom:1px solid #f1f5f9}.ie-log div:last-child{border:0}
 .ie-log i{margin-top:3px}.ie-log .ok i{color:#16a34a}.ie-log .skip i{color:#94a3b8}.ie-log .rep i{color:#2563eb}.ie-log .bad i{color:#dc2626}
 .ie-log a{margin-left:auto;white-space:nowrap;font-size:.78rem}
 .ie-result{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}
-.ie-result div{padding:10px;border-radius:10px;background:#f8fafc;text-align:center}.ie-result b{display:block;font-size:1.2rem}.ie-result span{font-size:.75rem;color:#64748b}
+.ie-result div{padding:10px;border-radius:5px;background:#f8fafc;text-align:center}.ie-result b{display:block;font-size:1.2rem}.ie-result span{font-size:.75rem;color:#64748b}
 /* export tabs */
 .ie-tabs{display:flex;gap:4px;flex-wrap:wrap;margin:10px 0 14px;border-bottom:1px solid #e5e7eb}
 .ie-tabs button{border:0;background:none;padding:9px 12px;font:600 .85rem inherit;font-family:inherit;color:#475569;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
@@ -240,22 +240,20 @@ $tab = in_array($_GET['tab'] ?? '', ['content', 'store', 'students', 'orders'], 
 <?= edu_chunk_js() ?>
 </head>
 <body>
-<?php admin_shell_open('Import &amp; Export', 'Posts, pages, courses, PDF notes, students, orders and fees — export with filters, import back'); ?>
+<?php admin_shell_open('Import &amp; Export'); ?>
 <?= admin_flash() ?>
 <div class="ie-grid">
   <div class="ie-card">
     <h3><i class="fas fa-file-export"></i> Export</h3>
     <nav class="ie-tabs" role="tablist"><button type="button" data-tab="content" class="on"><i class="fas fa-newspaper"></i> Posts &amp; Pages</button><button type="button" data-tab="store"><i class="fas fa-photo-film"></i> Courses &amp; Notes</button><button type="button" data-tab="students"><i class="fas fa-user-graduate"></i> Students</button><button type="button" data-tab="orders"><i class="fas fa-receipt"></i> Orders &amp; Fees</button></nav>
     <div class="ie-pane" data-pane="content">
-    <p>Download posts or pages as a ZIP — content, address, SEO, tags, categories, FAQs and every image. It imports on this site, another site on this CMS or the StoryTimes CMS.</p>
     <form method="POST"><?= csrf_field() ?><input type="hidden" name="action" value="export_posts">
-      <strong style="font-size:.9rem">Posts by category</strong> <small style="color:#9ca3af">— none ticked = every published post (<?= $totalPub ?>)</small>
+      <strong style="font-size:.9rem">Posts by category</strong> <small style="color:#9ca3af">· none ticked = all (<?= $totalPub ?>)</small>
       <div class="ie-cats"><?php foreach ($cats as $c): ?><label><span><input type="checkbox" name="cats[]" value="<?= (int)$c['id'] ?>"> <?= htmlspecialchars($c['name']) ?></span><small><?= (int)$c['n'] ?></small></label><?php endforeach; ?></div>
       <button type="submit" class="btn btn-primary"><i class="fas fa-download"></i> Export posts</button></form>
     <form method="POST" style="margin-top:12px"><?= csrf_field() ?><input type="hidden" name="action" value="export_pages"><button type="submit" class="btn btn-secondary" <?= $pageCount ? '' : 'disabled' ?>><i class="fas fa-download"></i> Export pages (<?= $pageCount ?>)</button></form>
     </div>
     <div class="ie-pane" data-pane="store" hidden>
-      <p>Courses and PDF notes as a ZIP — every detail, price, category, chapters, units, lectures, lecture PDFs, notes files and thumbnails. Import it on this site or another copy of it (the Import box on the right).</p>
       <form method="POST" class="ie-form"><?= csrf_field() ?><input type="hidden" name="action" value="export_store">
         <div class="ie-opts">
           <label>What<select class="form-control" name="type"><option value="">Courses and PDF notes</option><option value="course">Only courses</option><option value="notes">Only PDF notes</option></select></label>
@@ -263,13 +261,11 @@ $tab = in_array($_GET['tab'] ?? '', ['content', 'store', 'students', 'orders'], 
           <label>Price<select class="form-control" name="price"><option value="">Paid and free</option><option value="paid">Only paid</option><option value="free">Only free</option></select></label>
           <label>Category<select class="form-control" name="category"><option value="0">All categories</option><?php foreach ($shCats as $cid => $cn): ?><option value="<?= (int)$cid ?>"><?= htmlspecialchars($cn) ?></option><?php endforeach; ?></select></label>
         </div>
-        <label class="ie-chk"><input type="checkbox" name="videos" value="1"> <span><b>Include uploaded lecture videos</b><small>Videos make the file big (<?= htmlspecialchars($storeVideoSize) ?> now). YouTube lectures are always included as links.</small></span></label>
-        <p class="ie-muted"><?= (int)$storeCount['course'] ?> courses · <?= (int)$storeCount['notes'] ?> PDF notes on this site</p>
+        <label class="ie-chk"><input type="checkbox" name="videos" value="1"> <span><b>Include uploaded videos</b> <small>(<?= htmlspecialchars($storeVideoSize) ?>)</small></span></label>
         <button type="submit" class="btn btn-primary"><i class="fas fa-download"></i> Export courses / notes</button>
       </form>
     </div>
     <div class="ie-pane" data-pane="students" hidden>
-      <p>Students as a CSV file (opens in Excel / Google Sheets): details, type, class, courses and batches, online courses, fee, paid and due.</p>
       <form method="POST" class="ie-form"><?= csrf_field() ?><input type="hidden" name="action" value="export_students">
         <div class="ie-opts">
           <label>Student type<select class="form-control" name="type"><option value="">All students</option><option value="institute">Institute only</option><option value="online">Online only</option><option value="both">Both</option></select></label>
@@ -282,13 +278,12 @@ $tab = in_array($_GET['tab'] ?? '', ['content', 'store', 'students', 'orders'], 
         <button type="submit" class="btn btn-primary"><i class="fas fa-file-csv"></i> Export students</button>
       </form>
       <div class="ie-sub">
-        <h4><i class="fas fa-file-import"></i> Import students from a sheet</h4>
-        <p>A CSV with the column names in the first row — at least <b>Name</b> and <b>Mobile</b> (the Export above has every column). A student with the same name and mobile is skipped; new students get the next reg. no.</p>
+        <h4><i class="fas fa-file-import"></i> Import students (CSV)</h4>
+        <p>Needs <b>Name</b> and <b>Mobile</b> columns.</p>
         <form method="POST" enctype="multipart/form-data" class="ie-row"><?= csrf_field() ?><input type="hidden" name="action" value="import_students"><input type="file" name="csv" accept=".csv,text/csv" required class="form-control"><button type="submit" class="btn btn-secondary"><i class="fas fa-upload"></i> Import</button></form>
       </div>
     </div>
     <div class="ie-pane" data-pane="orders" hidden>
-      <p>Online orders and institute fee payments (receipts) as CSV files for Excel.</p>
       <form method="POST" class="ie-form"><?= csrf_field() ?><input type="hidden" name="action" value="export_orders">
         <h4 class="ie-h4">Online orders</h4>
         <div class="ie-opts">
@@ -310,9 +305,9 @@ $tab = in_array($_GET['tab'] ?? '', ['content', 'store', 'students', 'orders'], 
     </div>
   </div>
   <div class="ie-card">
-    <h3><i class="fas fa-file-import"></i> Import</h3><p>Add posts, pages or courses &amp; notes from an Export ZIP (from this site, another site on this CMS or the StoryTimes CMS). Each item keeps its address; images, SEO, categories and tags come along.</p>
+    <h3><i class="fas fa-file-import"></i> Import</h3>
     <div class="ie-steps"><span class="on" id="st1">1 Choose file</span><span id="st2">2 Check</span><span id="st3">3 Import</span></div>
-    <label class="ie-drop" id="ie-drop"><i class="fas fa-cloud-arrow-up" style="font-size:1.6rem;display:block;margin-bottom:6px"></i><span id="ie-text">Drop a ZIP here or click to choose<br><small>posts, pages or courses export ZIP</small></span><input type="file" id="ie-file" accept=".zip,application/zip" hidden></label>
+    <label class="ie-drop" id="ie-drop"><i class="fas fa-cloud-arrow-up" style="font-size:1.6rem;display:block;margin-bottom:6px"></i><span id="ie-text">Upload export ZIP</span><input type="file" id="ie-file" accept=".zip,application/zip" hidden></label>
     <div class="ie-prog" id="ie-prog" hidden><span></span></div>
     <div id="ie-review" hidden>
       <div class="ie-sum"><div><b id="rv-count">0</b><span id="rv-type">posts</span></div><div><b id="rv-new">0</b><span>new here</span></div><div><b id="rv-dup">0</b><span>already here</span></div></div>
@@ -328,7 +323,6 @@ $tab = in_array($_GET['tab'] ?? '', ['content', 'store', 'students', 'orders'], 
     </div>
     <div class="ie-result" id="ie-result" hidden></div>
     <div class="ie-log" id="ie-log" hidden></div>
-    <p style="font-size:.82rem;color:var(--gray-500);margin-top:14px">Need a copy of the whole site (database + all media)? Use <a href="/admin/backup-restore.php">Backup &amp; Restore</a>.</p>
   </div>
 </div>
 <?php admin_shell_close(); ?>
@@ -351,17 +345,17 @@ document.addEventListener('DOMContentLoaded', function () {
     txt.innerHTML = 'Uploading ' + esc(file.name) + '…';
     eduChunkUpload('/admin/import-export.php', file, { action: 'chunk', _csrf: CSRF }, bar).then(function (d) {
       scan = d; decisions = {}; step(2);
-      txt.innerHTML = '<i class="fas fa-circle-check" style="color:#16a34a"></i> ' + esc(file.name) + ' — checked, it is a valid export';
+      txt.innerHTML = '<i class="fas fa-circle-check" style="color:#16a34a"></i> ' + esc(file.name);
       $('rv-count').textContent = d.count; $('rv-type').textContent = d.type === 'store' ? 'courses / notes' : d.type === 'posts' ? (d.count === 1 ? 'post' : 'posts') : (d.count === 1 ? 'page' : 'pages');
       $('rv-dup').textContent = d.conflicts.length; $('rv-new').textContent = d.count - d.conflicts.length;
-      var s = d.source || {}, app = /storytimes|next/i.test(s.app || '') ? 'StoryTimes CMS' : /edumint/i.test(s.app || '') ? 'This CMS' : '';
-      $('rv-src').innerHTML = 'From ' + (s.name ? '<b>' + esc(s.name) + '</b> ' : '') + (s.url ? esc(s.url.replace(/^https?:\/\//, '')) + ' ' : 'another site ') + (app ? '(' + app + ')' : '') + (s.date ? ' · exported ' + esc(new Date(s.date).toLocaleString()) : '');
+      var s = d.source || {};
+      $('rv-src').innerHTML = 'From ' + (s.name ? '<b>' + esc(s.name) + '</b> ' : '') + (s.url ? esc(s.url.replace(/^https?:\/\//, '')) : 'another site') + (s.date ? ' · ' + esc(new Date(s.date).toLocaleString()) : '');
       $('rv-titles').innerHTML = d.titles.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + (d.count > d.titles.length ? '<li style="list-style:none;color:#94a3b8">… and ' + (d.count - d.titles.length) + ' more</li>' : '');
       $('rv-conf').hidden = !d.conflicts.length;
       $('rv-conf-list').innerHTML = d.conflicts.map(function (c) { decisions[c.i] = 'keep_both'; return '<div class="ie-conf-row"><div><b>' + esc(c.title) + '</b><small>' + esc(c.path) + ' — already here as “' + esc(c.existing) + '”</small></div><select class="form-control" data-i="' + c.i + '"><option value="keep_both">Keep both</option><option value="replace">Replace existing</option><option value="skip">Skip</option></select></div>'; }).join('');
       $('rv-conf-list').querySelectorAll('select').forEach(function (s) { s.onchange = function () { decisions[s.dataset.i] = s.value; }; });
       $('rv-author-wrap').hidden = d.type !== 'posts';
-      $('rv-authors-note').textContent = d.authors && d.authors.length ? 'Authors in the file: ' + d.authors.join(', ') + '. Names not found here go to you.' : '';
+      $('rv-authors-note').textContent = '';
       $('ie-start').hidden = false; $('ie-start').disabled = false; $('ie-again').hidden = true;
       $('ie-review').hidden = false;
     }).catch(function (e) { txt.innerHTML = '<span style="color:#dc2626"><i class="fas fa-circle-xmark"></i> ' + esc(e.message) + '</span>'; prog.hidden = true; step(1); });
@@ -400,7 +394,7 @@ document.addEventListener('DOMContentLoaded', function () {
       });
     })(0);
   };
-  $('ie-again').onclick = function () { scan = null; $('ie-review').hidden = true; $('ie-log').hidden = true; $('ie-result').hidden = true; prog.hidden = true; input.value = ''; txt.innerHTML = 'Drop a ZIP here or click to choose<br><small>posts, pages or courses export ZIP</small>'; step(1); };
+  $('ie-again').onclick = function () { scan = null; $('ie-review').hidden = true; $('ie-log').hidden = true; $('ie-result').hidden = true; prog.hidden = true; input.value = ''; txt.innerHTML = 'Upload export ZIP'; step(1); };
 });
 </script>
 </body>

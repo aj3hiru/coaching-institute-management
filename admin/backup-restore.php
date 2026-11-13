@@ -25,7 +25,7 @@ if ($action === 'chunk') {
         $done = edu_chunk_receive();
         if (!$done) { echo '{"ok":true}'; exit; }
         $zip = new ZipArchive();
-        if ($zip->open($done['path']) !== true || $zip->locateName('database.sql') === false) { @unlink($done['path']); throw new RuntimeException('This is not an EduMint backup ZIP (database.sql is missing).'); }
+        if ($zip->open($done['path']) !== true || $zip->locateName('database.sql') === false) { @unlink($done['path']); throw new RuntimeException('This is not a backup ZIP made here.'); }
         $zip->close();
         $_SESSION['edu_restore_file'] = $done['path'];
         $inf = edu_br_info($done['path']);
@@ -113,16 +113,16 @@ $partTxt = function (array $inf): string {
 .br-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
 .br-card{background:#fff;border:1px solid var(--gray-200,#e5e7eb);border-radius:5px;padding:20px}
 .br-card h3{margin:0 0 4px;display:flex;align-items:center;gap:8px}.br-card h3 i{color:var(--primary)}
-.br-card>p{margin:0 0 14px;color:var(--gray-500,#6b7280);font-size:.9rem}
+.br-card h3{margin-bottom:14px!important}.br-auto{margin:0 0 12px;font-size:.82rem;color:var(--gray-500,#6b7280)}
 .br-field{display:block;font-size:.85rem;font-weight:600;margin:0 0 12px}.br-field input{display:block;width:100%;margin-top:4px;height:40px;padding:0 10px;border:1px solid #d1d5db;border-radius:5px}
 .br-parts{display:flex;flex-direction:column;gap:8px;margin:0 0 14px}
-.br-part{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid #e5e7eb;border-radius:5px;cursor:pointer}
-.br-part input{margin-top:3px}.br-part b{display:block;font-size:.9rem}.br-part small{display:block;color:#6b7280;font-size:.8rem}.br-part em{margin-left:auto;font-style:normal;font-size:.8rem;color:#374151;white-space:nowrap;font-weight:600}
+.br-part{display:flex;gap:10px;align-items:center;padding:10px 12px;border:1px solid #e5e7eb;border-radius:5px;cursor:pointer}
+.br-part input{margin:0}.br-part b{display:block;font-size:.9rem}.br-part small{display:block;color:#6b7280;font-size:.8rem}.br-part em{margin-left:auto;font-style:normal;font-size:.8rem;color:#374151;white-space:nowrap;font-weight:600}
 .br-part.is-fixed{background:#f9fafb;cursor:default}
 .br-warn{border:1px solid #fde68a;background:#fffbeb;color:#92400e;border-radius:5px;padding:10px 12px;font-size:.85rem;margin:0 0 12px}
 .br-drop{display:block;border:2px dashed #cbd5e1;border-radius:5px;padding:24px;text-align:center;color:#64748b;cursor:pointer}
 .br-drop:hover{border-color:var(--primary)}
-.br-prog{height:8px;border-radius:99px;background:#e5e7eb;overflow:hidden;margin:10px 0}.br-prog span{display:block;height:100%;width:0;background:var(--primary)}
+.br-prog{height:8px;border-radius:5px;background:#e5e7eb;overflow:hidden;margin:10px 0}.br-prog span{display:block;height:100%;width:0;background:var(--primary)}
 .br-info{border:1px solid #e5e7eb;border-radius:5px;padding:10px 12px;margin:10px 0;font-size:.85rem}.br-info b{display:block;margin-bottom:4px}
 .br-table{width:100%;border-collapse:collapse;font-size:.88rem}.br-table th,.br-table td{padding:10px;border-bottom:1px solid #eef0f3;text-align:left;vertical-align:middle}
 .br-table td small{display:block;color:#6b7280}.br-table form{display:inline}
@@ -133,28 +133,29 @@ $partTxt = function (array $inf): string {
 @media (max-width:820px){.br-grid{grid-template-columns:1fr}.br-stats{grid-template-columns:1fr 1fr}}
 </style>
 <?= edu_chunk_js() ?>
+<script src="/assets/js/edu-dialog.js?v=<?= @filemtime(ROOT_PATH . '/assets/js/edu-dialog.js') ?: 1 ?>" defer></script>
 </head>
 <body>
-<?php admin_shell_open('Backup &amp; Restore', 'The whole website — database, images, course videos & PDFs and site files'); ?>
+<?php admin_shell_open('Backup &amp; Restore'); ?>
 <?= admin_flash() ?>
 <div class="br-stats"><?php foreach ($stats as [$ic, $v, $l]): ?><div class="br-stat"><i class="fas <?= $ic ?>"></i><div><b><?= is_int($v) ? number_format($v) : $v ?></b><span><?= $l ?></span></div></div><?php endforeach; ?></div>
 <div class="br-grid">
   <form class="br-card" method="POST"><?= csrf_field() ?><input type="hidden" name="action" value="create">
-    <h3><i class="fas fa-box-archive"></i> Create Backup</h3><p>One ZIP with everything you tick. Backups are kept on the server outside the public website — download a copy to your computer too.</p>
+    <h3><i class="fas fa-box-archive"></i> Create Backup</h3>
     <label class="br-field">Label (optional)<input type="text" name="label" maxlength="40" placeholder="e.g. before-big-update"></label>
     <div class="br-parts">
-      <label class="br-part is-fixed"><input type="checkbox" checked disabled><span><b>Database</b><small>Posts, pages, categories, courses, PDF notes, lectures, students, batches, fees, receipts, online accounts, orders, settings — every table</small></span><em><?= $mb($dbSize) ?></em></label>
-      <label class="br-part"><input type="checkbox" name="media" value="1" checked><span><b>Images &amp; media library</b><small>The uploads folder: post images, thumbnails, logos, File Manager files</small></span><em><?= $mb($sizes['uploads']) ?></em></label>
-      <label class="br-part"><input type="checkbox" name="store" value="1" checked><span><b>Course videos &amp; PDFs</b><small>Uploaded lecture videos, lecture PDFs and notes files (private folder)</small></span><em><?= $mb($sizes['store']) ?></em></label>
-      <label class="br-part"><input type="checkbox" name="site" value="1" checked><span><b>Site files</b><small>The website's code, theme, fonts and settings files — to move the site to another server (not used by Restore)</small></span><em><?= $mb($siteSize) ?></em></label>
+      <label class="br-part is-fixed"><input type="checkbox" checked disabled><span><b>Database</b></span><em><?= $mb($dbSize) ?></em></label>
+      <label class="br-part"><input type="checkbox" name="media" value="1" checked><span><b>Images &amp; media</b></span><em><?= $mb($sizes['uploads']) ?></em></label>
+      <label class="br-part"><input type="checkbox" name="store" value="1" checked><span><b>Course videos &amp; PDFs</b></span><em><?= $mb($sizes['store']) ?></em></label>
+      <label class="br-part"><input type="checkbox" name="site" value="1" checked><span><b>Site files</b></span><em><?= $mb($siteSize) ?></em></label>
     </div>
-    <p style="font-size:.82rem;color:var(--gray-500);margin:0 0 12px"><i class="fas fa-clock"></i> Automatic backup: <b><?= ['off' => 'off', 'daily' => 'every day', 'weekly' => 'once a week'][(string)es('cron', 'auto_backup', 'off')] ?? 'off' ?></b> — change it in <a href="/admin/cron-manager.php">Cron Manager</a>.</p>
+    <p class="br-auto"><i class="fas fa-clock"></i> Auto backup: <b><?= ['off' => 'Off', 'daily' => 'Daily', 'weekly' => 'Weekly'][(string)es('cron', 'auto_backup', 'off')] ?? 'Off' ?></b> · <a href="/admin/cron-manager.php">Change</a></p>
     <button type="submit" class="btn btn-primary" onclick="this.disabled=true;this.form.submit();this.innerHTML='<i class=&quot;fas fa-spinner fa-spin&quot;></i> Creating…'"><i class="fas fa-box-archive"></i> Create Backup Now</button>
   </form>
   <div class="br-card">
-    <h3><i class="fas fa-rotate-left"></i> Restore from a Backup ZIP</h3><p>Upload a backup ZIP made here. You will see what it holds and choose what to restore.</p>
-    <div class="br-warn"><b>Careful:</b> restoring the database replaces all current posts, courses, students, fees, orders and settings with the backup. A safety copy of the current site is made automatically first.</div>
-    <label class="br-drop" id="br-drop"><i class="fas fa-cloud-arrow-up" style="font-size:1.6rem;display:block;margin-bottom:6px"></i><span id="br-drop-text">Click or drag a backup .zip here</span><input type="file" id="br-file" accept=".zip" hidden></label>
+    <h3><i class="fas fa-rotate-left"></i> Restore</h3>
+    <div class="br-warn">Restore replaces the current data. A safety backup is made first.</div>
+    <label class="br-drop" id="br-drop"><i class="fas fa-cloud-arrow-up" style="font-size:1.6rem;display:block;margin-bottom:6px"></i><span id="br-drop-text">Upload backup ZIP</span><input type="file" id="br-file" accept=".zip" hidden></label>
     <div class="br-prog" id="br-prog" hidden><span></span></div>
     <form method="POST" id="br-upload-form" hidden><?= csrf_field() ?><input type="hidden" name="action" value="restore_upload">
       <div class="br-info" id="br-up-info"></div>
@@ -163,21 +164,21 @@ $partTxt = function (array $inf): string {
       <button type="submit" class="btn btn-danger"><i class="fas fa-rotate-left"></i> Restore</button></form>
   </div>
 </div>
-<div class="br-card" style="margin-top:16px"><h3><i class="fas fa-clock-rotate-left"></i> Saved Backups</h3><p>Stored on the server outside the website folder.</p>
+<div class="br-card" style="margin-top:16px"><h3><i class="fas fa-clock-rotate-left"></i> Saved Backups</h3>
   <?php if (!$backups): ?><p style="color:var(--gray-500)">No backups yet.</p><?php else: ?>
   <div style="overflow-x:auto"><table class="br-table"><thead><tr><th>Backup</th><th>Holds</th><th>Size</th><th>Created</th><th></th></tr></thead><tbody>
-  <?php foreach ($backups as $b): $inf = $b['info']; ?><tr><td><b><?= htmlspecialchars($b['name']) ?></b><?php if (!empty($inf['counts'])): ?><small><?= htmlspecialchars(implode(' · ', array_map(fn($k, $v) => number_format((int)$v) . ' ' . $k, array_keys($inf['counts']), $inf['counts']))) ?></small><?php endif; ?></td>
+  <?php foreach ($backups as $b): $inf = $b['info']; ?><tr><td><b><?= htmlspecialchars($b['name']) ?></b></td>
     <td><?= htmlspecialchars($partTxt($inf)) ?></td><td><?= $mb($b['size']) ?></td><td class="ci-nw"><?= date('j M Y, g:i a', $b['time']) ?></td>
     <td><div class="br-acts"><a class="btn btn-secondary btn-sm" href="?action=download&amp;file=<?= urlencode($b['name']) ?>"><i class="fas fa-download"></i> Download</a>
       <button type="button" class="btn btn-secondary btn-sm" data-restore="<?= htmlspecialchars($b['name']) ?>" data-has="<?= htmlspecialchars(json_encode($inf['has'] ?? [])) ?>"><i class="fas fa-rotate-left"></i> Restore</button>
-      <form method="POST" onsubmit="return confirm('Delete this backup file?')"><?= csrf_field() ?><input type="hidden" name="action" value="delete"><input type="hidden" name="file" value="<?= htmlspecialchars($b['name']) ?>"><button class="btn btn-danger btn-sm" type="submit"><i class="fas fa-trash"></i></button></form></div></td></tr>
+      <form method="POST" data-del><?= csrf_field() ?><input type="hidden" name="action" value="delete"><input type="hidden" name="file" value="<?= htmlspecialchars($b['name']) ?>"><button class="btn btn-danger btn-sm" type="submit"><i class="fas fa-trash"></i></button></form></div></td></tr>
   <?php endforeach; ?>
   </tbody></table></div><?php endif; ?>
 </div>
 <div class="br-modal" id="br-modal" hidden><div>
   <h3 style="margin:0 0 6px"><i class="fas fa-rotate-left"></i> Restore <span id="br-m-name"></span></h3>
   <form method="POST"><?= csrf_field() ?><input type="hidden" name="action" value="restore_saved"><input type="hidden" name="file" value="">
-    <div class="br-warn">Restoring the database replaces everything now on the site with this backup. A safety copy is made first.</div>
+    <div class="br-warn">Restore replaces the current data. A safety backup is made first.</div>
     <div class="br-parts" data-parts></div>
     <label class="br-field">Type RESTORE to confirm<input type="text" name="confirm" autocomplete="off" placeholder="RESTORE"></label>
     <div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" class="btn btn-secondary" data-close>Cancel</button><button type="submit" class="btn btn-danger">Restore</button></div>
@@ -185,13 +186,14 @@ $partTxt = function (array $inf): string {
 <?php admin_shell_close(); ?>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-  var LBL = { database: ['r_db', 'Database', 'every table: posts, courses, students, fees, orders, settings'], uploads: ['r_uploads', 'Images & media library', 'files are added / replaced'], store: ['r_store', 'Course videos & PDFs', 'files are added / replaced'] };
+  var LBL = { database: ['r_db', 'Database'], uploads: ['r_uploads', 'Images & media'], store: ['r_store', 'Course videos & PDFs'] };
+  var say = function (t) { return window.EduDialog ? EduDialog.alert(t) : alert(t); };
   function parts(box, has) {
-    box.innerHTML = Object.keys(LBL).filter(function (k) { return has[k]; }).map(function (k) { var l = LBL[k]; return '<label class="br-part"><input type="checkbox" name="' + l[0] + '" value="1" checked><span><b>' + l[1] + '</b><small>' + l[2] + '</small></span></label>'; }).join('') || '<p style="color:#b91c1c">Nothing in this file can be restored.</p>';
+    box.innerHTML = Object.keys(LBL).filter(function (k) { return has[k]; }).map(function (k) { var l = LBL[k]; return '<label class="br-part"><input type="checkbox" name="' + l[0] + '" value="1" checked><span><b>' + l[1] + '</b></span></label>'; }).join('') || '<p style="color:#b91c1c">Nothing in this file can be restored.</p>';
   }
   var drop = document.getElementById('br-drop'), input = document.getElementById('br-file'), prog = document.getElementById('br-prog'), txt = document.getElementById('br-drop-text'), uf = document.getElementById('br-upload-form');
   function go(file) {
-    if (!file || !/\.zip$/i.test(file.name)) { alert('Please choose a .zip backup file.'); return; }
+    if (!file || !/\.zip$/i.test(file.name)) { say('Please choose a .zip backup file.'); return; }
     prog.hidden = false; uf.hidden = true; txt.textContent = 'Uploading ' + file.name + '…';
     eduChunkUpload('/admin/backup-restore.php', file, { action: 'chunk', _csrf: <?= json_encode(csrf_token(), JSON_HEX_TAG) ?> }, function (p) { prog.firstElementChild.style.width = p + '%'; })
       .then(function (d) {
@@ -211,7 +213,11 @@ document.addEventListener('DOMContentLoaded', function () {
     if (b) { mf.file.value = b.getAttribute('data-restore'); mf.confirm.value = ''; document.getElementById('br-m-name').textContent = b.getAttribute('data-restore'); parts(mf.querySelector('[data-parts]'), JSON.parse(b.getAttribute('data-has') || '{}')); m.hidden = false; return; }
     if (e.target === m || e.target.closest('[data-close]')) m.hidden = true;
   });
-  [uf, mf].forEach(function (f) { f.addEventListener('submit', function (e) { if (f.confirm.value.trim() !== 'RESTORE') { e.preventDefault(); alert('Type RESTORE to confirm.'); } else if (!f.querySelector('[data-parts] input:checked')) { e.preventDefault(); alert('Choose what to restore.'); } }); });
+  document.querySelectorAll('form[data-del]').forEach(function (f) { f.addEventListener('submit', function (e) { // delete: our own dialog, not the browser's
+    if (f._ok) return; e.preventDefault();
+    (window.EduDialog ? EduDialog.confirm('Delete this backup?', { title: 'Delete backup', ok: 'Delete', danger: true }) : Promise.resolve(confirm('Delete this backup?'))).then(function (y) { if (y) { f._ok = true; f.submit(); } });
+  }); });
+  [uf, mf].forEach(function (f) { f.addEventListener('submit', function (e) { if (f.confirm.value.trim() !== 'RESTORE') { e.preventDefault(); say('Type RESTORE to confirm.'); } else if (!f.querySelector('[data-parts] input:checked')) { e.preventDefault(); say('Choose what to restore.'); } }); });
 });
 </script>
 </body>
