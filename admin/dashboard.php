@@ -115,11 +115,11 @@ $card = function (string $tone, string $icon, string $label, string $value, stri
         . '<span class="db-st"><span class="db-l">' . $e($label) . '</span><span class="db-v">' . $value . '</span><span class="db-f">' . $foot . '</span></span></a>';
 };
 $head = fn(string $icon, string $title, string $link = '', string $linkText = '', string $iconCls = '') => '<div class="db-h"><h2><span class="db-hi ' . $iconCls . '"><i class="fas ' . $icon . '"></i></span>' . $title . '</h2>'
-    . ($link !== '' ? '<a class="db-all" href="' . ci_e($link) . '">' . ci_e($linkText) . ' <i class="fas fa-chevron-right"></i></a>' : '') . '</div>';
+    . ($link !== '' ? '<a class="db-all" data-ds-item="View all link" href="' . ci_e($link) . '">' . ci_e($linkText) . ' <i class="fas fa-chevron-right"></i></a>' : '') . '</div>';
 $tile = function (string $tone, string $icon, string $label, string $value, string $href = '') use ($TONE, $e): string {
     [, $tint, $ink] = $TONE[$tone];
     $in = '<span class="db-ti" style="background:' . $tint . ';color:' . $ink . '"><i class="fas ' . $icon . '"></i></span><span><span class="db-tl">' . $e($label) . '</span><span class="db-tv"' . ($href ? ' style="color:' . $ink . '"' : '') . '>' . $value . '</span></span>';
-    return $href !== '' ? '<a class="db-tile db-tile-o" href="' . $e($href) . '">' . $in . '</a>' : '<div class="db-tile">' . $in . '</div>';
+    return $href !== '' ? '<a class="db-tile db-tile-o" data-ds-item="' . $e($label) . '" href="' . $e($href) . '">' . $in . '</a>' : '<div class="db-tile" data-ds-item="' . $e($label) . '">' . $in . '</div>';
 };
 // money on the chart's side: ₹500, ₹20k, ₹1.5L, ₹2Cr
 $short = function (float $v): string { $t = fn($n) => rtrim(rtrim(number_format($n, 1, '.', ''), '0'), '.'); return $v >= 1e7 ? '₹' . $t($v / 1e7) . 'Cr' : ($v >= 1e5 ? '₹' . $t($v / 1e5) . 'L' : ($v >= 1e3 ? '₹' . $t($v / 1e3) . 'k' : '₹' . (int)round($v))); };
@@ -158,7 +158,7 @@ $q = fn(array $x) => '/admin/dashboard.php?' . http_build_query($x);
 .db-cust label{display:block;margin-bottom:8px;font-size:12px;color:var(--db-m)}
 .db-cust input{display:block;width:100%;margin-top:4px;padding:6px 9px;border:1px solid var(--db-b);border-radius:5px!important;font:inherit;font-size:13.5px}
 .db-cust button{width:100%;margin-top:4px;padding:8px;border:0;border-radius:5px!important;background:var(--db-p);color:#fff;font-weight:600;cursor:pointer}
-.db-stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:20px;margin-bottom:20px}
+.db-stats{display:flex;flex-wrap:wrap;gap:20px;margin-bottom:20px}.db-stats>.db-stat{flex:1 1 200px;min-width:0} /* hidden cards leave no hole: the others grow */
 .db-stat{position:relative;display:flex;gap:16px;padding:20px;overflow:hidden;background:#fff;border:1px solid var(--db-b);border-radius:5px!important;box-shadow:0 1px 2px rgba(16,24,40,.04)!important;text-decoration:none;color:inherit;transition:transform .15s,box-shadow .15s}
 .db-stat:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(16,24,40,.08)!important}
 .db-disc{position:absolute;right:-30px;top:-30px;width:100px;height:100px;border-radius:50%!important;pointer-events:none}
@@ -182,7 +182,7 @@ $q = fn(array $x) => '/admin/dashboard.php?' . http_build_query($x);
 .db-hi.dot{width:32px;height:32px;border-radius:50%!important;background:#1cc88a;color:#fff;font-size:14px}
 .db-all{display:inline-flex;align-items:center;gap:7px;font-size:14px;font-weight:500;color:var(--db-p);text-decoration:none;white-space:nowrap}
 .db-all i{font-size:10.5px}
-.db-tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.db-tiles{display:flex;flex-wrap:wrap;gap:16px}.db-tiles>.db-tile{flex:1 1 calc(50% - 8px);min-width:0} /* two a row; a single one takes the row */
 @media (min-width:1500px){.db-tiles3{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .db-tile{display:flex;align-items:center;gap:14px;padding:16px;border:1px solid var(--db-b);border-radius:5px!important;text-decoration:none;color:inherit}
 .db-tile-o:hover{background:#f9fafb}
@@ -223,7 +223,7 @@ $q = fn(array $x) => '/admin/dashboard.php?' . http_build_query($x);
 /* a card hidden from Display options: the other cards of its row take the room */
 @media (min-width:1280px){.db-row:has(>.dsp-hide){grid-template-columns:minmax(0,1fr)}.db-row3:has(>.dsp-hide){grid-template-columns:repeat(2,minmax(0,1fr))}.db-row3:has(>.dsp-hide~.dsp-hide){grid-template-columns:minmax(0,1fr)}.db-row3:has(>.dsp-hide)>:last-child{grid-column:auto}}
 .db-row:not(:has(>:not(.dsp-hide))),.db-row3:not(:has(>:not(.dsp-hide))){display:none}
-@media (max-width:1279px){.db-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.db-stats>:last-child:nth-child(odd){grid-column:1/-1}.db-row,.db-row3{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:1279px){.db-stats>.db-stat{flex-basis:calc(50% - 10px)}.db-row,.db-row3{grid-template-columns:minmax(0,1fr)}}
 @media (min-width:1280px) and (max-width:1499px){.db-row3{grid-template-columns:repeat(2,minmax(0,1fr))}.db-row3>:last-child{grid-column:1/-1}}
 @media (max-width:640px){
   .db-stats{gap:12px}.db-stat{flex-direction:column;gap:10px;padding:14px}.db-ic{width:40px;height:40px;font-size:16px;border-radius:5px!important}
@@ -262,7 +262,7 @@ $q = fn(array $x) => '/admin/dashboard.php?' . http_build_query($x);
 </head>
 <body>
 <?php
-$rng = '<details class="db-rng"><summary aria-label="Period: ' . $e($rangeLabel) . '"><i class="fas fa-calendar-days"></i><span class="db-rng-l">' . $e($rangeLabel) . '</span><i class="fas fa-chevron-down db-rng-c"></i></summary><div class="db-rng-m" role="menu">';
+$rng = '<details class="db-rng" data-ds-item="Period filter"><summary aria-label="Period: ' . $e($rangeLabel) . '"><i class="fas fa-calendar-days"></i><span class="db-rng-l">' . $e($rangeLabel) . '</span><i class="fas fa-chevron-down db-rng-c"></i></summary><div class="db-rng-m" role="menu">';
 foreach ($ranges as $k => $l) $rng .= '<a role="menuitem" href="' . $e($q(['range' => $k])) . '"' . ($range === $k ? ' class="on" aria-current="true"' : '') . '>' . $e($l) . '</a>'; // (the tick is drawn by CSS: an icon inside would make the header turn the link into an icon-only button on phones)
 if ($sessions) { $sOn = $range === 'session';
     $rng .= '<button type="button" class="db-rng-cb db-rng-sb' . ($sOn ? ' on' : '') . '" aria-expanded="' . ($sOn ? 'true' : 'false') . '">' . ($sOn ? 'Session ' . $e($sess['name']) : 'Session') . '</button><div class="db-rng-sl"' . ($sOn ? '' : ' hidden') . '>';
@@ -273,10 +273,10 @@ $rng .= '<button type="button" class="db-rng-cb db-rng-cc' . ($range === 'custom
     . '<form method="get" action="/admin/dashboard.php"' . ($range === 'custom' ? '' : ' hidden') . '><input type="hidden" name="range" value="custom">'
     . '<label>From<input type="date" name="from" value="' . $e($from) . '" max="' . $today . '" required></label><label>To<input type="date" name="to" value="' . $e($to) . '" max="' . $today . '" required></label>'
     . '<button type="submit">Apply</button></form></div></details>';
-admin_shell_open('Dashboard', $range === 'custom' ? $span : $rangeLabel . ' · ' . $span, '<div class="ci-top-actions">' . $rng
-    . (ci_perm($me, 'add_student') ? '<a class="ci-btn" href="/admin/student-edit.php"><i class="fas fa-user-plus"></i> Add Student</a>' : '')
-    . (ci_perm($me, 'fees') ? '<a class="ci-btn ci-ghost" href="/admin/ci-dues.php?period=all"><i class="fas fa-indian-rupee-sign"></i> Collect Fee</a>' : '')
-    . (ci_perm($me, 'batches') ? '<a class="ci-btn ci-ghost" href="/admin/ci-batches.php?new=1"><i class="fas fa-layer-group"></i> New Batch</a>' : '') . '</div>'); ?>
+admin_shell_open('Dashboard', $range === 'custom' ? $span : $rangeLabel . ' · ' . $span, '<div class="ci-top-actions" data-ds="Top buttons" data-ds-section data-ds-extra>' . $rng
+    . (ci_perm($me, 'add_student') ? '<a class="ci-btn" data-ds-item="Add Student" href="/admin/student-edit.php"><i class="fas fa-user-plus"></i> Add Student</a>' : '')
+    . (ci_perm($me, 'fees') ? '<a class="ci-btn ci-ghost" data-ds-item="Collect Fee" href="/admin/ci-dues.php?period=all"><i class="fas fa-indian-rupee-sign"></i> Collect Fee</a>' : '')
+    . (ci_perm($me, 'batches') ? '<a class="ci-btn ci-ghost" data-ds-item="New Batch" href="/admin/ci-batches.php?new=1"><i class="fas fa-layer-group"></i> New Batch</a>' : '') . '</div>'); ?>
 <div class="ci db">
 <?= admin_flash() ?>
 
@@ -298,15 +298,15 @@ admin_shell_open('Dashboard', $range === 'custom' ? $span : $rangeLabel . ' · '
 </div>
 
 <div class="db-row" data-ds-wrap>
-  <section class="db-card db-sec" data-ds="Payment Modes">
+  <section class="db-card db-sec" data-ds="Payment Modes" data-ds-section>
     <?= $head('fa-wallet', 'Payment Modes (' . $e($rangeLabel) . ')', '/admin/ci-fees.php?' . http_build_query(['period' => 'custom', 'from' => $from, 'to' => $to]), 'View all', 'dot') ?>
     <div class="db-tiles">
       <?php $mi = ['Cash' => ['green', 'fa-money-bill-wave'], 'UPI' => ['purple', 'fa-mobile-screen-button'], 'Bank' => ['green', 'fa-building-columns'], 'Cheque' => ['purple', 'fa-money-check'], 'Card' => ['green', 'fa-credit-card'], 'Other' => ['purple', 'fa-wallet']];
       foreach ($mi as $m => [$tn, $ic]) if (in_array($m, ['Cash', 'UPI', 'Bank', 'Cheque'], true) || $modes[$m] > 0) echo $tile($tn, $ic, CI_METHODS[$m], ci_money0($modes[$m])); ?>
     </div>
   </section>
-  <section class="db-card db-sec" data-ds="Institute Overview">
-    <?= $head('fa-chart-simple', 'Institute Overview <small class="db-run">Running now</small>') ?>
+  <section class="db-card db-sec" data-ds="Institute Overview" data-ds-section>
+    <?= $head('fa-chart-simple', 'Institute Overview <small class="db-run" data-ds-item="Running now label">Running now</small>') ?>
     <div class="db-tiles">
       <?= $tile('green', 'fa-book', 'Courses', number_format($stats['courses']), '/admin/ci-courses.php') ?>
       <?= $tile('purple', 'fa-layer-group', 'Batches', number_format($stats['batches']), '/admin/ci-batches.php') ?>
@@ -316,8 +316,7 @@ admin_shell_open('Dashboard', $range === 'custom' ? $span : $rangeLabel . ' · '
   </section>
 </div>
 
-<div class="db-one">
-  <section class="db-card db-sec" data-ds="Recent Payments">
+<section class="db-card db-sec db-one" data-ds="Recent Payments" data-ds-section>
     <?= $head('fa-file-lines', 'Recent Payments', '/admin/ci-fees.php?period=month', 'View all') ?>
     <?php if (!$recentPays): ?><div class="db-emp" style="border-top:1px solid #f3f4f6"><span><i class="fas fa-file-lines"></i></span><b>No payments yet</b><small>Fee payments will appear here once you take them</small></div>
     <?php else: ?><div class="db-scroll"><table class="db-tbl"><thead><tr><th>Receipt</th><th>Student</th><th>Amount</th><th>Mode</th><th>Date</th><th><span class="sr-only">Print</span></th></tr></thead><tbody>
@@ -330,29 +329,28 @@ admin_shell_open('Dashboard', $range === 'custom' ? $span : $rangeLabel . ' · '
         <td><a class="db-pr" href="/admin/ci-receipt.php?id=<?= (int)$p['id'] ?>" target="_blank" aria-label="Print receipt <?= $e($p['receipt_no']) ?>"><?= ci_svg('print') ?></a></td>
       </tr><?php endforeach; ?>
     </tbody></table></div><?php endif; ?>
-  </section>
-</div>
+</section>
 
 <?php $av = function (array $s, int $k) use ($e): string { $c = [['#f5f3ff', '#7c3aed'], ['#e8f9f2', '#0f9f6e'], ['#fdecee', '#c81e32'], ['#fef6e7', '#b45309']][$k % 4];
     $ini = mb_strtoupper(mb_substr(trim((string)$s['name']), 0, 1));
-    return '<span class="db-av" style="background:' . $c[0] . ';color:' . $c[1] . '">' . (!empty($s['photo']) ? '<img src="' . $e('/' . ltrim((string)$s['photo'], '/')) . '" alt="" loading="lazy">' : $e($ini)) . '</span>'; }; ?>
+    return '<span class="db-av" data-ds-item="Photo" style="background:' . $c[0] . ';color:' . $c[1] . '">' . (!empty($s['photo']) ? '<img src="' . $e('/' . ltrim((string)$s['photo'], '/')) . '" alt="" loading="lazy">' : $e($ini)) . '</span>'; }; ?>
 <div class="db-row3" data-ds-wrap>
-  <section class="db-card db-sec" data-ds="New Admissions">
+  <section class="db-card db-sec" data-ds="New Admissions" data-ds-section>
     <?= $head('fa-user-plus', 'New Admissions', '/admin/students.php?status=all', 'View all') ?>
     <?php if (!$recentStudents): ?><div class="db-emp" style="border-top:1px solid #f3f4f6"><span><i class="fas fa-user-graduate"></i></span><b>No students yet</b><small>New admissions will appear here</small></div><?php else: ?>
-    <ul class="db-list"><?php foreach ($recentStudents as $k => $s): ?><li><div class="db-p"><?= $av($s, $k) ?><div class="db-n"><a href="/admin/student-view.php?id=<?= (int)$s['id'] ?>"><?= $e($s['name']) ?></a><small><?= $s['courses'] ? $e($s['courses']) : '&nbsp;' ?></small></div></div><span class="db-r"><?= ci_date($s['admission_date']) ?></span></li><?php endforeach; ?></ul><?php endif; ?>
+    <ul class="db-list"><?php foreach ($recentStudents as $k => $s): ?><li><div class="db-p"><?= $av($s, $k) ?><div class="db-n"><a href="/admin/student-view.php?id=<?= (int)$s['id'] ?>"><?= $e($s['name']) ?></a><small data-ds-item="Course"><?= $s['courses'] ? $e($s['courses']) : '&nbsp;' ?></small></div></div><span class="db-r" data-ds-item="Admission date"><?= ci_date($s['admission_date']) ?></span></li><?php endforeach; ?></ul><?php endif; ?>
   </section>
-  <section class="db-card db-sec" data-ds="Fee to Collect">
+  <section class="db-card db-sec" data-ds="Fee to Collect" data-ds-section>
     <?= $head('fa-hand-holding-dollar', 'Fee to Collect', '/admin/ci-dues.php?period=all', 'View all') ?>
     <?php if (!$upcoming): ?><div class="db-emp" style="border-top:1px solid #f3f4f6"><span><i class="fas fa-circle-check"></i></span><b>No dues</b><small>Everyone has paid</small></div><?php else: ?>
-    <ul class="db-list"><?php foreach ($upcoming as $k => $u): $late = $u['due_date'] && $u['due_date'] < $today; ?><li><div class="db-p"><?= $av($u, $k + 2) ?><div class="db-n"><a href="/admin/student-view.php?id=<?= (int)$u['sid'] ?>#pay"><?= $e($u['name']) ?></a><small><?= $e($u['course_name']) ?> · <a href="tel:<?= $e($u['mobile']) ?>" style="display:inline;font-weight:500;color:inherit"><?= $e($u['mobile']) ?></a></small></div></div>
-      <span class="db-r"><b style="color:#c81e32"><?= ci_money0($u['due']) ?></b><span<?= $late ? ' class="db-late"' : '' ?>><?= $u['due_date'] ? ($late ? 'Late · ' : '') . ci_date($u['due_date']) : 'No date' ?></span></span></li><?php endforeach; ?></ul><?php endif; ?>
+    <ul class="db-list"><?php foreach ($upcoming as $k => $u): $late = $u['due_date'] && $u['due_date'] < $today; ?><li><div class="db-p"><?= $av($u, $k + 2) ?><div class="db-n"><a href="/admin/student-view.php?id=<?= (int)$u['sid'] ?>#pay"><?= $e($u['name']) ?></a><small><span data-ds-item="Course"><?= $e($u['course_name']) ?></span><span data-ds-item="Mobile number"><span class="db-sep"> · </span><a href="tel:<?= $e($u['mobile']) ?>" style="display:inline;font-weight:500;color:inherit"><?= $e($u['mobile']) ?></a></span></small></div></div>
+      <span class="db-r"><b style="color:#c81e32" data-ds-item="Due amount"><?= ci_money0($u['due']) ?></b><span data-ds-item="Due date"<?= $late ? ' class="db-late"' : '' ?>><?= $u['due_date'] ? ($late ? 'Late · ' : '') . ci_date($u['due_date']) : 'No date' ?></span></span></li><?php endforeach; ?></ul><?php endif; ?>
   </section>
-  <section class="db-card db-sec" data-ds="Batches">
+  <section class="db-card db-sec" data-ds="Batches" data-ds-section>
     <?= $head('fa-layer-group', 'Batches', '/admin/ci-batches.php', 'View all') ?>
     <?php if (!$batches): ?><div class="db-emp" style="border-top:1px solid #f3f4f6"><span><i class="fas fa-layer-group"></i></span><b>No running batches</b><small>Create a batch to see seats filling here</small></div><?php else: ?>
-    <ul class="db-list"><?php foreach ($batches as $b): ?><li><div class="db-n"><a href="/admin/students.php?batch=<?= (int)$b['id'] ?>"><?= $e($b['name']) ?></a><small><?= $e(implode(' · ', array_filter([$b['course_name'], $b['timing']]))) ?></small></div>
-      <span class="db-r"><b><?= (int)$b['n'] ?><?= $b['capacity'] ? ' <span style="font-weight:400;color:#6b7280">/ ' . (int)$b['capacity'] . '</span>' : '' ?></b><?= $b['capacity'] ? '<div class="db-meter"><i style="width:' . min(100, round($b['n'] / max(1, $b['capacity']) * 100)) . '%"></i></div>' : 'students' ?></span></li><?php endforeach; ?></ul><?php endif; ?>
+    <ul class="db-list"><?php foreach ($batches as $b): ?><li><div class="db-n"><a href="/admin/students.php?batch=<?= (int)$b['id'] ?>"><?= $e($b['name']) ?></a><small data-ds-item="Course and timing"><?= $e(implode(' · ', array_filter([$b['course_name'], $b['timing']]))) ?></small></div>
+      <span class="db-r"><b data-ds-item="Students / seats"><?= (int)$b['n'] ?><?= $b['capacity'] ? ' <span style="font-weight:400;color:#6b7280">/ ' . (int)$b['capacity'] . '</span>' : '' ?></b><?= $b['capacity'] ? '<div class="db-meter" data-ds-item="Seats bar"><i style="width:' . min(100, round($b['n'] / max(1, $b['capacity']) * 100)) . '%"></i></div>' : 'students' ?></span></li><?php endforeach; ?></ul><?php endif; ?>
   </section>
 </div>
 

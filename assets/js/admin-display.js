@@ -83,7 +83,16 @@
   function elementsOf(sec, skey) {
     var list = [];
     var own = sec.querySelectorAll('[data-ds-item]'); // the page lists the parts itself
-    if (sec.matches('[data-ds-section]') && own.length) { own.forEach(function (x) { var l = x.getAttribute('data-ds-item'); list.push({ key: skey + ':i' + slug(l), label: l, el: x }); }); return list; }
+    if (sec.matches('[data-ds-section]') && own.length) {
+      var byName = {};
+      own.forEach(function (x) { var l = x.getAttribute('data-ds-item'); if (byName[l]) { byName[l].els.push(x); return; } byName[l] = { key: skey + ':i' + slug(l), label: l, els: [x] }; list.push(byName[l]); }); // the same name on many rows = one choice
+      sec.querySelectorAll('table').forEach(function (tb, ti) {
+        var ths = tb.querySelectorAll('thead th');
+        if (!tb.dataset.dspT) tb.dataset.dspT = skey.replace(/[^a-z0-9]/g, '') + ti;
+        ths.forEach(function (th, ci) { var l = txt(th) || (ci === ths.length - 1 ? 'Actions' : 'Column ' + (ci + 1)); list.push({ key: skey + ':c' + ti + '_' + ci, label: 'Column: ' + l, col: [tb.dataset.dspT, ci + 1] }); });
+      });
+      return list;
+    }
     sec.querySelectorAll('.ci-stat, .stat-card').forEach(function (t, i) { list.push({ key: skey + ':t' + i, label: 'Tile: ' + (txt(t.querySelector('small, .stat-label, p')) || txt(t).slice(0, 30)), el: t }); });
     sec.querySelectorAll('table').forEach(function (tb, ti) {
       var ths = tb.querySelectorAll('thead th');
@@ -142,6 +151,7 @@
     var blocks = [];
     collect(root, blocks, 0);
     [].forEach.call(root.querySelectorAll('[data-ds-section]'), function (el) { if (blocks.indexOf(el) < 0) blocks.push(el); }); // blocks the page names as their own sections
+    [].forEach.call(document.querySelectorAll('[data-ds-extra]'), function (el) { if (blocks.indexOf(el) < 0) blocks.unshift(el); }); // outside the page body (e.g. the header's buttons)
     // the page is one big wrapper (e.g. analytics, file manager): use the blocks inside it
     for (var guard = 0; blocks.length === 1 && guard < 6; guard++) {
       var only = blocks[0], inner = [].filter.call(only.children, isBlock);
@@ -165,6 +175,7 @@
       s.items.forEach(function (it) {
         var h = !!state.hidden[it.key];
         if (it.el) it.el.classList.toggle('dsp-hide', h);
+        if (it.els) it.els.forEach(function (x) { x.classList.toggle('dsp-hide', h); });
         if (it.el2) it.el2.classList.toggle('dsp-hide', h);
         if (it.col && h) css.push('table[data-dsp-t="' + it.col[0] + '"] tr > :nth-child(' + it.col[1] + '){display:none!important}');
       });
