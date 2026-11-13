@@ -118,7 +118,7 @@ foreach ($pdo->query("SELECT id, name, start_date, end_date, is_current FROM ci_
 
 $recentStudents = $pdo->query("SELECT s.*, (SELECT GROUP_CONCAT(c.name SEPARATOR ', ') FROM ci_enrollments e JOIN ci_courses c ON c.id = e.course_id WHERE e.student_id = s.id AND e.status <> 'dropped') AS courses
     FROM ci_students s WHERE s.stype <> 'online' ORDER BY s.id DESC LIMIT 6")->fetchAll(PDO::FETCH_ASSOC);
-$recentPays = $pdo->query("SELECT p.*, s.name, s.reg_no, s.photo, u.username FROM ci_payments p JOIN ci_students s ON s.id = p.student_id LEFT JOIN users u ON u.id = p.created_by ORDER BY p.id DESC LIMIT 8")->fetchAll(PDO::FETCH_ASSOC);
+$recentPays = $pdo->query("SELECT p.*, s.name, s.reg_no, s.photo, u.username, (SELECT " . CI_DUE_SQL . " FROM ci_enrollments e WHERE e.id = p.enrollment_id) AS due_now FROM ci_payments p JOIN ci_students s ON s.id = p.student_id LEFT JOIN users u ON u.id = p.created_by ORDER BY p.id DESC LIMIT 8")->fetchAll(PDO::FETCH_ASSOC);
 $upcoming = $pdo->query("SELECT e.id, e.due_date, s.id AS sid, s.name, s.mobile, s.photo, c.name AS course_name, " . CI_DUE_SQL . " AS due
     FROM ci_enrollments e JOIN ci_students s ON s.id = e.student_id LEFT JOIN ci_courses c ON c.id = e.course_id
     WHERE e.status <> 'dropped' AND " . CI_DUE_SQL . " > 0.004 ORDER BY (e.due_date IS NULL), e.due_date, due DESC LIMIT 6")->fetchAll(PDO::FETCH_ASSOC);
@@ -246,6 +246,11 @@ $q = fn(array $x) => '/admin/dashboard.php?' . http_build_query($x);
 .db-tbl .db-who{max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .db-tbl .db-who a{color:var(--db-t);font-weight:500;text-decoration:none}
 .db-mode{display:inline-block;padding:2px 8px;border-radius:5px!important;font-size:12px;font-weight:600;background:#f3f4f6;color:#374151;white-space:nowrap}
+.db-due{display:inline-flex;align-items:center;gap:8px;padding:4px 4px 4px 10px;border:1px solid #fecaca;border-radius:5px!important;background:#fef2f2;color:#b91c1c;font:inherit;font-size:13px;font-weight:700;white-space:nowrap;cursor:pointer}
+.db-due.is-ro{padding:4px 10px;cursor:default}
+.db-due-c{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:4px!important;background:#dc2626;color:#fff;font-size:12px}.db-due-c i{font-size:10px}
+.db-due:hover .db-due-c{background:#b91c1c}
+.db-full{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border:1px solid #bbf7d0;border-radius:5px!important;background:#f0fdf4;color:#15803d;font-size:13px;font-weight:700;white-space:nowrap}.db-full i{font-size:11px}
 .db-mode.cash{background:#ecfdf5;color:#047857}.db-mode.on{background:#f5f3ff;color:#6d28d9}
 .db-pr{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border:1px solid var(--db-b);border-radius:5px!important;color:#4b5563}
 .db-pr:hover{background:#f9fafb}.db-pr svg{width:15px;height:15px}
@@ -371,13 +376,17 @@ admin_shell_open('Dashboard', $range === 'custom' ? $span : $rangeLabel . ' · '
 <section class="db-card db-sec db-one" data-ds="Recent Payments" data-ds-section>
     <?= $head('fa-file-lines', 'Recent Payments', '/admin/ci-fees.php?period=month', 'View all') ?>
     <?php if (!$recentPays): ?><div class="db-emp" style="border-top:1px solid #f3f4f6"><span><i class="fas fa-file-lines"></i></span><b>No payments yet</b><small>Fee payments will appear here once you take them</small></div>
-    <?php else: ?><div class="db-scroll"><table class="db-tbl"><thead><tr><th>Receipt</th><th>Student</th><th>Amount</th><th>Mode</th><th>Date</th><th><span class="sr-only">Print</span></th></tr></thead><tbody>
+    <?php else: ?><div class="db-scroll"><table class="db-tbl"><thead><tr><th>Receipt</th><th>Student</th><th>Amount</th><th>Mode</th><th>Date</th><th>Status</th><th><span class="sr-only">Print</span></th></tr></thead><tbody>
       <?php foreach ($recentPays as $p): $mode = ci_pay_mode($p, false); ?><tr>
         <td><a class="db-rc" href="/admin/ci-receipt.php?id=<?= (int)$p['id'] ?>" target="_blank"><?= $e($p['receipt_no']) ?></a></td>
         <td class="db-who"><a href="/admin/student-view.php?id=<?= (int)$p['student_id'] ?>" title="<?= $e($p['name']) ?>"><?= $e($p['name']) ?></a></td>
         <td class="db-amt"><?= ci_money0($p['amount']) ?></td>
         <td><span class="db-mode <?= $p['method'] === 'Cash' ? 'cash' : 'on' ?>"><?= $e($mode) ?></span></td>
         <td style="white-space:nowrap;color:#6b7280"><?= ci_date($p['paid_on']) ?></td>
+        <td><?php // the course of this payment now: still due (collect it here) or fully paid
+          if ($p['due_now'] === null) echo '<span style="color:#9ca3af">—</span>';
+          elseif ((float)$p['due_now'] > 0.004) echo ci_perm($me, 'fees') ? '<button type="button" class="db-due" data-collect-sid="' . (int)$p['student_id'] . '" data-eid="' . (int)$p['enrollment_id'] . '" title="Collect the due">' . ci_money0($p['due_now']) . ' due <span class="db-due-c"><i class="fas fa-indian-rupee-sign"></i> Collect</span></button>' : '<span class="db-due is-ro">' . ci_money0($p['due_now']) . ' due</span>';
+          else echo '<span class="db-full"><i class="fas fa-check"></i> Full Paid</span>'; ?></td>
         <td><a class="db-pr" href="/admin/ci-receipt.php?id=<?= (int)$p['id'] ?>" target="_blank" aria-label="Print receipt <?= $e($p['receipt_no']) ?>"><?= ci_svg('print') ?></a></td>
       </tr><?php endforeach; ?>
     </tbody></table></div><?php endif; ?>
@@ -444,6 +453,7 @@ admin_shell_open('Dashboard', $range === 'custom' ? $span : $rangeLabel . ' · '
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && d.open) { d.removeAttribute('open'); d.querySelector('summary').focus(); } });
 })();
 </script>
+<?php require __DIR__ . '/components/ci-modals.php'; // the Collect fee pop-up (same as Fees / Students) ?>
 <?php admin_shell_close(); ?>
 </body>
 </html>
