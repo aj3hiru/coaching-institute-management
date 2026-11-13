@@ -205,18 +205,18 @@ $q = fn(array $x) => '/admin/dashboard.php?' . http_build_query($x);
 .db-sec{padding:24px}
 .db .db-sec{overflow:visible} /* the Institute Overview menu may hang below its card */
 .db-tag{margin-left:2px;padding:2px 9px;border-radius:5px!important;background:#f3f4f6;color:#4b5563;font-size:12px;font-weight:600;white-space:nowrap}
-.db-ovf{position:relative;margin-left:2px;font-size:12px}
-.db-ovf>summary{display:inline-flex;align-items:center;gap:6px;padding:4px 6px;border-radius:5px!important;background:none;color:#6b7280;font-size:13.5px;font-weight:500;cursor:pointer;list-style:none;white-space:nowrap}
-.db-ovf>summary:hover,.db-ovf[open]>summary{background:#f3f4f6;color:#374151}
+.db-ovf{position:relative;margin-left:6px;font-size:12px}
+.db-ovf>summary{display:inline-flex;align-items:center;gap:8px;height:32px;padding:0 10px;border:1px solid #d1d5db;border-radius:5px!important;background:#fff;color:#374151;font-size:13.5px;font-weight:500;cursor:pointer;list-style:none;white-space:nowrap} /* like the other drop-downs */
+.db-ovf>summary i{color:#9ca3af}.db-ovf>summary:hover{border-color:#9ca3af}.db-ovf[open]>summary{border-color:#7c3aed}
 .db-ovf>summary::-webkit-details-marker{display:none}.db-ovf>summary i{font-size:9px;transition:transform .15s}.db-ovf[open]>summary i{transform:rotate(180deg)}
-.db-ovf.other>summary{color:#7c3aed}
+.db-ovf.other>summary{color:#7c3aed;border-color:#c4b5fd}
 .db-ovf-m{position:absolute;left:0;top:calc(100% + 6px);z-index:40;min-width:200px;max-height:320px;overflow-y:auto;padding:6px;background:#fff;border:1px solid #e5e7eb;border-radius:5px!important;box-shadow:0 12px 32px rgba(16,24,40,.14)!important}
 .db-ovf-m .db-ovf-sb{justify-content:space-between;margin-top:4px;border-top:1px solid #f3f4f6!important;border-radius:0!important}
 .db-ovf-m .db-ovf-sb::after{content:"";width:6px;height:6px;border:solid #9ca3af;border-width:0 2px 2px 0;transform:rotate(45deg);margin-top:-3px}
 .db-ovf-m .db-ovf-sb[aria-expanded=true]::after{transform:rotate(-135deg);margin-top:3px}
 .db-ovf-m .db-ovf-sb.on{color:#7c3aed!important;font-weight:600}
 .db-ovf-sl{padding-left:10px}.db-ovf-sl[hidden]{display:none}
-@media (max-width:640px){.db-ovf-m{left:auto;right:-60px}}
+@media (max-width:640px){.db .db-sec{position:relative}.db-ovf{position:static}.db-ovf-m{left:12px;right:12px;top:54px;width:auto;min-width:0}} /* phones: the menu opens across its card, under the heading */
 .db-ovf-m p{margin:6px 0 2px;padding:8px 10px 2px;border-top:1px solid #f3f4f6;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#9ca3af}
 .db-ovf-m button{display:flex;align-items:center;width:100%;padding:8px 10px;border:0;border-radius:5px!important;background:none!important;color:#374151!important;font:inherit;font-size:14px;font-weight:400;text-align:left;cursor:pointer;min-height:0;height:auto;box-shadow:none!important}
 .db-ovf-m button:hover{background:#f3f4f6!important}.db-ovf-m button.on{background:#f5f3ff!important;color:#7c3aed!important;font-weight:600}
