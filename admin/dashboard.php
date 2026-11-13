@@ -128,7 +128,8 @@ $empty = !$stats['active'] && !$stats['courses'] && !$stats['batches'];
 
 // ---- small pieces ----
 $e = 'ci_e';
-$TONE = ['green' => ['#1cc88a', '#e8f9f2', '#0f9f6e'], 'purple' => ['#7c3aed', '#f5f3ff', '#7c3aed'], 'red' => ['#e74a5b', '#fdecee', '#c81e32'], 'amber' => ['#f59e0b', '#fef6e7', '#b45309']];
+$TONE = ['green' => ['var(--db-o)', 'var(--db-ol)', 'var(--db-o)'], 'purple' => ['var(--db-p)', 'var(--db-pl)', 'var(--db-p)'], 'red' => ['var(--db-r)', 'var(--db-rl)', 'var(--db-rd)'], // the admin theme (see :root below)
+    'amber' => ['#f59e0b', '#fef6e7', '#b45309']];
 $delta = function (float $now, float $before, bool $goodUp = true): string {
     if ($now == $before) { $dir = 'flat'; $txt = '0%'; }
     elseif ($before == 0.0) { $dir = 'up'; $txt = 'New'; }
@@ -161,10 +162,13 @@ $q = fn(array $x) => '/admin/dashboard.php?' . http_build_query($x);
 <title>Dashboard - <?= ci_e(edu_site_name()) ?></title>
 <?php admin_shell_head(); ci_head(); ?>
 <style>
+/* the admin theme's colours (primary violet of buttons, olive highlight of the menu, danger red) */
+:root{--db-p:var(--primary,#7c3aed);--db-pl:var(--primary-lighter,#f5f3ff);--db-pd:var(--primary-dark,#6d28d9);
+  --db-o:#646c3e;--db-ol:#f1f2e8;--db-ob:#d9dcc6;--db-r:var(--danger,#ef4444);--db-rl:var(--danger-light,#fef2f2);--db-rd:#b91c1c;--db-rb:#fecaca}
 /* Dashboard — same look as the store's admin dashboard: white cards, coloured icon squares, a pale disc in the corner,
    big numbers with "vs. previous period", section cards with an icon title and "View all ›". */
 .db .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
-.db{--db-b:#e5e7eb;--db-t:#111827;--db-m:#6b7280;--db-p:#7c3aed}
+.db{--db-b:#e5e7eb;--db-t:#111827;--db-m:#6b7280}
 .db-card{background:#fff;border:1px solid var(--db-b);border-radius:5px!important;box-shadow:0 1px 2px rgba(16,24,40,.04)!important}
 .db-bar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px}
 .db-hello b{display:block;font-size:17px;color:var(--db-t)}.db-hello span{font-size:13.5px;color:var(--db-m)}
@@ -198,7 +202,7 @@ $q = fn(array $x) => '/admin/dashboard.php?' . http_build_query($x);
 .db-f{display:block;margin-top:8px;font-size:13px;color:var(--db-m)}
 .db-delta{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px}
 .db-pill{display:inline-flex;align-items:center;gap:4px;padding:2px 6px;border-radius:5px!important;font-size:12px;font-weight:600;white-space:nowrap}
-.db-pill i{font-size:9.5px}.db-pill.good{background:#ecfdf5;color:#047857}.db-pill.bad{background:#fef2f2;color:#b91c1c}
+.db-pill i{font-size:9.5px}.db-pill.good{background:var(--db-ol);color:var(--db-o)}.db-pill.bad{background:var(--db-rl);color:var(--db-rd)}
 .db-vs{font-size:13px;color:var(--db-m);white-space:nowrap}
 .db-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;margin-bottom:20px} /* Payment Modes | Institute Overview: same width */
 .db-row3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;margin-bottom:20px}
@@ -207,27 +211,27 @@ $q = fn(array $x) => '/admin/dashboard.php?' . http_build_query($x);
 .db-tag{margin-left:2px;padding:2px 9px;border-radius:5px!important;background:#f3f4f6;color:#4b5563;font-size:12px;font-weight:600;white-space:nowrap}
 .db-ovf{position:relative;margin-left:6px;font-size:12px}
 .db-ovf>summary{display:inline-flex;align-items:center;gap:8px;height:32px;padding:0 10px;border:1px solid #d1d5db;border-radius:5px!important;background:#fff;color:#374151;font-size:13.5px;font-weight:500;cursor:pointer;list-style:none;white-space:nowrap} /* like the other drop-downs */
-.db-ovf>summary i{color:#9ca3af}.db-ovf>summary:hover{border-color:#9ca3af}.db-ovf[open]>summary{border-color:#7c3aed}
+.db-ovf>summary i{color:#9ca3af}.db-ovf>summary:hover{border-color:#9ca3af}.db-ovf[open]>summary{border-color:var(--db-p)}
 .db-ovf>summary::-webkit-details-marker{display:none}.db-ovf>summary i{font-size:9px;transition:transform .15s}.db-ovf[open]>summary i{transform:rotate(180deg)}
-.db-ovf.other>summary{color:#7c3aed;border-color:#c4b5fd}
+.db-ovf.other>summary{color:var(--db-p);border-color:#c4b5fd}
 .db-ovf-m{position:absolute;left:0;top:calc(100% + 6px);z-index:40;min-width:200px;max-height:320px;overflow-y:auto;padding:6px;background:#fff;border:1px solid #e5e7eb;border-radius:5px!important;box-shadow:0 12px 32px rgba(16,24,40,.14)!important}
 .db-ovf-m .db-ovf-sb{justify-content:space-between;margin-top:4px;border-top:1px solid #f3f4f6!important;border-radius:0!important}
 .db-ovf-m .db-ovf-sb::after{content:"";width:6px;height:6px;border:solid #9ca3af;border-width:0 2px 2px 0;transform:rotate(45deg);margin-top:-3px}
 .db-ovf-m .db-ovf-sb[aria-expanded=true]::after{transform:rotate(-135deg);margin-top:3px}
-.db-ovf-m .db-ovf-sb.on{color:#7c3aed!important;font-weight:600}
+.db-ovf-m .db-ovf-sb.on{color:var(--db-p)!important;font-weight:600}
 .db-ovf-sl{padding-left:10px}.db-ovf-sl[hidden]{display:none}
 @media (max-width:640px){.db .db-sec{position:relative}.db-ovf{position:static}.db-ovf-m{left:12px;right:12px;top:54px;width:auto;min-width:0}} /* phones: the menu opens across its card, under the heading */
 .db-ovf-m p{margin:6px 0 2px;padding:8px 10px 2px;border-top:1px solid #f3f4f6;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#9ca3af}
 .db-ovf-m button{display:flex;align-items:center;width:100%;padding:8px 10px;border:0;border-radius:5px!important;background:none!important;color:#374151!important;font:inherit;font-size:14px;font-weight:400;text-align:left;cursor:pointer;min-height:0;height:auto;box-shadow:none!important}
-.db-ovf-m button:hover{background:#f3f4f6!important}.db-ovf-m button.on{background:#f5f3ff!important;color:#7c3aed!important;font-weight:600}
-.db-ovf-m button.on::after{content:"";width:10px;height:5px;margin:-3px 2px 0 auto;border:solid #7c3aed;border-width:0 0 2px 2px;transform:rotate(-45deg)}
+.db-ovf-m button:hover{background:#f3f4f6!important}.db-ovf-m button.on{background:var(--db-pl)!important;color:var(--db-p)!important;font-weight:600}
+.db-ovf-m button.on::after{content:"";width:10px;height:5px;margin:-3px 2px 0 auto;border:solid var(--db-p);border-width:0 0 2px 2px;transform:rotate(-45deg)}
 .db-ovf-m button .db-rng-cur{margin-left:8px}
-.db-run{margin-left:2px;padding:2px 8px;border-radius:5px!important;background:#ecfdf5;color:#047857;font-size:11.5px;font-weight:600}
+.db-run{margin-left:2px;padding:2px 8px;border-radius:5px!important;background:var(--db-ol);color:var(--db-o);font-size:11.5px;font-weight:600}
 .db-one{margin-bottom:20px}
 .db-h{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:32px;margin-bottom:20px} /* same height in every card, so the tiles of side-by-side cards line up */
 .db-h h2{display:flex;align-items:center;gap:12px;margin:0;font-size:17px;font-weight:600;color:var(--db-t)}
 .db-hi{display:inline-flex;align-items:center;justify-content:center;font-size:18px;color:#4b5563}
-.db-hi.dot{width:32px;height:32px;border-radius:50%!important;background:#1cc88a;color:#fff;font-size:14px}
+.db-hi.dot{width:32px;height:32px;border-radius:50%!important;background:var(--db-o);color:#fff;font-size:14px}
 .db-all{display:inline-flex;align-items:center;gap:7px;font-size:14px;font-weight:500;color:var(--db-p);text-decoration:none;white-space:nowrap}
 .db-all i{font-size:10.5px}
 .db-tiles{display:flex;flex-wrap:wrap;gap:16px}.db-tiles>.db-tile{flex:1 1 calc(50% - 8px);min-width:0} /* two a row; a single one takes the row */
@@ -246,12 +250,11 @@ $q = fn(array $x) => '/admin/dashboard.php?' . http_build_query($x);
 .db-tbl .db-who{max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .db-tbl .db-who a{color:var(--db-t);font-weight:500;text-decoration:none}
 .db-mode{display:inline-block;padding:2px 8px;border-radius:5px!important;font-size:12px;font-weight:600;background:#f3f4f6;color:#374151;white-space:nowrap}
-.db-due{display:inline-flex;align-items:center;gap:8px;padding:4px 4px 4px 10px;border:1px solid #fecaca;border-radius:5px!important;background:#fef2f2;color:#b91c1c;font:inherit;font-size:13px;font-weight:700;white-space:nowrap;cursor:pointer}
+.db-due{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border:1px solid var(--db-rb);border-radius:5px!important;background:var(--db-rl);color:var(--db-rd);font:inherit;font-size:13px;font-weight:700;white-space:nowrap;cursor:pointer}
 .db-due.is-ro{padding:4px 10px;cursor:default}
-.db-due-c{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:4px!important;background:#dc2626;color:#fff;font-size:12px}.db-due-c i{font-size:10px}
-.db-due:hover .db-due-c{background:#b91c1c}
-.db-full{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border:1px solid #bbf7d0;border-radius:5px!important;background:#f0fdf4;color:#15803d;font-size:13px;font-weight:700;white-space:nowrap}.db-full i{font-size:11px}
-.db-mode.cash{background:#ecfdf5;color:#047857}.db-mode.on{background:#f5f3ff;color:#6d28d9}
+.db-due i{font-size:11px}button.db-due:hover{background:var(--db-r);border-color:var(--db-r);color:#fff}
+.db-full{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border:1px solid var(--db-ob);border-radius:5px!important;background:var(--db-ol);color:var(--db-o);font-size:13px;font-weight:700;white-space:nowrap}.db-full i{font-size:11px}
+.db-mode.cash{background:var(--db-ol);color:var(--db-o)}.db-mode.on{background:var(--db-pl);color:var(--db-pd)}
 .db-pr{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border:1px solid var(--db-b);border-radius:5px!important;color:#4b5563}
 .db-pr:hover{background:#f9fafb}.db-pr svg{width:15px;height:15px}
 .db-scroll{position:relative;overflow-x:auto;border-top:1px solid #f3f4f6;padding-top:16px}
@@ -269,7 +272,7 @@ $q = fn(array $x) => '/admin/dashboard.php?' . http_build_query($x);
 .db-list .db-n small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px;color:var(--db-m)}
 .db-list .db-r{flex:none;text-align:right;font-size:13px;color:var(--db-m)}
 .db-list .db-r b{display:block;font-size:14px;color:var(--db-t)}
-.db-late{color:#c81e32!important}
+.db-late{color:var(--db-rd)!important}
 .db-meter{width:110px;height:6px;margin-top:6px;margin-left:auto;border-radius:3px!important;background:#f3f4f6;overflow:hidden}
 .db-meter i{display:block;height:100%;border-radius:3px!important;background:var(--db-p)}
 .db-start{padding:20px 24px;margin-bottom:20px}.db-start ol{margin:8px 0 0 18px;padding:0;line-height:1.9}
@@ -288,25 +291,25 @@ $q = fn(array $x) => '/admin/dashboard.php?' . http_build_query($x);
 .db-rng{position:relative}
 .db-rng>summary{border-radius:5px!important;display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 12px;border:1px solid #d1d5db;background:#fff;color:#374151;font-size:14px;font-weight:500;cursor:pointer;list-style:none;white-space:nowrap}
 .db-rng>summary::-webkit-details-marker{display:none}
-.db-rng>summary>.fa-calendar-days{color:#7c3aed}.db-rng-c{font-size:10px;color:#9ca3af;transition:transform .15s}.db-rng[open] .db-rng-c{transform:rotate(180deg)}
+.db-rng>summary>.fa-calendar-days{color:var(--db-p)}.db-rng-c{font-size:10px;color:#9ca3af;transition:transform .15s}.db-rng[open] .db-rng-c{transform:rotate(180deg)}
 .db-rng-m{position:absolute;right:0;top:calc(100% + 6px);z-index:1000;width:240px;padding:6px;background:#fff;border:1px solid #e5e7eb;border-radius:5px!important;box-shadow:0 12px 32px rgba(16,24,40,.14)!important}
 .db-rng-m a{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:5px!important;font-size:14px;color:#374151;text-decoration:none}
-.db-rng-m a:hover{background:#f3f4f6}.db-rng-m a.on{background:#f5f3ff;color:#7c3aed;font-weight:600}.db-rng-m a i{font-size:12px}
+.db-rng-m a:hover{background:#f3f4f6}.db-rng-m a.on{background:var(--db-pl);color:var(--db-p);font-weight:600}.db-rng-m a i{font-size:12px}
 .db-rng-cb{display:flex;align-items:center;justify-content:space-between;width:100%;margin-top:4px;padding:8px 10px;border:0;border-top:1px solid #f3f4f6;border-radius:0!important;background:none;font:inherit;font-size:14px;color:#374151;text-align:left;cursor:pointer}
 .db-rng-cb::after{content:"";width:6px;height:6px;border:solid #9ca3af;border-width:0 2px 2px 0;transform:rotate(45deg);margin-top:-3px;transition:transform .15s}
 .db-rng-cb[aria-expanded=true]::after{transform:rotate(-135deg);margin-top:3px}
 .db-rng-m .db-rng-cb{background:none!important;color:#374151!important;box-shadow:none!important;min-height:0;height:auto;font-weight:400}
 .db-rng-m .db-rng-cb:hover,.db-rng-m .db-rng-cb[aria-expanded=true]{background:#f3f4f6!important}
-.db-rng-m .db-rng-cb.on{color:#7c3aed!important;font-weight:600}
+.db-rng-m .db-rng-cb.on{color:var(--db-p)!important;font-weight:600}
 .db-rng-m form{margin:0;padding:6px 6px 4px}.db-rng-m form[hidden]{display:none}
 .db-rng-sl{padding:2px 0 4px 10px}.db-rng-sl[hidden]{display:none}.db-rng-sl a{font-size:13.5px!important}
-.db-rng-cur{margin-left:6px;margin-right:auto;padding:1px 7px;border-radius:5px!important;background:#ecfdf5;color:#047857;font-size:11px;font-weight:600}
+.db-rng-cur{margin-left:6px;margin-right:auto;padding:1px 7px;border-radius:5px!important;background:var(--db-ol);color:var(--db-o);font-size:11px;font-weight:600}
 .db-rng-m{max-height:calc(100vh - 140px);overflow-y:auto}
 .db-rng-m p{margin:0 0 8px;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#9ca3af}
 .db-rng-m label{display:block;margin-bottom:8px;font-size:12px;color:#6b7280}
 .db-rng-m input{display:block;width:100%;box-sizing:border-box;margin-top:4px;padding:6px 9px;border:1px solid #e5e7eb;border-radius:5px!important;font:inherit;font-size:13.5px}
-.db-rng-m button{width:100%;padding:8px;border:0;border-radius:5px!important;background:#7c3aed;color:#fff;font-weight:600;cursor:pointer}
-.db-rng-m a.on::after{content:"";width:10px;height:5px;margin:-3px 2px 0 0;border:solid #7c3aed;border-width:0 0 2px 2px;transform:rotate(-45deg)}
+.db-rng-m button{width:100%;padding:8px;border:0;border-radius:5px!important;background:var(--db-p);color:#fff;font-weight:600;cursor:pointer}
+.db-rng-m a.on::after{content:"";width:10px;height:5px;margin:-3px 2px 0 0;border:solid var(--db-p);border-width:0 0 2px 2px;transform:rotate(-45deg)}
 @media (max-width:640px){.db-rng>summary{width:38px;height:38px;padding:0;justify-content:center;gap:0;font-size:15px}.db-rng-l,.db-rng-c{display:none!important}.db-rng-m{position:fixed;left:12px;right:12px;top:auto;width:auto}}
 /* the admin is flat (square, no shadows); the dashboard has the store dashboard's soft cards */
 .db .db-tbl th{background:transparent;border:0}
@@ -385,14 +388,14 @@ admin_shell_open('Dashboard', $range === 'custom' ? $span : $rangeLabel . ' · '
         <td style="white-space:nowrap;color:#6b7280"><?= ci_date($p['paid_on']) ?></td>
         <td><?php // the course of this payment now: still due (collect it here) or fully paid
           if ($p['due_now'] === null) echo '<span style="color:#9ca3af">—</span>';
-          elseif ((float)$p['due_now'] > 0.004) echo ci_perm($me, 'fees') ? '<button type="button" class="db-due" data-collect-sid="' . (int)$p['student_id'] . '" data-eid="' . (int)$p['enrollment_id'] . '" title="Collect the due">' . ci_money0($p['due_now']) . ' due <span class="db-due-c"><i class="fas fa-indian-rupee-sign"></i> Collect</span></button>' : '<span class="db-due is-ro">' . ci_money0($p['due_now']) . ' due</span>';
+          elseif ((float)$p['due_now'] > 0.004) echo ci_perm($me, 'fees') ? '<button type="button" class="db-due" data-collect-sid="' . (int)$p['student_id'] . '" data-eid="' . (int)$p['enrollment_id'] . '" title="Collect the due">' . ci_money0($p['due_now']) . ' due <i class="fas fa-indian-rupee-sign"></i></button>' : '<span class="db-due is-ro">' . ci_money0($p['due_now']) . ' due</span>';
           else echo '<span class="db-full"><i class="fas fa-check"></i> Full Paid</span>'; ?></td>
         <td><a class="db-pr" href="/admin/ci-receipt.php?id=<?= (int)$p['id'] ?>" target="_blank" aria-label="Print receipt <?= $e($p['receipt_no']) ?>"><?= ci_svg('print') ?></a></td>
       </tr><?php endforeach; ?>
     </tbody></table></div><?php endif; ?>
 </section>
 
-<?php $av = function (array $s, int $k) use ($e): string { $c = [['#f5f3ff', '#7c3aed'], ['#e8f9f2', '#0f9f6e'], ['#fdecee', '#c81e32'], ['#fef6e7', '#b45309']][$k % 4];
+<?php $av = function (array $s, int $k) use ($e): string { $c = [['var(--db-pl)', 'var(--db-p)'], ['var(--db-ol)', 'var(--db-o)'], ['var(--db-rl)', 'var(--db-rd)'], ['#fef6e7', '#b45309']][$k % 4];
     $ini = mb_strtoupper(mb_substr(trim((string)$s['name']), 0, 1));
     return '<span class="db-av" data-ds-item="Photo" style="background:' . $c[0] . ';color:' . $c[1] . '">' . (!empty($s['photo']) ? '<img src="' . $e('/' . ltrim((string)$s['photo'], '/')) . '" alt="" loading="lazy">' : $e($ini)) . '</span>'; }; ?>
 <div class="db-row3" data-ds-wrap>
@@ -405,7 +408,7 @@ admin_shell_open('Dashboard', $range === 'custom' ? $span : $rangeLabel . ' · '
     <?= $head('fa-hand-holding-dollar', 'Fee to Collect', '/admin/ci-dues.php?period=all', 'View all') ?>
     <?php if (!$upcoming): ?><div class="db-emp" style="border-top:1px solid #f3f4f6"><span><i class="fas fa-circle-check"></i></span><b>No dues</b><small>Everyone has paid</small></div><?php else: ?>
     <ul class="db-list"><?php foreach ($upcoming as $k => $u): $late = $u['due_date'] && $u['due_date'] < $today; ?><li><div class="db-p"><?= $av($u, $k + 2) ?><div class="db-n"><a href="/admin/student-view.php?id=<?= (int)$u['sid'] ?>#pay"><?= $e($u['name']) ?></a><small><span data-ds-item="Course"><?= $e($u['course_name']) ?></span><span data-ds-item="Mobile number"><span class="db-sep"> · </span><a href="tel:<?= $e($u['mobile']) ?>" style="display:inline;font-weight:500;color:inherit"><?= $e($u['mobile']) ?></a></span></small></div></div>
-      <span class="db-r"><b style="color:#c81e32" data-ds-item="Due amount"><?= ci_money0($u['due']) ?></b><span data-ds-item="Due date"<?= $late ? ' class="db-late"' : '' ?>><?= $u['due_date'] ? ($late ? 'Late · ' : '') . ci_date($u['due_date']) : 'No date' ?></span></span></li><?php endforeach; ?></ul><?php endif; ?>
+      <span class="db-r"><b style="color:var(--db-rd)" data-ds-item="Due amount"><?= ci_money0($u['due']) ?></b><span data-ds-item="Due date"<?= $late ? ' class="db-late"' : '' ?>><?= $u['due_date'] ? ($late ? 'Late · ' : '') . ci_date($u['due_date']) : 'No date' ?></span></span></li><?php endforeach; ?></ul><?php endif; ?>
   </section>
   <section class="db-card db-sec" data-ds="Batches" data-ds-section>
     <?= $head('fa-layer-group', 'Batches', '/admin/ci-batches.php', 'View all') ?>
