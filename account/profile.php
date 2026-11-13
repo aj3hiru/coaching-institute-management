@@ -77,7 +77,6 @@ $ico = fn($n) => sh_icon($n);
           <div class="st-f"><label for="pf-pin">Pin code</label><input id="pf-pin" name="pincode" inputmode="numeric" maxlength="6" pattern="\d{6}" placeholder="6 digits" value="<?= sh_e($u['pincode'] ?? '') ?>"></div>
         </div>
         <div class="st-f"><label for="pf-a">Address</label><textarea id="pf-a" name="address" rows="2" maxlength="300" placeholder="House / street, village or town, district"><?= sh_e($u['address'] ?? '') ?></textarea></div>
-        <p class="ac-hint">Your mobile number is your login and links your account with the institute, so it can't be changed here. Contact us if it is wrong.</p>
         <button class="ac-btn" type="submit">Save profile</button>
       </form>
     </div>

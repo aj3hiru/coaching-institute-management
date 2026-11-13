@@ -56,7 +56,7 @@ $ico = fn($n) => sh_icon($n);
     <?php if ($mine): ?>
     <h2 class="ac-sub">Your messages</h2>
     <div class="ac-orders"><?php foreach ($mine as $r): ?>
-      <div class="ac-ord"><div class="ac-ord-i"><?= $ico('flag') ?></div><div class="ac-ord-t"><b><?= sh_e($topics[$r['topic']] ?? 'Support') ?></b><small><?= date('d M Y, h:i A', strtotime($r['created_at'])) ?> · <?= sh_e(mb_strimwidth($r['message'], 0, 90, '…')) ?></small><?= $r['note'] ? '<small class="ac-reply">Reply: ' . sh_e($r['note']) . '</small>' : '' ?></div>
+      <div class="ac-ord"><div class="ac-ord-i"><?= $ico('headset') ?></div><div class="ac-ord-t"><b><?= sh_e($topics[$r['topic']] ?? 'Support') ?></b><small><?= date('d M Y, h:i A', strtotime($r['created_at'])) ?> · <?= sh_e(mb_strimwidth($r['message'], 0, 90, '…')) ?></small><?= $r['note'] ? '<small class="ac-reply">Reply: ' . sh_e($r['note']) . '</small>' : '' ?></div>
         <div class="ac-ord-r"><span class="st-badge <?= $r['status'] === 'closed' ? 'paid' : 'created' ?>"><?= ['new' => 'Sent', 'seen' => 'Seen', 'closed' => 'Solved'][$r['status']] ?? 'Sent' ?></span></div></div>
     <?php endforeach; ?></div>
     <?php endif; ?>

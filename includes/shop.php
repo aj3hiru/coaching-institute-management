@@ -893,6 +893,7 @@ function sh_icon(string $n): string
         'user' => '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
         'receipt' => '<path d="M5 2h14v20l-3-2-2 2-2-2-2 2-2-2-3 2Z"/><path d="M9 7h6M9 11h6M9 15h4"/>',
         'flag' => '<path d="M4 22V4"/><path d="M4 4h13l-2 4 2 4H4"/>',
+        'headset' => '<path d="M3 14v-3a9 9 0 0 1 18 0v3"/><path d="M21 16a2 2 0 0 1-2 2h-1v-6h1a2 2 0 0 1 2 2z"/><path d="M3 16a2 2 0 0 0 2 2h1v-6H5a2 2 0 0 0-2 2z"/><path d="M18 18v1a3 3 0 0 1-3 3h-3"/>', // Support
         'grid' => '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>',
         'logout' => '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5M21 12H9"/>',
         'login' => '<path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="m10 17 5-5-5-5M15 12H3"/>',
@@ -1092,7 +1093,7 @@ function sh_card_html(array $p, bool $owned = false): string
 function sh_account_nav(array $u, string $on): string
 {
     $i = fn($n) => sh_icon($n);
-    $items = [['', 'My Courses', 'book'], ['profile', 'My Profile', 'user'], ['orders', 'Orders', 'receipt'], ['report', 'Support', 'flag']];
+    $items = [['', 'My Courses', 'book'], ['profile', 'My Profile', 'user'], ['orders', 'Orders', 'receipt'], ['report', 'Support', 'headset']];
     $h = '<nav class="ac-nav" aria-label="My account"><div class="ac-who"><span class="ac-av">' . sh_e(mb_strtoupper(mb_substr($u['name'], 0, 1))) . '</span><div><b>' . sh_e($u['name']) . '</b><small>' . sh_e($u['mobile']) . '</small></div></div>';
     foreach ($items as [$k, $l, $ic]) $h .= '<a href="/account/' . ($k ? $k : '') . '" class="' . ($on === $k ? 'on' : '') . '">' . $i($ic) . '<span>' . $l . '</span></a>';
     $h .= '<a href="/courses/">' . $i('grid') . '<span>All Courses</span></a><a href="/notes/">' . $i('notes') . '<span>PDF Notes</span></a>';
