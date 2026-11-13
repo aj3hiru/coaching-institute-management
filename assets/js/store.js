@@ -231,7 +231,9 @@
 /* phones: the bottom Buy bar hides while the buy card's own button is on screen */
 (function () {
   var bar = document.querySelector('.st-mbar'), btn = document.querySelector('.sp-card .sp-btn');
-  if (!bar || !btn || !('IntersectionObserver' in window)) return;
+  if (!bar) return;
+  // the bar starts hidden (class is-off in the page), so it never shows for a moment and slides away on load
+  if (!btn || !('IntersectionObserver' in window)) { bar.classList.remove('is-off'); return; }
   new IntersectionObserver(function (es) { bar.classList.toggle('is-off', es[0].isIntersecting); }).observe(btn);
 })();
 

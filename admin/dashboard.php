@@ -70,14 +70,17 @@ foreach ($q as $r) {
 $stats = [ // now (not tied to the period)
     'active' => (int)$one("SELECT COUNT(*) FROM ci_students WHERE status = 'active' AND stype <> 'online'"),
     'online' => (int)$one("SELECT COUNT(*) FROM ci_students WHERE status = 'active' AND stype IN ('online','both')"),
-    'batches' => (int)$one("SELECT COUNT(*) FROM ci_batches WHERE status = 'active'"),
-    'courses' => (int)$one("SELECT COUNT(*) FROM ci_courses WHERE status = 'active'"),
-    'classes' => (int)$one("SELECT COUNT(*) FROM ci_classes"),
+    // running now only (not finished, not yet to start): a batch between its start and end date; a course with a running
+    // batch or a student still studying it; a class with active students
+    'batches' => (int)$one("SELECT COUNT(*) FROM ci_batches b WHERE b.status = 'active' AND (b.start_date IS NULL OR b.start_date <= CURDATE()) AND (b.end_date IS NULL OR b.end_date >= CURDATE())"),
+    'courses' => (int)$one("SELECT COUNT(*) FROM ci_courses c WHERE c.status = 'active' AND (EXISTS (SELECT 1 FROM ci_batches b WHERE b.course_id = c.id AND b.status = 'active' AND (b.start_date IS NULL OR b.start_date <= CURDATE()) AND (b.end_date IS NULL OR b.end_date >= CURDATE()))
+        OR EXISTS (SELECT 1 FROM ci_enrollments e JOIN ci_students s ON s.id = e.student_id WHERE e.course_id = c.id AND e.status = 'active' AND s.status = 'active'))"),
+    'classes' => (int)$one("SELECT COUNT(DISTINCT class_id) FROM ci_students WHERE status = 'active' AND stype <> 'online' AND class_id IS NOT NULL"),
     'due' => (float)$one("SELECT COALESCE(SUM(" . CI_DUE_SQL . "),0) FROM ci_enrollments e"),
     'late' => (int)$one("SELECT COUNT(*) FROM ci_enrollments e WHERE e.status <> 'dropped' AND e.due_date IS NOT NULL AND e.due_date < CURDATE() AND " . CI_DUE_SQL . " > 0.004"),
 ];
 $store = 0;
-try { $store = (int)$one("SELECT COUNT(*) FROM sh_products WHERE status = 'published'"); } catch (Throwable) {}
+try { $store = (int)$one("SELECT COUNT(*) FROM sh_products WHERE type = 'course' AND status = 'published' AND (starts_at IS NULL OR starts_at < CURDATE()) AND (ends_at IS NULL OR ends_at >= CURDATE())"); } catch (Throwable) {} // Running (as in Online Courses)
 
 $recentStudents = $pdo->query("SELECT s.*, (SELECT GROUP_CONCAT(c.name SEPARATOR ', ') FROM ci_enrollments e JOIN ci_courses c ON c.id = e.course_id WHERE e.student_id = s.id AND e.status <> 'dropped') AS courses
     FROM ci_students s WHERE s.stype <> 'online' ORDER BY s.id DESC LIMIT 6")->fetchAll(PDO::FETCH_ASSOC);
@@ -86,7 +89,7 @@ $upcoming = $pdo->query("SELECT e.id, e.due_date, s.id AS sid, s.name, s.mobile,
     FROM ci_enrollments e JOIN ci_students s ON s.id = e.student_id LEFT JOIN ci_courses c ON c.id = e.course_id
     WHERE e.status <> 'dropped' AND " . CI_DUE_SQL . " > 0.004 ORDER BY (e.due_date IS NULL), e.due_date, due DESC LIMIT 6")->fetchAll(PDO::FETCH_ASSOC);
 $batches = $pdo->query("SELECT b.id, b.name, b.timing, b.capacity, c.name AS course_name, (SELECT COUNT(*) FROM ci_enrollments e WHERE e.batch_id = b.id AND e.status = 'active') AS n
-    FROM ci_batches b LEFT JOIN ci_courses c ON c.id = b.course_id WHERE b.status = 'active' ORDER BY n DESC, b.name LIMIT 6")->fetchAll(PDO::FETCH_ASSOC);
+    FROM ci_batches b LEFT JOIN ci_courses c ON c.id = b.course_id WHERE b.status = 'active' AND (b.start_date IS NULL OR b.start_date <= CURDATE()) AND (b.end_date IS NULL OR b.end_date >= CURDATE()) ORDER BY n DESC, b.name LIMIT 6")->fetchAll(PDO::FETCH_ASSOC);
 $empty = !$stats['active'] && !$stats['courses'] && !$stats['batches'];
 
 // ---- small pieces ----
@@ -166,6 +169,7 @@ $q = fn(array $x) => '/admin/dashboard.php?' . http_build_query($x);
 .db-row{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:20px;margin-bottom:20px}
 .db-row3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;margin-bottom:20px}
 .db-sec{padding:24px}
+.db-run{margin-left:2px;padding:2px 8px;border-radius:999px!important;background:#ecfdf5;color:#047857;font-size:11.5px;font-weight:600}
 .db-one{margin-bottom:20px}
 .db-h{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px}
 .db-h h2{display:flex;align-items:center;gap:12px;margin:0;font-size:17px;font-weight:600;color:var(--db-t)}
@@ -230,7 +234,11 @@ $q = fn(array $x) => '/admin/dashboard.php?' . http_build_query($x);
 .db-rng-m{position:absolute;right:0;top:calc(100% + 6px);z-index:1000;width:240px;padding:6px;background:#fff;border:1px solid #e5e7eb;border-radius:10px!important;box-shadow:0 12px 32px rgba(16,24,40,.14)!important}
 .db-rng-m a{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:7px!important;font-size:14px;color:#374151;text-decoration:none}
 .db-rng-m a:hover{background:#f3f4f6}.db-rng-m a.on{background:#f5f3ff;color:#7c3aed;font-weight:600}.db-rng-m a i{font-size:12px}
-.db-rng-m form{margin:6px 0 0;padding:10px 6px 4px;border-top:1px solid #f3f4f6}
+.db-rng-cb{display:flex;align-items:center;justify-content:space-between;width:100%;margin-top:4px;padding:8px 10px;border:0;border-top:1px solid #f3f4f6;border-radius:0!important;background:none;font:inherit;font-size:14px;color:#374151;text-align:left;cursor:pointer}
+.db-rng-cb::after{content:"";width:6px;height:6px;border:solid #9ca3af;border-width:0 2px 2px 0;transform:rotate(45deg);margin-top:-3px;transition:transform .15s}
+.db-rng-cb[aria-expanded=true]::after{transform:rotate(-135deg);margin-top:3px}
+.db-rng-cb:hover{background:#f3f4f6}.db-rng-cb.on{color:#7c3aed;font-weight:600}
+.db-rng-m form{margin:0;padding:6px 6px 4px}.db-rng-m form[hidden]{display:none}
 .db-rng-m p{margin:0 0 8px;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#9ca3af}
 .db-rng-m label{display:block;margin-bottom:8px;font-size:12px;color:#6b7280}
 .db-rng-m input{display:block;width:100%;box-sizing:border-box;margin-top:4px;padding:6px 9px;border:1px solid #e5e7eb;border-radius:7px!important;font:inherit;font-size:13.5px}
@@ -246,7 +254,8 @@ $q = fn(array $x) => '/admin/dashboard.php?' . http_build_query($x);
 <?php
 $rng = '<details class="db-rng"><summary aria-label="Period: ' . $e($rangeLabel) . '"><i class="fas fa-calendar-days"></i><span class="db-rng-l">' . $e($rangeLabel) . '</span><i class="fas fa-chevron-down db-rng-c"></i></summary><div class="db-rng-m" role="menu">';
 foreach ($ranges as $k => $l) $rng .= '<a role="menuitem" href="' . $e($q(['range' => $k])) . '"' . ($range === $k ? ' class="on" aria-current="true"' : '') . '>' . $e($l) . '</a>'; // (the tick is drawn by CSS: an icon inside would make the header turn the link into an icon-only button on phones)
-$rng .= '<form method="get" action="/admin/dashboard.php"' . ($range === 'custom' ? ' class="on"' : '') . '><input type="hidden" name="range" value="custom"><p>Custom range</p>'
+$rng .= '<button type="button" class="db-rng-cb' . ($range === 'custom' ? ' on' : '') . '" aria-expanded="' . ($range === 'custom' ? 'true' : 'false') . '">Custom range</button>'
+    . '<form method="get" action="/admin/dashboard.php"' . ($range === 'custom' ? '' : ' hidden') . '><input type="hidden" name="range" value="custom">'
     . '<label>From<input type="date" name="from" value="' . $e($from) . '" max="' . $today . '" required></label><label>To<input type="date" name="to" value="' . $e($to) . '" max="' . $today . '" required></label>'
     . '<button type="submit">Apply</button></form></div></details>';
 admin_shell_open('Dashboard', $range === 'custom' ? $span : $rangeLabel . ' · ' . $span, '<div class="ci-top-actions">' . $rng
@@ -271,7 +280,7 @@ admin_shell_open('Dashboard', $range === 'custom' ? $span : $rangeLabel . ' · '
   <?= $card('green', 'fa-receipt', 'Receipts', number_format($cur['rcp']), $delta($cur['rcp'], $prev['rcp']), '/admin/ci-fees.php?' . http_build_query(['period' => 'custom', 'from' => $from, 'to' => $to])) ?>
   <?= $card('purple', 'fa-file-invoice', 'New Fee Charged', ci_money0($cur['charged']), $delta($cur['charged'], $prev['charged']), '/admin/ci-dues.php?period=all') ?>
   <?= $card('purple', 'fa-user-graduate', 'Active Students', number_format($stats['active']), $stats['online'] ? number_format($stats['online']) . ' online students' : 'Studying at the institute', '/admin/students.php') ?>
-  <?= $card('green', 'fa-layer-group', 'Active Batches', number_format($stats['batches']), number_format($stats['courses']) . ' active course' . ($stats['courses'] === 1 ? '' : 's'), '/admin/ci-batches.php') ?>
+  <?= $card('green', 'fa-layer-group', 'Running Batches', number_format($stats['batches']), number_format($stats['courses']) . ' running course' . ($stats['courses'] === 1 ? '' : 's'), '/admin/ci-batches.php') ?>
   <?= $card('red', 'fa-hourglass-half', 'Total Due', ci_money0($stats['due']), 'Still to be collected', '/admin/ci-dues.php?period=all') ?>
   <?= $card($stats['late'] ? 'red' : 'green', 'fa-calendar-xmark', 'Due Date Passed', number_format($stats['late']), $stats['late'] ? 'Students to remind' : 'Nobody is late', '/admin/ci-dues.php?period=all&late=1') ?>
 </div>
@@ -286,7 +295,7 @@ admin_shell_open('Dashboard', $range === 'custom' ? $span : $rangeLabel . ' · '
     </div>
   </section>
   <section class="db-card db-sec" data-ds="Institute Overview">
-    <?= $head('fa-chart-simple', 'Institute Overview') ?>
+    <?= $head('fa-chart-simple', 'Institute Overview <small class="db-run">Running now</small>') ?>
     <div class="db-tiles">
       <?= $tile('green', 'fa-book', 'Courses', number_format($stats['courses']), '/admin/ci-courses.php') ?>
       <?= $tile('purple', 'fa-layer-group', 'Batches', number_format($stats['batches']), '/admin/ci-batches.php') ?>
@@ -330,7 +339,7 @@ admin_shell_open('Dashboard', $range === 'custom' ? $span : $rangeLabel . ' · '
   </section>
   <section class="db-card db-sec" data-ds="Batches">
     <?= $head('fa-layer-group', 'Batches', '/admin/ci-batches.php', 'View all') ?>
-    <?php if (!$batches): ?><div class="db-emp" style="border-top:1px solid #f3f4f6"><span><i class="fas fa-layer-group"></i></span><b>No active batches</b><small>Create a batch to see seats filling here</small></div><?php else: ?>
+    <?php if (!$batches): ?><div class="db-emp" style="border-top:1px solid #f3f4f6"><span><i class="fas fa-layer-group"></i></span><b>No running batches</b><small>Create a batch to see seats filling here</small></div><?php else: ?>
     <ul class="db-list"><?php foreach ($batches as $b): ?><li><div class="db-n"><a href="/admin/students.php?batch=<?= (int)$b['id'] ?>"><?= $e($b['name']) ?></a><small><?= $e(implode(' · ', array_filter([$b['course_name'], $b['timing']]))) ?></small></div>
       <span class="db-r"><b><?= (int)$b['n'] ?><?= $b['capacity'] ? ' <span style="font-weight:400;color:#6b7280">/ ' . (int)$b['capacity'] . '</span>' : '' ?></b><?= $b['capacity'] ? '<div class="db-meter"><i style="width:' . min(100, round($b['n'] / max(1, $b['capacity']) * 100)) . '%"></i></div>' : 'students' ?></span></li><?php endforeach; ?></ul><?php endif; ?>
   </section>
@@ -340,6 +349,8 @@ admin_shell_open('Dashboard', $range === 'custom' ? $span : $rangeLabel . ' · '
 <script>
 (function () { // the period menu in the header closes on a click outside it or Escape
   var d = document.querySelector('.db-rng'); if (!d) return;
+  var cb = d.querySelector('.db-rng-cb'), f = d.querySelector('form');
+  cb.addEventListener('click', function () { var open = f.hidden; f.hidden = !open; cb.setAttribute('aria-expanded', open ? 'true' : 'false'); if (open) { var i = f.querySelector('input:not([type=hidden])'); if (i) i.focus(); } });
   document.addEventListener('click', function (e) { if (d.open && !d.contains(e.target)) d.removeAttribute('open'); });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && d.open) { d.removeAttribute('open'); d.querySelector('summary').focus(); } });
 })();

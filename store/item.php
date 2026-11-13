@@ -215,7 +215,7 @@ $tabs = array_filter(['about' => $desc !== '' ? 'About' : '', 'content' => $isCo
   </div>
 </div>
 
-<div class="st-mbar"><div class="sp-price"><?= $own ? '<span class="sp-owned">' . $ico('check') . ' In your library</span>' : ($off ? '<s>' . sh_money($p['mrp']) . '</s>' : '') . ($isFree ? $priceTxt : '<b>' . $priceTxt . '</b>') ?></div>
+<div class="st-mbar is-off"><div class="sp-price"><?= $own ? '<span class="sp-owned">' . $ico('check') . ' In your library</span>' : ($off ? '<s>' . sh_money($p['mrp']) . '</s>' : '') . ($isFree ? $priceTxt : '<b>' . $priceTxt . '</b>') ?></div>
   <?php if ($own): ?><a class="sp-btn" href="<?= sh_e($lu()) ?>"><?= $isCourse ? 'Continue' : 'Open notes' ?></a><?php else: ?><button type="button" class="sp-btn" onclick="var b=document.querySelector('.sp-card [data-buy], .sp-card a.sp-btn');b.scrollIntoView({block:'center'});b.click();"><?= $joinTxt ?></button><?php endif; ?></div>
 <?php if ($u && !$own): ?><script>window.ST_BUYER = <?= json_encode(['name' => $u['name'], 'email' => $u['email'], 'contact' => $u['mobile']], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) ?>; window.ST_SITE = <?= json_encode(edu_site_name(), JSON_HEX_TAG) ?>;</script><?php endif; ?>
 <?php // structured data for Google: the course (or notes pack) with its price, the path to it, and its own FAQ
