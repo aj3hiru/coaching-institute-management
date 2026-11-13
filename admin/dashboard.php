@@ -237,7 +237,9 @@ $q = fn(array $x) => '/admin/dashboard.php?' . http_build_query($x);
 .db-rng-cb{display:flex;align-items:center;justify-content:space-between;width:100%;margin-top:4px;padding:8px 10px;border:0;border-top:1px solid #f3f4f6;border-radius:0!important;background:none;font:inherit;font-size:14px;color:#374151;text-align:left;cursor:pointer}
 .db-rng-cb::after{content:"";width:6px;height:6px;border:solid #9ca3af;border-width:0 2px 2px 0;transform:rotate(45deg);margin-top:-3px;transition:transform .15s}
 .db-rng-cb[aria-expanded=true]::after{transform:rotate(-135deg);margin-top:3px}
-.db-rng-cb:hover{background:#f3f4f6}.db-rng-cb.on{color:#7c3aed;font-weight:600}
+.db-rng-m .db-rng-cb{background:none!important;color:#374151!important;box-shadow:none!important;min-height:0;height:auto;font-weight:400}
+.db-rng-m .db-rng-cb:hover,.db-rng-m .db-rng-cb[aria-expanded=true]{background:#f3f4f6!important}
+.db-rng-m .db-rng-cb.on{color:#7c3aed!important;font-weight:600}
 .db-rng-m form{margin:0;padding:6px 6px 4px}.db-rng-m form[hidden]{display:none}
 .db-rng-m p{margin:0 0 8px;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#9ca3af}
 .db-rng-m label{display:block;margin-bottom:8px;font-size:12px;color:#6b7280}
