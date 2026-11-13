@@ -84,8 +84,37 @@ $stats = [ // now (not tied to the period)
     'due' => (float)$one("SELECT COALESCE(SUM(" . CI_DUE_SQL . "),0) FROM ci_enrollments e"),
     'late' => (int)$one("SELECT COUNT(*) FROM ci_enrollments e WHERE e.status <> 'dropped' AND e.due_date IS NOT NULL AND e.due_date < CURDATE() AND " . CI_DUE_SQL . " > 0.004"),
 ];
-$store = 0;
-try { $store = (int)$one("SELECT COUNT(*) FROM sh_products WHERE type = 'course' AND status = 'published' AND (starts_at IS NULL OR starts_at < CURDATE()) AND (ends_at IS NULL OR ends_at >= CURDATE())"); } catch (Throwable) {} // Running (as in Online Courses)
+// ---- Institute Overview: Running now (default) / Upcoming / Completed / All / one session — all counted here, picked in the page
+$BW = [ // batches in each state
+    'running' => "b.status = 'active' AND (b.start_date IS NULL OR b.start_date <= CURDATE()) AND (b.end_date IS NULL OR b.end_date >= CURDATE())",
+    'upcoming' => "b.status = 'active' AND b.start_date > CURDATE()",
+    'completed' => "(b.status = 'completed' OR (b.status = 'active' AND b.end_date < CURDATE()))",
+    'all' => '1 = 1',
+];
+$OW = [ // online courses (as in Online Courses → Course Status)
+    'running' => '(starts_at IS NULL OR starts_at < CURDATE()) AND (ends_at IS NULL OR ends_at >= CURDATE())',
+    'upcoming' => 'starts_at >= CURDATE()', 'completed' => 'ends_at < CURDATE()', 'all' => '1 = 1',
+];
+$onl = function (string $w) use ($one): int { try { return (int)$one("SELECT COUNT(*) FROM sh_products WHERE type = 'course' AND status = 'published' AND $w"); } catch (Throwable) { return 0; } };
+$ov = [];
+foreach (['running' => 'Running now', 'upcoming' => 'Upcoming', 'completed' => 'Completed', 'all' => 'All'] as $k => $l) {
+    $w = $BW[$k];
+    $ov[$k] = ['label' => $l,
+        'courses' => $k === 'running' ? $stats['courses'] : ($k === 'all' ? (int)$one("SELECT COUNT(*) FROM ci_courses") : (int)$one("SELECT COUNT(DISTINCT b.course_id) FROM ci_batches b WHERE $w")),
+        'batches' => (int)$one("SELECT COUNT(*) FROM ci_batches b WHERE $w"),
+        'classes' => $k === 'running' ? $stats['classes'] : ($k === 'all' ? (int)$one("SELECT COUNT(*) FROM ci_classes") : (int)$one("SELECT COUNT(DISTINCT s.class_id) FROM ci_enrollments e JOIN ci_batches b ON b.id = e.batch_id JOIN ci_students s ON s.id = e.student_id WHERE $w AND s.class_id IS NOT NULL")),
+        'online' => $onl($OW[$k]),
+        'links' => ['/admin/ci-courses.php', '/admin/ci-batches.php?status=' . ['running' => 'active', 'upcoming' => 'active', 'completed' => 'completed', 'all' => 'all'][$k], '/admin/ci-classes.php', '/admin/shop-products.php?batch=' . ($k === 'all' ? '' : $k)]];
+}
+foreach ($pdo->query("SELECT id, name, start_date, end_date, is_current FROM ci_sessions ORDER BY (start_date IS NULL), start_date DESC, id DESC")->fetchAll(PDO::FETCH_ASSOC) as $x) {
+    $sid = (int)$x['id']; $inS = "(b.session_id = $sid OR e.session_id = $sid)";
+    $ov['s' . $sid] = ['label' => 'Session ' . $x['name'], 'session' => $x['name'], 'current' => (int)$x['is_current'],
+        'courses' => (int)$one("SELECT COUNT(DISTINCT c) FROM (SELECT course_id c FROM ci_batches WHERE session_id = $sid UNION SELECT course_id FROM ci_enrollments WHERE session_id = $sid) t"),
+        'batches' => (int)$one("SELECT COUNT(*) FROM ci_batches b WHERE b.session_id = $sid"),
+        'classes' => (int)$one("SELECT COUNT(DISTINCT s.class_id) FROM ci_enrollments e LEFT JOIN ci_batches b ON b.id = e.batch_id JOIN ci_students s ON s.id = e.student_id WHERE $inS AND s.class_id IS NOT NULL"),
+        'online' => $x['start_date'] && $x['end_date'] ? $onl('(starts_at IS NULL OR starts_at <= ' . $pdo->quote($x['end_date']) . ') AND (ends_at IS NULL OR ends_at >= ' . $pdo->quote($x['start_date']) . ')') : $onl('1 = 1'),
+        'links' => ['/admin/ci-courses.php', '/admin/ci-batches.php?status=all&session=' . $sid, '/admin/ci-classes.php', '/admin/shop-products.php?batch=']];
+}
 
 $recentStudents = $pdo->query("SELECT s.*, (SELECT GROUP_CONCAT(c.name SEPARATOR ', ') FROM ci_enrollments e JOIN ci_courses c ON c.id = e.course_id WHERE e.student_id = s.id AND e.status <> 'dropped') AS courses
     FROM ci_students s WHERE s.stype <> 'online' ORDER BY s.id DESC LIMIT 6")->fetchAll(PDO::FETCH_ASSOC);
@@ -174,6 +203,24 @@ $q = fn(array $x) => '/admin/dashboard.php?' . http_build_query($x);
 .db-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;margin-bottom:20px} /* Payment Modes | Institute Overview: same width */
 .db-row3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;margin-bottom:20px}
 .db-sec{padding:24px}
+.db .db-sec{overflow:visible} /* the Institute Overview menu may hang below its card */
+.db-tag{margin-left:2px;padding:2px 9px;border-radius:999px!important;background:#f3f4f6;color:#4b5563;font-size:12px;font-weight:600;white-space:nowrap}
+.db-ovf{position:relative;margin-left:2px;font-size:12px}
+.db-ovf>summary{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px!important;background:#ecfdf5;color:#047857;font-weight:600;cursor:pointer;list-style:none;white-space:nowrap}
+.db-ovf>summary::-webkit-details-marker{display:none}.db-ovf>summary i{font-size:9px;transition:transform .15s}.db-ovf[open]>summary i{transform:rotate(180deg)}
+.db-ovf.other>summary{background:#f5f3ff;color:#6d28d9}
+.db-ovf-m{position:absolute;left:0;top:calc(100% + 6px);z-index:40;min-width:200px;max-height:320px;overflow-y:auto;padding:6px;background:#fff;border:1px solid #e5e7eb;border-radius:5px!important;box-shadow:0 12px 32px rgba(16,24,40,.14)!important}
+.db-ovf-m .db-ovf-sb{justify-content:space-between;margin-top:4px;border-top:1px solid #f3f4f6!important;border-radius:0!important}
+.db-ovf-m .db-ovf-sb::after{content:"";width:6px;height:6px;border:solid #9ca3af;border-width:0 2px 2px 0;transform:rotate(45deg);margin-top:-3px}
+.db-ovf-m .db-ovf-sb[aria-expanded=true]::after{transform:rotate(-135deg);margin-top:3px}
+.db-ovf-m .db-ovf-sb.on{color:#7c3aed!important;font-weight:600}
+.db-ovf-sl{padding-left:10px}.db-ovf-sl[hidden]{display:none}
+@media (max-width:640px){.db-ovf-m{left:auto;right:-60px}}
+.db-ovf-m p{margin:6px 0 2px;padding:8px 10px 2px;border-top:1px solid #f3f4f6;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#9ca3af}
+.db-ovf-m button{display:flex;align-items:center;width:100%;padding:8px 10px;border:0;border-radius:5px!important;background:none!important;color:#374151!important;font:inherit;font-size:14px;font-weight:400;text-align:left;cursor:pointer;min-height:0;height:auto;box-shadow:none!important}
+.db-ovf-m button:hover{background:#f3f4f6!important}.db-ovf-m button.on{background:#f5f3ff!important;color:#7c3aed!important;font-weight:600}
+.db-ovf-m button.on::after{content:"";width:10px;height:5px;margin:-3px 2px 0 auto;border:solid #7c3aed;border-width:0 0 2px 2px;transform:rotate(-45deg)}
+.db-ovf-m button .db-rng-cur{margin-left:8px}
 .db-run{margin-left:2px;padding:2px 8px;border-radius:999px!important;background:#ecfdf5;color:#047857;font-size:11.5px;font-weight:600}
 .db-one{margin-bottom:20px}
 .db-h{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:32px;margin-bottom:20px} /* same height in every card, so the tiles of side-by-side cards line up */
@@ -299,19 +346,23 @@ admin_shell_open('Dashboard', $range === 'custom' ? $span : $rangeLabel . ' · '
 
 <div class="db-row" data-ds-wrap>
   <section class="db-card db-sec" data-ds="Payment Modes" data-ds-section>
-    <?= $head('fa-wallet', 'Payment Modes (' . $e($rangeLabel) . ')', '/admin/ci-fees.php?' . http_build_query(['period' => 'custom', 'from' => $from, 'to' => $to]), 'View all', 'dot') ?>
+    <?= $head('fa-wallet', 'Payment Modes <small class="db-tag" data-ds-item="Period label">' . $e($rangeLabel) . '</small>', '/admin/ci-fees.php?' . http_build_query(['period' => 'custom', 'from' => $from, 'to' => $to]), 'View all', 'dot') ?>
     <div class="db-tiles">
       <?php $mi = ['Cash' => ['green', 'fa-money-bill-wave'], 'UPI' => ['purple', 'fa-mobile-screen-button'], 'Bank' => ['green', 'fa-building-columns'], 'Cheque' => ['purple', 'fa-money-check'], 'Card' => ['green', 'fa-credit-card'], 'Other' => ['purple', 'fa-wallet']];
       foreach ($mi as $m => [$tn, $ic]) if (in_array($m, ['Cash', 'UPI', 'Bank', 'Cheque'], true) || $modes[$m] > 0) echo $tile($tn, $ic, CI_METHODS[$m], ci_money0($modes[$m])); ?>
     </div>
   </section>
   <section class="db-card db-sec" data-ds="Institute Overview" data-ds-section>
-    <?= $head('fa-chart-simple', 'Institute Overview <small class="db-run" data-ds-item="Running now label">Running now</small>') ?>
-    <div class="db-tiles">
-      <?= $tile('green', 'fa-book', 'Courses', number_format($stats['courses']), '/admin/ci-courses.php') ?>
-      <?= $tile('purple', 'fa-layer-group', 'Batches', number_format($stats['batches']), '/admin/ci-batches.php') ?>
-      <?= $tile('purple', 'fa-chalkboard', 'Classes', number_format($stats['classes']), '/admin/ci-classes.php') ?>
-      <?= $tile('green', 'fa-photo-film', 'Online Courses', number_format($store), '/admin/shop-products.php') ?>
+    <?php $ovm = '<details class="db-ovf" data-ds-item="Overview filter"><summary><span class="db-ovf-l">Running now</span><i class="fas fa-chevron-down"></i></summary><div class="db-ovf-m" role="menu">';
+    foreach ($ov as $k => $o) { if ($k[0] === 's' && !isset($sHead)) { $sHead = 1; $ovm .= '<button type="button" class="db-ovf-sb" aria-expanded="false">Session</button><div class="db-ovf-sl" hidden>'; }
+        $ovm .= '<button type="button" role="menuitemradio" data-ov="' . $e($k) . '">' . $e($o['session'] ?? $o['label']) . (!empty($o['current']) ? ' <small class="db-rng-cur">Current</small>' : '') . '</button>'; }
+    $ovm .= (isset($sHead) ? '</div>' : '') . '</div></details>'; ?>
+    <?= $head('fa-chart-simple', 'Institute Overview ' . $ovm) ?>
+    <div class="db-tiles" id="dbOv" data-ov='<?= $e(json_encode($ov, JSON_UNESCAPED_UNICODE)) ?>'>
+      <?= $tile('green', 'fa-book', 'Courses', number_format($ov['running']['courses']), '/admin/ci-courses.php') ?>
+      <?= $tile('purple', 'fa-layer-group', 'Batches', number_format($ov['running']['batches']), $ov['running']['links'][1]) ?>
+      <?= $tile('purple', 'fa-chalkboard', 'Classes', number_format($ov['running']['classes']), '/admin/ci-classes.php') ?>
+      <?= $tile('green', 'fa-photo-film', 'Online Courses', number_format($ov['running']['online']), $ov['running']['links'][3]) ?>
     </div>
   </section>
 </div>
@@ -356,6 +407,26 @@ admin_shell_open('Dashboard', $range === 'custom' ? $span : $rangeLabel . ' · '
 
 </div>
 <script>
+(function () { // Institute Overview filter: shows the counts of the choice at once; the choice is remembered in this browser
+  var box = document.getElementById('dbOv'), d = document.querySelector('.db-ovf'); if (!box || !d) return;
+  var data = JSON.parse(box.getAttribute('data-ov')), tiles = box.querySelectorAll('.db-tile'), keys = ['courses', 'batches', 'classes', 'online'];
+  function pick(k, save) {
+    if (!data[k]) k = 'running';
+    var o = data[k];
+    tiles.forEach(function (t, i) { var v = t.querySelector('.db-tv'); if (v) v.textContent = Number(o[keys[i]] || 0).toLocaleString('en-IN'); if (t.tagName === 'A' && o.links[i]) t.setAttribute('href', o.links[i]); });
+    d.querySelector('.db-ovf-l').textContent = o.label; d.classList.toggle('other', k !== 'running');
+    var sb = d.querySelector('.db-ovf-sb'), sl = d.querySelector('.db-ovf-sl'), isS = k.charAt(0) === 's';
+    if (sb) { sb.classList.toggle('on', isS); sb.textContent = isS ? o.label : 'Session'; sl.hidden = !isS; sb.setAttribute('aria-expanded', isS ? 'true' : 'false'); }
+    d.querySelectorAll('[data-ov]').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-ov') === k); b.setAttribute('aria-checked', b.getAttribute('data-ov') === k ? 'true' : 'false'); });
+    if (save) try { localStorage.setItem('dbOv', k); } catch (e) {}
+  }
+  var saved = 'running'; try { saved = localStorage.getItem('dbOv') || 'running'; } catch (e) {}
+  pick(saved, false);
+  d.addEventListener('click', function (e) {
+    var sb = e.target.closest('.db-ovf-sb'); if (sb) { var sl = d.querySelector('.db-ovf-sl'); sl.hidden = !sl.hidden; sb.setAttribute('aria-expanded', sl.hidden ? 'false' : 'true'); return; }
+    var b = e.target.closest('[data-ov]'); if (!b) return; pick(b.getAttribute('data-ov'), true); d.removeAttribute('open'); });
+  document.addEventListener('click', function (e) { if (d.open && !d.contains(e.target)) d.removeAttribute('open'); });
+})();
 (function () { // the period menu in the header closes on a click outside it or Escape
   var d = document.querySelector('.db-rng'); if (!d) return;
   // Session and Custom range open their own part of the menu (one at a time)
