@@ -117,8 +117,8 @@ foreach ($pdo->query("SELECT id, name, start_date, end_date, is_current FROM ci_
 }
 
 $recentStudents = $pdo->query("SELECT s.*, (SELECT GROUP_CONCAT(c.name SEPARATOR ', ') FROM ci_enrollments e JOIN ci_courses c ON c.id = e.course_id WHERE e.student_id = s.id AND e.status <> 'dropped') AS courses
-    FROM ci_students s WHERE s.stype <> 'online' ORDER BY s.id DESC LIMIT 6")->fetchAll(PDO::FETCH_ASSOC);
-$recentPays = $pdo->query("SELECT p.*, s.name, s.reg_no, s.photo, u.username, (SELECT " . CI_DUE_SQL . " FROM ci_enrollments e WHERE e.id = p.enrollment_id) AS due_now FROM ci_payments p JOIN ci_students s ON s.id = p.student_id LEFT JOIN users u ON u.id = p.created_by ORDER BY p.id DESC LIMIT 8")->fetchAll(PDO::FETCH_ASSOC);
+    FROM ci_students s WHERE s.stype <> 'online' ORDER BY s.admission_date DESC, s.id DESC LIMIT 6")->fetchAll(PDO::FETCH_ASSOC);
+$recentPays = $pdo->query("SELECT p.*, s.name, s.reg_no, s.photo, u.username, (SELECT " . CI_DUE_SQL . " FROM ci_enrollments e WHERE e.id = p.enrollment_id) AS due_now FROM ci_payments p JOIN ci_students s ON s.id = p.student_id LEFT JOIN users u ON u.id = p.created_by ORDER BY p.paid_on DESC, p.id DESC LIMIT 8")->fetchAll(PDO::FETCH_ASSOC);
 $upcoming = $pdo->query("SELECT e.id, e.due_date, s.id AS sid, s.name, s.mobile, s.photo, c.name AS course_name, " . CI_DUE_SQL . " AS due
     FROM ci_enrollments e JOIN ci_students s ON s.id = e.student_id LEFT JOIN ci_courses c ON c.id = e.course_id
     WHERE e.status <> 'dropped' AND " . CI_DUE_SQL . " > 0.004 ORDER BY (e.due_date IS NULL), e.due_date, due DESC LIMIT 6")->fetchAll(PDO::FETCH_ASSOC);
