@@ -248,7 +248,7 @@ $q = fn(array $x) => '/admin/dashboard.php?' . http_build_query($x);
 .db-rng-m .db-rng-cb:hover,.db-rng-m .db-rng-cb[aria-expanded=true]{background:#f3f4f6!important}
 .db-rng-m .db-rng-cb.on{color:#7c3aed!important;font-weight:600}
 .db-rng-m form{margin:0;padding:6px 6px 4px}.db-rng-m form[hidden]{display:none}
-.db-rng-m p.db-rng-g{margin:6px 0 2px;padding:8px 10px 2px;border-top:1px solid #f3f4f6}
+.db-rng-sl{padding:2px 0 4px 10px}.db-rng-sl[hidden]{display:none}.db-rng-sl a{font-size:13.5px!important}
 .db-rng-cur{margin-left:6px;margin-right:auto;padding:1px 7px;border-radius:999px!important;background:#ecfdf5;color:#047857;font-size:11px;font-weight:600}
 .db-rng-m{max-height:calc(100vh - 140px);overflow-y:auto}
 .db-rng-m p{margin:0 0 8px;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#9ca3af}
@@ -266,10 +266,12 @@ $q = fn(array $x) => '/admin/dashboard.php?' . http_build_query($x);
 <?php
 $rng = '<details class="db-rng"><summary aria-label="Period: ' . $e($rangeLabel) . '"><i class="fas fa-calendar-days"></i><span class="db-rng-l">' . $e($rangeLabel) . '</span><i class="fas fa-chevron-down db-rng-c"></i></summary><div class="db-rng-m" role="menu">';
 foreach ($ranges as $k => $l) $rng .= '<a role="menuitem" href="' . $e($q(['range' => $k])) . '"' . ($range === $k ? ' class="on" aria-current="true"' : '') . '>' . $e($l) . '</a>'; // (the tick is drawn by CSS: an icon inside would make the header turn the link into an icon-only button on phones)
-if ($sessions) { $rng .= '<p class="db-rng-g">Academic session</p>';
+if ($sessions) { $sOn = $range === 'session';
+    $rng .= '<button type="button" class="db-rng-cb db-rng-sb' . ($sOn ? ' on' : '') . '" aria-expanded="' . ($sOn ? 'true' : 'false') . '">' . ($sOn ? 'Session ' . $e($sess['name']) : 'Session') . '</button><div class="db-rng-sl"' . ($sOn ? '' : ' hidden') . '>';
     foreach ($sessions as $x) { $on = $range === 'session' && (int)$sess['id'] === (int)$x['id'];
-        $rng .= '<a role="menuitem" href="' . $e($q(['range' => 'session', 'sid' => (int)$x['id']])) . '"' . ($on ? ' class="on" aria-current="true"' : '') . '>' . $e($x['name']) . ($x['is_current'] ? ' <small class="db-rng-cur">Current</small>' : '') . '</a>'; } }
-$rng .= '<button type="button" class="db-rng-cb' . ($range === 'custom' ? ' on' : '') . '" aria-expanded="' . ($range === 'custom' ? 'true' : 'false') . '">Custom range</button>'
+        $rng .= '<a role="menuitem" href="' . $e($q(['range' => 'session', 'sid' => (int)$x['id']])) . '"' . ($on ? ' class="on" aria-current="true"' : '') . '>' . $e($x['name']) . ($x['is_current'] ? ' <small class="db-rng-cur">Current</small>' : '') . '</a>'; }
+    $rng .= '</div>'; }
+$rng .= '<button type="button" class="db-rng-cb db-rng-cc' . ($range === 'custom' ? ' on' : '') . '" aria-expanded="' . ($range === 'custom' ? 'true' : 'false') . '">Custom range</button>'
     . '<form method="get" action="/admin/dashboard.php"' . ($range === 'custom' ? '' : ' hidden') . '><input type="hidden" name="range" value="custom">'
     . '<label>From<input type="date" name="from" value="' . $e($from) . '" max="' . $today . '" required></label><label>To<input type="date" name="to" value="' . $e($to) . '" max="' . $today . '" required></label>'
     . '<button type="submit">Apply</button></form></div></details>';
@@ -363,8 +365,16 @@ admin_shell_open('Dashboard', $range === 'custom' ? $span : $rangeLabel . ' · '
 <script>
 (function () { // the period menu in the header closes on a click outside it or Escape
   var d = document.querySelector('.db-rng'); if (!d) return;
-  var cb = d.querySelector('.db-rng-cb'), f = d.querySelector('form');
-  cb.addEventListener('click', function () { var open = f.hidden; f.hidden = !open; cb.setAttribute('aria-expanded', open ? 'true' : 'false'); if (open) { var i = f.querySelector('input:not([type=hidden])'); if (i) i.focus(); } });
+  // Session and Custom range open their own part of the menu (one at a time)
+  var parts = [[d.querySelector('.db-rng-sb'), d.querySelector('.db-rng-sl')], [d.querySelector('.db-rng-cc'), d.querySelector('.db-rng-m form')]].filter(function (x) { return x[0] && x[1]; });
+  parts.forEach(function (x) {
+    x[0].addEventListener('click', function () {
+      var open = x[1].hidden;
+      parts.forEach(function (y) { y[1].hidden = true; y[0].setAttribute('aria-expanded', 'false'); });
+      x[1].hidden = !open; x[0].setAttribute('aria-expanded', open ? 'true' : 'false');
+      if (open) { var i = x[1].querySelector('input:not([type=hidden]), a'); if (i) i.focus(); }
+    });
+  });
   document.addEventListener('click', function (e) { if (d.open && !d.contains(e.target)) d.removeAttribute('open'); });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && d.open) { d.removeAttribute('open'); d.querySelector('summary').focus(); } });
 })();
