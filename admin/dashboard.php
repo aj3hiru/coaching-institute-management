@@ -28,7 +28,11 @@ $month = date('Y-m-01');
 // Every "this period" figure is compared with the period just before it (This month: the same days of last month).
 $ranges = ['today' => 'Today', 'yesterday' => 'Yesterday', '7days' => 'Last 7 Days', 'month' => 'This Month', 'prev_month' => 'Last Month'];
 $range = (string)($_GET['range'] ?? 'today');
-if ($range !== 'custom' && !isset($ranges[$range])) $range = 'today';
+if ($range !== 'custom' && $range !== 'session' && !isset($ranges[$range])) $range = 'today';
+// academic sessions (Institute → Sessions) with their dates, newest first: a session shows from its start to today (or its end)
+$sessions = $pdo->query("SELECT id, name, start_date, end_date, is_current FROM ci_sessions WHERE start_date IS NOT NULL AND end_date IS NOT NULL ORDER BY start_date DESC")->fetchAll(PDO::FETCH_ASSOC);
+$sess = null;
+if ($range === 'session') { foreach ($sessions as $x) if ((int)$x['id'] === (int)($_GET['sid'] ?? 0)) $sess = $x; if (!$sess) $range = 'today'; }
 $isDate = fn($d) => is_string($d) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $d) && strtotime($d);
 $d = fn(string $s, string $mod = '') => date('Y-m-d', strtotime($s . ($mod !== '' ? ' ' . $mod : '')));
 switch ($range) {
@@ -37,6 +41,9 @@ switch ($range) {
     case '7days': $from = $d($today, '-6 day'); $to = $today; $pFrom = $d($today, '-13 day'); $pTo = $d($today, '-7 day'); break;
     case 'prev_month': $from = date('Y-m-01', strtotime('first day of last month')); $to = date('Y-m-t', strtotime('first day of last month'));
         $pFrom = date('Y-m-01', strtotime('first day of -2 month')); $pTo = date('Y-m-t', strtotime('first day of -2 month')); break;
+    case 'session': // compared with the same days of the year before (the previous session)
+        $from = $sess['start_date']; $to = $sess['start_date'] > $today ? $sess['end_date'] : min($sess['end_date'], $today);
+        $pFrom = $d($from, '-1 year'); $pTo = $d($to, '-1 year'); break;
     case 'custom':
         $from = $isDate($_GET['from'] ?? null) ? $_GET['from'] : $month; $to = $isDate($_GET['to'] ?? null) ? $_GET['to'] : $today;
         if ($from > $to) [$from, $to] = [$to, $from];
@@ -46,8 +53,8 @@ switch ($range) {
         $pFrom = date('Y-m-01', strtotime('first day of last month'));
         $pTo = min(date('Y-m-t', strtotime('first day of last month')), date('Y-m-', strtotime('first day of last month')) . date('d')); // the same days of last month
 }
-$rangeLabel = $range === 'custom' ? date('d M', strtotime($from)) . ' – ' . date('d M Y', strtotime($to)) : $ranges[$range];
-$span = $from === $to ? date('d M Y', strtotime($from)) : date('d M', strtotime($from)) . ' – ' . date('d M Y', strtotime($to));
+$rangeLabel = $range === 'custom' ? date(substr($from, 0, 4) === substr($to, 0, 4) ? 'd M' : 'd M Y', strtotime($from)) . ' – ' . date('d M Y', strtotime($to)) : ($range === 'session' ? 'Session ' . $sess['name'] : $ranges[$range]);
+$span = $from === $to ? date('d M Y', strtotime($from)) : date(substr($from, 0, 4) === substr($to, 0, 4) ? 'd M' : 'd M Y', strtotime($from)) . ' – ' . date('d M Y', strtotime($to)); // the year on both ends when they differ
 
 $period = function (string $a, string $b) use ($one): array {
     return [
@@ -241,6 +248,9 @@ $q = fn(array $x) => '/admin/dashboard.php?' . http_build_query($x);
 .db-rng-m .db-rng-cb:hover,.db-rng-m .db-rng-cb[aria-expanded=true]{background:#f3f4f6!important}
 .db-rng-m .db-rng-cb.on{color:#7c3aed!important;font-weight:600}
 .db-rng-m form{margin:0;padding:6px 6px 4px}.db-rng-m form[hidden]{display:none}
+.db-rng-m p.db-rng-g{margin:6px 0 2px;padding:8px 10px 2px;border-top:1px solid #f3f4f6}
+.db-rng-cur{margin-left:6px;margin-right:auto;padding:1px 7px;border-radius:999px!important;background:#ecfdf5;color:#047857;font-size:11px;font-weight:600}
+.db-rng-m{max-height:calc(100vh - 140px);overflow-y:auto}
 .db-rng-m p{margin:0 0 8px;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#9ca3af}
 .db-rng-m label{display:block;margin-bottom:8px;font-size:12px;color:#6b7280}
 .db-rng-m input{display:block;width:100%;box-sizing:border-box;margin-top:4px;padding:6px 9px;border:1px solid #e5e7eb;border-radius:5px!important;font:inherit;font-size:13.5px}
@@ -256,6 +266,9 @@ $q = fn(array $x) => '/admin/dashboard.php?' . http_build_query($x);
 <?php
 $rng = '<details class="db-rng"><summary aria-label="Period: ' . $e($rangeLabel) . '"><i class="fas fa-calendar-days"></i><span class="db-rng-l">' . $e($rangeLabel) . '</span><i class="fas fa-chevron-down db-rng-c"></i></summary><div class="db-rng-m" role="menu">';
 foreach ($ranges as $k => $l) $rng .= '<a role="menuitem" href="' . $e($q(['range' => $k])) . '"' . ($range === $k ? ' class="on" aria-current="true"' : '') . '>' . $e($l) . '</a>'; // (the tick is drawn by CSS: an icon inside would make the header turn the link into an icon-only button on phones)
+if ($sessions) { $rng .= '<p class="db-rng-g">Academic session</p>';
+    foreach ($sessions as $x) { $on = $range === 'session' && (int)$sess['id'] === (int)$x['id'];
+        $rng .= '<a role="menuitem" href="' . $e($q(['range' => 'session', 'sid' => (int)$x['id']])) . '"' . ($on ? ' class="on" aria-current="true"' : '') . '>' . $e($x['name']) . ($x['is_current'] ? ' <small class="db-rng-cur">Current</small>' : '') . '</a>'; } }
 $rng .= '<button type="button" class="db-rng-cb' . ($range === 'custom' ? ' on' : '') . '" aria-expanded="' . ($range === 'custom' ? 'true' : 'false') . '">Custom range</button>'
     . '<form method="get" action="/admin/dashboard.php"' . ($range === 'custom' ? '' : ' hidden') . '><input type="hidden" name="range" value="custom">'
     . '<label>From<input type="date" name="from" value="' . $e($from) . '" max="' . $today . '" required></label><label>To<input type="date" name="to" value="' . $e($to) . '" max="' . $today . '" required></label>'
