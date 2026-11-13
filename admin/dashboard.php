@@ -27,7 +27,8 @@ $month = date('Y-m-01');
 // ---- the period (top right): Today / Yesterday / Last 7 days / This month / Last month / Custom — like the store dashboard.
 // Every "this period" figure is compared with the period just before it (This month: the same days of last month).
 $ranges = ['today' => 'Today', 'yesterday' => 'Yesterday', '7days' => 'Last 7 Days', 'month' => 'This Month', 'prev_month' => 'Last Month'];
-$range = (string)($_GET['range'] ?? 'month');
+$range = (string)($_GET['range'] ?? 'today');
+if ($range !== 'custom' && !isset($ranges[$range])) $range = 'today';
 $isDate = fn($d) => is_string($d) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $d) && strtotime($d);
 $d = fn(string $s, string $mod = '') => date('Y-m-d', strtotime($s . ($mod !== '' ? ' ' . $mod : '')));
 switch ($range) {
@@ -41,7 +42,7 @@ switch ($range) {
         if ($from > $to) [$from, $to] = [$to, $from];
         $len = (int)round((strtotime($to) - strtotime($from)) / 86400) + 1;
         $pTo = $d($from, '-1 day'); $pFrom = $d($pTo, '-' . ($len - 1) . ' day'); break;
-    default: $range = 'month'; $from = $month; $to = $today;
+    default: $from = $month; $to = $today; // This Month
         $pFrom = date('Y-m-01', strtotime('first day of last month'));
         $pTo = min(date('Y-m-t', strtotime('first day of last month')), date('Y-m-', strtotime('first day of last month')) . date('d')); // the same days of last month
 }
@@ -58,13 +59,13 @@ $period = function (string $a, string $b) use ($one): array {
 };
 $cur = $period($from, $to);
 $prev = $period($pFrom, $pTo);
-// cash and online (UPI, card, bank …) received in the period; a split payment counts each part where it belongs
-$cash = 0.0; $online = 0.0;
+// fee received in the period by mode (Cash, UPI, Card, Bank transfer, Cheque, Other); a split payment counts each part where it belongs
+$modes = array_fill_keys(array_keys(CI_METHODS), 0.0);
 $q = $pdo->prepare("SELECT method, parts, amount FROM ci_payments WHERE paid_on BETWEEN ? AND ?"); $q->execute([$from, $to]);
 foreach ($q as $r) {
     $parts = $r['method'] === 'Split' ? json_decode((string)$r['parts'], true) : null;
-    if (is_array($parts) && $parts) { foreach ($parts as $x) { if (($x['m'] ?? '') === 'Cash') $cash += (float)($x['a'] ?? 0); else $online += (float)($x['a'] ?? 0); } }
-    elseif ($r['method'] === 'Cash') $cash += (float)$r['amount']; else $online += (float)$r['amount'];
+    if (!is_array($parts) || !$parts) $parts = [['m' => $r['method'], 'a' => $r['amount']]];
+    foreach ($parts as $x) { $m = isset($modes[$x['m'] ?? '']) ? $x['m'] : 'Other'; $modes[$m] += (float)($x['a'] ?? 0); }
 }
 $stats = [ // now (not tied to the period)
     'active' => (int)$one("SELECT COUNT(*) FROM ci_students WHERE status = 'active' AND stype <> 'online'"),
@@ -77,16 +78,6 @@ $stats = [ // now (not tied to the period)
 ];
 $store = 0;
 try { $store = (int)$one("SELECT COUNT(*) FROM sh_products WHERE status = 'published'"); } catch (Throwable) {}
-
-// the fee chart: one point a day (at least the last 7 days), or one a month for a long custom range
-$cFrom = (strtotime($to) - strtotime($from)) / 86400 < 6 ? $d($to, '-6 day') : $from;
-$days = (int)round((strtotime($to) - strtotime($cFrom)) / 86400) + 1;
-$byMonth = $days > 62;
-$q = $pdo->prepare("SELECT " . ($byMonth ? "DATE_FORMAT(paid_on, '%Y-%m')" : 'paid_on') . " k, SUM(amount) v FROM ci_payments WHERE paid_on BETWEEN ? AND ? GROUP BY k");
-$q->execute([$cFrom, $to]); $got = $q->fetchAll(PDO::FETCH_KEY_PAIR);
-$series = [];
-if ($byMonth) { for ($m = strtotime(date('Y-m-01', strtotime($cFrom))); $m <= strtotime($to); $m = strtotime('+1 month', $m)) $series[] = [date('M', $m), date('M Y', $m), (float)($got[date('Y-m', $m)] ?? 0)]; }
-else { for ($i = 0; $i < $days; $i++) { $k = $d($cFrom, "+$i day"); $series[] = [$days > 10 ? date('j', strtotime($k)) : date('D', strtotime($k)), date('D, d M Y', strtotime($k)), (float)($got[$k] ?? 0)]; } }
 
 $recentStudents = $pdo->query("SELECT s.*, (SELECT GROUP_CONCAT(c.name SEPARATOR ', ') FROM ci_enrollments e JOIN ci_courses c ON c.id = e.course_id WHERE e.student_id = s.id AND e.status <> 'dropped') AS courses
     FROM ci_students s WHERE s.stype <> 'online' ORDER BY s.id DESC LIMIT 6")->fetchAll(PDO::FETCH_ASSOC);
@@ -175,6 +166,7 @@ $q = fn(array $x) => '/admin/dashboard.php?' . http_build_query($x);
 .db-row{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:20px;margin-bottom:20px}
 .db-row3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;margin-bottom:20px}
 .db-sec{padding:24px}
+.db-one{margin-bottom:20px}
 .db-h{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px}
 .db-h h2{display:flex;align-items:center;gap:12px;margin:0;font-size:17px;font-weight:600;color:var(--db-t)}
 .db-hi{display:inline-flex;align-items:center;justify-content:center;font-size:18px;color:#4b5563}
@@ -182,6 +174,7 @@ $q = fn(array $x) => '/admin/dashboard.php?' . http_build_query($x);
 .db-all{display:inline-flex;align-items:center;gap:7px;font-size:14px;font-weight:500;color:var(--db-p);text-decoration:none;white-space:nowrap}
 .db-all i{font-size:10.5px}
 .db-tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+@media (min-width:1500px){.db-tiles3{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .db-tile{display:flex;align-items:center;gap:14px;padding:16px;border:1px solid var(--db-b);border-radius:10px!important;text-decoration:none;color:inherit}
 .db-tile-o:hover{background:#f9fafb}
 .db-ti{flex:none;display:flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:10px!important;font-size:18px}
@@ -203,24 +196,6 @@ $q = fn(array $x) => '/admin/dashboard.php?' . http_build_query($x);
 .db-emp{display:flex;flex-direction:column;align-items:center;padding:28px 10px;text-align:center}
 .db-emp span{display:flex;align-items:center;justify-content:center;width:64px;height:64px;margin-bottom:12px;border-radius:50%!important;background:#f3f4f6;color:#9ca3af;font-size:24px}
 .db-emp b{font-size:15px;color:var(--db-t)}.db-emp small{margin-top:4px;font-size:13.5px;color:var(--db-m)}
-/* chart */
-.db-ch{position:relative;display:flex;flex-direction:column;height:250px}
-@media (min-width:1280px){.db-chsec{display:flex;flex-direction:column}.db-chsec .db-ch{flex:1;min-height:250px;height:auto}}
-.db-ch-in{display:flex;flex:1;min-height:0}
-.db-ya{display:flex;flex-direction:column;justify-content:space-between;width:48px;flex:none;padding-right:8px;text-align:right;font-size:11px;color:#9ca3af}
-.db-ya span{line-height:1;transform:translateY(-50%)}.db-ya span:first-child{transform:none}.db-ya span:last-child{transform:none}
-.db-plot{position:relative;flex:1;min-width:0;border-left:1px solid var(--db-b);border-bottom:1px solid var(--db-b);outline:none}
-.db-plot:focus-visible{box-shadow:0 0 0 2px #c4b5fd!important}
-.db-grid{position:absolute;left:0;right:0;border-top:1px dashed #f3f4f6}
-.db-plot svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
-.db-hit{position:absolute;inset:0;display:grid}
-.db-xh{position:absolute;top:0;bottom:0;width:1px;background:#d1d5db;pointer-events:none}
-.db-dot{position:absolute;width:10px;height:10px;margin:-5px 0 0 -5px;border:2px solid #fff;border-radius:50%!important;background:var(--db-p);box-shadow:0 0 0 1px var(--db-p)!important;pointer-events:none}
-.db-tip{position:absolute;z-index:5;transform:translateX(-50%);padding:6px 10px;background:#fff;border:1px solid var(--db-b);border-radius:8px!important;box-shadow:0 8px 20px rgba(0,0,0,.08)!important;white-space:nowrap;pointer-events:none}
-.db-tip small{display:block;font-size:11px;color:var(--db-m)}.db-tip b{font-size:13px;color:var(--db-t)}
-.db-xa{display:grid;margin-left:48px;padding-top:8px;text-align:center;font-size:11.5px;color:#9ca3af}
-.db-xa span{overflow:hidden;white-space:nowrap}.db-xa span.on{font-weight:600;color:#374151}
-.db-chs{display:flex;flex-wrap:wrap;gap:6px 18px;margin:-8px 0 16px;font-size:13px;color:var(--db-m)}.db-chs b{color:var(--db-t)}
 /* lists */
 .db-list{list-style:none;margin:0;padding:0;border-top:1px solid #f3f4f6}
 .db-list li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid #f3f4f6}
@@ -247,31 +222,39 @@ $q = fn(array $x) => '/admin/dashboard.php?' . http_build_query($x);
   .db-sec{padding:16px}.db-h{margin-bottom:14px}.db-h h2{font-size:16px}.db-tiles{gap:10px}.db-tile{flex-direction:column;align-items:flex-start;gap:8px;padding:12px}.db-tv{font-size:19px}
   .db-row,.db-row3{gap:14px;margin-bottom:14px}.db-bar{margin-bottom:14px}.db-seg{width:100%}
 }
+/* period menu in the header */
+.db-rng{position:relative}
+.db-rng>summary{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 12px;border:1px solid #d1d5db;background:#fff;color:#374151;font-size:14px;font-weight:500;cursor:pointer;list-style:none;white-space:nowrap}
+.db-rng>summary::-webkit-details-marker{display:none}
+.db-rng>summary>.fa-calendar-days{color:#7c3aed}.db-rng-c{font-size:10px;color:#9ca3af;transition:transform .15s}.db-rng[open] .db-rng-c{transform:rotate(180deg)}
+.db-rng-m{position:absolute;right:0;top:calc(100% + 6px);z-index:1000;width:240px;padding:6px;background:#fff;border:1px solid #e5e7eb;border-radius:10px!important;box-shadow:0 12px 32px rgba(16,24,40,.14)!important}
+.db-rng-m a{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:7px!important;font-size:14px;color:#374151;text-decoration:none}
+.db-rng-m a:hover{background:#f3f4f6}.db-rng-m a.on{background:#f5f3ff;color:#7c3aed;font-weight:600}.db-rng-m a i{font-size:12px}
+.db-rng-m form{margin:6px 0 0;padding:10px 6px 4px;border-top:1px solid #f3f4f6}
+.db-rng-m p{margin:0 0 8px;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#9ca3af}
+.db-rng-m label{display:block;margin-bottom:8px;font-size:12px;color:#6b7280}
+.db-rng-m input{display:block;width:100%;box-sizing:border-box;margin-top:4px;padding:6px 9px;border:1px solid #e5e7eb;border-radius:7px!important;font:inherit;font-size:13.5px}
+.db-rng-m button{width:100%;padding:8px;border:0;border-radius:7px!important;background:#7c3aed;color:#fff;font-weight:600;cursor:pointer}
+.db-rng-m a.on::after{content:"";width:10px;height:5px;margin:-3px 2px 0 0;border:solid #7c3aed;border-width:0 0 2px 2px;transform:rotate(-45deg)}
+@media (max-width:640px){.db-rng>summary{width:38px;height:38px;padding:0;justify-content:center;gap:0;font-size:15px}.db-rng-l,.db-rng-c{display:none!important}.db-rng-m{position:fixed;left:12px;right:12px;top:auto;width:auto}}
 /* the admin is flat (square, no shadows); the dashboard has the store dashboard's soft cards */
 .db .db-tbl th{background:transparent;border:0}
 @media (max-width:640px){.db-segw{width:100%}.db-seg{flex:1}.db-custw>summary{height:42px;padding:0 12px}}
 </style>
 </head>
 <body>
-<?php admin_shell_open('Dashboard', date('l, F j, Y'), '<div class="ci-top-actions">'
+<?php
+$rng = '<details class="db-rng"><summary aria-label="Period: ' . $e($rangeLabel) . '"><i class="fas fa-calendar-days"></i><span class="db-rng-l">' . $e($rangeLabel) . '</span><i class="fas fa-chevron-down db-rng-c"></i></summary><div class="db-rng-m" role="menu">';
+foreach ($ranges as $k => $l) $rng .= '<a role="menuitem" href="' . $e($q(['range' => $k])) . '"' . ($range === $k ? ' class="on" aria-current="true"' : '') . '>' . $e($l) . '</a>'; // (the tick is drawn by CSS: an icon inside would make the header turn the link into an icon-only button on phones)
+$rng .= '<form method="get" action="/admin/dashboard.php"' . ($range === 'custom' ? ' class="on"' : '') . '><input type="hidden" name="range" value="custom"><p>Custom range</p>'
+    . '<label>From<input type="date" name="from" value="' . $e($from) . '" max="' . $today . '" required></label><label>To<input type="date" name="to" value="' . $e($to) . '" max="' . $today . '" required></label>'
+    . '<button type="submit">Apply</button></form></div></details>';
+admin_shell_open('Dashboard', $range === 'custom' ? $span : $rangeLabel . ' · ' . $span, '<div class="ci-top-actions">' . $rng
     . (ci_perm($me, 'add_student') ? '<a class="ci-btn" href="/admin/student-edit.php"><i class="fas fa-user-plus"></i> Add Student</a>' : '')
     . (ci_perm($me, 'fees') ? '<a class="ci-btn ci-ghost" href="/admin/ci-dues.php?period=all"><i class="fas fa-indian-rupee-sign"></i> Collect Fee</a>' : '')
     . (ci_perm($me, 'batches') ? '<a class="ci-btn ci-ghost" href="/admin/ci-batches.php?new=1"><i class="fas fa-layer-group"></i> New Batch</a>' : '') . '</div>'); ?>
 <div class="ci db">
 <?= admin_flash() ?>
-
-<div class="db-bar" data-ds="Period">
-  <div class="db-hello"><b>Welcome back, <?= $e($me['username']) ?></b><span>Showing <?= $range === 'custom' ? $e($span) : $e($rangeLabel) . ' · ' . $e($span) ?></span></div>
-  <div class="db-segw"><nav class="db-seg" aria-label="Period">
-    <?php foreach ($ranges as $k => $l): ?><a href="<?= $e($q(['range' => $k])) ?>"<?= $range === $k ? ' class="on" aria-current="true"' : '' ?>><?= $e($l) ?></a><?php endforeach; ?>
-  </nav>
-    <details class="db-custw<?= $range === 'custom' ? ' on' : '' ?>"><summary><i class="fas fa-calendar-days"></i> <?= $range === 'custom' ? $e($rangeLabel) : 'Custom' ?></summary>
-      <form class="db-cust" method="get" action="/admin/dashboard.php"><input type="hidden" name="range" value="custom"><p>Custom range</p>
-        <label>From<input type="date" name="from" value="<?= $e($from) ?>" max="<?= $today ?>" required></label>
-        <label>To<input type="date" name="to" value="<?= $e($to) ?>" max="<?= $today ?>" required></label>
-        <button type="submit">Apply</button></form></details>
-  </div>
-</div>
 
 <?php if ($empty): ?>
 <div class="db-card db-start"><b>Getting started</b><ol>
@@ -296,11 +279,10 @@ $q = fn(array $x) => '/admin/dashboard.php?' . http_build_query($x);
 <div class="db-row" data-ds-wrap>
   <section class="db-card db-sec" data-ds="Fees">
     <?= $head('fa-indian-rupee-sign', 'Fees (' . $e($rangeLabel) . ')', '/admin/ci-fees.php?' . http_build_query(['period' => 'custom', 'from' => $from, 'to' => $to]), 'View all', 'dot') ?>
-    <div class="db-tiles">
-      <?= $tile('green', 'fa-coins', 'Collected', ci_money0($cur['fee'])) ?>
-      <?= $tile('purple', 'fa-file-invoice', 'New fee charged', ci_money0($cur['charged'])) ?>
-      <?= $tile('green', 'fa-money-bill-wave', 'Cash', ci_money0($cash)) ?>
-      <?= $tile('purple', 'fa-mobile-screen-button', 'UPI / Online', ci_money0($online)) ?>
+    <div class="db-tiles db-tiles3">
+      <?= $tile('green', 'fa-coins', 'Total collected', ci_money0($cur['fee'])) ?>
+      <?php $mi = ['Cash' => ['green', 'fa-money-bill-wave'], 'UPI' => ['purple', 'fa-mobile-screen-button'], 'Bank' => ['green', 'fa-building-columns'], 'Cheque' => ['purple', 'fa-money-check'], 'Card' => ['green', 'fa-credit-card'], 'Other' => ['purple', 'fa-wallet']];
+      foreach ($mi as $m => [$tn, $ic]) if (in_array($m, ['Cash', 'UPI', 'Bank', 'Cheque'], true) || $modes[$m] > 0) echo $tile($tn, $ic, CI_METHODS[$m], ci_money0($modes[$m])); ?>
     </div>
   </section>
   <section class="db-card db-sec" data-ds="Institute Overview">
@@ -314,7 +296,7 @@ $q = fn(array $x) => '/admin/dashboard.php?' . http_build_query($x);
   </section>
 </div>
 
-<div class="db-row" data-ds-wrap>
+<div class="db-one">
   <section class="db-card db-sec" data-ds="Recent Payments">
     <?= $head('fa-file-lines', 'Recent Payments', '/admin/ci-fees.php?period=month', 'View all') ?>
     <?php if (!$recentPays): ?><div class="db-emp" style="border-top:1px solid #f3f4f6"><span><i class="fas fa-file-lines"></i></span><b>No payments yet</b><small>Fee payments will appear here once you take them</small></div>
@@ -328,36 +310,6 @@ $q = fn(array $x) => '/admin/dashboard.php?' . http_build_query($x);
         <td><a class="db-pr" href="/admin/ci-receipt.php?id=<?= (int)$p['id'] ?>" target="_blank" aria-label="Print receipt <?= $e($p['receipt_no']) ?>"><?= ci_svg('print') ?></a></td>
       </tr><?php endforeach; ?>
     </tbody></table></div><?php endif; ?>
-  </section>
-  <section class="db-card db-sec db-chsec" data-ds="Fee Collection">
-    <?= $head('fa-chart-line', 'Fee Collection') ?>
-    <?php $tot = array_sum(array_column($series, 2)); $max = max(array_column($series, 2) ?: [0]);
-    $exp = $max > 0 ? pow(10, floor(log10($max))) : 1; $nn = $max > 0 ? $max / $exp : 0; $top = $max > 0 ? ($nn <= 1 ? 1 : ($nn <= 2 ? 2 : ($nn <= 5 ? 5 : 10))) * $exp : 4;
-    $n = count($series); $x = fn($i) => ($i + 0.5) / $n * 100; $y = fn($v) => 100 - $v / $top * 100;
-    $pts = []; foreach ($series as $i => $s) $pts[] = [round($x($i), 3), round($y($s[2]), 3)];
-    $path = 'M' . $pts[0][0] . ',' . $pts[0][1];
-    if ($n === 2) $path .= ' L' . $pts[1][0] . ',' . $pts[1][1];
-    else for ($i = 0; $i < $n - 1; $i++) { $p0 = $pts[$i - 1] ?? $pts[$i]; $p1 = $pts[$i]; $p2 = $pts[$i + 1]; $p3 = $pts[$i + 2] ?? $p2; // through every point (Catmull-Rom), never above / below a real value
-        $cy = fn($v) => max(0, min(100, $v)); // control points kept inside the chart, so the curve never dips below ₹0 or above the top
-        $path .= sprintf(' C%.3f,%.3f %.3f,%.3f %.3f,%.3f', $p1[0] + ($p2[0] - $p0[0]) / 6, $cy($p1[1] + ($p2[1] - $p0[1]) / 6), $p2[0] - ($p3[0] - $p1[0]) / 6, $cy($p2[1] - ($p3[1] - $p1[1]) / 6), $p2[0], $p2[1]); }
-    $area = 'M' . $pts[0][0] . ',100 L' . $pts[0][0] . ',' . $pts[0][1] . preg_replace('/^M[^ ]+/', '', $path) . ' L' . $pts[$n - 1][0] . ',100 Z';
-    $every = $byMonth ? ($n > 8 ? (int)ceil($n / 6) : 1) : ($n > 16 ? (int)ceil($n / 8) : 1); ?>
-    <div class="db-chs"><span>Total <b><?= ci_money0($tot) ?></b></span><span><?= $byMonth ? 'By month' : 'By day' ?> · <?= $e(date('d M', strtotime($cFrom))) ?> – <?= $e(date('d M Y', strtotime($to))) ?></span></div>
-    <div class="db-ch" id="dbChart" data-pts='<?= $e(json_encode(array_map(fn($s, $p) => [$s[1], ci_money0($s[2]), $p[0], $p[1]], $series, $pts), JSON_UNESCAPED_UNICODE)) ?>'>
-      <div class="db-ch-in">
-        <div class="db-ya" aria-hidden="true"><?php foreach ([$top, $top * .75, $top / 2, $top / 4, 0] as $t): ?><span><?= $tot > 0 ? $short($t) : '' ?></span><?php endforeach; ?></div>
-        <div class="db-plot" tabindex="0" role="img" aria-label="Fee collected, <?= $e($rangeLabel) ?>. Use the left and right arrow keys to read each <?= $byMonth ? 'month' : 'day' ?>.">
-          <?php if ($tot > 0): ?>
-          <?php foreach ([25, 50, 75] as $g): ?><div class="db-grid" style="top:<?= $g ?>%"></div><?php endforeach; ?>
-          <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="dbFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#7c3aed" stop-opacity=".18"/><stop offset="100%" stop-color="#7c3aed" stop-opacity="0"/></linearGradient></defs>
-            <path d="<?= $area ?>" fill="url(#dbFill)"/><path d="<?= $path ?>" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>
-          <div class="db-hit" style="grid-template-columns:repeat(<?= $n ?>,1fr)"><?php for ($i = 0; $i < $n; $i++): ?><div data-i="<?= $i ?>"></div><?php endfor; ?></div>
-          <?php else: ?><div class="db-emp" style="position:absolute;inset:0;justify-content:center;padding:0"><span style="width:48px;height:48px;font-size:18px"><i class="fas fa-chart-simple"></i></span><b style="font-size:14px">No fee collected yet</b><small style="font-size:12px">The chart fills in as you take fees</small></div><?php endif; ?>
-        </div>
-      </div>
-      <div class="db-xa" aria-hidden="true" style="grid-template-columns:repeat(<?= $n ?>,1fr)"><?php foreach ($series as $i => $s): ?><span><?= ($i % $every === 0 || $i === $n - 1) ? $e($s[0]) : '' ?></span><?php endforeach; ?></div>
-      <table class="sr-only"><caption>Fee collected</caption><tbody><?php foreach ($series as $s): ?><tr><td><?= $e($s[1]) ?></td><td><?= ci_money0($s[2]) ?></td></tr><?php endforeach; ?></tbody></table>
-    </div>
   </section>
 </div>
 
@@ -386,28 +338,10 @@ $q = fn(array $x) => '/admin/dashboard.php?' . http_build_query($x);
 
 </div>
 <script>
-(function () { // chart: a line, dot and the amount under the finger / mouse (arrow keys too)
-  var ch = document.getElementById('dbChart'); if (!ch) return; var plot = ch.querySelector('.db-plot'), hit = ch.querySelector('.db-hit'); if (!hit) return;
-  var pts = JSON.parse(ch.getAttribute('data-pts')), xs = ch.querySelectorAll('.db-xa span'), cur = null, line, dot, tip;
-  function show(i) {
-    if (i === null) { [line, dot, tip].forEach(function (el) { if (el) el.remove(); }); line = dot = tip = null; if (cur !== null && xs[cur]) xs[cur].classList.remove('on'); cur = null; return; }
-    if (!line) { line = document.createElement('div'); line.className = 'db-xh'; dot = document.createElement('div'); dot.className = 'db-dot'; tip = document.createElement('div'); tip.className = 'db-tip'; plot.appendChild(line); plot.appendChild(dot); plot.appendChild(tip); }
-    if (cur !== null && xs[cur]) xs[cur].classList.remove('on'); cur = i; if (xs[i]) xs[i].classList.add('on');
-    var p = pts[i]; line.style.left = p[2] + '%'; dot.style.left = p[2] + '%'; dot.style.top = p[3] + '%';
-    tip.innerHTML = '<small></small><b></b>'; tip.firstChild.textContent = p[0]; tip.lastChild.textContent = p[1];
-    tip.style.left = 'clamp(56px,' + p[2] + '%,calc(100% - 56px))'; tip.style.top = 'calc(' + p[3] + '% - 54px)';
-  }
-  hit.addEventListener('mouseover', function (e) { var c = e.target.closest('[data-i]'); if (c) show(+c.getAttribute('data-i')); });
-  hit.addEventListener('mouseleave', function () { show(null); });
-  hit.addEventListener('touchstart', function (e) { var c = e.target.closest('[data-i]'); if (c) show(+c.getAttribute('data-i')); }, { passive: true });
-  plot.addEventListener('keydown', function (e) {
-    if (e.key === 'ArrowRight') { e.preventDefault(); show(cur === null ? 0 : Math.min(pts.length - 1, cur + 1)); }
-    else if (e.key === 'ArrowLeft') { e.preventDefault(); show(cur === null ? pts.length - 1 : Math.max(0, cur - 1)); }
-    else if (e.key === 'Escape') show(null);
-  });
-  plot.addEventListener('blur', function () { show(null); });
-  // the custom range box closes on a click outside it
-  document.addEventListener('click', function (e) { var d = document.querySelector('.db-custw[open]'); if (d && !d.contains(e.target)) d.removeAttribute('open'); });
+(function () { // the period menu in the header closes on a click outside it or Escape
+  var d = document.querySelector('.db-rng'); if (!d) return;
+  document.addEventListener('click', function (e) { if (d.open && !d.contains(e.target)) d.removeAttribute('open'); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && d.open) { d.removeAttribute('open'); d.querySelector('summary').focus(); } });
 })();
 </script>
 <?php admin_shell_close(); ?>
