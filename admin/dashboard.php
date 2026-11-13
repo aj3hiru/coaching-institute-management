@@ -171,12 +171,12 @@ $q = fn(array $x) => '/admin/dashboard.php?' . http_build_query($x);
 .db-pill{display:inline-flex;align-items:center;gap:4px;padding:2px 6px;border-radius:5px!important;font-size:12px;font-weight:600;white-space:nowrap}
 .db-pill i{font-size:9.5px}.db-pill.good{background:#ecfdf5;color:#047857}.db-pill.bad{background:#fef2f2;color:#b91c1c}
 .db-vs{font-size:13px;color:var(--db-m);white-space:nowrap}
-.db-row{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:20px;margin-bottom:20px}
+.db-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;margin-bottom:20px} /* Payment Modes | Institute Overview: same width */
 .db-row3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;margin-bottom:20px}
 .db-sec{padding:24px}
 .db-run{margin-left:2px;padding:2px 8px;border-radius:999px!important;background:#ecfdf5;color:#047857;font-size:11.5px;font-weight:600}
 .db-one{margin-bottom:20px}
-.db-h{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px}
+.db-h{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:32px;margin-bottom:20px} /* same height in every card, so the tiles of side-by-side cards line up */
 .db-h h2{display:flex;align-items:center;gap:12px;margin:0;font-size:17px;font-weight:600;color:var(--db-t)}
 .db-hi{display:inline-flex;align-items:center;justify-content:center;font-size:18px;color:#4b5563}
 .db-hi.dot{width:32px;height:32px;border-radius:50%!important;background:#1cc88a;color:#fff;font-size:14px}
