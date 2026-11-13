@@ -60,8 +60,6 @@ $period = function (string $a, string $b) use ($one): array {
     return [
         'adm' => (int)$one("SELECT COUNT(*) FROM ci_students WHERE stype <> 'online' AND admission_date BETWEEN ? AND ?", [$a, $b]),
         'fee' => (float)$one("SELECT COALESCE(SUM(amount),0) FROM ci_payments WHERE paid_on BETWEEN ? AND ?", [$a, $b]),
-        'rcp' => (int)$one("SELECT COUNT(*) FROM ci_payments WHERE paid_on BETWEEN ? AND ?", [$a, $b]),
-        'charged' => (float)$one("SELECT COALESCE(SUM(GREATEST(fee - discount, 0)),0) FROM ci_enrollments WHERE status <> 'dropped' AND enrolled_on BETWEEN ? AND ?", [$a, $b]),
     ];
 };
 $cur = $period($from, $to);
@@ -160,7 +158,7 @@ $q = fn(array $x) => '/admin/dashboard.php?' . http_build_query($x);
 .db-cust label{display:block;margin-bottom:8px;font-size:12px;color:var(--db-m)}
 .db-cust input{display:block;width:100%;margin-top:4px;padding:6px 9px;border:1px solid var(--db-b);border-radius:5px!important;font:inherit;font-size:13.5px}
 .db-cust button{width:100%;margin-top:4px;padding:8px;border:0;border-radius:5px!important;background:var(--db-p);color:#fff;font-weight:600;cursor:pointer}
-.db-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px;margin-bottom:20px}
+.db-stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:20px;margin-bottom:20px}
 .db-stat{position:relative;display:flex;gap:16px;padding:20px;overflow:hidden;background:#fff;border:1px solid var(--db-b);border-radius:5px!important;box-shadow:0 1px 2px rgba(16,24,40,.04)!important;text-decoration:none;color:inherit;transition:transform .15s,box-shadow .15s}
 .db-stat:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(16,24,40,.08)!important}
 .db-disc{position:absolute;right:-30px;top:-30px;width:100px;height:100px;border-radius:50%!important;pointer-events:none}
@@ -225,7 +223,7 @@ $q = fn(array $x) => '/admin/dashboard.php?' . http_build_query($x);
 /* a card hidden from Display options: the other cards of its row take the room */
 @media (min-width:1280px){.db-row:has(>.dsp-hide){grid-template-columns:minmax(0,1fr)}.db-row3:has(>.dsp-hide){grid-template-columns:repeat(2,minmax(0,1fr))}.db-row3:has(>.dsp-hide~.dsp-hide){grid-template-columns:minmax(0,1fr)}.db-row3:has(>.dsp-hide)>:last-child{grid-column:auto}}
 .db-row:not(:has(>:not(.dsp-hide))),.db-row3:not(:has(>:not(.dsp-hide))){display:none}
-@media (max-width:1279px){.db-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.db-row,.db-row3{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:1279px){.db-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.db-stats>:last-child:nth-child(odd){grid-column:1/-1}.db-row,.db-row3{grid-template-columns:minmax(0,1fr)}}
 @media (min-width:1280px) and (max-width:1499px){.db-row3{grid-template-columns:repeat(2,minmax(0,1fr))}.db-row3>:last-child{grid-column:1/-1}}
 @media (max-width:640px){
   .db-stats{gap:12px}.db-stat{flex-direction:column;gap:10px;padding:14px}.db-ic{width:40px;height:40px;font-size:16px;border-radius:5px!important}
@@ -294,10 +292,7 @@ admin_shell_open('Dashboard', $range === 'custom' ? $span : $rangeLabel . ' · '
 <div class="db-stats" data-ds="Summary" data-ds-section>
   <?= $card('green', 'fa-indian-rupee-sign', 'Fee Collected', ci_money0($cur['fee']), $delta($cur['fee'], $prev['fee']), '/admin/ci-fees.php?' . http_build_query(['period' => 'custom', 'from' => $from, 'to' => $to])) ?>
   <?= $card('purple', 'fa-user-plus', 'New Admissions', number_format($cur['adm']), $delta($cur['adm'], $prev['adm']), '/admin/students.php?' . http_build_query(['status' => 'all', 'from' => $from, 'to' => $to])) ?>
-  <?= $card('green', 'fa-receipt', 'Receipts', number_format($cur['rcp']), $delta($cur['rcp'], $prev['rcp']), '/admin/ci-fees.php?' . http_build_query(['period' => 'custom', 'from' => $from, 'to' => $to])) ?>
-  <?= $card('purple', 'fa-file-invoice', 'New Fee Charged', ci_money0($cur['charged']), $delta($cur['charged'], $prev['charged']), '/admin/ci-dues.php?period=all') ?>
   <?= $card('purple', 'fa-user-graduate', 'Active Students', number_format($stats['active']), $stats['online'] ? number_format($stats['online']) . ' online students' : 'Studying at the institute', '/admin/students.php') ?>
-  <?= $card('green', 'fa-layer-group', 'Running Batches', number_format($stats['batches']), number_format($stats['courses']) . ' running course' . ($stats['courses'] === 1 ? '' : 's'), '/admin/ci-batches.php') ?>
   <?= $card('red', 'fa-hourglass-half', 'Total Due', ci_money0($stats['due']), 'Still to be collected', '/admin/ci-dues.php?period=all') ?>
   <?= $card($stats['late'] ? 'red' : 'green', 'fa-calendar-xmark', 'Due Date Passed', number_format($stats['late']), $stats['late'] ? 'Students to remind' : 'Nobody is late', '/admin/ci-dues.php?period=all&late=1') ?>
 </div>
