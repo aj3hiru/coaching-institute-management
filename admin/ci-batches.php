@@ -114,13 +114,13 @@ $curSession = ci_current_session($pdo);
   <div class="ci-f"><label>Course <span class="ci-req">*</span></label><select name="course_id" required><option value="">Choose…</option><?php foreach ($L['courses'] as $cid => $c): ?><option value="<?= $cid ?>" <?= (int)($eb['course_id'] ?? $fCourse) === $cid ? 'selected' : '' ?>><?= ci_e($c['name']) ?> (<?= ci_money0($c['fee']) ?>)</option><?php endforeach; ?></select></div>
   <div class="ci-f"><label>Session</label><select name="session_id"><option value="">—</option><?php foreach ($L['sessions'] as $sid => $sn): ?><option value="<?= $sid ?>" <?= (int)($eb['session_id'] ?? $curSession) === $sid ? 'selected' : '' ?>><?= ci_e($sn) ?></option><?php endforeach; ?></select></div>
   <div class="ci-f"><label>Status</label><select name="status"><?php foreach (['active' => 'Active', 'completed' => 'Completed', 'inactive' => 'Inactive'] as $k => $l): ?><option value="<?= $k ?>" <?= ($eb['status'] ?? 'active') === $k ? 'selected' : '' ?>><?= $l ?></option><?php endforeach; ?></select></div>
-  <div class="ci-f"><label>Class starts at <span class="ci-req">*</span></label><input type="time" name="start_time" required value="<?= ci_e(substr((string)($eb['start_time'] ?? ''), 0, 5)) ?>"></div>
-  <div class="ci-f"><label>Class ends at <span class="ci-req">*</span></label><input type="time" name="end_time" required value="<?= ci_e(substr((string)($eb['end_time'] ?? ''), 0, 5)) ?>"></div>
+  <div class="ci-f"><label>Class time from <span class="ci-req">*</span></label><input type="time" name="start_time" required value="<?= ci_e(substr((string)($eb['start_time'] ?? ''), 0, 5)) ?>"></div>
+  <div class="ci-f"><label>Class time to <span class="ci-req">*</span></label><input type="time" name="end_time" required value="<?= ci_e(substr((string)($eb['end_time'] ?? ''), 0, 5)) ?>"></div>
   <div class="ci-f"><label>Days</label><input name="days" maxlength="80" placeholder="e.g. Mon–Sat" value="<?= ci_e($eb['days'] ?? '') ?>"></div>
   <div class="ci-f"><label>Teacher</label><input name="teacher" maxlength="120" value="<?= ci_e($eb['teacher'] ?? '') ?>"></div>
   <div class="ci-f"><label>Seats</label><input type="number" name="capacity" min="0" placeholder="no limit" value="<?= ci_e($eb['capacity'] ?? '') ?>"></div>
-  <div class="ci-f"><label>Starts</label><input type="date" name="start_date" value="<?= ci_e($eb['start_date'] ?? '') ?>"></div>
-  <div class="ci-f"><label>Ends</label><input type="date" name="end_date" value="<?= ci_e($eb['end_date'] ?? '') ?>"></div>
+  <div class="ci-f"><label>Batch start date</label><input type="date" name="start_date" value="<?= ci_e($eb['start_date'] ?? '') ?>"></div>
+  <div class="ci-f"><label>Batch end date</label><input type="date" name="end_date" value="<?= ci_e($eb['end_date'] ?? '') ?>"></div>
 </div>
 <div class="ci-mfoot"><button type="button" class="ci-btn ci-ghost" data-close>Cancel</button><button class="ci-btn" type="submit"><i class="fas fa-check"></i> Save batch</button></div>
 </form></div></div></div>
