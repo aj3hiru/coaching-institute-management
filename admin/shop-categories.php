@@ -92,7 +92,7 @@ fi.addEventListener('change',function(){var f=this.files[0];if(f)icon(URL.create
 document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('[data-mopen="#scgForm"]');if(!b)return;
   setTimeout(function(){var src=b.getAttribute('data-icon')||'';icon(src,n.value);rm.hidden=!src;rm.querySelector('input').checked=false;paint();},0);});})();</script>
 <div class="ci-card"><div class="ci-card-h"><h3>All categories (<?= count($cats) ?>)</h3><a class="ci-btn ci-sm" href="/admin/shop-categories.php?new=1" data-mopen="#scgForm" data-mtitle="Add a category" data-fill='{"id":0}'><i class="fas fa-plus"></i> Add category</a></div>
-<div class="ci-card-b ci-p0 ci-table-wrap"><table class="ci-table">
+<div class="ci-card-b ci-p0 ci-table-wrap"><table data-sno class="ci-table">
 <thead><tr><th>Icon</th><th>Category</th><th>Courses &amp; notes</th><th>Order</th><th>Status</th><th>Action</th></tr></thead><tbody>
 <?php if (!$cats): ?><tr><td colspan="6" class="ci-empty">No categories yet.</td></tr><?php endif; ?>
 <?php foreach ($cats as $c): ?>

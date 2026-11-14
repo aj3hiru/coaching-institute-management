@@ -350,6 +350,7 @@ foreach ($rows as $r) {
 .um-sub{margin:.25rem 0 .6rem;font-size:.8rem;font-weight:700;color:var(--primary,#4a3369);text-transform:uppercase;letter-spacing:.04em}
 .um-teach{padding:.75rem .9rem .25rem;margin:0 0 1rem;border:1px dashed var(--gray-200,#e5e7eb);border-radius:10px;background:var(--gray-50,#f9fafb)}
 .um-check{display:flex;align-items:center;gap:.5rem;cursor:pointer;margin:.1rem 0 .6rem;font-size:.875rem}
+.ci-sno{width:1%;white-space:nowrap;text-align:center!important;color:var(--gray-500,#6b7280);font-variant-numeric:tabular-nums}
 .um-del-note{background:var(--warning-light,#fef3c7);color:#92400e;border-radius:10px;padding:.75rem 1rem;font-size:.875rem;margin-bottom:1rem}
 </style>
 </head>
@@ -375,7 +376,7 @@ foreach ($rows as $r) {
   </div>
 </form></div>
 
-<div class="table-wrap"><div class="table-responsive"><table>
+<div class="table-wrap"><div class="table-responsive"><table data-sno>
 <?php if ($view === 'users'): ?>
   <thead><tr><th>User</th><th>Role</th><th>Status</th><th class="hide-mobile">Posts</th><th class="hide-mobile">Joined</th><th>Actions</th></tr></thead>
   <tbody>

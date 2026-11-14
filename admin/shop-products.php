@@ -332,7 +332,7 @@ $tchF = ['0' => 'All teachers', '-1' => 'No teacher']; foreach ($teachers as $k 
 </form>
 <p class="shp-fcount"><?= $fOn ? '<b>' . count($rows) . '</b> of ' . $fTotal . ($isC ? ' courses' : ' notes packs') . ' match the filters' : '<b>' . $fTotal . '</b> ' . ($isC ? 'courses' : 'notes packs') ?></p>
 <script>document.querySelectorAll('.shp-filt select').forEach(function (s) { s.addEventListener('change', function () { s.form.submit(); }); });</script>
-<div class="ci-card"><div class="ci-card-b ci-p0 ci-table-wrap"><table class="ci-table">
+<div class="ci-card"><div class="ci-card-b ci-p0 ci-table-wrap"><table data-sno class="ci-table">
 <thead><tr><th><?= $isC ? 'Course' : 'Notes' ?></th><th><?= $isC ? 'Teacher' : 'Category' ?></th><th>Inside</th><th class="ci-num">Price</th><th>Access</th><th class="ci-num">Buyers</th><th class="ci-num">Sales</th><th>Status</th><th>Action</th></tr></thead><tbody>
 <?php if (!$rows): ?><tr><td colspan="9" class="ci-empty"><?= $fOn ? 'Nothing matches these filters. <a href="?type=' . $fType . '">Clear filters</a>' : 'No products yet. Add your first course or notes.' ?></td></tr><?php endif; ?>
 <?php foreach ($rows as $p): ?>

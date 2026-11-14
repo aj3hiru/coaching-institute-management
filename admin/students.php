@@ -150,8 +150,7 @@ $filtered = $f['type'] !== '' || $f['q'] !== '' || $f['class'] || $f['course'] |
   <div class="ci-fbtn"><button class="ci-btn" type="submit"><i class="fas fa-filter"></i> Filter</button><?php if ($filtered): ?><a class="ci-btn ci-ghost" href="/admin/students.php">Clear</a><?php endif; ?></div>
 </form></div></div>
 
-<div class="ci-head ci-head-show"><div class="ci-sub"><?= number_format($total) ?> found<?= $totalDue > 0 ? ' · due ' . ci_money0($totalDue) : '' ?></div></div>
-<div class="ci-card"><div class="ci-card-b ci-p0 ci-table-wrap"><table class="ci-table" data-sheet-total="<?= (int)$total ?>" data-sheet-page="<?= (int)$page ?>" data-sheet-per="<?= $per === 1000 ? 0 : (int)$per ?>">
+<div class="ci-card"><div class="ci-card-b ci-p0 ci-table-wrap"><table data-sno class="ci-table" data-sheet-total="<?= (int)$total ?>" data-sheet-page="<?= (int)$page ?>" data-sheet-per="<?= $per === 1000 ? 0 : (int)$per ?>">
 <thead><tr><th>Student</th><th>Mobile</th><th>Class</th><th>Courses / batches</th><th>Admission</th><th class="ci-num">Fee due</th><th>Action</th></tr></thead><tbody>
 <?php if (!$students): ?><tr><td colspan="7" class="ci-empty"><?= $filtered ? 'No students match these filters.' : 'No students yet. <a href="/admin/student-edit.php">Add the first student</a>.' ?></td></tr><?php endif; ?>
 <?php $back = $qs(['page' => $page]); foreach ($students as $s): $sid = (int)$s['id']; ?>

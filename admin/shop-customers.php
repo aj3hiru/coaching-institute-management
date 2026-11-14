@@ -298,7 +298,7 @@ $cvBlocked = count(array_filter($acc, fn($x) => !empty($x['blocked']))); $cvPaid
   <div class="ci-f cu-btns"><label>&nbsp;</label><span><button class="ci-btn" type="submit"><i class="fas fa-magnifying-glass"></i> Search</button><?php if ($qq !== '' || $show !== '' || $joined !== '' || $sort !== ''): ?><a class="ci-btn ci-ghost" href="?">Clear</a><?php endif; ?></span></div>
 </form></div></div>
 <div class="ci-card"><div class="ci-card-h"><h3><?= $total ?> account<?= $total === 1 ? '' : 's' ?></h3><?php if ($pages > 1): ?><span class="ci-muted">Page <?= $pg ?> of <?= $pages ?></span><?php endif; ?></div>
-<div class="ci-card-b ci-p0 ci-table-wrap"><table class="ci-table cu-table"><thead><tr><th>Student</th><th>Mobile</th><th>Institute</th><th class="ci-num">Courses</th><th class="ci-num">Spent</th><th>Joined</th><th>Last login</th><th>Status</th><th>Action</th></tr></thead><tbody>
+<div class="ci-card-b ci-p0 ci-table-wrap"><table data-sno class="ci-table cu-table"><thead><tr><th>Student</th><th>Mobile</th><th>Institute</th><th class="ci-num">Courses</th><th class="ci-num">Spent</th><th>Joined</th><th>Last login</th><th>Status</th><th>Action</th></tr></thead><tbody>
 <?php if (!$list): ?><tr><td colspan="9" class="ci-empty"><?= $total || $qq !== '' || $show !== '' || $joined !== '' ? 'No account matches — change the filters.' : 'No accounts yet.' ?></td></tr><?php endif; ?>
 <?php foreach ($list as $r): $susp = $r['status'] !== 'active'; ?>
 <tr class="<?= $susp ? 'cu-off' : '' ?>"><td><a class="cu-who" href="?id=<?= (int)$r['id'] ?>"><span class="cu-av"><?= ci_e(mb_strtoupper(mb_substr(trim($r['name']), 0, 1))) ?></span><span><b><?= ci_e($r['name']) ?></b><small><?= ci_e($r['email']) ?></small></span></a></td>

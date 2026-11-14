@@ -137,7 +137,7 @@ $curSession = ci_current_session($pdo);
   <div class="ci-f"><label>Status</label><select name="status"><?php foreach (['active' => 'Active', 'completed' => 'Completed', 'inactive' => 'Inactive', 'all' => 'All'] as $k => $l): ?><option value="<?= $k ?>" <?= $fStatus === $k ? 'selected' : '' ?>><?= $l ?></option><?php endforeach; ?></select></div>
   <div class="ci-fbtn"><button class="ci-btn" type="submit"><i class="fas fa-filter"></i> Filter</button><a class="ci-btn ci-ghost" href="/admin/ci-batches.php?session=0&amp;status=all">Reset</a></div>
 </form></div></div>
-<div class="ci-card"><div class="ci-card-b ci-p0 ci-table-wrap"><table class="ci-table">
+<div class="ci-card"><div class="ci-card-b ci-p0 ci-table-wrap"><table data-sno class="ci-table">
 <thead><tr><th>Batch</th><th>Course</th><th>Timing</th><th>Session</th><th class="ci-num">Course fee</th><th class="ci-num">Students</th><th class="ci-num">Due</th><th>Status</th><th>Action</th></tr></thead><tbody>
 <?php if (!$batches): ?><tr><td colspan="9" class="ci-empty">No batches for these filters.</td></tr><?php endif; ?>
 <?php foreach ($batches as $b): $fee = $b['course_fee']; ?>

@@ -83,7 +83,7 @@ $cf = fn(array $c): string => ci_e(json_encode(['id' => (int)$c['id'], 'name' =>
 </form></div></div></div>
 
 <div class="ci-head ci-head-show"><div class="ci-show"><label for="ci-cst">Status</label><select id="ci-cst" onchange="location.href='?status='+this.value"><?php foreach (['active' => 'Active', 'completed' => 'Completed', 'inactive' => 'Inactive', 'all' => 'All'] as $k => $l): ?><option value="<?= $k ?>" <?= $fStatus === $k ? 'selected' : '' ?>><?= $l ?></option><?php endforeach; ?></select><span class="ci-muted"><?= count($courses) ?> courses</span></div></div>
-<div class="ci-card"><div class="ci-card-b ci-p0 ci-table-wrap"><table class="ci-table">
+<div class="ci-card"><div class="ci-card-b ci-p0 ci-table-wrap"><table data-sno class="ci-table">
 <thead><tr><th>Course</th><th>Class</th><th>Duration</th><th class="ci-num">Fee</th><th class="ci-num">Batches</th><th class="ci-num">Students</th><th class="ci-num">Due</th><th>Status</th><th>Action</th></tr></thead><tbody>
 <?php if (!$courses): ?><tr><td colspan="9" class="ci-empty">No courses here. Press Add Course to add one.</td></tr><?php endif; ?>
 <?php foreach ($courses as $c): ?>

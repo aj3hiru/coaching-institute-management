@@ -54,7 +54,7 @@ $courses = $pdo->query("SELECT p.id, p.title FROM sh_products p WHERE p.type = '
   <div class="ci-f"><label>Show</label><select name="status" onchange="this.form.submit()"><?php foreach (['open' => 'Waiting for an answer', 'answered' => 'Answered', 'hidden' => 'Hidden', 'all' => 'All'] as $k => $l): ?><option value="<?= $k ?>" <?= $status === $k ? 'selected' : '' ?>><?= $l ?></option><?php endforeach; ?></select></div>
   <div class="ci-f"><label>Course</label><select name="course" onchange="this.form.submit()"><option value="0">All courses</option><?php foreach ($courses as $k => $l): ?><option value="<?= (int)$k ?>" <?= $course === (int)$k ? 'selected' : '' ?>><?= ci_e($l) ?></option><?php endforeach; ?></select></div>
 </form>
-<div class="ci-card"><div class="ci-card-b ci-p0 ci-table-wrap"><table class="ci-table">
+<div class="ci-card"><div class="ci-card-b ci-p0 ci-table-wrap"><table data-sno class="ci-table">
 <thead><tr><th>Student</th><th>Doubt</th><th>Date</th><th>Status</th><th>Action</th></tr></thead><tbody>
 <?php if (!$rows): ?><tr><td colspan="5" class="ci-empty">No doubts here.</td></tr><?php endif; ?>
 <?php foreach ($rows as $r): ?>

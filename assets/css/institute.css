@@ -388,3 +388,6 @@ div.ci-then-online{align-items:center;cursor:default}div.ci-then-online>span{fle
 .ci-tel:hover{color:#15803d;text-decoration:underline}
 @media print{.ci-tel{color:inherit}}
 small .ci-tel{font-weight:400!important;color:inherit!important} /* under a name: stays like the small grey text */
+
+/* S.No. column (admin-table.js adds it to tables marked data-sno) */
+.ci-sno{width:1%;white-space:nowrap;text-align:center!important;color:#6b7280;font-variant-numeric:tabular-nums;padding-left:12px!important;padding-right:6px!important}

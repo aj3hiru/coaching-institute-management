@@ -76,7 +76,7 @@ $days = fn(array $h) => (int)round((strtotime($h['to_date']) - strtotime($h['fro
       <button class="ci-btn" type="submit"><?= ci_svg('check') ?> Save holiday</button>
     </div></form>
   <div class="ci-card" data-ds="Holidays"><div class="ci-card-h"><h3>Holidays <span class="ci-muted">(<?= count($list) ?>)</span></h3></div><div class="ci-card-b ci-p0 ci-table-wrap">
-    <table class="ci-table" data-sheet="off"><thead><tr><th>Holiday</th><th>Dates</th><th>Days</th><th>For</th><th>When</th><th></th></tr></thead><tbody>
+    <table data-sno class="ci-table" data-sheet="off"><thead><tr><th>Holiday</th><th>Dates</th><th>Days</th><th>For</th><th>When</th><th></th></tr></thead><tbody>
     <?php if (!$list): ?><tr><td colspan="6" class="ci-empty">No holidays yet.</td></tr><?php endif; ?>
     <?php foreach ($list as $h): $st = $h['to_date'] < $today ? ['past', 'Over'] : ($h['from_date'] <= $today ? ['now', 'Today'] : ['next', 'Coming']); ?>
       <tr><td><b><?= ci_e($h['title']) ?></b></td>

@@ -129,7 +129,7 @@ if ($tab === 'sessions' && $ps && !$ps['is_current'] && $me['role'] === 'admin')
   </div>
   <div class="ci-mfoot"><button type="button" class="ci-btn ci-ghost" data-close>Cancel</button><button class="ci-btn" type="submit"><i class="fas fa-check"></i> Save session</button></div>
 </form></div></div></div>
-<div class="ci-card"><div class="ci-card-b ci-p0 ci-table-wrap"><table class="ci-table">
+<div class="ci-card"><div class="ci-card-b ci-p0 ci-table-wrap"><table data-sno class="ci-table">
 <thead><tr><th>Session</th><th>Dates</th><th class="ci-num">Batches</th><th class="ci-num">Students</th><th>Status</th><th>Action</th></tr></thead><tbody>
 <?php if (!$sessions): ?><tr><td colspan="6" class="ci-empty">No sessions yet.</td></tr><?php endif; ?>
 <?php foreach ($sessions as $s): ?>

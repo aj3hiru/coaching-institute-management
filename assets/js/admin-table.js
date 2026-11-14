@@ -38,7 +38,26 @@
     var n = t.replace(/[₹,\s]/g, '').match(/^-?\d+(\.\d+)?/); if (n && /^[₹\d\s,.-]/.test(t)) return parseFloat(n[0]);
     return t.toLowerCase();
   }
+  // S.No. column for tables marked data-sno: added here (so sorting / paging keep it right) and renumbered on every draw;
+  // a page from the server starts at its own offset (page 2 of 20 → 21)
+  function snoAdd(table) {
+    if (!table.hasAttribute('data-sno') || table.dataset.snoDone) return;
+    table.dataset.snoDone = '1';
+    var hr = table.tHead && table.tHead.rows[0]; if (!hr) return;
+    var th = el('th', 'ci-sno', 'S.No.'); th.dataset.nosort = ''; th.setAttribute('scope', 'col'); hr.insertBefore(th, hr.cells[0]);
+    [].forEach.call(table.tBodies, function (tb) { [].forEach.call(tb.rows, function (r) {
+      if ((r.cells.length === 1 && r.cells[0].colSpan > 1) || r.classList.contains('ci-total-row')) { r.cells[0].colSpan += 1; return; } // "nothing found" / total row: no number
+      r.insertBefore(el('td', 'ci-sno'), r.cells[0]);
+    }); });
+    snoNum(table);
+  }
+  function snoNum(table) {
+    if (!table.dataset.snoDone) return;
+    var off = table.dataset.sheetTotal != null ? ((+table.dataset.sheetPage || 1) - 1) * (+table.dataset.sheetPer || 1000) : 0, n = off;
+    [].forEach.call(table.tBodies, function (tb) { [].forEach.call(tb.rows, function (r) { var c = r.cells[0]; if (c && c.classList.contains('ci-sno')) c.textContent = ++n; }); });
+  }
   function setup(table, idx) {
+    snoAdd(table);
     if (table.dataset.sheet === 'off' || table.classList.contains('ci-plan') || table.closest('.ci-sheet-done, form .ci-modal, .ci-modal-b')) return;
     var wrap = table.closest('.ci-table-wrap') || table.parentNode, card = wrap.closest('.ci-card') || wrap;
     if (card.classList.contains('ci-sheet-done')) return;
@@ -64,6 +83,7 @@
     card.appendChild(foot);
     var urlFor = function (p) { var u = new URL(location.href); u.searchParams.set('page', p); return u.toString(); };
     function draw() {
+      snoNum(table);
       var old = foot.querySelector('.ci-sheet-pg'); if (old) old.remove();
       if (server) {
         var total = +table.dataset.sheetTotal, pp = +table.dataset.sheetPer || 1000, pages = Math.max(1, Math.ceil(total / pp)), a = total ? (page - 1) * pp + 1 : 0;
@@ -99,6 +119,7 @@
     }
     draw();
   }
-  function run() { [].forEach.call(document.querySelectorAll('table.ci-table'), setup); }
+  function run() { [].forEach.call(document.querySelectorAll('table.ci-table'), setup); [].forEach.call(document.querySelectorAll('table[data-sno]'), snoAdd); }
+  window.ciSnoRenumber = function (t) { snoNum(t); }; // for pages that filter rows themselves
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run); else run();
 })();

@@ -74,7 +74,7 @@ $rf = fn(array $r): string => ci_e(json_encode(['id' => (int)$r['id'], 'rating' 
   <div class="ci-f"><label>Course / notes</label><select name="product" onchange="this.form.submit()"><option value="0">All courses &amp; notes</option><?php foreach ($products as $pp): ?><option value="<?= (int)$pp['id'] ?>" <?= $prod === (int)$pp['id'] ? 'selected' : '' ?>><?= ci_e($pp['title']) ?></option><?php endforeach; ?></select></div>
   <div class="ci-f"><label>Stars</label><select name="stars" onchange="this.form.submit()"><option value="0">Any</option><?php for ($i = 5; $i >= 1; $i--): ?><option value="<?= $i ?>" <?= $stars === $i ? 'selected' : '' ?>><?= $i ?> star<?= $i === 1 ? '' : 's' ?></option><?php endfor; ?></select></div>
 </form>
-<div class="ci-card"><div class="ci-card-b ci-p0 ci-table-wrap"><table class="ci-table">
+<div class="ci-card"><div class="ci-card-b ci-p0 ci-table-wrap"><table data-sno class="ci-table">
 <thead><tr><th>Student</th><th>Course / notes</th><th>Rating</th><th>Review</th><th>Date</th><th>Status</th><th>Action</th></tr></thead><tbody>
 <?php if (!$rows): ?><tr><td colspan="7" class="ci-empty"><?= $status === 'pending' ? 'No reviews are waiting for approval.' : 'No reviews here.' ?></td></tr><?php endif; ?>
 <?php foreach ($rows as $r): ?>

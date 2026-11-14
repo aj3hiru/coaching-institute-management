@@ -105,7 +105,7 @@ $badge = fn($s) => '<span class="ci-badge ' . ['paid' => 'ci-b-green', 'created'
   <div class="ci-f"><label>To</label><input type="date" name="to" value="<?= ci_e($to) ?>"></div>
   <div class="ci-f"><label>&nbsp;</label><button class="ci-btn" type="submit"><i class="fas fa-filter"></i> Filter</button></div>
 </form>
-<div class="ci-card"><div class="ci-card-b ci-p0 ci-table-wrap"><table class="ci-table or-table">
+<div class="ci-card"><div class="ci-card-b ci-p0 ci-table-wrap"><table data-sno class="ci-table or-table">
 <thead><tr><th>Order</th><th>Buyer</th><th>Item</th><th class="ci-num">Amount</th><th>Status</th><th>Access</th><th>Payment</th><th>Date</th></tr></thead><tbody>
 <?php if (!$rows): ?><tr><td colspan="8" class="ci-empty">No orders for these filters.</td></tr><?php endif; ?>
 <?php foreach ($rows as $o): ?>

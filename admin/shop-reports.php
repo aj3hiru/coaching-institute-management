@@ -53,7 +53,7 @@ $cnt = $pdo->query("SELECT status, COUNT(*) FROM sh_reports GROUP BY status")->f
   <div class="ci-stat"><i class="fas fa-check ci-i-green"></i><div><b><?= (int)($cnt['closed'] ?? 0) ?></b><small>Solved</small></div></div>
 </div>
 <form class="ci-filters" method="get"><div class="ci-f"><label>Show</label><select name="status" onchange="this.form.submit()"><?php foreach (['open' => 'Open', 'new' => 'New', 'seen' => 'Seen', 'closed' => 'Solved', 'all' => 'All'] as $k => $l): ?><option value="<?= $k ?>" <?= $status === $k ? 'selected' : '' ?>><?= $l ?></option><?php endforeach; ?></select></div></form>
-<div class="ci-card"><div class="ci-card-b ci-p0 ci-table-wrap"><table class="ci-table">
+<div class="ci-card"><div class="ci-card-b ci-p0 ci-table-wrap"><table data-sno class="ci-table">
 <thead><tr><th>Student</th><th>About</th><th>Message</th><th>Date</th><th>Status</th><th>Action</th></tr></thead><tbody>
 <?php if (!$rows): ?><tr><td colspan="6" class="ci-empty">No reports here.</td></tr><?php endif; ?>
 <?php foreach ($rows as $r): ?>

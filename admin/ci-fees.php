@@ -169,7 +169,7 @@ $qs = function (array $over = []) {
 <script>(function(){var s=document.getElementById('cfPeriod');if(!s)return;s.addEventListener('change',function(){var c=s.value==='custom';[].forEach.call(document.querySelectorAll('.cf-custom'),function(d){d.hidden=!c;var i=d.querySelector('input');if(i)i.disabled=!c;});if(!c)s.form.submit();});})();</script>
 
 <?php if ($tab === 'payments'): ?>
-<div class="ci-card"><div class="ci-card-b ci-p0 ci-table-wrap"><table class="ci-table">
+<div class="ci-card"><div class="ci-card-b ci-p0 ci-table-wrap"><table data-sno class="ci-table">
 <thead><tr><th>Receipt</th><th>Date</th><th>Student</th><th>Course / batch</th><th>Paid by</th><th class="ci-num">Amount</th><th class="ci-num">Due</th><th></th></tr></thead><tbody>
 <?php if (!$rows): ?><tr><td colspan="8" class="ci-empty">No payments <?= $period === 'today' ? 'today' : 'in this period' ?>.</td></tr><?php endif; ?>
 <?php foreach ($rows as $r): ?>
@@ -184,7 +184,7 @@ $qs = function (array $over = []) {
 </tbody></table></div></div>
 
 <?php else: ?>
-<div class="ci-card"><div class="ci-card-b ci-p0 ci-table-wrap"><table class="ci-table">
+<div class="ci-card"><div class="ci-card-b ci-p0 ci-table-wrap"><table data-sno class="ci-table">
 <thead><tr><th>Student</th><th>Course / batch</th><th class="ci-num">Fee</th><th class="ci-num">Paid</th><th class="ci-num">Due</th><th>Next due date</th><th></th></tr></thead><tbody>
 <?php if (!$rows): ?><tr><td colspan="7" class="ci-empty"><?= $period === 'all' ? 'No dues. Everyone has paid.' : 'No dues with a due date ' . ($period === 'today' ? 'today' : 'in this period') . '.' ?> <a href="?period=all">See all dues</a></td></tr><?php endif; ?>
 <?php foreach ($rows as $r): $lateRow = $r['due_date'] && $r['due_date'] < date('Y-m-d'); ?>
