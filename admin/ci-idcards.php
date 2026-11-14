@@ -94,7 +94,7 @@ body{margin:0;background:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,"S
     <div class="idc-nm"><?= ci_e($s['name']) ?></div>
     <table class="idc-d">
       <tr><th>Admission ID</th><td><?= ci_e($s['reg_no']) ?></td></tr>
-      <tr><th>Date of Birth</th><td><?= !empty($s['dob']) ? date('d/m/Y', strtotime($s['dob'])) : '—' ?></td></tr>
+      <tr><th>Date of Birth</th><td><?= !empty($s['dob']) ? date('d-m-Y', strtotime($s['dob'])) : '—' ?></td></tr>
       <tr><th>Father's Name</th><td><?= ci_e(trim((string)($s['father_name'] ?? '')) ?: '—') ?></td></tr>
       <tr><th>Contact No.</th><td><?= ci_e($s['mobile']) ?></td></tr>
       <?php if ($ad !== ''): ?><tr><th>Address</th><td class="ad"><span><?= ci_e($ad) ?></span></td></tr><?php endif; ?>
