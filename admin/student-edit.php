@@ -366,7 +366,7 @@ $v = fn($k) => ci_e($form[$k] ?? '');
 </div></div>
 
 <div class="ci-card"><div class="ci-card-h"><h3>Course, batch &amp; fee</h3><div class="ci-acts-r"><button type="button" class="ci-btn ci-ghost ci-sm" id="ci-add-row"><i class="fas fa-plus"></i> Add to Batch</button><?php if ($canOnline): ?><button type="button" class="ci-btn ci-ghost ci-sm" id="ci-add-online"><i class="fas fa-plus"></i> Add to Course</button><?php endif; ?></div></div><div class="ci-card-b">
-<p class="ci-hint ci-rows-hint" id="ci-rows-hint"<?= $drawRows || $oRows ? ' hidden' : '' ?>><b>+ Add to Batch</b> — an institute course and its batch (offline classes, fee). <?php if ($canOnline): ?><b>+ Add to Course</b> — an online video course or PDF notes. <?php endif; ?>The student type changes by itself.</p>
+<p class="ci-hint ci-rows-hint" id="ci-rows-hint"<?= $drawRows || $oRows ? ' hidden' : '' ?>><b>+ Add to Batch</b> for offline classes<?php if ($canOnline): ?> · <b>+ Add to Course</b> for online courses / notes<?php endif; ?>.</p>
 <div id="ci-rows">
 <?php foreach (array_values($drawRows) as $n => $r) echo $rowHtml($r + ['student_id' => $id], $n); ?>
 </div>
