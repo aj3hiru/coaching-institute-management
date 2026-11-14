@@ -174,7 +174,6 @@ tr.at-hl td{background:#fefce8}
   <div class="at-scan" data-ds="Scan ID card">
     <h3><i class="fas fa-barcode"></i> Scan ID card</h3>
     <input type="text" id="atScan" inputmode="text" autocomplete="off" placeholder="<?= $isToday ? 'Scan or type admission ID, press Enter' : 'Switch the date to today to scan' ?>"<?= $isToday ? ' autofocus' : ' disabled' ?>>
-    <small>First scan = check-in · next scan after <b id="atMin"><?= $minOut ?></b> min = check-out<?= $f['batch'] ? ' · this batch only' : '' ?></small>
     <div class="at-last" id="atLast" hidden></div>
   </div>
 </div>
@@ -334,7 +333,7 @@ tr.at-hl td{background:#fefce8}
   document.getElementById('atSetBtn').addEventListener('click', function () { m.hidden = false; sf.min_out.focus(); });
   m.addEventListener('click', function (e) { if (e.target === m || e.target.closest('[data-close]')) m.hidden = true; });
   sf.addEventListener('submit', function (e) { e.preventDefault(); post({ action: 'settings', min_out: sf.min_out.value }).then(function (d) {
-    if (!d.ok) throw new Error(d.msg); document.getElementById('atMin').textContent = d.min; m.hidden = true; toast(d.msg);
+    if (!d.ok) throw new Error(d.msg); m.hidden = true; toast(d.msg);
   }).catch(function (err) { toast(err.message, false); }); });
 })();
 </script>
