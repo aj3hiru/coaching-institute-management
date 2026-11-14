@@ -190,6 +190,14 @@ $tel = fn(?string $m) => ci_tel($m);
 .sv-cal-d.is-holiday{background:#f5f3ff;border-color:#c4b5fd}.sv-cal-d.is-holiday em{color:#6d28d9}.sv-cal-d.is-holiday small{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 @media (max-width:640px){.sv-cal-d{min-height:44px;padding:3px}.sv-cal-d small{display:none}.sv-cal-d em{top:auto;bottom:3px;right:4px}}
 .sv-att-print{display:none}
+/* Student details / Online account: closed by default, the title opens them */
+.sv-fold>.ci-card-h{cursor:pointer;user-select:none}
+.sv-fold>.ci-card-h h3{display:flex;align-items:center;gap:8px;flex:1}
+.sv-fold>.ci-card-h h3::after{content:"";width:7px;height:7px;margin-left:auto;margin-right:4px;border-right:2px solid #9ca3af;border-bottom:2px solid #9ca3af;transform:rotate(45deg) translateY(-2px);transition:transform .2s}
+.sv-fold.open>.ci-card-h h3::after{transform:rotate(-135deg) translateY(-1px)}
+.sv-fold:not(.open)>.ci-card-h{border-bottom:0}
+.sv-fold:not(.open)>.ci-card-b{display:none}
+@media print{.sv-fold>.ci-card-b{display:block!important}}
 </style>
 </head>
 <body>
@@ -244,7 +252,7 @@ if (function_exists('sh_perm') && sh_perm($me, 'customers')) { sh_tables($pdo); 
 ?>
 <div class="ci-pf">
   <aside class="ci-pf-side">
-    <div class="ci-card ci-det" data-ds="Student details"><div class="ci-card-h"><h3>Student details</h3><?php if (ci_perm($me, 'edit_student')): ?><?= ci_ico('edit', '/admin/student-edit.php?id=' . $id, 'Edit details') ?><?php endif; ?></div><div class="ci-card-b">
+    <div class="ci-card ci-det sv-fold" data-ds="Student details"><div class="ci-card-h" role="button" tabindex="0" aria-expanded="false"><h3>Student details</h3><?php if (ci_perm($me, 'edit_student')): ?><?= ci_ico('edit', '/admin/student-edit.php?id=' . $id, 'Edit details') ?><?php endif; ?></div><div class="ci-card-b">
       <?php $detKv = array_diff_key($allKv, array_flip(['Full name', 'Reg. no.', 'Class', 'Mobile', 'Status', 'Admission date'])); // the card on top already shows these ?>
       <dl class="ci-kv ci-kv1 sv-det"><?php foreach ($detKv as $k => $v): ?><dt><?= ci_e($k) ?></dt><dd><?= ci_e($v) ?></dd><?php endforeach; ?></dl>
       <?php if ($s['notes']): ?><div class="ci-det-notes"><b>Notes</b><br><?= nl2br(ci_e($s['notes'])) ?></div><?php endif; ?>
@@ -395,6 +403,17 @@ if (function_exists('sh_perm') && sh_perm($me, 'customers')) { sh_tables($pdo); 
 <?php if (function_exists('sh_perm') && sh_perm($me, 'orders')) require __DIR__ . '/components/sh-enroll.php'; ?>
 <?php if (!empty($_GET['online'])): ?><script>window.addEventListener('load',function(){var b=document.querySelector('[data-enroll-sid]');if(b)b.click();});</script><?php endif; ?>
 <?php admin_shell_close(); ?>
+<script>
+(function () { // Student details / Online account: click the title to open / close (open by itself when the page is sent to it)
+  document.querySelectorAll('.sv-fold').forEach(function (c) {
+    var h = c.querySelector('.ci-card-h');
+    function set(o) { c.classList.toggle('open', o); h.setAttribute('aria-expanded', o ? 'true' : 'false'); }
+    h.addEventListener('click', function (e) { if (e.target.closest('a,button,form,input,select')) return; set(!c.classList.contains('open')); });
+    h.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); set(!c.classList.contains('open')); } });
+    if (location.hash && (c.id && location.hash === '#' + c.id)) set(true);
+  });
+})();
+</script>
 <script>
 (function () {
   var inr = function (n) { return '₹' + (Math.round(n * 100) / 100).toLocaleString('en-IN'); };

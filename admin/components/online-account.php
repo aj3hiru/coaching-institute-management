@@ -46,7 +46,7 @@ function oa_hidden(array $oa, string $action, array $more = []): string
 function oa_side(array $oa, array $me): void
 {
     $u = $oa['u']; $s = $oa['s'];
-    echo '<div class="ci-card" id="online-account" data-ds="Online account"><div class="ci-card-h"><h3>Online account</h3>';
+    echo '<div class="ci-card sv-fold" id="online-account" data-ds="Online account"><div class="ci-card-h" role="button" tabindex="0" aria-expanded="false"><h3>Online account</h3>';
     if ($u) echo $u['status'] === 'active' ? '<span class="ci-badge ci-b-green">Active</span>' : '<span class="ci-badge ci-b-red"><i class="fas fa-ban"></i> Suspended</span>';
     echo '</div><div class="ci-card-b">';
     if (!$u) {
