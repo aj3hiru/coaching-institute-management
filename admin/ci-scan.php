@@ -106,7 +106,8 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Ari
 /* off: waves dim, the slash is drawn, then the icon breathes */
 .net.n-off{border-color:#fca5a5;background:#fef2f2;color:#991b1b}.net.n-off .n-ico{color:#dc2626;animation:n-in .35s cubic-bezier(.2,.9,.3,1.3),n-breath 1.6s .6s ease-in-out infinite}
 .n-cut .w1,.n-cut .w2,.n-cut .w3{animation:none;opacity:.35}
-.n-slash{stroke-width:2.6;stroke-dasharray:25;stroke-dashoffset:25;animation:n-draw .35s .15s ease-out forwards}
+.n-slash{stroke-width:2.6;transform-origin:12px 12px;animation:n-slash .4s .1s cubic-bezier(.2,.9,.3,1.4) backwards} /* always drawn; pops in */
+@keyframes n-slash{from{transform:scale(.2) rotate(-25deg)}to{transform:none}}
 @keyframes n-breath{50%{opacity:.45}}
 /* logged out */
 .net.n-login{border-color:#fca5a5;background:#fef2f2;color:#991b1b}.net.n-login .n-ico{color:#dc2626}
