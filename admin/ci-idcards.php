@@ -1,6 +1,6 @@
 <?php
 // Student ID cards (Institute only) — opened from Reports → ID Cards, printed or saved as PDF from the browser.
-// Card (54 × 85.6 mm portrait, the size of a bank card): the institute's logo, name, address, phone and email on top; the student's
+// Card (54 × 85.6 mm portrait, the size of a bank card): the institute's logo, name, address and phone on top; the student's
 // photo, name, class, roll no., admission ID, mobile, address and batch; a Code 128 barcode of the admission ID that the
 // attendance page's barcode scanner reads. 9 cards on an A4 page.
 require_once __DIR__ . '/components/guard.php';
@@ -49,26 +49,25 @@ body{margin:0;background:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,"S
 .empty{max-width:600px;margin:40px auto;padding:20px;background:#fff;border:1px solid #e5e7eb;text-align:center;color:#6b7280}
 /* portrait card, 54 × 85.6 mm (bank-card size) */
 .idc{position:relative;width:54mm;height:85.6mm;border:.3mm solid #c9ced6;border-radius:3mm;overflow:hidden;display:flex;flex-direction:column;background:#fff;break-inside:avoid;page-break-inside:avoid}
-.idc-h{display:flex;align-items:center;gap:2mm;padding:2.4mm 2.6mm 2.2mm;background:var(--idc);color:#fff}
-.idc-h img{width:11mm;height:11mm;object-fit:contain;background:#fff;border-radius:50%;padding:.6mm;flex:none}
+.idc-h{display:flex;align-items:center;gap:2mm;padding:2.2mm 2.6mm 1.8mm;background:#fff;border-top:1.6mm solid var(--idc)}
+.idc-h img{width:10.5mm;height:10.5mm;object-fit:contain;flex:none}
 .idc-h div{min-width:0;line-height:1.2}
-.idc-h b{display:block;font-size:3.6mm;font-weight:800;letter-spacing:.03em;text-transform:uppercase;line-height:1.05}
-.idc-h small{display:block;font-size:1.7mm;opacity:.9;margin-top:.5mm}
-.idc-t{background:var(--idc2);color:#fff;text-align:center;font-size:1.9mm;font-weight:700;letter-spacing:.2em;padding:.7mm 0}
-.idc-b{display:flex;gap:2.4mm;padding:2.6mm 2.6mm 0}
-.idc-ph{flex:none;width:19mm;height:24mm;border:.5mm solid var(--idc);border-radius:1.4mm;overflow:hidden;background:#e5e7eb}
-.idc-ph img,.idc-ph svg{width:100%;height:100%;object-fit:cover;display:block}
-.idc-k{min-width:0;flex:1;display:flex;flex-direction:column;gap:1.1mm}
-.idc-k i,.idc-x i{display:block;font-style:normal;font-size:1.55mm;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--idc)}
-.idc-k b,.idc-x b{display:block;font-size:2.35mm;font-weight:700;color:#111827;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.idc-k .nm b{font-size:2.8mm;font-weight:800;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
-.idc-x{display:grid;grid-template-columns:1fr 1fr;gap:1.1mm 2mm;padding:2mm 2.6mm 0;flex:1;align-content:start}
+.idc-h b{display:block;font-family:Georgia,"Times New Roman",serif;font-size:3.7mm;font-weight:700;letter-spacing:.02em;text-transform:uppercase;color:var(--idc);line-height:1.05}
+.idc-h small{display:block;font-size:1.6mm;color:#4b5563;margin-top:.5mm}
+.idc-t{background:var(--idc);color:#fff;text-align:center;font-size:1.95mm;font-weight:700;letter-spacing:.24em;padding:.9mm 0;border-bottom:.6mm solid var(--idc2)}
+.idc-bc{padding:1.3mm 2.6mm .6mm;text-align:center}
+.idc-bc svg{height:7mm;width:auto;max-width:100%;display:block;margin:0 auto}
+.idc-bc span{display:block;font-size:1.9mm;font-weight:700;letter-spacing:.3em;font-family:ui-monospace,Menlo,Consolas,monospace;margin-top:.2mm}
+.idc-b{display:flex;gap:2.2mm;padding:1.2mm 2.6mm 0}
+.idc-ph{flex:none;width:24mm;height:30.86mm;border:.35mm solid #9ca3af;overflow:hidden;background:#e5e7eb} /* passport 7:9 */
+.idc-ph img,.idc-ph svg{width:100%;height:100%;object-fit:cover;object-position:50% 30%;display:block}
+.idc-k{min-width:0;flex:1;display:flex;flex-direction:column;justify-content:space-between;padding:.2mm 0}
+.idc-k i,.idc-x i{display:block;font-style:normal;font-size:1.5mm;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#6b7280}
+.idc-k b,.idc-x b{display:block;font-size:2.3mm;font-weight:700;color:#111827;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.idc-k .nm b{font-size:2.7mm;font-weight:800;color:var(--idc);white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.idc-x{display:grid;grid-template-columns:1fr 1fr;gap:1.4mm 2mm;padding:2mm 2.6mm 1.6mm;flex:1;align-content:start}
 .idc-x .w{grid-column:1/-1}.idc-x .w b{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;font-weight:600}
-.idc-s{display:flex;justify-content:space-between;align-items:flex-end;padding:0 2.6mm 1mm;font-size:1.6mm;color:#374151}
-.idc-s span:last-child{text-align:center}.idc-s em{display:block;width:15mm;border-top:.25mm solid #6b7280;margin-bottom:.3mm}
-.idc-bc{border-top:.6mm solid var(--idc);padding:1.2mm 2.6mm 1.4mm;text-align:center;background:#fff}
-.idc-bc svg{height:8.5mm;width:auto;max-width:100%;display:block;margin:0 auto}
-.idc-bc span{display:block;font-size:2.1mm;font-weight:700;letter-spacing:.25em;font-family:ui-monospace,Menlo,Consolas,monospace;margin-top:.3mm}
+.idc-f{height:1.6mm;background:var(--idc);border-top:.5mm solid var(--idc2)}
 @page{size:A4 portrait;margin:8mm 10mm} /* 3 × 3 portrait cards on a page */
 @media print{
   body{background:#fff}.bar{display:none}
@@ -86,24 +85,23 @@ body{margin:0;background:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,"S
   <div class="idc">
     <div class="idc-h"><?php if ($logo): ?><img src="<?= ci_e($logo) ?>" alt=""><?php endif; ?><div><b><?= ci_e($inst['name']) ?></b>
       <?php if ($inst['address']): ?><small><?= ci_e($inst['address']) ?></small><?php endif; ?>
-      <small><?= ci_e(implode(' · ', array_filter([$inst['phone'], $inst['email']]))) ?></small></div></div>
+      <?php if ($inst['phone']): ?><small>Ph: <?= ci_e($inst['phone']) ?></small><?php endif; ?></div></div>
     <div class="idc-t">STUDENT IDENTITY CARD</div>
+    <div class="idc-bc"><?= ci_barcode_svg((string)$s['reg_no'], 40, 1.4) ?><span><?= ci_e($s['reg_no']) ?></span></div>
     <div class="idc-b">
-      <div class="idc-ph"><?= ($u = ci_photo_url($s['photo'] ?? '')) ? '<img src="' . ci_e($u) . '" alt="">' : '<svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" fill="#c9ced6"/><circle cx="32" cy="25" r="12" fill="#fff"/><path d="M8 64c1.6-13 11.6-21 24-21s22.4 8 24 21z" fill="#fff"/></svg>' ?></div>
+      <div class="idc-ph"><?= ($u = ci_photo_url($s['photo'] ?? '')) ? '<img src="' . ci_e($u) . '" alt="">' : ci_photo_blank() ?></div>
       <div class="idc-k">
-        <div class="nm"><i>Student name</i><b><?= ci_e($s['name']) ?></b></div>
+        <div class="nm"><i>Name</i><b><?= ci_e($s['name']) ?></b></div>
         <div><i>Admission ID</i><b><?= ci_e($s['reg_no']) ?></b></div>
-        <div><i>Class · Roll</i><b><?= ci_e(($s['class_name'] ?: '—') . ' · ' . ($s['roll_no'] ?: '—')) ?></b></div>
+        <div><i>Roll No.</i><b><?= ci_e($s['roll_no'] ?: '—') ?></b></div>
+        <div><i>Father's name</i><b><?= ci_e(trim((string)($s['father_name'] ?? '')) ?: '—') ?></b></div>
       </div>
     </div>
     <div class="idc-x">
-      <div><i>Mobile</i><b><?= ci_e($s['mobile']) ?></b></div>
-      <div><i>Session</i><b><?= ci_e($session !== '' ? $session : '—') ?></b></div>
-      <?php if ($s['batches']): ?><div class="w"><i>Batch</i><b><?= ci_e($s['batches']) ?></b></div><?php endif; ?>
+      <div class="w"><i>Contact no.</i><b><?= ci_e($s['mobile'] . (!empty($s['alt_mobile']) ? ', ' . $s['alt_mobile'] : '')) ?></b></div>
       <?php if ($ad !== ''): ?><div class="w"><i>Address</i><b><?= ci_e($ad) ?></b></div><?php endif; ?>
     </div>
-    <div class="idc-s"><span></span><span><em></em>Authorised sign</span></div>
-    <div class="idc-bc"><?= ci_barcode_svg((string)$s['reg_no'], 40, 1.4) ?><span><?= ci_e($s['reg_no']) ?></span></div>
+    <div class="idc-f"></div>
   </div>
 <?php endforeach; ?>
 </div><?php endif; ?>

@@ -487,12 +487,14 @@ function ci_save_photo(array $file, string $regNo): array
     if (function_exists('imagecreatetruecolor') && function_exists('imagejpeg') && function_exists($reader)) {
         $src = @$reader($file['tmp_name']);
         if ($src) {
+            // passport size: cut to 7:9 (35 × 45 mm) and save at 420 × 540 — a wide picture keeps its middle, a tall one its upper part (the face)
             [$w, $h] = [imagesx($src), imagesy($src)];
-            $s = min(1, 600 / max($w, $h));
-            $nw = max(1, (int)round($w * $s)); $nh = max(1, (int)round($h * $s));
+            if ($w / $h > 7 / 9) { $cw = (int)round($h * 7 / 9); $ch = $h; $cx = (int)(($w - $cw) / 2); $cy = 0; }
+            else { $cw = $w; $ch = (int)round($w * 9 / 7); $cx = 0; $cy = (int)(($h - $ch) * 0.3); }
+            $nw = min(420, $cw); $nh = (int)round($nw * 9 / 7);
             $dst = imagecreatetruecolor($nw, $nh);
             imagefill($dst, 0, 0, imagecolorallocate($dst, 255, 255, 255));
-            imagecopyresampled($dst, $src, 0, 0, 0, 0, $nw, $nh, $w, $h);
+            imagecopyresampled($dst, $src, 0, 0, $cx, $cy, $nw, $nh, $cw, $ch);
             $ok = imagejpeg($dst, $dest, 85);
             imagedestroy($src); imagedestroy($dst);
         }
@@ -517,14 +519,19 @@ function ci_photo_url(?string $p): string
     return $p ? '/' . ltrim($p, '/') : '';
 }
 
-/** The student's photo, or a grey profile picture when there is none. */
+/** Grey passport-size (7:9) "no photo" picture. */
+function ci_photo_blank(): string
+{
+    return '<svg viewBox="0 0 70 90" width="100%" height="100%" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="70" height="90" fill="#c9ced6"/>'
+        . '<circle cx="35" cy="35" r="15" fill="#fff"/><path d="M5 90c2-20 14-31 30-31s28 11 30 31z" fill="#fff"/></svg>';
+}
+
+/** The student's photo in passport shape (7:9; $size = its height), or a grey picture when there is none. */
 function ci_avatar(array $s, int $size = 40): string
 {
-    $url = ci_photo_url($s['photo'] ?? '');
-    if ($url) return '<img class="ci-av" src="' . ci_e($url) . '" alt="" width="' . $size . '" height="' . $size . '" style="width:' . $size . 'px;height:' . $size . 'px">';
-    // no photo: the usual grey profile picture
-    return '<span class="ci-av ci-av-none" role="img" aria-label="No photo" style="width:' . $size . 'px;height:' . $size . 'px"><svg viewBox="0 0 64 64" width="100%" height="100%" aria-hidden="true">'
-        . '<rect width="64" height="64" fill="#c9ced6"/><circle cx="32" cy="25" r="12" fill="#fff"/><path d="M8 64c1.6-13 11.6-21 24-21s22.4 8 24 21z" fill="#fff"/></svg></span>';
+    $url = ci_photo_url($s['photo'] ?? ''); $w = (int)round($size * 7 / 9);
+    if ($url) return '<img class="ci-av" src="' . ci_e($url) . '" alt="" width="' . $w . '" height="' . $size . '" style="width:' . $w . 'px;height:' . $size . 'px">';
+    return '<span class="ci-av ci-av-none" role="img" aria-label="No photo" style="width:' . $w . 'px;height:' . $size . 'px">' . ci_photo_blank() . '</span>';
 }
 
 function ci_status_badge(string $s): string

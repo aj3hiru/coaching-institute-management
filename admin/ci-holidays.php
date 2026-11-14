@@ -44,11 +44,16 @@ $days = fn(array $h) => (int)round((strtotime($h['to_date']) - strtotime($h['fro
 <title>Holidays - <?= ci_e(edu_site_name()) ?></title>
 <?php admin_shell_head(); ci_head(); ?>
 <style>
-.hd-grid{display:grid;grid-template-columns:360px minmax(0,1fr);gap:16px;align-items:start}
+.hd-grid{display:grid;grid-template-columns:360px minmax(0,1fr);gap:16px;align-items:start}.hd-grid>*{min-width:0}
 @media (max-width:1000px){.hd-grid{grid-template-columns:1fr}}
 .hd-form .ci-f{margin-bottom:12px}
-.hd-for{display:flex;gap:6px;flex-wrap:wrap}.hd-for label{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border:1px solid #d1d5db;cursor:pointer;font-size:13.5px}
-.hd-for input{margin:0}.hd-for label:has(input:checked){border-color:var(--ci-acc,#4a3369);background:#f5f3ff;color:var(--ci-acc,#4a3369);font-weight:600}
+.hd-for{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid #d1d5db;background:#fff}
+.hd-for label{position:relative;display:flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:6px 8px;margin:0;border-left:1px solid #d1d5db;cursor:pointer;font-size:13px;font-weight:600;color:#374151;text-align:center;line-height:1.2}
+.hd-for label:first-child{border-left:0}.hd-for label i{font-size:12px;color:#9ca3af}
+.hd-for input{position:absolute;opacity:0;width:1px;height:1px;margin:0;pointer-events:none}
+.hd-for label:has(input:checked){background:var(--ci-acc,#4a3369);color:#fff}.hd-for label:has(input:checked) i{color:#fff}
+.hd-for label:has(input:focus-visible){outline:2px solid var(--ci-acc,#4a3369);outline-offset:2px}
+.hd-form .ci-btn[type=submit]{width:100%;justify-content:center}
 .hd-st{display:inline-block;padding:2px 8px;font-size:12px;font-weight:700}.hd-st.now{background:#ede9fe;color:#5b21b6}.hd-st.next{background:#f0fdf4;color:#15803d}.hd-st.past{background:#f3f4f6;color:#6b7280}
 </style>
 </head>
@@ -63,11 +68,11 @@ $days = fn(array $h) => (int)round((strtotime($h['to_date']) - strtotime($h['fro
       <div class="ci-grid2" style="gap:12px"><div class="ci-f"><label>From <span class="ci-req">*</span></label><input type="date" name="from_date" required value="<?= $today ?>"></div>
         <div class="ci-f"><label>To</label><input type="date" name="to_date" value="<?= $today ?>"></div></div>
       <div class="ci-f"><label>For</label><div class="hd-for">
-        <label><input type="radio" name="for" value="all" checked> All courses &amp; batches</label>
-        <label><input type="radio" name="for" value="course"> One course</label>
-        <label><input type="radio" name="for" value="batch"> One batch</label></div></div>
-      <div class="ci-f" data-for="course" hidden><label>Course</label><select name="course_id"><option value=""></option><?php foreach ($courses as $id => $n): ?><option value="<?= (int)$id ?>"><?= ci_e($n) ?></option><?php endforeach; ?></select></div>
-      <div class="ci-f" data-for="batch" hidden><label>Batch</label><select name="batch_id"><option value=""></option><?php foreach ($batches as $b): ?><option value="<?= (int)$b['id'] ?>"><?= ci_e($b['name'] . ' · ' . $b['course_name']) ?></option><?php endforeach; ?></select></div>
+        <label><input type="radio" name="for" value="all" checked><i class="fas fa-layer-group"></i> All</label>
+        <label><input type="radio" name="for" value="course"><i class="fas fa-book-open"></i> Course</label>
+        <label><input type="radio" name="for" value="batch"><i class="fas fa-users"></i> Batch</label></div></div>
+      <div class="ci-f" data-for="course" hidden><label>Course</label><select name="course_id"><option value="">Choose course…</option><?php foreach ($courses as $id => $n): ?><option value="<?= (int)$id ?>"><?= ci_e($n) ?></option><?php endforeach; ?></select></div>
+      <div class="ci-f" data-for="batch" hidden><label>Batch</label><select name="batch_id"><option value="">Choose batch…</option><?php foreach ($batches as $b): ?><option value="<?= (int)$b['id'] ?>"><?= ci_e($b['name'] . ' · ' . $b['course_name']) ?></option><?php endforeach; ?></select></div>
       <button class="ci-btn" type="submit"><?= ci_svg('check') ?> Save holiday</button>
     </div></form>
   <div class="ci-card" data-ds="Holidays"><div class="ci-card-h"><h3>Holidays <span class="ci-muted">(<?= count($list) ?>)</span></h3></div><div class="ci-card-b ci-p0 ci-table-wrap">

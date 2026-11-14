@@ -53,7 +53,7 @@ a.ci-stat:hover{border-color:var(--ci-acc)}
 .ci-person a{font-weight:600;color:#111827}
 .ci-person a:hover{color:var(--ci-acc)}
 .ci-person small{display:block;color:var(--ci-mut);font-size:12px}
-.ci-av{border-radius:0;object-fit:cover;flex-shrink:0;background:#f3f4f6}
+.ci-av{border-radius:0;object-fit:cover;object-position:50% 30%;flex-shrink:0;background:#f3f4f6} /* student photos are passport size (35 × 45 mm, 7:9) */
 .ci-av-txt{display:inline-grid;place-items:center;background:#f3effa;color:#4a3369;font-weight:700}
 .ci-badge{display:inline-block;padding:2px 8px;border-radius:0;font-size:11.5px;font-weight:600;white-space:nowrap}
 .ci-b-green{background:#ecfdf5;color:#047857}.ci-b-red{background:#fef2f2;color:#b91c1c}.ci-b-grey{background:#f3f4f6;color:#4b5563}.ci-b-blue{background:#eff6ff;color:#1d4ed8}.ci-b-amber{background:#fffbeb;color:#b45309}
@@ -69,7 +69,7 @@ a.ci-stat:hover{border-color:var(--ci-acc)}
 .ci-alert-err{background:#fef2f2;color:#991b1b;border:1px solid #fecaca}
 .ci-alert-ok{background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0}
 .ci-photo{display:flex;align-items:center;gap:14px}
-.ci-photo .ci-av{width:84px;height:84px}
+.ci-photo .ci-av{width:70px;height:90px}
 .ci-enr-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) 38px;gap:10px;align-items:end;padding:12px;border:1px solid #eef0f3;margin:0 0 10px;background:#fcfcfd}
 .ci-enr-row .ci-enr-del{height:38px;width:38px;justify-content:center;padding:0}
 .ci-enr-row .ci-span2{grid-column:span 2}
@@ -87,7 +87,7 @@ a.ci-stat:hover{border-color:var(--ci-acc)}
 .ci-kv dt{color:var(--ci-mut)}
 .ci-kv dd{margin:0;color:#111827;word-break:break-word}
 .ci-profile{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
-.ci-profile .ci-av{width:76px;height:76px}
+.ci-profile .ci-av{width:62px;height:80px}
 .ci-profile h2{margin:0 0 4px;font-size:21px}
 .ci-sum{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 .ci-sum div{padding:12px;border:1px solid var(--ci-b);border-radius:0;background:#fff}
@@ -105,7 +105,7 @@ details.ci-more>summary::-webkit-details-marker{display:none}
 .ci [hidden]{display:none!important}
 .ci-ph .ci-card-b{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
 .ci-ph-main{display:flex;gap:16px;align-items:center;min-width:0}
-.ci-ph-main .ci-av{width:88px;height:88px}
+.ci-ph-main .ci-av{width:77px;height:99px}
 .ci-ph-txt h2{margin:0 0 6px;font-size:22px;color:#111827}
 .ci-ph-tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
 .ci-ph-meta{display:flex;gap:6px 16px;flex-wrap:wrap;font-size:13px;color:#4b5563}

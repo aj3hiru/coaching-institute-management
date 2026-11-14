@@ -337,8 +337,8 @@ $v = fn($k) => ci_e($form[$k] ?? '');
 
 <div class="ci-card"><div class="ci-card-h"><h3>Student details</h3><?php if ($student): ?><span class="ci-muted">Reg. no. <b><?= ci_e($student['reg_no']) ?></b></span><?php endif; ?></div><div class="ci-card-b">
   <div class="ci-photo" style="margin-bottom:16px">
-    <span class="ci-photo-prev" id="ci-photo-prev"><?= ci_avatar($form, 84) ?></span>
-    <div class="ci-f ci-nofloat"><label>Photo</label><input type="file" name="photo" id="ci-photo-in" accept="image/jpeg,image/png,image/webp" style="height:auto;padding:6px"><span class="ci-hint">JPG, PNG or WebP, up to 3 MB.</span>
+    <span class="ci-photo-prev" id="ci-photo-prev"><?= ci_avatar($form, 90) ?></span>
+    <div class="ci-f ci-nofloat"><label>Photo</label><input type="file" name="photo" id="ci-photo-in" accept="image/jpeg,image/png,image/webp" style="height:auto;padding:6px"><span class="ci-hint">Passport size · JPG, PNG or WebP, up to 3 MB.</span>
     <?php if (!empty($form['photo'])): ?><label class="ci-chk"><input type="checkbox" name="photo_remove" value="1"> Remove photo</label><?php endif; ?></div>
   </div>
   <div class="ci-grid4">
@@ -480,16 +480,49 @@ $v = fn($k) => ci_e($form[$k] ?? '');
   });
   var _wire = wire; wire = function (row, init) { classFilter(row); _wire(row, init); row.querySelector('.ci-course').addEventListener('change', function () { var o = this.options[this.selectedIndex]; if (cls && !cls.value && o && o.dataset.class && o.dataset.class !== '0') { cls.value = o.dataset.class; cls.dispatchEvent(new Event('change', { bubbles: true })); } }); };
   rows.querySelectorAll('.ci-enr-row').forEach(function (r) { wire(r, true); });
-  // photo: show the chosen picture at once
+  // photo: the chosen picture opens in a passport-size frame (35 × 45 mm, 7:9) — drag to place, slide to zoom — and is
+  // saved cut to that frame (420 × 540), so it is the same size everywhere (lists, profile, ID card)
   var pin = document.getElementById('ci-photo-in'), prev = document.getElementById('ci-photo-prev');
-  if (pin && prev) pin.addEventListener('change', function () {
-    var f = pin.files && pin.files[0];
-    if (!f) return;
-    if (!/^image\/(jpeg|png|webp)$/.test(f.type)) { alert('Please choose a JPG, PNG or WebP image.'); pin.value = ''; return; }
-    if (f.size > 3 * 1024 * 1024) { alert('The photo is larger than 3 MB.'); pin.value = ''; return; }
-    var url = URL.createObjectURL(f);
-    prev.innerHTML = '<img class="ci-av" src="' + url + '" alt="" style="width:84px;height:84px">';
-  });
+  if (pin && prev) {
+    var FW = 210, FH = 270, OW = 420, OH = 540, busyCrop = false;
+    var cm = document.createElement('div');
+    cm.className = 'ci-modal'; cm.hidden = true;
+    cm.innerHTML = '<div class="ci-modal-box" role="dialog" aria-modal="true" aria-label="Passport photo" style="max-width:380px">'
+      + '<div class="ci-card-h"><h3>Passport size photo</h3><button type="button" class="ci-x" data-pc="no" aria-label="Close"><i class="fas fa-times"></i></button></div>'
+      + '<div class="ci-card-b" style="text-align:center"><div class="pc-frame" style="position:relative;width:' + FW + 'px;height:' + FH + 'px;margin:0 auto;overflow:hidden;background:#e5e7eb;cursor:grab;touch-action:none;outline:2px solid #4a3369;outline-offset:2px"><img alt="" style="position:absolute;left:0;top:0;max-width:none;user-select:none;-webkit-user-drag:none" draggable="false"></div>'
+      + '<p class="ci-muted" style="font-size:12.5px;margin:10px 0 6px">Drag the photo to place the face; use the slider to zoom.</p>'
+      + '<input type="range" class="pc-zoom" min="1" max="3" step="0.01" value="1" style="width:' + FW + 'px" aria-label="Zoom">'
+      + '<div style="display:flex;gap:8px;justify-content:center;margin-top:12px"><button type="button" class="ci-btn" data-pc="ok"><i class="fas fa-check"></i> Use photo</button><button type="button" class="ci-btn ci-ghost" data-pc="no">Cancel</button></div></div></div>';
+    document.body.appendChild(cm);
+    var frame = cm.querySelector('.pc-frame'), im = frame.querySelector('img'), zoom = cm.querySelector('.pc-zoom'), st = { base: 1, z: 1, x: 0, y: 0 };
+    function clamp() { var w = im.naturalWidth * st.base * st.z, h = im.naturalHeight * st.base * st.z; st.x = Math.min(0, Math.max(FW - w, st.x)); st.y = Math.min(0, Math.max(FH - h, st.y)); im.style.width = w + 'px'; im.style.height = h + 'px'; im.style.left = st.x + 'px'; im.style.top = st.y + 'px'; }
+    zoom.addEventListener('input', function () { var cx = FW / 2 - st.x, cy = FH / 2 - st.y, k = +zoom.value / st.z; st.z = +zoom.value; st.x = FW / 2 - cx * k; st.y = FH / 2 - cy * k; clamp(); });
+    var drag = null;
+    frame.addEventListener('pointerdown', function (e) { drag = { x: e.clientX - st.x, y: e.clientY - st.y }; frame.setPointerCapture(e.pointerId); frame.style.cursor = 'grabbing'; });
+    frame.addEventListener('pointermove', function (e) { if (!drag) return; st.x = e.clientX - drag.x; st.y = e.clientY - drag.y; clamp(); });
+    frame.addEventListener('pointerup', function () { drag = null; frame.style.cursor = 'grab'; });
+    function close(ok) {
+      if (!ok) { pin.value = ''; cm.hidden = true; return; }
+      if (busyCrop) return; busyCrop = true;
+      var cv = document.createElement('canvas'); cv.width = OW; cv.height = OH;
+      var g = cv.getContext('2d'), k = st.base * st.z; g.fillStyle = '#fff'; g.fillRect(0, 0, OW, OH);
+      g.drawImage(im, -st.x / k, -st.y / k, FW / k, FH / k, 0, 0, OW, OH);
+      cv.toBlob(function (bl) {
+        busyCrop = false; cm.hidden = true;
+        try { var dt = new DataTransfer(); dt.items.add(new File([bl], 'photo.jpg', { type: 'image/jpeg' })); pin.files = dt.files; } catch (x) {} // old browsers: the server cuts it to 7:9 itself
+        prev.innerHTML = '<img class="ci-av" src="' + URL.createObjectURL(bl) + '" alt="" style="width:70px;height:90px">';
+      }, 'image/jpeg', 0.9);
+    }
+    cm.addEventListener('click', function (e) { var b = e.target.closest('[data-pc]'); if (b) close(b.dataset.pc === 'ok'); else if (e.target === cm) close(false); });
+    pin.addEventListener('change', function () {
+      var f = pin.files && pin.files[0];
+      if (!f) return;
+      if (!/^image\/(jpeg|png|webp)$/.test(f.type)) { alert('Please choose a JPG, PNG or WebP image.'); pin.value = ''; return; }
+      if (f.size > 3 * 1024 * 1024) { alert('The photo is larger than 3 MB.'); pin.value = ''; return; }
+      im.onload = function () { st.base = Math.max(FW / im.naturalWidth, FH / im.naturalHeight); st.z = 1; zoom.value = 1; st.x = (FW - im.naturalWidth * st.base) / 2; st.y = (FH - im.naturalHeight * st.base) * 0.3; clamp(); cm.hidden = false; };
+      im.src = URL.createObjectURL(f);
+    });
+  }
   // "+ Add to Batch": a new institute row — unless one is still empty (then that one gets the focus)
   var hint = document.getElementById('ci-rows-hint'), stype = document.getElementById('ci-stype');
   function focusRow(r, sel) { r.scrollIntoView({ block: 'center', behavior: 'smooth' }); var f = r.querySelector(sel); setTimeout(function () { f && f.focus(); }, 250); r.classList.add('ci-flash'); setTimeout(function () { r.classList.remove('ci-flash'); }, 900); }
