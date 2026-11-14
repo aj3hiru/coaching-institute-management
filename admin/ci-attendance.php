@@ -50,7 +50,14 @@ if ($act !== '') {
         if (!is_array($pairs) || !$pairs || count($pairs) > 2000) $out(['ok' => false, 'msg' => 'Nobody to check out.'], 400);
         $up = $pdo->prepare("UPDATE ci_attendance SET out_at = NOW(), updated_at = NOW(), marked_by = ? WHERE student_id = ? AND batch_id = ? AND att_date = ? AND status = 'present' AND in_at IS NOT NULL AND out_at IS NULL");
         $n = 0; foreach ($pairs as [$sid, $bid]) { $up->execute([(int)$me['id'], (int)$sid, (int)$bid, $date]); $n += $up->rowCount(); }
-        $out(['ok' => true, 'n' => $n, 'time' => date('h:i A'), 'msg' => $n ? $n . ' student(s) checked out at ' . date('h:i A') . '.' : 'Nobody was checked in without a check-out.']);
+        // "Check out all": the students of these batches who did not come today become absent (a mark already given stays)
+        $abs = json_decode((string)($_POST['absent'] ?? '[]'), true); $na = 0;
+        if (is_array($abs) && $abs && count($abs) <= 2000) {
+            $ia = $pdo->prepare("INSERT IGNORE INTO ci_attendance (student_id, batch_id, att_date, status, source, marked_by) VALUES (?,?,?, 'absent', 'manual', ?)");
+            foreach ($abs as [$sid, $bid]) { $ia->execute([(int)$sid, (int)$bid, $date, (int)$me['id']]); $na += $ia->rowCount(); }
+        }
+        $msg = ($n ? $n . ' student(s) checked out at ' . date('h:i A') : 'Nobody was checked in without a check-out') . ($na ? '; ' . $na . ' who did not come marked absent' : '') . '.';
+        $out(['ok' => true, 'n' => $n, 'na' => $na, 'time' => date('h:i A'), 'msg' => $msg]);
     }
     if ($act === 'settings') {
         $min = max(0, min(720, (int)($_POST['min_out'] ?? 60)));
@@ -69,10 +76,10 @@ $f = [
 ];
 $batches = $pdo->query("SELECT b.id, b.name, b.timing, b.course_id, b.start_time, b.end_time, c.name AS course_name FROM ci_batches b LEFT JOIN ci_courses c ON c.id = b.course_id WHERE b.status = 'active' ORDER BY b.start_time IS NULL, b.start_time, c.name, b.name")->fetchAll(PDO::FETCH_ASSOC);
 ci_att_autoclose($pdo, date('Y-m-d', strtotime('-14 days')), $today); // past classes: the ones not marked are absent
-// opened with no choice: the batch whose class is on now (15 minutes before it starts until it ends)
+// opened with no choice: the batch whose class is on now (15 minutes before it starts until 15 minutes after it ends)
 $running = null;
 if (!array_intersect(array_keys($_GET), ['date', 'course', 'batch', 'class', 'q', 'show', 'all'])) {
-    $now = date('H:i:s'); $soon = date('H:i:s', time() + 15 * 60);
+    $now = date('H:i:s', time() - CI_ATT_GRACE * 60); $soon = date('H:i:s', time() + 15 * 60);
     foreach ($batches as $b) if ($b['start_time'] && $b['end_time'] && $b['start_time'] <= $soon && $now <= $b['end_time']) { $running = $b; break; }
 }
 if ($running) $f['batch'] = (int)$running['id'];
@@ -196,7 +203,7 @@ tr.at-hl td{background:#fefce8}
   <div class="at-bulk">
     <button type="button" class="ci-btn ci-ghost" data-bulk="present"><i class="fas fa-check-double"></i> All present</button>
     <button type="button" class="ci-btn ci-ghost" data-bulk="absent-rest"><i class="fas fa-user-xmark"></i> Rest absent</button>
-    <?php if ($isToday): ?><button type="button" class="ci-btn" id="atOutAll"<?= $checkedIn ? '' : ' disabled' ?>><i class="fas fa-right-from-bracket"></i> <span>Check out all (<?= $checkedIn ?>)</span></button><?php endif; ?>
+    <?php if ($isToday): ?><button type="button" class="ci-btn" id="atOutAll"<?= $checkedIn || array_filter($rows, fn($r) => $r['status'] === 'present') ? '' : ' disabled' ?>><i class="fas fa-right-from-bracket"></i> <span>Check out all (<?= $checkedIn ?>)</span></button><?php endif; ?>
   </div>
 </div>
 
@@ -230,6 +237,8 @@ tr.at-hl td{background:#fefce8}
 <script>
 (function () {
   var CSRF = <?= json_encode(csrf_token(), JSON_HEX_TAG) ?>, DATE = <?= json_encode($f['date'], JSON_HEX_TAG) ?>, BATCH = <?= (int)$f['batch'] ?>, TODAY = <?= $isToday ? 'true' : 'false' ?>;
+  // the class on now: 15 minutes after it ends the students who did not come become absent — reload then to show it
+  <?php if ($running): ?>setTimeout(function () { location.reload(); }, Math.max(5000, <?= (strtotime($today . ' ' . $running['end_time']) + CI_ATT_GRACE * 60 - time()) * 1000 + 5000 ?>));<?php endif; ?>
   function post(data) {
     var fd = new FormData(); fd.append('_csrf', CSRF); fd.append('date', DATE);
     Object.keys(data).forEach(function (k) { fd.append(k, data[k]); });
@@ -257,7 +266,7 @@ tr.at-hl td{background:#fefce8}
     }
     t.innerHTML = h || '<span class="ci-muted">—</span>';
   }
-  function countIn() { var n = [].filter.call(document.querySelectorAll('#atT .at-t'), function (t) { return t.dataset.in && !t.dataset.out && t.dataset.st === 'present'; }).length, b = document.getElementById('atOutAll'); if (b) { b.querySelector('span').textContent = 'Check out all (' + n + ')'; b.disabled = !n; } return n; }
+  function countIn() { var n = [].filter.call(document.querySelectorAll('#atT .at-t'), function (t) { return t.dataset.in && !t.dataset.out && t.dataset.st === 'present'; }).length, b = document.getElementById('atOutAll'); if (b) { b.querySelector('span').textContent = 'Check out all (' + n + ')'; b.disabled = !n && !document.querySelector('#atT .at-t[data-st="present"]'); } return n; }
   document.querySelectorAll('#atT .at-t').forEach(drawT);
   document.getElementById('atT').addEventListener('click', function (e) {
     var io = e.target.closest('.at-io'); if (!io) return;
@@ -271,17 +280,22 @@ tr.at-hl td{background:#fefce8}
   });
   var outAll = document.getElementById('atOutAll');
   if (outAll) outAll.addEventListener('click', function () {
-    var trs = [].filter.call(document.querySelectorAll('#atT tr[data-sid]'), function (tr) { var t = tr.querySelector('.at-t'); return t.dataset.in && !t.dataset.out && t.dataset.st === 'present'; });
-    if (!trs.length) return;
+    var all = [].slice.call(document.querySelectorAll('#atT tr[data-sid]'));
+    var trs = all.filter(function (tr) { var t = tr.querySelector('.at-t'); return t.dataset.in && !t.dataset.out && t.dataset.st === 'present'; });
+    var held = {}; all.forEach(function (tr) { if (tr.querySelector('.at-t').dataset.st === 'present') held[tr.dataset.bid] = 1; }); // batches whose class was held today
+    var rest = all.filter(function (tr) { return !tr.querySelector('.at-t').dataset.st && held[tr.dataset.bid] && !tr.querySelector('.at-hol'); });
+    if (!trs.length && !rest.length) return;
     var go = function () {
       outAll.disabled = true;
-      post({ action: 'checkout', pairs: JSON.stringify(trs.map(function (tr) { return [+tr.dataset.sid, +tr.dataset.bid]; })) }).then(function (d) {
+      var pr = function (l) { return JSON.stringify(l.map(function (tr) { return [+tr.dataset.sid, +tr.dataset.bid]; })); };
+      post({ action: 'checkout', pairs: pr(trs), absent: pr(rest) }).then(function (d) {
         if (!d.ok) throw new Error(d.msg);
         trs.forEach(function (tr) { var t = tr.querySelector('.at-t'); t.dataset.out = d.time; drawT(t); });
+        rest.forEach(function (tr) { setRow(tr, 'absent'); });
         countIn(); toast(d.msg);
       }).catch(function (err) { toast(err.message, false); countIn(); });
     };
-    var text = 'Check out all ' + trs.length + ' checked-in student(s) in this list now?';
+    var text = 'Check out ' + trs.length + ' present student(s) now' + (rest.length ? ' and mark the other ' + rest.length + ' student(s) of this batch absent' : '') + '?';
     if (window.EduDialog) EduDialog.confirm(text, { title: 'Check out', ok: 'Check out all' }).then(function (y) { if (y) go(); }); else if (confirm(text)) go();
   });
   document.getElementById('atT').addEventListener('click', function (e) {

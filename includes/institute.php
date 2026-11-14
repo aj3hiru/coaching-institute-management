@@ -941,6 +941,7 @@ function ci_holiday_on(array $hols, string $date, int $batchId, int $courseId): 
  * every student of the batch who was not marked becomes Absent once the class time is over (today after its end time, any
  * earlier day) — except on that batch's holidays. Runs when attendance is opened / reported, for [$from, $to].
  */
+const CI_ATT_GRACE = 15; // minutes after a batch ends before its students with no mark become absent
 function ci_att_autoclose(PDO $pdo, string $from, string $to): int
 {
     $today = date('Y-m-d'); if ($to > $today) $to = $today;
@@ -955,7 +956,7 @@ function ci_att_autoclose(PDO $pdo, string $from, string $to): int
         WHERE e.batch_id = ? AND e.status = 'active' AND s.status = 'active' AND s.stype <> 'online' AND (e.enrolled_on IS NULL OR e.enrolled_on <= ?)");
     $n = 0;
     foreach ($q as $r) {
-        if ($r['att_date'] === $today && (!$r['end_time'] || date('H:i:s') < $r['end_time'])) continue; // class not over yet
+        if ($r['att_date'] === $today && (!$r['end_time'] || time() < strtotime($today . ' ' . $r['end_time']) + CI_ATT_GRACE * 60)) continue; // class not over (+15 min) yet
         if (ci_holiday_on($hols, $r['att_date'], (int)$r['batch_id'], (int)$r['course_id'])) continue;
         $ins->execute([$r['att_date'], (int)$r['batch_id'], $r['att_date']]); $n += $ins->rowCount();
     }
