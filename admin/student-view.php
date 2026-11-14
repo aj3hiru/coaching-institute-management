@@ -237,7 +237,6 @@ if (function_exists('sh_perm') && sh_perm($me, 'customers')) { sh_tables($pdo); 
 
 <?php
   $age = $s['dob'] ? (new DateTime($s['dob']))->diff(new DateTime())->y : null;
-  $mainKv = array_filter(["Mother's name" => $s['mother_name'], 'Date of birth' => $s['dob'] ? ci_date($s['dob']) . ' (' . $age . ' yrs)' : '', 'Gender' => $s['gender'], 'Email' => $s['email']]);
   $allKv = array_filter(['Full name' => $s['name'], 'Reg. no.' => $s['reg_no'], 'Class' => $s['class_name'], "Father's name" => $s['father_name'], "Mother's name" => $s['mother_name'],
       'Mobile' => $s['mobile'], 'Alternate mobile' => $s['alt_mobile'], 'Email' => $s['email'], 'Date of birth' => $s['dob'] ? ci_date($s['dob']) . ' (' . $age . ' yrs)' : '', 'Gender' => $s['gender'],
       'Address' => $s['address'], 'City' => $s['city'], 'State' => $s['state'], 'PIN code' => $s['pincode'], 'School / College' => $s['school'], 'Admission date' => ci_date($s['admission_date']),
@@ -430,8 +429,6 @@ if (function_exists('sh_perm') && sh_perm($me, 'customers')) { sh_tables($pdo); 
     f.addEventListener('submit', function (e) { if (!course.value) { e.preventDefault(); alert('Choose a course.'); } });
     if (/[?&]addcourse=1/.test(location.search)) { var md = document.getElementById('ci-addc'); md.hidden = false; }
   })();
-  // View all details
-  document.querySelectorAll('[data-more]').forEach(function (b) { b.addEventListener('click', function () { var box = b.parentNode.querySelector('.ci-det-all'), open = box.hidden; box.hidden = !open; b.classList.toggle('open', open); b.firstChild.textContent = open ? 'Show less ' : 'View all details '; }); });
   // a course card linked from elsewhere (#enr-N) opens its payments
   if (/^#enr-\d+$/.test(location.hash)) { var cc = document.querySelector(location.hash); if (cc) { var dt = cc.querySelector('details'); if (dt) dt.open = true; cc.scrollIntoView({ block: 'center' }); } }
 
