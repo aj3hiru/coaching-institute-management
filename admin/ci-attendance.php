@@ -182,7 +182,6 @@ tr.at-hl td{background:#fefce8}
   <div class="at-scan" data-ds="Scan ID card or enter admission ID">
     <h3><i class="fas fa-barcode"></i> Scan ID card or enter Admission ID</h3>
     <form class="at-scan-row" id="atScanF"><input type="text" id="atScan" inputmode="text" autocomplete="off" aria-label="Admission ID" placeholder="<?= $isToday ? 'Admission ID' : 'Switch the date to today' ?>"<?= $isToday ? ' autofocus' : ' disabled' ?>><button type="submit"<?= $isToday ? '' : ' disabled' ?>><i class="fas fa-check"></i> Mark</button></form>
-    <small><?= $isToday ? 'By hand: type the admission ID (e.g. 17 or 000017) and press Enter or Mark.' : 'For another day, use the P / A / L buttons in the list.' ?></small>
     <div class="at-last" id="atLast" hidden></div>
   </div>
 </div>
@@ -208,11 +207,12 @@ tr.at-hl td{background:#fefce8}
 </div>
 
 <div class="ci-card" data-ds="Students"><div class="ci-card-b ci-p0 ci-table-wrap"><table class="ci-table" id="atT" data-sheet="off">
-  <thead><tr><th>Adm. ID</th><th>Student</th><th>Class</th><th>Batch</th><th>Attendance</th><th>Check-in / out</th></tr></thead>
+  <thead><tr><th class="ci-num">S.No.</th><th>Adm. ID</th><th>Student</th><th>Class</th><th>Batch</th><th>Attendance</th><th>Check-in / out</th></tr></thead>
   <tbody>
-  <?php if (!$rows): ?><tr><td colspan="6" class="ci-empty">No students for these filters. Students show here when they are in an active batch / course.</td></tr><?php endif; ?>
-  <?php foreach ($rows as $r): ?>
+  <?php if (!$rows): ?><tr><td colspan="7" class="ci-empty">No students for these filters. Students show here when they are in an active batch / course.</td></tr><?php endif; ?>
+  <?php foreach ($rows as $i => $r): ?>
   <tr data-sid="<?= (int)$r['id'] ?>" data-bid="<?= (int)$r['batch_id'] ?>" data-reg="<?= ci_e($r['reg_no']) ?>">
+    <td class="ci-num ci-muted"><?= $i + 1 ?></td>
     <td class="ci-nw"><b><?= ci_e($r['reg_no']) ?></b></td>
     <td><div class="at-name"><?= ci_avatar($r, 34) ?><div><a href="/admin/student-view.php?id=<?= (int)$r['id'] ?>#attendance"><?= ci_e($r['name']) ?></a><small><?= ci_e($r['mobile']) ?></small></div></div></td>
     <td class="ci-nw"><?= ci_e($r['class_name'] ?: '—') ?></td>
