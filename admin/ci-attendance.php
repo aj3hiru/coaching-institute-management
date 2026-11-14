@@ -60,7 +60,7 @@ if ($act !== '') {
         $out(['ok' => true, 'n' => $n, 'na' => $na, 'time' => date('h:i A'), 'msg' => $msg]);
     }
     if ($act === 'settings') {
-        $min = max(0, min(720, (int)($_POST['min_out'] ?? 60)));
+        $min = max(0, min(720, (int)($_POST['min_out'] ?? 10)));
         edu_settings_save('institute', ['att_min_out' => $min]);
         $out(['ok' => true, 'min' => $min, 'msg' => 'Saved: check-out opens ' . $min . ' minutes after check-in.']);
     }

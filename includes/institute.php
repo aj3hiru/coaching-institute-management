@@ -823,7 +823,7 @@ function ci_next_roll(PDO $pdo, ?int $classId, int $exceptId = 0): ?string
 /** Minutes after check-in before a second scan counts as check-out (Attendance → Settings). */
 function ci_att_min_out(): int
 {
-    return max(0, min(720, (int)(function_exists('es') ? es('institute', 'att_min_out', 60) : 60)));
+    return max(0, min(720, (int)(function_exists('es') ? es('institute', 'att_min_out', 10) : 10)));
 }
 
 /** Code 128 (set B) barcode as an inline SVG — what a USB / Bluetooth barcode scanner reads back as text. */
