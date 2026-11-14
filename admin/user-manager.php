@@ -345,6 +345,10 @@ foreach ($rows as $r) {
 .view-tab-count{color:var(--gray-400);font-weight:400;font-size:.8125rem}
 .perm-item.perm-off{opacity:.45;cursor:not-allowed}
 #umPermBox .perm-item{flex-wrap:wrap}
+#umPermBox .perm-lock .perm-grid{opacity:.45;pointer-events:none}
+.perm-lockbar{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:-2px 0 8px;padding:7px 10px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;color:#92400e;font-size:.8rem;font-weight:600}
+.perm-lockbar button{padding:3px 10px;border:1px solid #d97706;border-radius:6px;background:#fff;color:#b45309;font:inherit;font-size:.78rem;cursor:pointer}
+.perm-lockbar button:hover{background:#d97706;color:#fff}
 #umPermBox .perm-item small{flex-basis:100%;padding-left:24px;margin-top:2px;color:var(--gray-500);font-size:.74rem;line-height:1.35;font-weight:400}
 .um-del-note{background:var(--warning-light,#fef3c7);color:#92400e;border-radius:10px;padding:.75rem 1rem;font-size:.875rem;margin-bottom:1rem}
 </style>
@@ -560,12 +564,28 @@ window.UM = (function () {
   function scopeBox(role) { // show only the permission groups the role can hold
     var sc = ROLE_SCOPE[role] || 'blog', box = document.getElementById('umPermBox');
     if (!box) return;
-    box.querySelectorAll('[data-scope]').forEach(function (g) { g.hidden = !(sc === 'all' || g.dataset.scope === sc); });
+    // every group stays visible; a group the chosen role cannot hold is locked, with a one-click role change on it
+    var offered = Array.prototype.map.call(f.role.options, function (o) { return o.value; }), barDone = {};
+    box.querySelectorAll('[data-scope]').forEach(function (g) {
+      var gs = g.dataset.scope;
+      if (gs === 'all') { g.hidden = sc !== 'all'; return; } // push notifications: admins only
+      var ok = sc === 'all' || gs === sc;
+      var roles = (gs === 'office' ? ['teacher', 'accountant'] : ['editor', 'author']).filter(function (r) { return offered.indexOf(r) >= 0; });
+      g.hidden = !ok && !roles.length;
+      g.classList.toggle('perm-lock', !ok);
+      g.querySelectorAll('input').forEach(function (i) { if (i.dataset.lk === undefined) i.dataset.lk = i.disabled ? '1' : '0'; i.disabled = !ok || i.dataset.lk === '1'; });
+      var bar = g.querySelector('.perm-lockbar');
+      if (!ok && roles.length && !barDone[gs]) { barDone[gs] = 1; // one line per part, on its first group
+        if (!bar) { bar = document.createElement('div'); bar.className = 'perm-lockbar'; g.querySelector('.perm-group-title').after(bar); }
+        bar.innerHTML = '<i class="fas fa-lock"></i> ' + (gs === 'office' ? 'For Teacher / Accountant role' : 'For Author / Editor (blog) role') + ' — ' + roles.map(function (r) { return '<button type="button" data-role="' + r + '">Make ' + ({ teacher: 'Teacher', accountant: 'Accountant', editor: 'Editor', author: 'Author' })[r] + '</button>'; }).join(' ');
+      } else if (bar) bar.remove();
+    });
     var note = document.getElementById('umScopeNote');
     if (note) note.textContent = sc === 'all' ? 'Admins can do everything.' : role === 'blog_admin' ? 'Blog Admin: the whole blog — all posts, categories, tags, comments, media, analytics, ads, code snippets, blog Customize, and blog authors / editors. Nothing outside the blog.' : sc === 'blog' ? 'Blog only — nothing outside the blog (institute, store, settings).' : 'Institute and online store only — no blog.';
     var adv = box.querySelector('.adv-panel'), tog = box.querySelector('.adv-toggle');
     if (role === 'admin' || role === 'blog_admin') { adv.hidden = true; tog.hidden = true; } else { adv.hidden = false; tog.hidden = false; }
   }
+  f.addEventListener('click', function (e) { var b = e.target.closest('.perm-lockbar button[data-role]'); if (!b) return; f.role.value = b.dataset.role; UM.applyRole(b.dataset.role); });
   function teachBox() { var b = document.getElementById('umTeach'), c = f.querySelector('[name="p_store[teacher]"]'); if (b) b.hidden = !(c && c.checked); }
   function slugify(s) { return (s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''); }
   function slugPrev() { document.getElementById('umSlugPrev').textContent = slugify(f.slug.value) || slugify(f.name.value) || slugify(f.username.value) || '…'; }
@@ -591,7 +611,7 @@ window.UM = (function () {
         f.is_featured.checked = r.is_featured == 1;
         if (!f.role.querySelector('option[value="' + r.role + '"]')) f.role.value = f.role.options[0].value;
         setPerms(r.perms);
-      } else { f.role.value = f.role.querySelector('option[value="author"]') ? 'author' : f.role.options[0].value; f.status.value = 'active'; setPerms(roleDefaults[f.role.value] || roleDefaults.author); }
+      } else { f.role.value = f.role.querySelector('option[value="teacher"]') ? 'teacher' : f.role.querySelector('option[value="author"]') ? 'author' : f.role.options[0].value; f.status.value = 'active'; setPerms(roleDefaults[f.role.value] || roleDefaults.author); }
       var self = !!(r && r.self);
       f.role.disabled = self; f.status.disabled = self; document.getElementById('umSelfHint').hidden = !self;
       if (permBox) permBox.hidden = self;
