@@ -57,6 +57,7 @@ if ($type === 'student') {
     $q = $pdo->prepare("SELECT s.*, c.name AS class_name FROM ci_students s LEFT JOIN ci_classes c ON c.id = s.class_id WHERE s.id = ?");
     $q->execute([$id]);
     $s = $q->fetch(PDO::FETCH_ASSOC) ?: $fail('Student not found');
+    if (!ci_scope_ok($me, $s['stype'] ?? 'institute')) $fail('Student not found'); // only institute / only online staff
     $enr = ci_enrollments($pdo, $id);
     $tot = ci_student_totals($pdo, $id);
     $cRows = array_map(fn($e) => [$e['course_name'] ?? '-', $e['batch_name'] ?: '-', $e['session_name'] ?: '-', ($e['fee_type'] ?? 'full') === 'installment' ? 'Installment' : 'Final fee',

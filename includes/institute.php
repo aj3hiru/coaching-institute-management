@@ -125,7 +125,10 @@ function ci_tables(PDO $pdo): void
 
 /** Institute permissions (Users → Advance Access → Institute). Admins have all of them. */
 define('CI_PERMS', ['add_student' => 'Add student', 'edit_student' => 'Edit student', 'batches' => 'Manage batches', 'courses' => 'Manage courses',
-    'fees' => 'Manage fee & dues', 'sessions' => 'Manage sessions', 'classes' => 'Manage classes', 'attendance' => 'Take attendance']);
+    'fees' => 'Manage fee & dues', 'sessions' => 'Manage sessions', 'classes' => 'Manage classes', 'attendance' => 'Attendance (mark, edit, holidays)',
+    'att_scan' => 'Scan screen only (ID card scanning)']);
+// which students a staff member works with (Users → Advance Access): '' both · 'institute' · 'online'. "Both"-type students count for either.
+if (!defined('CI_SCOPES')) define('CI_SCOPES', ['' => 'Institute + Online students', 'institute' => 'Only institute students', 'online' => 'Only online students']);
 
 function ci_perm(array $u, string $key): bool
 {
@@ -139,8 +142,39 @@ function ci_perm(array $u, string $key): bool
 /** May the user open the institute section at all (any one institute permission)? */
 function ci_can(array $u): bool
 {
-    foreach (array_keys(CI_PERMS) as $k) if ($k !== 'shop' && ci_perm($u, $k)) return true; // the online store is separate from the institute pages
+    foreach (array_keys(CI_PERMS) as $k) if ($k !== 'shop' && $k !== 'att_scan' && ci_perm($u, $k)) return true; // the online store is separate; "Scan screen only" opens just that screen
     return false;
+}
+
+/** Which students the user works with: '' every student · 'institute' · 'online' (Users → Advance Access). */
+function ci_scope(array $u): string
+{
+    if (($u['role'] ?? '') === 'admin') return '';
+    $p = is_array($u['permissions'] ?? null) ? $u['permissions'] : (json_decode((string)($u['permissions'] ?? '{}'), true) ?: []);
+    $v = (string)($p['student_scope'] ?? '');
+    return in_array($v, ['institute', 'online'], true) ? $v : '';
+}
+
+/** SQL condition for that scope on a ci_students alias ('' = no limit). "Both" students belong to either side. */
+function ci_scope_sql(array $u, string $alias = 's'): string
+{
+    $sc = ci_scope($u);
+    return $sc === 'institute' ? "$alias.stype <> 'online'" : ($sc === 'online' ? "$alias.stype <> 'institute'" : '');
+}
+
+/** May the user open this student (by student type)? */
+function ci_scope_ok(array $u, ?string $stype): bool
+{
+    $sc = ci_scope($u); $t = (string)($stype ?: 'institute');
+    return $sc === '' || $t === 'both' || $t === $sc;
+}
+
+/** Stops the page when the student is outside the user's students. */
+function ci_scope_guard(array $u, ?string $stype): void
+{
+    if (ci_scope_ok($u, $stype)) return;
+    admin_flash('This student is not one of yours — you work with ' . strtolower(CI_SCOPES[ci_scope($u)]) . '.', 'error');
+    header('Location: /admin/students.php'); exit;
 }
 
 function ci_money($n): string

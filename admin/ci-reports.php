@@ -15,7 +15,7 @@ $storeItems = $prodOK ? $pdo->query("SELECT id, title FROM sh_products ORDER BY 
 $storeProds = $prodOK ? $pdo->query("SELECT id, title, type, status FROM sh_products ORDER BY type, title")->fetchAll(PDO::FETCH_ASSOC) : [];
 $storeCats = $prodOK ? $pdo->query("SELECT id, name FROM sh_categories ORDER BY sort, name")->fetchAll(PDO::FETCH_KEY_PAIR) : [];
 $L = ci_lists($pdo);
-$students = $pdo->query("SELECT s.id, s.reg_no, s.name, s.status, c.name AS class_name FROM ci_students s LEFT JOIN ci_classes c ON c.id = s.class_id ORDER BY s.name")->fetchAll(PDO::FETCH_ASSOC);
+$students = $pdo->query("SELECT s.id, s.reg_no, s.name, s.status, c.name AS class_name FROM ci_students s LEFT JOIN ci_classes c ON c.id = s.class_id" . (($sc = ci_scope_sql($me)) ? " WHERE $sc" : '') . " ORDER BY s.name")->fetchAll(PDO::FETCH_ASSOC);
 $courses = $pdo->query("SELECT id, name, status FROM ci_courses ORDER BY status = 'active' DESC, name")->fetchAll(PDO::FETCH_ASSOC);
 $batches = $pdo->query("SELECT b.id, b.name, b.status, c.name AS course_name, se.name AS session_name FROM ci_batches b LEFT JOIN ci_courses c ON c.id = b.course_id LEFT JOIN ci_sessions se ON se.id = b.session_id ORDER BY b.status = 'active' DESC, c.name, b.name")->fetchAll(PDO::FETCH_ASSOC);
 // attendance / ID cards: only the institute's (offline) side — courses that have batches, batches, non-online students

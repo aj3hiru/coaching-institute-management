@@ -11,10 +11,10 @@ header('Cache-Control: no-store');
 $a = (string)($_GET['a'] ?? '');
 $id = (int)($_GET['id'] ?? 0);
 if ($a === 'student') {
-    $q = $pdo->prepare("SELECT s.id, s.name, s.reg_no, s.class_id, s.status, c.name AS class_name FROM ci_students s LEFT JOIN ci_classes c ON c.id = s.class_id WHERE s.id = ?");
+    $q = $pdo->prepare("SELECT s.id, s.name, s.reg_no, s.class_id, s.status, s.stype, c.name AS class_name FROM ci_students s LEFT JOIN ci_classes c ON c.id = s.class_id WHERE s.id = ?");
     $q->execute([$id]);
     $s = $q->fetch(PDO::FETCH_ASSOC);
-    if (!$s) { http_response_code(404); exit(json_encode(['error' => 'Student not found'])); }
+    if (!$s || !ci_scope_ok($me, $s['stype'])) { http_response_code(404); exit(json_encode(['error' => 'Student not found'])); }
     $payable = [];
     foreach (ci_enrollments($pdo, $id) as $e) {
         if ($e['status'] === 'dropped' || (float)$e['due'] <= 0.004) continue;
@@ -28,6 +28,7 @@ if ($a === 'student') {
 }
 if ($a === 'search') {
     $w = ["s.status = 'active'"]; $args = [];
+    if ($sc = ci_scope_sql($me)) $w[] = $sc; // only institute / only online staff
     $q = trim((string)($_GET['q'] ?? ''));
     if ($q !== '') { $w[] = '(s.name LIKE ? OR s.mobile LIKE ? OR s.alt_mobile LIKE ? OR s.email LIKE ? OR s.reg_no LIKE ? OR s.father_name LIKE ?)'; array_push($args, ...array_fill(0, 6, '%' . $q . '%')); }
     if ($c = (int)($_GET['class'] ?? 0)) { $w[] = 's.class_id = ?'; $args[] = $c; }

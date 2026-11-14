@@ -4,7 +4,8 @@
 // (barcode = admission ID): the first scan checks in, a scan after the set minutes checks out.
 require_once __DIR__ . '/components/guard.php';
 require_once INCLUDES_PATH . '/institute.php';
-$me = ci_page_start($pdo, ['attendance'], ($_POST['action'] ?? '') === 'scan'); // a scan skips the table checks: fast at 100+ scans a minute
+$isScan = ($_POST['action'] ?? '') === 'scan';
+$me = ci_page_start($pdo, $isScan ? ['attendance', 'att_scan'] : ['attendance'], $isScan); // a scan skips the table checks (fast at 100+ a minute); "Scan screen only" staff may scan, nothing else here
 $today = date('Y-m-d');
 $ST = ['present' => 'Present', 'absent' => 'Absent', 'leave' => 'Leave', 'holiday' => 'Holiday'];
 

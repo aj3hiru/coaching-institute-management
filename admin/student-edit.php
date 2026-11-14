@@ -17,7 +17,9 @@ if ($id) {
     $q->execute([$id]);
     $student = $q->fetch(PDO::FETCH_ASSOC);
     if (!$student) { admin_flash('Student not found.', 'error'); header('Location: /admin/students.php'); exit; }
+    ci_scope_guard($me, $student['stype'] ?? 'institute');
 }
+$myScope = ci_scope($me); // only institute / only online staff add and keep students of that kind
 $enrolls = $id ? ci_enrollments($pdo, $id) : [];
 $known = array_column($enrolls, null, 'id');
 $errors = [];
@@ -132,6 +134,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $onlNow = (bool)$oRows || (bool)array_filter($hasOnline, fn($a) => !(int)$a['revoked']);
     if ($instNow || $onlNow) $form['stype'] = $instNow && $onlNow ? 'both' : ($instNow ? 'institute' : 'online'); // nothing chosen: the type picked in the form stays
     if (!$form['class_id'] && $L['classes'] && $form['stype'] === 'online') $errors = array_values(array_filter($errors, fn($e) => $e !== 'Choose the class.'));
+    if ($myScope !== '' && !ci_scope_ok($me, $form['stype'])) $form['stype'] = $myScope; // never outside the staff member's students
 
     $photoFile = $_FILES['photo'] ?? ['error' => UPLOAD_ERR_NO_FILE];
     $newPhoto = '';
@@ -350,7 +353,7 @@ $v = fn($k) => ci_e($form[$k] ?? '');
     <div class="ci-f"><label>Class <span class="ci-req">*</span></label><select name="class_id" id="ci-class"><option value=""></option><?php foreach ($L['classes'] as $cid => $cn): ?><option value="<?= $cid ?>" <?= (int)($form['class_id'] ?? 0) === $cid ? 'selected' : '' ?>><?= ci_e($cn) ?></option><?php endforeach; ?></select></div>
     <div class="ci-f"><label>Admission date</label><input type="date" name="admission_date" value="<?= $v('admission_date') ?>"></div>
     <div class="ci-f"><label>Student status</label><select name="status"><?php foreach (['active' => 'Active', 'completed' => 'Completed', 'left' => 'Left'] as $k => $l): ?><option value="<?= $k ?>" <?= ($form['status'] ?? 'active') === $k ? 'selected' : '' ?>><?= $l ?></option><?php endforeach; ?></select></div>
-    <div class="ci-f"><label>Student type</label><select name="stype" id="ci-stype"><?php foreach (CI_STYPES as $k => $l): ?><option value="<?= $k ?>" <?= ($form['stype'] ?? 'institute') === $k ? 'selected' : '' ?>><?= $l ?></option><?php endforeach; ?></select></div>
+    <div class="ci-f"><label>Student type</label><select name="stype" id="ci-stype"><?php foreach (CI_STYPES as $k => $l): if (!ci_scope_ok($me, $k)) continue; ?><option value="<?= $k ?>" <?= ($form['stype'] ?? ($myScope ?: 'institute')) === $k ? 'selected' : '' ?>><?= $l ?></option><?php endforeach; ?></select></div>
     <div class="ci-f"><label>Password <small class="ci-muted" style="font-weight:400">(online login)</small></label><div class="ci-pwf"><input type="password" name="spass" id="ci-spass" minlength="4" maxlength="72" autocomplete="new-password" placeholder="<?= $student ? 'empty = keep' : 'empty = date of birth (DDMMYYYY)' ?>"><button type="button" class="ci-pw-eye" aria-label="Show password" onclick="var i=document.getElementById('ci-spass'),s=i.type==='password';i.type=s?'text':'password';this.querySelector('i').className='fas '+(s?'fa-eye-slash':'fa-eye')"><i class="fas fa-eye"></i></button></div><span class="ci-hint"><?= $student ? 'Type a new one to change it.' : 'Login: mobile number + this password.' ?></span></div>
   </div>
   <div class="ci-sec" style="margin-top:18px">Address</div>

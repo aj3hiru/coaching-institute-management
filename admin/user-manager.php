@@ -2,10 +2,13 @@
 // Users & Authors — WordPress-style: one form creates the login account and the author profile shown on posts
 // (photo, bio, qualifications, social links… — the E-E-A-T details search engines look for).
 require_once __DIR__ . '/components/guard.php';
-$me = admin_guard(['admin', 'editor']);
+$me = admin_guard(['admin', 'editor', 'teacher', 'accountant']);
 $isAdmin = $me['role'] === 'admin';
-if (!$isAdmin && !admin_can('users.create')) { http_response_code(403); exit('Access Denied'); }
-$canGive = edu_roles_assignable($me['role']); // admin: every role · blog admin: author, editor · editor: author
+if (!$isAdmin && !admin_can('users.create') && !admin_can('users.edit')) { http_response_code(403); exit('Access Denied'); }
+$myPerms = json_decode((string)($me['permissions'] ?? ''), true) ?: [];
+$canGive = edu_roles_assignable($me['role'], $myPerms); // admin: every role · blog admin: author, editor · editor: author · User Manager (teacher / accountant): teachers, accountants
+// a teacher / accountant with "User Manager": manages staff, and can give only the permissions they hold themselves
+$officeMgr = in_array($me['role'], ['teacher', 'accountant'], true) && (bool)$canGive;
 if (!$canGive) { http_response_code(403); exit('Access Denied'); }
 
 // ─── Permissions: the same groups as before, with defaults per role ───────────────────────────────────────────
@@ -22,7 +25,7 @@ const UM_PERMS = [
     'pages' => ['create' => 'Create', 'edit' => 'Edit', 'delete' => 'Delete'],
     'files' => ['access_file_manager' => 'File Manager'],
     'security' => ['view_logs' => 'View Logs', 'manage_blacklist' => 'Blacklist', 'manage_recaptcha' => 'reCAPTCHA'],
-    'institute' => ['add_student' => 'Add student', 'edit_student' => 'Edit student', 'batches' => 'Manage batches', 'courses' => 'Manage courses', 'fees' => 'Manage fee & dues', 'sessions' => 'Manage sessions', 'classes' => 'Manage classes', 'attendance' => 'Take attendance'],
+    'institute' => ['add_student' => 'Add student', 'edit_student' => 'Edit student', 'batches' => 'Manage batches', 'courses' => 'Manage courses', 'fees' => 'Manage fee & dues', 'sessions' => 'Manage sessions', 'classes' => 'Manage classes', 'attendance' => 'Attendance (mark, edit, holidays)', 'att_scan' => 'Scan screen only (ID card scanning)'],
     'store' => ['products' => 'Courses & notes (add, edit, upload)', 'orders' => 'Orders & sales reports', 'customers' => 'Customers', 'settings' => 'Store settings (Razorpay keys)', 'teacher' => 'Teacher'],
 ];
 const UM_ICONS = ['dashboard_access' => 'fa-tachometer-alt', 'blogs' => 'fa-blog', 'media' => 'fa-photo-video', 'push_notifications' => 'fa-bell', 'users' => 'fa-users', 'authors' => 'fa-feather-alt', 'analytics' => 'fa-chart-bar', 'ads' => 'fa-ad', 'settings' => 'fa-cog', 'pages' => 'fa-file-alt', 'files' => 'fa-folder', 'security' => 'fa-shield-alt'];
@@ -87,7 +90,28 @@ function um_perms_from_post(): array
     if (!empty($_POST['p_push_adv'])) { $out['push_notifications']['manage_templates'] = $out['push_notifications']['advanced'] = true; }
     foreach (array_keys(UM_PERMS['institute']) as $k) $out['institute'][$k] = !empty($_POST['p_inst'][$k]);
     foreach (array_keys(UM_PERMS['store']) as $k) $out['store'][$k] = !empty($_POST['p_store'][$k]);
+    // which students: both / only institute / only online
+    $out['student_scope'] = in_array($_POST['p_scope'] ?? '', ['institute', 'online'], true) ? $_POST['p_scope'] : '';
+    // User Manager: add / edit / suspend staff (teachers, accountants); delete is separate
+    $um = ($_POST['p_users'] ?? '') === 'manage';
+    $out['users'] = ['create' => $um, 'edit' => $um, 'suspend' => $um, 'delete' => $um && !empty($_POST['p_users_del']), 'change_roles' => false, 'manage_permissions' => false];
     return $out;
+}
+
+/**
+ * What a User Manager (teacher / accountant) may save for another staff member: a permission they do not hold
+ * themselves keeps its old value (they can neither give nor take it), the student scope is theirs when they have one,
+ * and User Manager itself is never given by them.
+ */
+function um_cap(array $want, array $mine, array $old): array
+{
+    foreach (['institute', 'store'] as $g) foreach ((array)($want[$g] ?? []) as $k => $v)
+        if (empty($mine[$g][$k])) $want[$g][$k] = !empty($old[$g][$k]);
+    $ms = (string)($mine['student_scope'] ?? '');
+    if ($ms !== '') $want['student_scope'] = $ms;
+    $want['users'] = isset($old['users']) && is_array($old['users']) ? $old['users'] : array_fill_keys(['create', 'edit', 'suspend', 'delete', 'change_roles', 'manage_permissions'], false);
+    foreach (['blogs', 'media', 'push_notifications', 'authors', 'analytics', 'ads', 'settings', 'pages', 'files', 'security'] as $g) $want[$g] = $old[$g] ?? ($want[$g] ?? []);
+    return $want;
 }
 
 function um_slug(string $s): string
@@ -108,7 +132,7 @@ function um_unique_slug(PDO $pdo, string $slug, int $exceptId): string
 
 $roleOptions = $isAdmin
     ? ['author' => 'Author', 'editor' => 'Editor', 'blog_admin' => 'Blog Admin', 'teacher' => 'Teacher', 'accountant' => 'Accountant', 'admin' => 'Admin']
-    : array_intersect_key(['author' => 'Author', 'editor' => 'Editor'], array_flip($canGive));
+    : array_intersect_key(EDU_ROLES, array_flip($canGive));
 
 // ─── Save / delete ────────────────────────────────────────────────────────────────────────────────────────────
 // the superadmin account is not shown to — and cannot be changed by — anyone else
@@ -126,7 +150,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $username = trim((string)($_POST['username'] ?? ''));
             $email = filter_var(trim((string)($_POST['email'] ?? '')), FILTER_VALIDATE_EMAIL);
             $pass = (string)($_POST['password'] ?? '');
-            $role = array_key_exists($_POST['role'] ?? '', $roleOptions) ? $_POST['role'] : 'author';
+            $role = (string)($_POST['role'] ?? '');
+            if (!array_key_exists($role, $roleOptions)) { // a role you may not give is refused, never swapped for another
+                if ($isAdmin || ($_POST['id'] ?? '') === (string)$me['id']) $role = $isAdmin ? 'author' : $me['role'];
+                else throw new RuntimeException('You may not give the role "' . (EDU_ROLES[$role] ?? $role) . '".');
+            }
             $status = in_array($_POST['status'] ?? '', ['active', 'pending', 'suspended'], true) ? $_POST['status'] : 'active';
             $old = null;
             if ($id) {
@@ -141,6 +169,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!$id && strlen($pass) < 8) throw new RuntimeException('The password must have at least 8 characters.');
             if ($id && $pass !== '' && strlen($pass) < 8) throw new RuntimeException('The new password must have at least 8 characters.');
             $self = $id === (int)$me['id'];
+            if (!$isAdmin && $old && !$self && $status !== $old['status'] && !admin_can('users.suspend') && $me['role'] !== 'blog_admin' && $me['role'] !== 'editor') $status = $old['status'];
+            if (!$isAdmin && !$id && !admin_can('users.create') && !in_array($me['role'], ['blog_admin', 'editor'], true)) throw new RuntimeException('You may edit staff but not add new ones.');
             if ($self) { $role = $me['role']; $status = 'active'; } // nobody can lock themselves out
             $dupe = $pdo->prepare("SELECT username, email FROM users WHERE (username = ? OR email = ?) AND id <> ?");
             $dupe->execute([$username, $email, $id]);
@@ -149,6 +179,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // a role never holds permissions outside its part (blog / teacher & accountant); a Blog Admin always has the whole blog
             if ($self && $old) $perms = $old['permissions'];
             elseif ($isAdmin && !in_array($role, ['admin', 'blog_admin'], true)) $perms = json_encode(edu_role_clamp($role, um_perms_from_post()));
+            elseif ($officeMgr) { // a User Manager: within their own permissions and their own students
+                $oldP = $old ? (json_decode((string)$old['permissions'], true) ?: []) : [];
+                $ms = (string)($myPerms['student_scope'] ?? '');
+                if ($ms !== '' && $old && (string)($oldP['student_scope'] ?? '') !== $ms) throw new RuntimeException('This user works with other students than you — ask an admin.');
+                $perms = json_encode(edu_role_clamp($role, um_cap(um_perms_from_post(), $myPerms, $oldP ?: um_role_perms($role))));
+            }
             else $perms = json_encode(um_role_perms($role));
 
             // Author profile (every user gets one, like WordPress — it is what shows on their posts)
@@ -307,6 +343,9 @@ foreach ($rows as $r) {
 .pwd-field{position:relative;display:block}.pwd-field .form-control{padding-right:2.5rem}.pwd-field-toggle{position:absolute;right:.5rem;top:50%;transform:translateY(-50%);border:0;background:0 0;color:var(--gray-500);cursor:pointer;padding:.35rem}
 .um-hint{font-size:.78rem;color:var(--gray-500);margin-top:4px;overflow-wrap:anywhere}
 .view-tab-count{color:var(--gray-400);font-weight:400;font-size:.8125rem}
+.perm-item.perm-off{opacity:.45;cursor:not-allowed}
+#umPermBox .perm-item{flex-wrap:wrap}
+#umPermBox .perm-item small{flex-basis:100%;padding-left:24px;margin-top:2px;color:var(--gray-500);font-size:.74rem;line-height:1.35;font-weight:400}
 .um-del-note{background:var(--warning-light,#fef3c7);color:#92400e;border-radius:10px;padding:.75rem 1rem;font-size:.875rem;margin-bottom:1rem}
 </style>
 </head>
@@ -422,7 +461,7 @@ foreach ($rows as $r) {
         </div>
         <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;margin:.25rem 0 1rem"><input type="checkbox" name="is_featured" value="1"> <span><i class="fas fa-star" style="color:#f59e0b;margin-right:4px"></i>Featured author</span></label>
 
-        <?php if ($isAdmin): ?>
+        <?php if ($isAdmin || $officeMgr): ?>
         <div id="umPermBox">
         <div class="form-section-title"><i class="fas fa-shield-alt"></i> Permissions</div>
         <p class="um-hint" id="umScopeNote" style="margin:0 0 .6rem"></p>
@@ -438,12 +477,24 @@ foreach ($rows as $r) {
             <label class="perm-item"><input type="checkbox" name="p_push" value="1" data-simple="push"> Send push</label>
             <label class="perm-item"><input type="checkbox" name="p_push_adv" value="1" data-simple="push_adv"> Advanced <small>(change keys, import / export)</small></label>
           </div></div>
+          <?php $mine = fn(string $g, string $k) => $isAdmin || !empty($myPerms[$g][$k]); $myScope = (string)($myPerms['student_scope'] ?? ''); ?>
+          <div class="perm-group" data-scope="office"><div class="perm-group-title"><i class="fas fa-people-group"></i> Students they work with</div><div class="perm-grid">
+            <?php foreach (CI_SCOPES as $k => $l): $off = !$isAdmin && $myScope !== '' && $k !== $myScope; ?><label class="perm-item<?= $off ? ' perm-off' : '' ?>"><input type="radio" name="p_scope" value="<?= $k ?>" data-simple="scope"<?= $off ? ' disabled' : '' ?>> <?= $esc($l) ?><?= $k === 'institute' ? ' <small>Institute + "Both" students</small>' : ($k === 'online' ? ' <small>Online + "Both" students</small>' : ' <small>Every student</small>') ?></label><?php endforeach; ?>
+          </div></div>
           <div class="perm-group" data-scope="office"><div class="perm-group-title"><i class="fas fa-user-graduate"></i> Institute Management</div><div class="perm-grid">
-            <?php foreach (UM_PERMS['institute'] as $k => $l): ?><label class="perm-item"><input type="checkbox" name="p_inst[<?= $k ?>]" value="1" data-simple="inst.<?= $k ?>"> <?= $esc($l) ?></label><?php endforeach; ?>
+            <?php foreach (UM_PERMS['institute'] as $k => $l): if ($k === 'attendance' || $k === 'att_scan') continue; $off = !$mine('institute', $k); ?><label class="perm-item<?= $off ? ' perm-off' : '' ?>"<?= $off ? ' title="You do not have this permission yourself"' : '' ?>><input type="checkbox" name="p_inst[<?= $k ?>]" value="1" data-simple="inst.<?= $k ?>"<?= $off ? ' disabled' : '' ?>> <?= $esc($l) ?></label><?php endforeach; ?>
+          </div></div>
+          <div class="perm-group" data-scope="office"><div class="perm-group-title"><i class="fas fa-clipboard-user"></i> Attendance</div><div class="perm-grid">
+            <?php foreach (['attendance' => 'Full attendance <small>Mark P / A / L, check-out all, scan screen, holidays</small>', 'att_scan' => 'Scan screen only <small>For the gate — only scans ID cards, nothing else</small>'] as $k => $l): $off = !$mine('institute', $k); ?><label class="perm-item<?= $off ? ' perm-off' : '' ?>"<?= $off ? ' title="You do not have this permission yourself"' : '' ?>><input type="checkbox" name="p_inst[<?= $k ?>]" value="1" data-simple="inst.<?= $k ?>"<?= $off ? ' disabled' : '' ?>> <?= $l ?></label><?php endforeach; ?>
           </div></div>
           <div class="perm-group" data-scope="office"><div class="perm-group-title"><i class="fas fa-store"></i> Online Store</div><div class="perm-grid" id="umStorePerms">
-            <?php foreach (UM_PERMS['store'] as $k => $l): ?><label class="perm-item"><input type="checkbox" name="p_store[<?= $k ?>]" value="1" data-simple="store.<?= $k ?>"> <?= $esc($l) ?></label><?php endforeach; ?>
+            <?php foreach (UM_PERMS['store'] as $k => $l): $off = !$mine('store', $k); ?><label class="perm-item<?= $off ? ' perm-off' : '' ?>"<?= $off ? ' title="You do not have this permission yourself"' : '' ?>><input type="checkbox" name="p_store[<?= $k ?>]" value="1" data-simple="store.<?= $k ?>"<?= $off ? ' disabled' : '' ?>> <?= $esc($l) ?></label><?php endforeach; ?>
           </div></div>
+          <?php if ($isAdmin): ?><div class="perm-group" data-scope="office"><div class="perm-group-title"><i class="fas fa-users-gear"></i> User Manager</div><div class="perm-grid">
+            <label class="perm-item"><input type="radio" name="p_users" value="none" data-simple="users"> No access</label>
+            <label class="perm-item"><input type="radio" name="p_users" value="manage" data-simple="users"> Manage staff <small>Add / edit / suspend teachers &amp; accountants — gives only their own permissions</small></label>
+            <label class="perm-item"><input type="checkbox" name="p_users_del" value="1" data-simple="users_del"> Can also delete staff <small>Only with "Manage staff"</small></label>
+          </div></div><?php endif; ?>
         </div></div>
         <div class="um-teach" id="umTeach" hidden>
           <div class="form-section-title"><i class="fas fa-chalkboard-user"></i> Teacher profile <span style="font-size:.72rem;font-weight:400;color:var(--gray-500)">— the card in "Meet our teachers" on the homepage and "Taught by" on courses</span></div>
@@ -497,6 +548,9 @@ window.UM = (function () {
       else if (k === 'push') on = g('push_notifications', 'send');
       else if (k === 'push_adv') on = g('push_notifications', 'advanced');
       else if (k.indexOf('inst.') === 0) on = g('institute', k.slice(5));
+      else if (k === 'scope') on = c.value === (p.student_scope || '');
+      else if (k === 'users') on = c.value === (g('users', 'create') || g('users', 'edit') ? 'manage' : 'none');
+      else if (k === 'users_del') on = g('users', 'delete');
       else if (k.indexOf('store.') === 0) on = g('store', k.slice(6)) || (k !== 'store.settings' && g('institute', 'shop')); // the older single store permission
       c.checked = !!on;
     });
@@ -535,9 +589,9 @@ window.UM = (function () {
         f.author_email.value = r.author_email || '';
         if (f.t_subject) { f.t_subject.value = r.t_subject || ''; f.t_about.value = r.t_about || ''; f.t_sort.value = r.t_sort || 0; f.t_show.checked = r.t_show != 0; }
         f.is_featured.checked = r.is_featured == 1;
-        if (!f.role.querySelector('option[value="' + r.role + '"]')) f.role.value = 'author';
+        if (!f.role.querySelector('option[value="' + r.role + '"]')) f.role.value = f.role.options[0].value;
         setPerms(r.perms);
-      } else { f.role.value = 'author'; f.status.value = 'active'; setPerms(roleDefaults.author); }
+      } else { f.role.value = f.role.querySelector('option[value="author"]') ? 'author' : f.role.options[0].value; f.status.value = 'active'; setPerms(roleDefaults[f.role.value] || roleDefaults.author); }
       var self = !!(r && r.self);
       f.role.disabled = self; f.status.disabled = self; document.getElementById('umSelfHint').hidden = !self;
       if (permBox) permBox.hidden = self;

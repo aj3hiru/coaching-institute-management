@@ -40,6 +40,7 @@ if ($f['batch'] && isset($L['batches'][$f['batch']]) && !$f['course']) $f['cours
 
 $where = ['1'];
 $args = [];
+if ($sc = ci_scope_sql($me)) $where[] = $sc; // staff who work with only institute / only online students
 if ($f['q'] !== '') {
     $where[] = '(s.name LIKE ? OR s.reg_no LIKE ? OR s.mobile LIKE ? OR s.alt_mobile LIKE ? OR s.father_name LIKE ? OR s.email LIKE ?)';
     array_push($args, ...array_fill(0, 6, '%' . $f['q'] . '%'));

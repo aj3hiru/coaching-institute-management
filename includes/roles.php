@@ -29,7 +29,7 @@ function edu_role_allows(string $role, string $group): bool
     if ($scope === 'all') return true;
     if ($group === 'dashboard_access') return $scope !== '';
     if ($scope === 'blog') return in_array($group, ['blogs', 'media', 'analytics', 'ads', 'files', 'authors', 'users'], true);
-    if ($scope === 'office') return in_array($group, ['institute', 'store'], true);
+    if ($scope === 'office') return in_array($group, ['institute', 'store', 'student_scope', 'users'], true); // users: User Manager (staff only), when an admin gives it
     return false;
 }
 
@@ -47,11 +47,16 @@ function edu_role_clamp(string $role, array $perms): array
     return $perms;
 }
 
-/** Roles a user of this role may give to others in Users (empty = may not manage users). */
-function edu_roles_assignable(string $role): array
+/** Roles a user of this role may give to others in Users (empty = may not manage users). A teacher / accountant whom an
+ *  admin gave "User Manager" manages teachers and accountants only. */
+function edu_roles_assignable(string $role, $perms = null): array
 {
     if ($role === 'admin') return array_keys(EDU_ROLES);
     if ($role === 'blog_admin') return ['author', 'editor'];
     if ($role === 'editor') return ['author'];
+    if ($role === 'teacher' || $role === 'accountant') {
+        $p = is_array($perms) ? $perms : (json_decode((string)$perms, true) ?: []);
+        return !empty($p['users']['create']) || !empty($p['users']['edit']) ? ['teacher', 'accountant'] : [];
+    }
     return [];
 }

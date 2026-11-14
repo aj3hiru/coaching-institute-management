@@ -81,8 +81,9 @@ function admin_shell_nav(): array
             ])],
             $cp('attendance') ? ['label' => 'Attendance', 'href' => '/admin/ci-attendance.php', 'icon' => 'fa-clipboard-user', 'items' => $sub([
                 $link(true, 'Take Attendance', '/admin/ci-attendance.php', 'fa-clipboard-check'),
+                $link(true, 'Scan Screen', '/admin/ci-scan.php', 'fa-id-card'),
                 $link(true, 'Holidays', '/admin/ci-holidays.php', 'fa-umbrella-beach'),
-            ])] : null,
+            ])] : $link($cp('att_scan'), 'Scan Screen', '/admin/ci-scan.php', 'fa-id-card'),
             $link($cp('batches'), 'Batches', '/admin/ci-batches.php', 'fa-layer-group'),
             $link($cp('courses'), 'Courses', '/admin/ci-courses.php', 'fa-book-open'),
             $link($cp('fees'), 'Fees', '/admin/ci-fees.php', 'fa-indian-rupee-sign'),
@@ -90,7 +91,7 @@ function admin_shell_nav(): array
             $link($cp('sessions'), 'Sessions', '/admin/ci-sessions.php', 'fa-calendar-alt'),
             $link($cp('classes'), 'Classes', '/admin/ci-classes.php', 'fa-chalkboard'),
             $link(true, 'Reports', '/admin/ci-reports.php', 'fa-file-pdf'),
-        ] : []],
+        ] : ($cp('att_scan') ? [$link(true, 'Scan Screen', '/admin/ci-scan.php', 'fa-id-card')] : [])], // "Scan screen only": just that
         ['label' => 'Online Store', 'items' => (function () use ($cu, $link, $ci, $sub) {
             require_once ($_SERVER['DOCUMENT_ROOT'] ?? '') . '/includes/shop.php';
             return [

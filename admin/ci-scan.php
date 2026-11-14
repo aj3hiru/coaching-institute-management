@@ -9,7 +9,8 @@
 require_once __DIR__ . '/components/guard.php';
 require_once INCLUDES_PATH . '/institute.php';
 $ping = isset($_GET['ping']); $roster = isset($_GET['roster']);
-$me = ci_page_start($pdo, ['attendance'], $ping || $roster);
+$me = ci_page_start($pdo, ['attendance', 'att_scan'], $ping || $roster); // full attendance or "Scan screen only"
+$canAtt = ci_perm($me, 'attendance');
 if ($roster) {
     // the students' list for the instant card, kept in the browser and only sent again when it changed:
     //  · details (name, photo, class, batch, father, fee due — no mobile number, today a holiday?) carry a fingerprint (v); the browser
@@ -203,7 +204,7 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Ari
 <div class="top"><?php if ($logo): ?><img src="<?= ci_e($logo) ?>" alt=""><?php endif; ?><b><?= ci_e($inst['name']) ?></b><span class="sp"></span>
   <div class="net" id="net" role="status" aria-live="polite"><i class="n-ico"></i><span><em>Status:</em> Connecting</span></div>
   <div class="clk"><span id="clk"></span><small><?= date('l, d M Y') ?></small></div>
-  <?php if (!$embed): ?><a href="/admin/ci-attendance.php">← Attendance</a><?php endif; ?></div>
+  <?php if (!$embed): ?><a href="<?= $canAtt ? '/admin/ci-attendance.php' : '/admin/dashboard.php' ?>">← <?= $canAtt ? 'Attendance' : 'Dashboard' ?></a><?php endif; ?></div>
 <div class="inp"><form id="f" autocomplete="off"><input id="code" inputmode="text" placeholder="Scan card / admission ID" aria-label="Admission ID" autofocus><button type="submit">Mark</button></form></div>
 <div class="stage"><div class="st idle" id="st">Ready — scan an ID card</div><div id="box"></div></div>
 <div class="ld" id="ld" role="status" aria-live="polite"><div class="ld-c">

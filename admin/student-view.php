@@ -12,6 +12,7 @@ $q = $pdo->prepare("SELECT s.*, c.name AS class_name, u.username AS added_by FRO
 $q->execute([$id]);
 $s = $q->fetch(PDO::FETCH_ASSOC);
 if (!$s) { admin_flash('Student not found.', 'error'); header('Location: /admin/students.php'); exit; }
+ci_scope_guard($me, $s['stype'] ?? 'institute'); // only institute / only online staff
 $back = fn(string $tab = '') => "/admin/student-view.php?id=$id" . ($tab ? "#$tab" : '');
 // popups on list pages post here with back = that page; go back there after saving
 $listBack = (string)($_POST['back'] ?? '');
