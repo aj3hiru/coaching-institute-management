@@ -1,14 +1,40 @@
 <?php
 // Scan screen (Institute): a big screen for the door. A student scans the ID card (or staff types the admission ID) and the
 // student's card shows at once — landscape, like the ID card — with fee status (Full paid / Due ₹…) and an animated tick when
-// the attendance is saved. Built for 100+ scans a minute: every scan goes out at once (several together); a scan that can't
+// the attendance is saved. Built for 200+ scans a minute: the students' list is kept in the browser, so the card and the tick
+// show the moment the card is scanned (no waiting for the server); every scan goes out at once (several together); a scan that can't
 // reach the server waits in a queue kept in the browser and is sent by itself when the internet is back (with the time it was
 // scanned); a keep-alive every 20 s keeps the login and the connection warm. Opened from Attendance (popup, ?embed=1 inside
 // it) or in its own tab. Uses the attendance page's scan action.
 require_once __DIR__ . '/components/guard.php';
 require_once INCLUDES_PATH . '/institute.php';
-$ping = isset($_GET['ping']);
-$me = ci_page_start($pdo, ['attendance'], $ping);
+$ping = isset($_GET['ping']); $roster = isset($_GET['roster']);
+$me = ci_page_start($pdo, ['attendance'], $ping || $roster);
+if ($roster) { // every institute student of an active batch, for the instant card: details, fee due, today's in / out, holiday
+    header('Content-Type: application/json; charset=utf-8'); header('Cache-Control: no-store');
+    session_write_close();
+    $today = date('Y-m-d');
+    $rows = $pdo->query("SELECT s.id, s.reg_no, s.name, s.father_name, s.mobile, s.photo, c.name AS class_name,
+            (SELECT COALESCE(SUM(" . CI_DUE_SQL . "), 0) FROM ci_enrollments e WHERE e.student_id = s.id) AS due,
+            (SELECT MIN(in_at) FROM ci_attendance a WHERE a.student_id = s.id AND a.att_date = CURDATE()) AS in_at,
+            (SELECT MAX(out_at) FROM ci_attendance a WHERE a.student_id = s.id AND a.att_date = CURDATE()) AS out_at
+        FROM ci_students s LEFT JOIN ci_classes c ON c.id = s.class_id
+        WHERE s.status = 'active' AND s.stype <> 'online'
+          AND EXISTS (SELECT 1 FROM ci_enrollments e JOIN ci_batches b ON b.id = e.batch_id WHERE e.student_id = s.id AND e.status = 'active' AND b.status = 'active')")->fetchAll(PDO::FETCH_ASSOC);
+    $bat = [];
+    foreach ($pdo->query("SELECT e.student_id, b.id, b.name, b.course_id FROM ci_enrollments e JOIN ci_batches b ON b.id = e.batch_id WHERE e.status = 'active' AND b.status = 'active' ORDER BY b.name") as $b) $bat[(int)$b['student_id']][(int)$b['id']] = $b;
+    $hols = ci_holidays_between($pdo, $today, $today);
+    $list = [];
+    foreach ($rows as $r) {
+        $bs = $bat[(int)$r['id']] ?? [];
+        $open = array_filter($bs, fn($b) => !ci_holiday_on($hols, $today, (int)$b['id'], (int)$b['course_id']));
+        $list[] = ['reg' => $r['reg_no'], 'name' => $r['name'], 'class' => $r['class_name'], 'batches' => implode(', ', array_unique(array_column($bs, 'name'))),
+            'father' => (string)($r['father_name'] ?? ''), 'mobile' => (string)$r['mobile'], 'photo' => ci_photo_url($r['photo'] ?? ''),
+            'due' => round((float)$r['due'], 2), 'due_text' => (float)$r['due'] > 0 ? ci_money0($r['due']) : '',
+            'in' => $r['in_at'] ? strtotime($r['in_at']) : 0, 'out' => $r['out_at'] ? strtotime($r['out_at']) : 0, 'hol' => $bs && !$open ? 1 : 0];
+    }
+    exit(json_encode(['ok' => true, 'day' => $today, 't' => time(), 'min' => ci_att_min_out(), 'list' => $list], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+}
 if ($ping) { // keep-alive, every 20 s: keeps the login and the connection alive, gives the current form token, the server clock
     header('Content-Type: application/json; charset=utf-8'); header('Cache-Control: no-store');
     $tok = csrf_token(); session_write_close();
@@ -68,7 +94,7 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Ari
 .c-d th{width:21cqw;text-align:left;font-weight:600;color:#6b7280;padding:.35cqw 0;vertical-align:top;white-space:nowrap}
 .c-d td{font-weight:700;padding:.35cqw 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .c-f{display:flex;align-items:center;gap:2cqw;padding:2cqw 3.6cqw 2.6cqw}
-.fee{display:inline-flex;align-items:center;gap:1cqw;padding:1cqw 2.4cqw;border-radius:99px;font-size:2.7cqw;font-weight:800;letter-spacing:.04em}
+.fee{display:inline-flex;white-space:nowrap;flex:none;align-items:center;gap:1cqw;padding:1cqw 2.4cqw;border-radius:99px;font-size:2.7cqw;font-weight:800;letter-spacing:.04em}
 .fee.paid{background:#dcfce7;color:#166534}.fee.due{background:#fee2e2;color:#991b1b}
 .c-f .tm{margin-left:auto;font-size:2.4cqw;color:#374151;font-weight:600;text-align:right}.c-f .tm b{color:#111827}
 .c-bar{height:1.4cqw;background:var(--p);border-top:.5cqw solid #646c3e}
@@ -91,6 +117,7 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Ari
 .rec-t{display:flex;flex-wrap:nowrap;gap:8px;width:max-content;will-change:transform}
 .rec-t div{display:flex;align-items:center;gap:8px;flex:none;padding:6px 12px 6px 6px;background:#fff;border:1px solid #e5e7eb;border-left:4px solid var(--ok);font-size:13px;max-width:300px}
 .rec-t div.new{animation:recin .45s ease-out}
+.rec-t div.bad{border-left-color:var(--bad);opacity:.6;text-decoration:line-through}
 @keyframes recin{from{opacity:0}to{opacity:1}}
 .rec-t div img,.rec-t div svg{width:28px;height:36px;object-fit:cover;flex:none}
 .rec-t div span{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.rec-t div em{font-style:normal;color:#6b7280;font-size:12px;margin-left:4px}
@@ -137,9 +164,9 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Ari
   }
   // only the students who just became present (check-in) — not check-outs, repeat scans or errors; one row, slides once
   var TEL = '<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="#16a34a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-.12em;margin-right:.3em"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg>';
-  function addRecent(d) {
+  function addRecent(d, k) {
     var s = d.student; if (d.kind !== 'in' || !s) return;
-    var el = document.createElement('div'); el.className = 'new'; el.title = d.msg || '';
+    var el = document.createElement('div'); el.className = 'new'; el.title = d.msg || ''; el.setAttribute('data-k', k || '');
     el.innerHTML = photo(s) + '<span><b>' + esc(s.name) + '</b><em>' + esc(s.reg || '') + ' · ' + esc(d.time || '') + '</em></span>';
     rec.insertBefore(el, rec.firstChild); while (rec.children.length > 20) rec.removeChild(rec.lastChild);
     var w = el.offsetWidth + 8; // the row moves right by one name, once
@@ -159,13 +186,55 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Ari
     net.className = 'net' + (off ? ' off' : (wait ? ' slow' : ''));
     net.innerHTML = '<i></i><span>' + (loggedOut ? 'Logged out — <a href="/admin-login" target="_blank" rel="noopener">log in again</a>' + (wait ? ' · ' + wait + ' waiting' : '')
       : off ? 'No internet' + (wait ? ' · ' + wait + ' scan' + (wait > 1 ? 's' : '') + ' waiting — sent by itself when back' : '')
-      : wait ? 'Sending ' + wait + '…' : 'Online') + '</span>';
+      : wait ? 'Saving ' + wait + '…' : 'Online · all saved') + '</span>';
+  }
+  // ---- instant: the students' list is kept in the browser; a scan is decided and shown at once, then sent in the queue ----
+  var RK = 'ciScanRoster', SK = 'ciScanState', R = { min: 10, by: {} }, S = { day: DAY, st: {} }, srvOff = 0;
+  function norm(c) { c = String(c).trim().toUpperCase(); return /^\d{1,5}$/.test(c) ? ('000000' + c).slice(-6) : c; }
+  function hm(ms) { var d = new Date(ms), h = d.getHours(), m = d.getMinutes(); return ('0' + (h % 12 || 12)).slice(-2) + ':' + ('0' + m).slice(-2) + (h < 12 ? ' AM' : ' PM'); }
+  try { var r0 = JSON.parse(localStorage.getItem(RK) || 'null'); if (r0 && r0.day === DAY) R = r0; } catch (x) {}
+  try { var s0 = JSON.parse(localStorage.getItem(SK) || 'null'); if (s0 && s0.day === DAY) S = s0; } catch (x) {}
+  function saveS() { try { localStorage.setItem(SK, JSON.stringify(S)); } catch (x) {} }
+  function loadRoster() {
+    fetch('/admin/ci-scan.php?roster=1&_=' + Date.now(), { credentials: 'same-origin', cache: 'no-store', headers: { 'X-Requested-With': 'fetch' } })
+      .then(function (r) { if (r.redirected && /admin-login/.test(r.url)) throw { login: 1 }; return r.json(); })
+      .then(function (d) {
+        if (!d || !d.ok) return;
+        if (d.day !== DAY) { if (!Q.length) location.reload(); return; }
+        srvOff = d.t * 1000 - Date.now(); // the server's clock, for check-out times
+        var by = {}; d.list.forEach(function (x) { by[norm(x.reg)] = x; });
+        R = { day: d.day, min: d.min, by: by, n: d.list.length };
+        // what the server already has wins; a scan still waiting in the queue stays
+        d.list.forEach(function (x) { var k = norm(x.reg), m = S.st[k] || (S.st[k] = {}); if (x['in']) m['in'] = x['in'] * 1000; if (x.out) m.out = x.out * 1000; });
+        saveS(); try { localStorage.setItem(RK, JSON.stringify(R)); } catch (x) {}
+        d.list.forEach(function (x) { if (x.photo) { var im = new Image(); im.src = x.photo; } }); // photos ready before the card
+      }).catch(function (e) { if (e && e.login) { loggedOut = true; netShow(); } });
+  }
+  function local(k, s, now) { // the same rules as the server: 1st scan in; again after the set minutes out; else wait / done
+    var m = S.st[k] || (S.st[k] = {}), card = { reg: s.reg, name: s.name, 'class': s['class'], batches: s.batches, father: s.father, mobile: s.mobile, photo: s.photo, due: s.due, due_text: s.due_text };
+    var d = { ok: false, kind: 'done', time: hm(now), student: card };
+    if (s.hol) { d.kind = 'error'; d.msg = 'Today is a holiday for ' + s.name + "'s batch."; return d; }
+    if (!m['in']) { m['in'] = now; d.ok = true; d.kind = 'in'; d.msg = 'Checked in at ' + hm(now); }
+    else if (!m.out) {
+      var open = m['in'] + R.min * 60000;
+      if (now >= open) { m.out = now; d.ok = true; d.kind = 'out'; d.msg = 'Checked out at ' + hm(now); }
+      else { d.kind = 'wait'; d.msg = 'Already checked in at ' + hm(m['in']) + '. Check-out opens at ' + hm(open) + ' (after ' + R.min + ' min).'; }
+    } else d.msg = 'Already checked out at ' + hm(m.out) + '.';
+    card['in'] = m['in'] ? hm(m['in']) : ''; card.out = m.out ? hm(m.out) : '';
+    saveS(); return d;
   }
   function add(c) {
-    var k = c.toUpperCase(), now = Date.now();
+    var k = norm(c), now = Date.now();
     if (recent[k] && now - recent[k] < 4000) return; // the scanner read the same card twice
     recent[k] = now;
-    var it = { id: now + '-' + Math.random().toString(36).slice(2, 7), code: c, at: now, day: DAY, seq: ++seq, tries: 0 };
+    var it = { id: now + '-' + Math.random().toString(36).slice(2, 7), code: c, at: now, day: DAY, seq: ++seq, tries: 0 }, s = R.by[k];
+    if (s) {
+      var d = local(k, s, now + srvOff);
+      it.local = d.kind; it.name = s.name;
+      beep(d.ok || d.kind === 'wait'); addRecent(d, k); shown = it.seq; show(d, c);
+      clearTimeout(idleT); idleT = setTimeout(idle, 9000);
+      if (d.kind !== 'in' && d.kind !== 'out') return; // nothing to save
+    } else { st.className = 'st idle'; st.textContent = 'Checking ' + c + '…'; }
     Q.push(it); save(); pump();
   }
   function pump() {
@@ -205,8 +274,18 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Ari
       });
   }
   function result(d, it) {
-    beep(d.ok); addRecent(d);
     if (EMBED && window.parent !== window) try { window.parent.postMessage({ ciScan: d }, location.origin); } catch (x) {}
+    if (it.local) { // already shown: only a refusal from the server is shown (e.g. a holiday added a minute ago)
+      if (d.kind === 'error') {
+        var k = norm(it.code), m = S.st[k]; if (m) { if (it.local === 'in') delete m['in']; if (it.local === 'out') delete m.out; saveS(); }
+        var chip = rec.querySelector('[data-k="' + k + '"]'); if (chip) chip.classList.add('bad');
+        beep(false); st.className = 'st error'; st.textContent = '⚠ Not saved — ' + (it.name || it.code) + ': ' + (d.msg || 'error');
+        clearTimeout(idleT); idleT = setTimeout(idle, 9000);
+      }
+      return;
+    }
+    if (d.student) { var k2 = norm(d.student.reg); if (!R.by[k2]) loadRoster(); } // a new student: get the list again
+    beep(d.ok); addRecent(d, d.student ? norm(d.student.reg) : '');
     if (it.seq < shown) return; shown = it.seq; show(d, it.code);
     clearTimeout(idleT); idleT = setTimeout(idle, 9000);
   }
@@ -226,6 +305,7 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Ari
       .catch(function (e) { pinging = false; if (e && e.login) loggedOut = true; else fails = Math.max(fails, 2); netShow(); });
   }
   setInterval(refreshToken, 20000);
+  loadRoster(); setInterval(loadRoster, 180000); // the students' list: now and every 3 minutes
   setInterval(function () { if (Q.length) pump(); }, 5000);
   window.addEventListener('online', function () { fails = 0; Q.forEach(function (x) { x.next = 0; }); refreshToken(true); pump(); });
   window.addEventListener('offline', netShow);

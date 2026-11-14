@@ -884,7 +884,10 @@ function ci_att_scan(PDO $pdo, string $code, int $batch, int $userId, int $ago =
     if ($batch) {
         if (!in_array($batch, $mine, true)) return ['ok' => false, 'kind' => 'error', 'student' => $s, 'msg' => $s['name'] . ' is not in this batch.'];
         $list = [$batch];
-    } else $list = $mine ?: [0];
+    } else {
+        if (!$mine) return ['ok' => false, 'kind' => 'error', 'student' => $s, 'msg' => $s['name'] . ' is not in any running batch — attendance is only for the institute\'s batches.'];
+        $list = $mine;
+    }
     $today = date('Y-m-d'); $now = date('Y-m-d H:i:s', $ts); $min = ci_att_min_out(); $kind = 'done'; $msg = '';
     $hols = ci_holidays_between($pdo, $today, $today);
     if ($hols) {
