@@ -1,9 +1,10 @@
 <?php
-// Courses — what the institute teaches (name, code, duration, total fee). Batches and enrollments belong to a course.
+// Courses — what the institute teaches (name, class, teacher, duration, total fee). Batches and enrollments belong to a course.
 require_once __DIR__ . '/components/guard.php';
 require_once INCLUDES_PATH . '/institute.php';
 $me = ci_page_start($pdo, ["courses"]);
 $classes = ci_lists($pdo)['classes'];
+$teachers = ci_teachers($pdo, $pdo->query("SELECT teacher FROM ci_courses UNION SELECT teacher FROM ci_batches")->fetchAll(PDO::FETCH_COLUMN)); // staff with the Teacher role
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_check();
@@ -15,10 +16,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($name === '') throw new RuntimeException('Enter the course name.');
             $cls = (int)($_POST['class_id'] ?? 0);
             $status = in_array($_POST['status'] ?? '', ['active', 'completed', 'inactive'], true) ? $_POST['status'] : 'active';
+            $teacher = trim((string)($_POST['teacher'] ?? '')); $teacher = isset($teachers[$teacher]) ? $teacher : null;
             $vals = [$name, isset($classes[$cls]) ? $cls : null, trim((string)($_POST['duration'] ?? '')) ?: null, ci_amount($_POST['fee'] ?? 0),
                 trim((string)($_POST['description'] ?? '')) ?: null, $status === 'completed' ? 'active' : $status];
             if ($id) { $vals[] = $id; $pdo->prepare("UPDATE ci_courses SET name=?, class_id=?, duration=?, fee=?, description=?, status=? WHERE id=?")->execute($vals); }
             else { $pdo->prepare("INSERT INTO ci_courses (name, class_id, duration, fee, description, status) VALUES (?,?,?,?,?,?)")->execute($vals); $id = (int)$pdo->lastInsertId(); }
+            $pdo->prepare("UPDATE ci_courses SET teacher = ? WHERE id = ?")->execute([$teacher, $id]);
             if ($status === 'completed') ci_complete_course($pdo, $id); // all its batches complete too
             admin_log('ci_course', "Saved course $name");
             admin_flash('Course saved. The fee is used for new enrollments; existing students keep the fee they joined with.');
@@ -48,7 +51,7 @@ $courses = $pdo->query("SELECT c.*, k.name AS class_name, (SELECT COUNT(*) FROM 
 $ec = $edit ? (array_values(array_filter($courses, fn($c) => (int)$c['id'] === $edit))[0] ?? null) : null;
 $open = $ec || isset($_GET["new"]) || (!$courses && $fStatus === "active"); // ?new=1 / ?edit=N (and no courses yet) open the popup on load
 $cf = fn(array $c): string => ci_e(json_encode(['id' => (int)$c['id'], 'name' => $c['name'], 'class_id' => (int)$c['class_id'] ?: '', 'duration' => (string)$c['duration'], 'fee' => (float)$c['fee'],
-    'status' => $c['status'], 'description' => (string)$c['description']], JSON_UNESCAPED_UNICODE));
+    'status' => $c['status'], 'teacher' => (string)($c['teacher'] ?? ''), 'description' => (string)$c['description']], JSON_UNESCAPED_UNICODE));
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -68,6 +71,7 @@ $cf = fn(array $c): string => ci_e(json_encode(['id' => (int)$c['id'], 'name' =>
 <div class="ci-grid2 ci-mgrid">
   <div class="ci-f" style="grid-column:1/-1"><label>Course name <span class="ci-req">*</span></label><input name="name" required maxlength="150" placeholder="e.g. Foundation Maths, NEET, SSC GD" value="<?= ci_e($ec['name'] ?? '') ?>"></div>
   <div class="ci-f"><label>Class</label><select name="class_id"><option value="">Any class / not class-wise</option><?php foreach ($classes as $kid => $kn): ?><option value="<?= $kid ?>" <?= (int)($ec['class_id'] ?? 0) === $kid ? 'selected' : '' ?>><?= ci_e($kn) ?></option><?php endforeach; ?></select><span class="ci-hint">The admission form offers a class's own courses.</span></div>
+  <div class="ci-f"><label>Teacher</label><select name="teacher"><option value="">— No teacher —</option><?php foreach ($teachers as $tn): ?><option value="<?= ci_e($tn) ?>" <?= ($ec['teacher'] ?? '') === $tn ? 'selected' : '' ?>><?= ci_e($tn) ?></option><?php endforeach; ?></select><span class="ci-hint"><?= $teachers ? 'New batches of this course get this teacher; a batch can change it.' : 'No teachers yet — add them in Users with the Teacher role.' ?></span></div>
   <div class="ci-f"><label>Duration</label><input name="duration" maxlength="60" placeholder="e.g. 6 months, 1 year" value="<?= ci_e($ec['duration'] ?? '') ?>"></div>
   <div class="ci-f"><label>Total fee (₹)</label><input name="fee" type="number" min="0" step="0.01" value="<?= ci_e(isset($ec['fee']) ? (float)$ec['fee'] : '') ?>"><span class="ci-hint">Every batch of this course uses this fee; it can be changed per student at admission.</span></div>
   <div class="ci-f"><label>Status</label><select name="status"><option value="active">Active</option><option value="completed" <?= ($ec['status'] ?? '') === 'completed' ? 'selected' : '' ?>>Completed</option><option value="inactive" <?= ($ec['status'] ?? '') === 'inactive' ? 'selected' : '' ?>>Inactive</option></select></div>
@@ -81,7 +85,7 @@ $cf = fn(array $c): string => ci_e(json_encode(['id' => (int)$c['id'], 'name' =>
 <thead><tr><th>Course</th><th>Class</th><th>Duration</th><th class="ci-num">Fee</th><th class="ci-num">Batches</th><th class="ci-num">Students</th><th class="ci-num">Due</th><th>Status</th><th>Action</th></tr></thead><tbody>
 <?php if (!$courses): ?><tr><td colspan="9" class="ci-empty">No courses here. Press Add Course to add one.</td></tr><?php endif; ?>
 <?php foreach ($courses as $c): ?>
-<tr><td><b><?= ci_e($c['name']) ?></b></td>
+<tr><td><b><?= ci_e($c['name']) ?></b><?php if (!empty($c['teacher'])): ?><small class="ci-muted" style="display:block"><?= ci_e($c['teacher']) ?></small><?php endif; ?></td>
 <td><?= ci_e($c['class_name'] ?? '—') ?></td><td class="ci-muted"><?= ci_e($c['duration'] ?: '—') ?></td><td class="ci-num"><?= ci_money0($c['fee']) ?></td>
 <td class="ci-num"><a href="/admin/ci-batches.php?course=<?= (int)$c['id'] ?>"><?= (int)$c['batches'] ?></a></td>
 <td class="ci-num"><a href="/admin/students.php?course=<?= (int)$c['id'] ?>"><?= (int)$c['students'] ?></a></td>

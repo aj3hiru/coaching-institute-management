@@ -62,6 +62,8 @@ function ci_tables(PDO $pdo): void
         KEY k_enrollment (enrollment_id), KEY k_due (due_date)) $opt");
     // added later: a course can belong to a class (the enrollment form then offers the class's courses first)
     if (!$pdo->query("SHOW COLUMNS FROM ci_courses LIKE 'class_id'")->fetch()) $pdo->exec("ALTER TABLE ci_courses ADD COLUMN class_id INT UNSIGNED NULL AFTER code");
+    // added later: the course's teacher (a new batch of the course gets this teacher; each batch can change it)
+    if (!$pdo->query("SHOW COLUMNS FROM ci_courses LIKE 'teacher'")->fetch()) $pdo->exec("ALTER TABLE ci_courses ADD COLUMN teacher VARCHAR(120) NULL AFTER class_id");
     // added later: how the student pays a course — 'full' (final fee, one time) or 'installment' (any amount, any number of times)
     // class changes (promotion 6th → 7th …): the old courses and their fees stay as they are
     $pdo->exec("CREATE TABLE IF NOT EXISTS ci_class_history (
@@ -781,6 +783,32 @@ function ci_report_assets(): void
         . '<script src="/assets/js/ci-report.js?v=' . $v . '" defer></script>' . "\n";
 }
 
+}
+
+/** Teachers for the Course / Batch forms: active staff with the Teacher role (or an admin who also teaches), by their shown name.
+    Names already saved on courses / batches stay in the list, so an old value is never lost. */
+function ci_teachers(PDO $pdo, array $keep = []): array
+{
+    $out = [];
+    try { $rows = $pdo->query("SELECT u.role, u.permissions, u.username, a.name AS an, t.display_name AS dn FROM users u
+            LEFT JOIN (SELECT user_id, MIN(name) AS name FROM authors GROUP BY user_id) a ON a.user_id = u.id LEFT JOIN sh_teacher_info t ON t.user_id = u.id WHERE u.status = 'active'")->fetchAll(PDO::FETCH_ASSOC); }
+    catch (Throwable) { $rows = $pdo->query("SELECT u.role, u.permissions, u.username, a.name AS an, NULL AS dn FROM users u
+            LEFT JOIN (SELECT user_id, MIN(name) AS name FROM authors GROUP BY user_id) a ON a.user_id = u.id WHERE u.status = 'active'")->fetchAll(PDO::FETCH_ASSOC); }
+    foreach ($rows as $u) {
+        $p = json_decode((string)$u['permissions'], true) ?: [];
+        if ($u['role'] !== 'teacher' && !($u['role'] === 'admin' && !empty($p['store']['teacher']))) continue;
+        $n = trim((string)$u['dn']) ?: (trim((string)$u['an']) ?: (string)$u['username']);
+        $out[$n] = $n;
+    }
+    foreach ($keep as $k) if (($k = trim((string)$k)) !== '') $out[$k] = $k;
+    natcasesort($out);
+    return $out;
+}
+
+/** A student's first online password: the date of birth as DDMMYYYY (20 Nov 2006 → 20112006); no date of birth → the mobile number. */
+function ci_default_pass(?string $dob, string $mobile): string
+{
+    return $dob && preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $dob, $m) && $m[1] > 1900 ? $m[3] . $m[2] . $m[1] : $mobile;
 }
 
 /** The next roll number in a class (highest number + 1). */

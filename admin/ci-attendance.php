@@ -1,6 +1,6 @@
 <?php
 // Attendance (Institute only): the students of the institute's batches for one day — filter by course / batch / class or
-// find a student by name, roll no. or admission ID; mark Present / Absent / Leave by hand, or scan the student's ID card
+// find a student by name, admission ID or mobile; mark Present / Absent / Leave by hand, or scan the student's ID card
 // (barcode = admission ID): the first scan checks in, a scan after the set minutes checks out.
 require_once __DIR__ . '/components/guard.php';
 require_once INCLUDES_PATH . '/institute.php';
@@ -21,7 +21,7 @@ if ($act !== '') {
         if ($date !== $today) $out(['ok' => false, 'kind' => 'error', 'msg' => 'Scanning works for today only — switch the date to today.']);
         $r = ci_att_scan($pdo, (string)($_POST['code'] ?? ''), (int)($_POST['batch'] ?? 0), (int)$me['id']);
         $s = $r['student'] ?? null;
-        $out(['ok' => $r['ok'], 'kind' => $r['kind'], 'msg' => $r['msg'], 'student' => $s ? ['id' => (int)$s['id'], 'name' => $s['name'], 'reg' => $s['reg_no'], 'roll' => $s['roll_no'],
+        $out(['ok' => $r['ok'], 'kind' => $r['kind'], 'msg' => $r['msg'], 'student' => $s ? ['id' => (int)$s['id'], 'name' => $s['name'], 'reg' => $s['reg_no'],
             'class' => $s['class_name'], 'photo' => ci_photo_url($s['photo'] ?? ''), 'avatar' => ci_avatar($s, 56)] : null, 'time' => date('h:i A')]);
     }
     if ($act === 'mark') { // one or many [student, batch] pairs → one status
@@ -82,14 +82,14 @@ $a = [$f['date']];
 if ($f['course']) { $w[] = 'e.course_id = ?'; $a[] = $f['course']; }
 if ($f['batch']) { $w[] = 'e.batch_id = ?'; $a[] = $f['batch']; }
 if ($f['class']) { $w[] = 's.class_id = ?'; $a[] = $f['class']; }
-if ($f['q'] !== '') { $w[] = '(s.name LIKE ? OR s.roll_no = ? OR s.reg_no = ? OR s.mobile LIKE ?)'; array_push($a, '%' . $f['q'] . '%', $f['q'], $f['q'], '%' . $f['q'] . '%'); }
+if ($f['q'] !== '') { $w[] = '(s.name LIKE ? OR s.reg_no = ? OR s.reg_no = ? OR s.mobile LIKE ?)'; array_push($a, '%' . $f['q'] . '%', $f['q'], ctype_digit($f['q']) ? str_pad($f['q'], 6, '0', STR_PAD_LEFT) : $f['q'], '%' . $f['q'] . '%'); }
 $q = $pdo->prepare("SELECT s.id, s.name, s.reg_no, s.roll_no, s.photo, s.mobile, cl.name AS class_name, COALESCE(e.batch_id, 0) AS batch_id, b.name AS batch_name, b.timing, e.course_id, co.name AS course_name,
         a.status, a.in_at, a.out_at, a.source
     FROM ci_enrollments e JOIN ci_students s ON s.id = e.student_id LEFT JOIN ci_batches b ON b.id = e.batch_id LEFT JOIN ci_courses co ON co.id = e.course_id
     LEFT JOIN ci_classes cl ON cl.id = s.class_id
     LEFT JOIN ci_attendance a ON a.student_id = s.id AND a.batch_id = COALESCE(e.batch_id, 0) AND a.att_date = ?
     WHERE " . implode(' AND ', $w) . "
-    ORDER BY cl.sort IS NULL, cl.sort, CAST(s.roll_no AS UNSIGNED), s.name");
+    ORDER BY cl.sort IS NULL, cl.sort, s.reg_no, s.name");
 $q->execute(array_merge([$f['date']], $a));
 $rows = []; foreach ($q as $r) $rows[$r['id'] . '-' . $r['batch_id']] ??= $r; // one row per student and batch
 $rows = array_values($rows);
@@ -131,6 +131,7 @@ $checkedIn = count(array_filter($rows, fn($r) => $r['status'] === 'present' && $
 .at-scan input{width:100%;box-sizing:border-box;height:46px;padding:0 12px;border:2px solid var(--ci-acc,#4a3369);font:inherit;font-size:16px;letter-spacing:.04em}
 .at-scan input:focus{outline:none;box-shadow:0 0 0 3px rgba(74,51,105,.15)}
 .at-scan small{display:block;margin-top:6px;color:#6b7280;font-size:12px}
+.at-scan-row{display:flex;gap:8px}.at-scan-row input{flex:1;min-width:0}.at-scan-row button{flex:none;height:46px;padding:0 16px;border:0;background:var(--ci-acc,#4a3369);color:#fff;font:inherit;font-size:14px;font-weight:700;cursor:pointer}.at-scan-row button:disabled{opacity:.5;cursor:not-allowed}
 .at-last{display:flex;gap:12px;align-items:center;margin-top:12px;padding:10px;border:1px solid #e5e7eb;min-height:56px}
 .at-last[hidden]{display:none}
 .at-last.in{border-color:#bbf7d0;background:#f0fdf4}.at-last.out{border-color:#bfdbfe;background:#eff6ff}.at-last.wait,.at-last.done{border-color:#fde68a;background:#fffbeb}.at-last.error{border-color:#fecaca;background:#fef2f2}
@@ -168,12 +169,13 @@ tr.at-hl td{background:#fefce8}
     <div class="ci-f"><label>Course</label><select name="course"><option value="0">All courses</option><?php foreach ($courses as $id => $n): ?><option value="<?= (int)$id ?>"<?= $f['course'] === (int)$id ? ' selected' : '' ?>><?= ci_e($n) ?></option><?php endforeach; ?></select></div>
     <div class="ci-f"><label>Batch</label><select name="batch"><option value="0">All batches</option><?php foreach ($batches as $b): ?><option value="<?= (int)$b['id'] ?>"<?= $f['batch'] === (int)$b['id'] ? ' selected' : '' ?>><?= ci_e($b['name'] . ($b['timing'] ? ' · ' . $b['timing'] : '')) ?></option><?php endforeach; ?></select></div>
     <div class="ci-f"><label>Class</label><select name="class"><option value="0">All classes</option><?php foreach ($L['classes'] as $id => $n): ?><option value="<?= (int)$id ?>"<?= $f['class'] === (int)$id ? ' selected' : '' ?>><?= ci_e($n) ?></option><?php endforeach; ?></select></div>
-    <div class="ci-f"><label>Name / roll no. / admission ID</label><input type="search" name="q" value="<?= ci_e($f['q']) ?>" placeholder="Search"></div>
+    <div class="ci-f"><label>Name / admission ID / mobile</label><input type="search" name="q" value="<?= ci_e($f['q']) ?>" placeholder="Search"></div>
     <?php if ($f['show']): ?><input type="hidden" name="show" value="<?= ci_e($f['show']) ?>"><?php endif; ?>
   </form>
-  <div class="at-scan" data-ds="Scan ID card">
-    <h3><i class="fas fa-barcode"></i> Scan ID card</h3>
-    <input type="text" id="atScan" inputmode="text" autocomplete="off" placeholder="<?= $isToday ? 'Scan or type admission ID, press Enter' : 'Switch the date to today to scan' ?>"<?= $isToday ? ' autofocus' : ' disabled' ?>>
+  <div class="at-scan" data-ds="Scan ID card or enter admission ID">
+    <h3><i class="fas fa-barcode"></i> Scan ID card or enter Admission ID</h3>
+    <form class="at-scan-row" id="atScanF"><input type="text" id="atScan" inputmode="text" autocomplete="off" aria-label="Admission ID" placeholder="<?= $isToday ? 'Admission ID' : 'Switch the date to today' ?>"<?= $isToday ? ' autofocus' : ' disabled' ?>><button type="submit"<?= $isToday ? '' : ' disabled' ?>><i class="fas fa-check"></i> Mark</button></form>
+    <small><?= $isToday ? 'By hand: type the admission ID (e.g. 17 or 000017) and press Enter or Mark.' : 'For another day, use the P / A / L buttons in the list.' ?></small>
     <div class="at-last" id="atLast" hidden></div>
   </div>
 </div>
@@ -199,13 +201,13 @@ tr.at-hl td{background:#fefce8}
 </div>
 
 <div class="ci-card" data-ds="Students"><div class="ci-card-b ci-p0 ci-table-wrap"><table class="ci-table" id="atT" data-sheet="off">
-  <thead><tr><th>Roll</th><th>Student</th><th>Class</th><th>Batch</th><th>Attendance</th><th>Check-in / out</th></tr></thead>
+  <thead><tr><th>Adm. ID</th><th>Student</th><th>Class</th><th>Batch</th><th>Attendance</th><th>Check-in / out</th></tr></thead>
   <tbody>
   <?php if (!$rows): ?><tr><td colspan="6" class="ci-empty">No students for these filters. Students show here when they are in an active batch / course.</td></tr><?php endif; ?>
   <?php foreach ($rows as $r): ?>
   <tr data-sid="<?= (int)$r['id'] ?>" data-bid="<?= (int)$r['batch_id'] ?>" data-reg="<?= ci_e($r['reg_no']) ?>">
-    <td class="ci-nw"><b><?= ci_e($r['roll_no'] ?: '—') ?></b></td>
-    <td><div class="at-name"><?= ci_avatar($r, 34) ?><div><a href="/admin/student-view.php?id=<?= (int)$r['id'] ?>#attendance"><?= ci_e($r['name']) ?></a><small><?= ci_e($r['reg_no']) ?> · <?= ci_e($r['mobile']) ?></small></div></div></td>
+    <td class="ci-nw"><b><?= ci_e($r['reg_no']) ?></b></td>
+    <td><div class="at-name"><?= ci_avatar($r, 34) ?><div><a href="/admin/student-view.php?id=<?= (int)$r['id'] ?>#attendance"><?= ci_e($r['name']) ?></a><small><?= ci_e($r['mobile']) ?></small></div></div></td>
     <td class="ci-nw"><?= ci_e($r['class_name'] ?: '—') ?></td>
     <td><?= $r['batch_name'] ? ci_e($r['batch_name']) . ($r['timing'] ? '<small class="ci-muted" style="display:block">' . ci_e($r['timing']) . '</small>' : '') : '<span class="ci-muted">' . ci_e($r['course_name'] ?: 'No batch') . '</span>' ?></td>
     <td><div class="at-st" role="group" aria-label="Attendance of <?= ci_e($r['name']) ?>"><?php foreach (['present' => 'P', 'absent' => 'A', 'leave' => 'L', 'holiday' => 'H'] as $k => $l): ?><button type="button" data-s="<?= $k ?>" class="<?= $r['status'] === $k ? 'on' : '' ?>" title="<?= $ST[$k] ?>"><?= $l ?></button><?php endforeach; ?></div><?= $r['hol'] ? '<span class="at-hol"><i class="fas fa-umbrella-beach"></i> ' . ci_e($r['hol']) . '</span>' : '' ?></td>
@@ -308,14 +310,15 @@ tr.at-hl td{background:#fefce8}
   // barcode scanner (types the admission ID + Enter) or typing by hand
   var scan = document.getElementById('atScan'), last = document.getElementById('atLast'), busy = false;
   function esc(t) { return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
-  if (scan) scan.addEventListener('keydown', function (e) {
-    if (e.key !== 'Enter') return; e.preventDefault();
+  var scanF = document.getElementById('atScanF');
+  if (scanF) scanF.addEventListener('submit', function (e) {
+    e.preventDefault();
     var code = scan.value.trim(); if (!code || busy) return; busy = true; scan.value = '';
     post({ action: 'scan', code: code, batch: BATCH }).then(function (d) {
       var s = d.student;
       last.className = 'at-last ' + (d.kind || 'error'); last.hidden = false;
       last.innerHTML = (s ? s.avatar : '<i class="fas fa-circle-xmark" style="font-size:28px;color:#dc2626"></i>') + '<div><b>' + esc(s ? s.name : code) + '</b><span>' + esc(d.msg) + '</span>'
-        + (s ? '<em>' + esc([s.class ? 'Class ' + s.class : '', s.roll ? 'Roll ' + s.roll : '', s.reg].filter(Boolean).join(' · ')) + ' · ' + esc(d.time) + '</em>' : '') + '</div>';
+        + (s ? '<em>' + esc([s.class ? 'Class ' + s.class : '', s.reg].filter(Boolean).join(' · ')) + ' · ' + esc(d.time) + '</em>' : '') + '</div>';
       if (s) { // the student's row in the list: mark it and light it up
         document.querySelectorAll('#atT tr[data-sid="' + s.id + '"]').forEach(function (tr) {
           var t = tr.querySelector('.at-t');

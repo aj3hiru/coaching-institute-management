@@ -39,12 +39,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $sid = (int)($_POST['student_id'] ?? 0);
             $name = trim((string)($_POST['name'] ?? '')); $mobile = trim((string)($_POST['mobile'] ?? '')); $email = trim((string)($_POST['email'] ?? ''));
             if ($sid) { // from an institute student: use their details where the form is empty
-                $s = $pdo->prepare("SELECT name, mobile, email FROM ci_students WHERE id = ?"); $s->execute([$sid]);
-                if ($r = $s->fetch(PDO::FETCH_ASSOC)) { $name = $name ?: $r['name']; $mobile = $mobile ?: $r['mobile']; $email = $email ?: (string)$r['email']; }
+                $s = $pdo->prepare("SELECT name, mobile, email, dob FROM ci_students WHERE id = ?"); $s->execute([$sid]);
+                if ($r = $s->fetch(PDO::FETCH_ASSOC)) { $sdob = $r['dob']; $name = $name ?: $r['name']; $mobile = $mobile ?: $r['mobile']; $email = $email ?: (string)$r['email']; }
             }
             $pass = (string)($_POST['pass'] ?? '');
             $made = false;
-            if ($pass === '') { $pass = sh_clean_mobile($mobile) ?: substr(str_replace(['+', '/', '='], '', base64_encode(random_bytes(9))), 0, 8); $made = true; } // empty = the mobile number
+            if ($pass === '') { $pass = ($sid && !empty($sdob) ? ci_default_pass($sdob, '') : '') ?: sh_clean_mobile($mobile) ?: substr(str_replace(['+', '/', '='], '', base64_encode(random_bytes(9))), 0, 8); $made = true; } // empty = the student's date of birth (DDMMYYYY), else the mobile number
             if ($email === '' && preg_match('/^[6-9]\d{9}$/', sh_clean_mobile($mobile))) $email = 'm' . sh_clean_mobile($mobile) . '@noemail.invalid'; // mobile-only login
             $new = sh_register($pdo, $name, $mobile, $email, $pass, (int)$me['id']);
             if ($sid) { $pdo->prepare("UPDATE sh_users SET student_id = ? WHERE id = ?")->execute([$sid, $new]); ci_type_sync($pdo, $sid); }

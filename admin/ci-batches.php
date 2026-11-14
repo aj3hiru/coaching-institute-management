@@ -4,6 +4,8 @@ require_once __DIR__ . '/components/guard.php';
 require_once INCLUDES_PATH . '/institute.php';
 $me = ci_page_start($pdo, ["batches"]);
 $L = ci_lists($pdo);
+$teachers = ci_teachers($pdo, $pdo->query("SELECT teacher FROM ci_courses UNION SELECT teacher FROM ci_batches")->fetchAll(PDO::FETCH_COLUMN)); // staff with the Teacher role
+$cTeach = $pdo->query("SELECT id, COALESCE(teacher, '') FROM ci_courses")->fetchAll(PDO::FETCH_KEY_PAIR); // a new batch gets its course's teacher
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_check();
@@ -29,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!$tFrom || !$tTo) throw new RuntimeException('Enter the class time: from and to.');
             if ($tTo <= $tFrom) throw new RuntimeException('The class must end after it starts.');
             $vals = [$name, $course, $session, ci_time_range($tFrom, $tTo), trim((string)($_POST['days'] ?? '')) ?: null, $start, $end, $cap, $fee,
-                trim((string)($_POST['teacher'] ?? '')) ?: null, $status];
+                isset($teachers[$t = trim((string)($_POST['teacher'] ?? ''))]) ? $t : null, $status];
             if ($id) {
                 $old = $pdo->prepare("SELECT course_id FROM ci_batches WHERE id = ?"); $old->execute([$id]);
                 $oldCourse = (int)$old->fetchColumn();
@@ -111,13 +113,13 @@ $curSession = ci_current_session($pdo);
 <form method="post"><?= csrf_field() ?><input type="hidden" name="action" value="save"><input type="hidden" name="id" value="<?= (int)($eb['id'] ?? 0) ?>">
 <div class="ci-grid2 ci-mgrid">
   <div class="ci-f"><label>Batch name <span class="ci-req">*</span></label><input name="name" required maxlength="150" placeholder="e.g. Morning A" value="<?= ci_e($eb['name'] ?? '') ?>"></div>
-  <div class="ci-f"><label>Course <span class="ci-req">*</span></label><select name="course_id" required><option value="">Choose…</option><?php foreach ($L['courses'] as $cid => $c): ?><option value="<?= $cid ?>" <?= (int)($eb['course_id'] ?? $fCourse) === $cid ? 'selected' : '' ?>><?= ci_e($c['name']) ?> (<?= ci_money0($c['fee']) ?>)</option><?php endforeach; ?></select></div>
+  <div class="ci-f"><label>Course <span class="ci-req">*</span></label><select name="course_id" required><option value="">Choose…</option><?php foreach ($L['courses'] as $cid => $c): ?><option value="<?= $cid ?>" data-teacher="<?= ci_e($cTeach[$cid] ?? '') ?>" <?= (int)($eb['course_id'] ?? $fCourse) === $cid ? 'selected' : '' ?>><?= ci_e($c['name']) ?> (<?= ci_money0($c['fee']) ?>)</option><?php endforeach; ?></select></div>
   <div class="ci-f"><label>Session</label><select name="session_id"><option value="">—</option><?php foreach ($L['sessions'] as $sid => $sn): ?><option value="<?= $sid ?>" <?= (int)($eb['session_id'] ?? $curSession) === $sid ? 'selected' : '' ?>><?= ci_e($sn) ?></option><?php endforeach; ?></select></div>
   <div class="ci-f"><label>Status</label><select name="status"><?php foreach (['active' => 'Active', 'completed' => 'Completed', 'inactive' => 'Inactive'] as $k => $l): ?><option value="<?= $k ?>" <?= ($eb['status'] ?? 'active') === $k ? 'selected' : '' ?>><?= $l ?></option><?php endforeach; ?></select></div>
   <div class="ci-f"><label>Class time from <span class="ci-req">*</span></label><input type="time" name="start_time" required value="<?= ci_e(substr((string)($eb['start_time'] ?? ''), 0, 5)) ?>"></div>
   <div class="ci-f"><label>Class time to <span class="ci-req">*</span></label><input type="time" name="end_time" required value="<?= ci_e(substr((string)($eb['end_time'] ?? ''), 0, 5)) ?>"></div>
   <div class="ci-f"><label>Days</label><input name="days" maxlength="80" placeholder="e.g. Mon–Sat" value="<?= ci_e($eb['days'] ?? '') ?>"></div>
-  <div class="ci-f"><label>Teacher</label><input name="teacher" maxlength="120" value="<?= ci_e($eb['teacher'] ?? '') ?>"></div>
+  <div class="ci-f"><label>Teacher</label><select name="teacher" id="bmTeacher"><option value="">— No teacher —</option><?php foreach ($teachers as $tn): ?><option value="<?= ci_e($tn) ?>" <?= ($eb['teacher'] ?? '') === $tn ? 'selected' : '' ?>><?= ci_e($tn) ?></option><?php endforeach; ?></select><span class="ci-hint">Filled from the course; change it for this batch if needed.</span></div>
   <div class="ci-f"><label>Seats</label><input type="number" name="capacity" min="0" placeholder="no limit" value="<?= ci_e($eb['capacity'] ?? '') ?>"></div>
   <div class="ci-f"><label>Batch start date</label><input type="date" name="start_date" value="<?= ci_e($eb['start_date'] ?? '') ?>"></div>
   <div class="ci-f"><label>Batch end date</label><input type="date" name="end_date" value="<?= ci_e($eb['end_date'] ?? '') ?>"></div>
@@ -154,5 +156,15 @@ $curSession = ci_current_session($pdo);
 </div>
 <?php require __DIR__ . '/components/ci-modals.php'; require __DIR__ . '/components/ci-picker.php'; ?>
 <?php admin_shell_close(); ?>
+<script>
+(function () { // choosing the course fills in that course's teacher (still changeable)
+  var f = document.querySelector('#bmForm form'); if (!f) return;
+  var c = f.querySelector('[name=course_id]'), t = f.querySelector('[name=teacher]'), prev = '';
+  function ct() { var o = c.options[c.selectedIndex]; return o ? (o.getAttribute('data-teacher') || '') : ''; }
+  c.addEventListener('focus', function () { prev = ct(); });
+  c.addEventListener('change', function () { var n = ct(); if (n && (t.value === '' || t.value === prev)) t.value = n; prev = n; });
+  prev = ct(); if (!t.value && prev && !(+f.querySelector('[name=id]').value)) t.value = prev;
+})();
+</script>
 </body>
 </html>

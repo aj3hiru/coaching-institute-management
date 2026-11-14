@@ -51,7 +51,7 @@ function oa_side(array $oa, array $me): void
     echo '</div><div class="ci-card-b">';
     if (!$u) {
         echo '<p class="ci-muted" style="margin:0 0 10px">No online login yet.</p>';
-        echo '<form method="post" action="/admin/shop-customers.php">' . oa_hidden($oa, 'create', ['student_id' => (int)$s['id']]) . '<div class="ci-f"><label>Password</label><input name="pass" minlength="4" autocomplete="new-password" placeholder="empty = mobile number"></div><button class="ci-btn" type="submit" style="margin-top:8px"><i class="fas fa-user-plus"></i> Make online login</button></form>';
+        echo '<form method="post" action="/admin/shop-customers.php">' . oa_hidden($oa, 'create', ['student_id' => (int)$s['id']]) . '<div class="ci-f"><label>Password</label><input name="pass" minlength="4" autocomplete="new-password" placeholder="empty = date of birth (DDMMYYYY)"></div><button class="ci-btn" type="submit" style="margin-top:8px"><i class="fas fa-user-plus"></i> Make online login</button></form>';
         echo '</div></div>';
         return;
     }

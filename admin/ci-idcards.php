@@ -1,7 +1,7 @@
 <?php
 // Student ID cards (Institute only) — opened from Reports → ID Cards, printed or saved as PDF from the browser.
 // Card (54 × 85.6 mm portrait, the size of a bank card): the institute's logo, name, address and phone on top; the student's
-// photo, name, class, roll no., admission ID, mobile, address and batch; a Code 128 barcode of the admission ID that the
+// photo, name, admission ID, father's name, mobile and address; a Code 128 barcode of the admission ID that the
 // attendance page's barcode scanner reads. 9 cards on an A4 page.
 require_once __DIR__ . '/components/guard.php';
 require_once INCLUDES_PATH . '/institute.php';
@@ -17,7 +17,7 @@ if ($f['course'] || $f['batch']) {
 }
 $q = $pdo->prepare("SELECT s.*, c.name AS class_name,
         (SELECT GROUP_CONCAT(DISTINCT b.name ORDER BY b.name SEPARATOR ', ') FROM ci_enrollments e JOIN ci_batches b ON b.id = e.batch_id WHERE e.student_id = s.id AND e.status = 'active' AND b.status = 'active') AS batches
-    FROM ci_students s LEFT JOIN ci_classes c ON c.id = s.class_id WHERE " . implode(' AND ', $w) . " ORDER BY c.sort IS NULL, c.sort, CAST(s.roll_no AS UNSIGNED), s.name LIMIT 1000");
+    FROM ci_students s LEFT JOIN ci_classes c ON c.id = s.class_id WHERE " . implode(' AND ', $w) . " ORDER BY c.sort IS NULL, c.sort, s.reg_no, s.name LIMIT 1000");
 $q->execute($a);
 $list = $q->fetchAll(PDO::FETCH_ASSOC);
 $inst = ci_institute();
@@ -91,7 +91,6 @@ body{margin:0;background:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,"S
     <div class="idc-nm"><?= ci_e($s['name']) ?></div>
     <table class="idc-d">
       <tr><th>Admission ID</th><td><?= ci_e($s['reg_no']) ?></td></tr>
-      <tr><th>Roll No.</th><td><?= ci_e($s['roll_no'] ?: '—') ?></td></tr>
       <tr><th>Father's Name</th><td><?= ci_e(trim((string)($s['father_name'] ?? '')) ?: '—') ?></td></tr>
       <tr><th>Contact No.</th><td><?= ci_e($s['mobile']) ?></td></tr>
       <?php if ($ad !== ''): ?><tr><th>Address</th><td class="ad"><?= ci_e($ad) ?></td></tr><?php endif; ?>

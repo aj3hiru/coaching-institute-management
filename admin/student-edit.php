@@ -54,10 +54,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'class_id' => isset($L['classes'][(int)($_POST['class_id'] ?? 0)]) ? (int)$_POST['class_id'] : null, 'school' => $student['school'] ?? null,
         'admission_date' => ci_clean_date($_POST['admission_date'] ?? '') ?: date('Y-m-d'),
         'status' => in_array($_POST['status'] ?? '', ['active', 'left', 'completed'], true) ? $_POST['status'] : 'active',
-        'notes' => $in('notes', 2000), 'photo' => $student['photo'] ?? null, 'reg_no' => $student['reg_no'] ?? '', 'roll_no' => $in('roll_no', 20),
+        'notes' => $in('notes', 2000), 'photo' => $student['photo'] ?? null, 'reg_no' => $student['reg_no'] ?? '',
         'stype' => isset(CI_STYPES[$_POST['stype'] ?? '']) ? $_POST['stype'] : ($student['stype'] ?? 'institute'),
     ];
-    $spass = (string)($_POST['spass'] ?? ''); // online login password (empty: new student = mobile number, saved student = unchanged)
+    $spass = (string)($_POST['spass'] ?? ''); // online login password (empty: new student = date of birth DDMMYYYY, or the mobile number; saved student = unchanged)
     if ($spass !== '' && strlen($spass) < 4) $errors[] = 'The password must have at least 4 characters.';
     if ($form['name'] === '') $errors[] = 'Enter the student name.';
     if (!$form['class_id'] && $L['classes'] && $form['stype'] !== 'online') $errors[] = 'Choose the class.'; // online-only students need no class
@@ -165,9 +165,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $form['name'], $form['father_name'] ?: null, $form['mother_name'] ?: null, $form['dob'], $form['gender'], $form['mobile'], $form['alt_mobile'] ?: null,
                 $form['email'] ?: null, $form['address'] ?: null, $form['city'] ?: null, $form['state'] ?: null, $form['pincode'] ?: null, $form['class_id'],
                 $form['school'] ?: null, $form['photo'], $form['status'], $form['stype'], $form['admission_date'], $form['notes'] ?: null, $id]);
-            // roll no.: as typed, or the next number of the class when left empty (institute students)
-            $roll = $form['roll_no'] !== '' ? $form['roll_no'] : ($form['stype'] !== 'online' && (($student['class_id'] ?? null) != $form['class_id'] || empty($student['roll_no'])) ? ci_next_roll($pdo, $form['class_id'], $id) : ($student['roll_no'] ?? null));
-            $pdo->prepare("UPDATE ci_students SET roll_no = ? WHERE id = ?")->execute([$roll ?: null, $id]);
             $receipt = null;
             foreach ($rows as $r) {
                 $eid = $r['id'];
@@ -198,7 +195,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($leftNow) $pdo->prepare("UPDATE ci_enrollments SET status = 'left', ended_on = CURDATE() WHERE student_id = ? AND status = 'active'")->execute([$id]);
             $pdo->commit();
             if ($oldPhoto && $oldPhoto !== $form['photo']) ci_delete_photo($oldPhoto); // only after the save went through
-            // online login: every student gets an account (mobile + password); a new student's password is the mobile number
+            // online login: every student gets an account (mobile + password); a new student's password is the date of birth (DDMMYYYY), or the mobile number when it is not given
             if (is_file(INCLUDES_PATH . '/shop.php')) {
                 require_once INCLUDES_PATH . '/shop.php';
                 try {
@@ -206,7 +203,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $had = $pdo->prepare("SELECT id FROM sh_users WHERE student_id = ? LIMIT 1"); $had->execute([$id]); $hadAcc = (int)$had->fetchColumn();
                     if ($hadAcc || $spass !== '' || !$student) {
                         [$uid] = sh_account_for_student($pdo, $id, (int)$me['id']);
-                        $pw = $spass !== '' ? $spass : (!$hadAcc ? $form['mobile'] : '');
+                        $pw = $spass !== '' ? $spass : (!$hadAcc ? ci_default_pass($form['dob'], $form['mobile']) : '');
                         if ($pw !== '') $pdo->prepare("UPDATE sh_users SET pass = ? WHERE id = ?")->execute([password_hash($pw, PASSWORD_DEFAULT), $uid]);
                     }
                 } catch (Throwable $e) { admin_flash('Student saved, but the online login could not be set: ' . $e->getMessage(), 'error'); }
@@ -222,7 +219,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($made) $_SESSION['ci_online_made'] = 'Online: ' . implode(', ', $made) . '.';
             ci_type_sync($pdo, $id);
             admin_log('ci_student', ($student ? 'Updated' : 'Added') . " student {$form['reg_no']} {$form['name']}");
-            if (!$receipt) admin_flash(($student ? 'Student saved.' : 'Student added: ' . $form['reg_no'] . '.') . (!empty($_SESSION['ci_online_made']) ? ' ' . $_SESSION['ci_online_made'] : ''));
+            if (!$receipt) admin_flash(($student ? 'Student saved.' : 'Student added: ' . $form['reg_no'] . '.' . ($spass === '' ? ' Online login: mobile number, password ' . ($form['dob'] ? 'the date of birth (' . date('dmY', strtotime($form['dob'])) . ')' : 'the mobile number') . '.' : '')) . (!empty($_SESSION['ci_online_made']) ? ' ' . $_SESSION['ci_online_made'] : ''));
             unset($_SESSION['ci_online_made']); // with a payment the profile shows "Saved — Print receipt"
             $online = '';
             header('Location: /admin/student-view.php?id=' . $id . $online . ($receipt ? '&receipt=' . $receipt . '#payments' : '#fee'));
@@ -351,11 +348,10 @@ $v = fn($k) => ci_e($form[$k] ?? '');
     <div class="ci-f"><label>Date of birth</label><input type="date" name="dob" max="<?= date('Y-m-d') ?>" value="<?= $v('dob') ?>"></div>
     <div class="ci-f"><label>Gender</label><select name="gender"><option value=""></option><?php foreach (['Male', 'Female', 'Other'] as $g): ?><option <?= ($form['gender'] ?? '') === $g ? 'selected' : '' ?>><?= $g ?></option><?php endforeach; ?></select></div>
     <div class="ci-f"><label>Class <span class="ci-req">*</span></label><select name="class_id" id="ci-class"><option value=""></option><?php foreach ($L['classes'] as $cid => $cn): ?><option value="<?= $cid ?>" <?= (int)($form['class_id'] ?? 0) === $cid ? 'selected' : '' ?>><?= ci_e($cn) ?></option><?php endforeach; ?></select></div>
-    <div class="ci-f"><label>Roll no.</label><input type="text" name="roll_no" maxlength="20" value="<?= $v('roll_no') ?>" placeholder="Next in the class"></div>
     <div class="ci-f"><label>Admission date</label><input type="date" name="admission_date" value="<?= $v('admission_date') ?>"></div>
     <div class="ci-f"><label>Student status</label><select name="status"><?php foreach (['active' => 'Active', 'completed' => 'Completed', 'left' => 'Left'] as $k => $l): ?><option value="<?= $k ?>" <?= ($form['status'] ?? 'active') === $k ? 'selected' : '' ?>><?= $l ?></option><?php endforeach; ?></select></div>
     <div class="ci-f"><label>Student type</label><select name="stype" id="ci-stype"><?php foreach (CI_STYPES as $k => $l): ?><option value="<?= $k ?>" <?= ($form['stype'] ?? 'institute') === $k ? 'selected' : '' ?>><?= $l ?></option><?php endforeach; ?></select></div>
-    <div class="ci-f"><label>Password <small class="ci-muted" style="font-weight:400">(online login)</small></label><div class="ci-pwf"><input type="password" name="spass" id="ci-spass" minlength="4" maxlength="72" autocomplete="new-password" placeholder="<?= $student ? 'empty = keep' : 'empty = mobile number' ?>"><button type="button" class="ci-pw-eye" aria-label="Show password" onclick="var i=document.getElementById('ci-spass'),s=i.type==='password';i.type=s?'text':'password';this.querySelector('i').className='fas '+(s?'fa-eye-slash':'fa-eye')"><i class="fas fa-eye"></i></button></div><span class="ci-hint"><?= $student ? 'Type a new one to change it.' : 'Login: mobile number + this password.' ?></span></div>
+    <div class="ci-f"><label>Password <small class="ci-muted" style="font-weight:400">(online login)</small></label><div class="ci-pwf"><input type="password" name="spass" id="ci-spass" minlength="4" maxlength="72" autocomplete="new-password" placeholder="<?= $student ? 'empty = keep' : 'empty = date of birth (DDMMYYYY)' ?>"><button type="button" class="ci-pw-eye" aria-label="Show password" onclick="var i=document.getElementById('ci-spass'),s=i.type==='password';i.type=s?'text':'password';this.querySelector('i').className='fas '+(s?'fa-eye-slash':'fa-eye')"><i class="fas fa-eye"></i></button></div><span class="ci-hint"><?= $student ? 'Type a new one to change it.' : 'Login: mobile number + this password.' ?></span></div>
   </div>
   <div class="ci-sec" style="margin-top:18px">Address</div>
   <div class="ci-grid4">
