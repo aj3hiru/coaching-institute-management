@@ -55,8 +55,8 @@ body{margin:0;background:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,"S
 .idc-h b{display:block;font-family:Georgia,"Times New Roman",serif;font-size:3.7mm;font-weight:700;letter-spacing:.02em;text-transform:uppercase;color:var(--idc);line-height:1.05}
 .idc-h small{display:block;font-size:1.6mm;color:#4b5563;margin-top:.5mm}
 .idc-t{background:var(--idc);color:#fff;text-align:center;font-size:1.95mm;font-weight:700;letter-spacing:.24em;padding:.9mm 0;border-bottom:.6mm solid var(--idc2)}
-.idc-bc{padding:1.3mm 2.6mm .6mm;text-align:center}
-.idc-bc svg{height:7mm;width:auto;max-width:100%;display:block;margin:0 auto}
+.idc-bc{padding:1.2mm 1.4mm .5mm;text-align:center}
+.idc-bc svg{width:100%;height:auto;display:block} /* full card width: thick bars (~0.42 mm) for any scanner */
 .idc-bc span{display:block;font-size:1.9mm;font-weight:700;letter-spacing:.3em;font-family:ui-monospace,Menlo,Consolas,monospace;margin-top:.2mm}
 .idc-b{display:flex;gap:2.2mm;padding:1.2mm 2.6mm 0}
 .idc-ph{flex:none;width:24mm;height:30.86mm;border:.35mm solid #9ca3af;overflow:hidden;background:#e5e7eb} /* passport 7:9 */
@@ -87,7 +87,7 @@ body{margin:0;background:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,"S
       <?php if ($inst['address']): ?><small><?= ci_e($inst['address']) ?></small><?php endif; ?>
       <?php if ($inst['phone']): ?><small>Ph: <?= ci_e($inst['phone']) ?></small><?php endif; ?></div></div>
     <div class="idc-t">STUDENT IDENTITY CARD</div>
-    <div class="idc-bc"><?= ci_barcode_svg((string)$s['reg_no'], 40, 1.4) ?><span><?= ci_e($s['reg_no']) ?></span></div>
+    <div class="idc-bc"><?= ci_barcode_svg((string)$s['reg_no'], 30, 1) ?><span><?= ci_e($s['reg_no']) ?></span></div>
     <div class="idc-b">
       <div class="idc-ph"><?= ($u = ci_photo_url($s['photo'] ?? '')) ? '<img src="' . ci_e($u) . '" alt="">' : ci_photo_blank() ?></div>
       <div class="idc-k">
