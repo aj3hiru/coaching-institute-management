@@ -80,8 +80,8 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Ari
 .net{display:inline-flex;align-items:center;gap:8px;height:34px;padding:0 12px 0 8px;border:1px solid #d1d5db;border-radius:99px;background:#fff;font-size:13px;font-weight:600;color:#374151;white-space:nowrap;transition:background .3s,border-color .3s,color .3s}
 .net .n-ico{position:relative;display:block;width:22px;height:22px;flex:none;animation:n-in .35s cubic-bezier(.2,.9,.3,1.3)}
 .net svg{width:100%;height:100%;display:block;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;overflow:visible}
-.net span{transition:opacity .2s;animation:n-txt .3s ease-out}
-@keyframes n-txt{from{opacity:0;transform:translateX(-4px)}to{opacity:1;transform:none}}.net span em{font-style:normal;font-weight:500;opacity:.75;margin-right:1px}
+.net span{display:inline-block;animation:n-txt .3s ease-out} /* slide only — the text is never see-through, even if the browser pauses animations */
+@keyframes n-txt{from{transform:translateX(-5px)}to{transform:none}}.net span em{font-style:normal;font-weight:500;opacity:.75;margin-right:1px}
 .net a{height:auto;padding:0;border:0;background:none;color:inherit;text-decoration:underline}
 @keyframes n-in{from{transform:scale(.4);opacity:0}to{transform:none;opacity:1}}
 /* ok */
@@ -89,9 +89,9 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Ari
 .net.n-ok .n-ico{color:#16a34a}
 .net.n-ok .n-ico::before{content:"";position:absolute;left:50%;top:50%;width:8px;height:8px;margin:-4px 0 0 -4px;border-radius:50%;background:rgba(22,163,74,.45);animation:n-pulse 2s ease-out infinite}
 .n-live .l0{fill:currentColor;stroke:none;transform-origin:12px 12px;animation:n-dot 2s ease-in-out infinite}
-.n-live .l1,.n-live .l2{opacity:.15;animation:n-ripple 2s ease-out infinite}
+.n-live .l1,.n-live .l2{opacity:.45;animation:n-ripple 2s ease-out infinite}
 .n-live .l2{animation-delay:.25s}
-@keyframes n-ripple{0%{opacity:.15}20%{opacity:1}55%,100%{opacity:.15}}
+@keyframes n-ripple{0%{opacity:.45}20%{opacity:1}55%,100%{opacity:.45}}
 @keyframes n-dot{0%,100%{transform:scale(1)}15%{transform:scale(1.25)}}
 @keyframes n-pulse{0%{transform:scale(1);opacity:.8}70%,100%{transform:scale(3.4);opacity:0}}
 /* sync */
@@ -100,9 +100,9 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Ari
 @keyframes n-rot{to{transform:rotate(360deg)}}
 /* retry: waves light up one after another */
 .net.n-retry{border-color:#fde68a;background:#fffbeb;color:#92400e}.net.n-retry .n-ico{color:#d97706}
-.n-wifi .w1,.n-wifi .w2,.n-wifi .w3{opacity:.18;animation:n-wave 1.6s cubic-bezier(.4,0,.2,1) infinite}
+.n-wifi .w1,.n-wifi .w2,.n-wifi .w3{opacity:.35;animation:n-wave 1.6s cubic-bezier(.4,0,.2,1) infinite}
 .n-wifi .w2{animation-delay:.18s}.n-wifi .w3{animation-delay:.36s}.n-wifi .w0{fill:currentColor;stroke:none}
-@keyframes n-wave{0%,100%{opacity:.18}30%,55%{opacity:1}}
+@keyframes n-wave{0%,100%{opacity:.35}30%,55%{opacity:1}}
 /* off: waves dim, the slash is drawn, then the icon breathes */
 .net.n-off{border-color:#fca5a5;background:#fef2f2;color:#991b1b}.net.n-off .n-ico{color:#dc2626;animation:n-in .35s cubic-bezier(.2,.9,.3,1.3),n-breath 1.6s .6s ease-in-out infinite}
 .n-cut .w1,.n-cut .w2,.n-cut .w3{animation:none;opacity:.35}
@@ -171,6 +171,7 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Ari
 /* getting ready: % ring, bar and the steps; fades when ready */
 .ld{position:fixed;inset:0;z-index:20;padding-top:70px;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(246,244,250,.96);backdrop-filter:blur(3px);transition:opacity .45s}
 .ld.gone{opacity:0;pointer-events:none}
+.ld[hidden]{display:none} /* really gone once ready (its blur would keep the graphics card busy behind the whole screen) */
 .ld-c{width:min(420px,100%);text-align:center}
 .ld-ring{position:relative;width:132px;height:132px;margin:0 auto 14px}
 .ld-ring svg{width:100%;height:100%;transform:rotate(-90deg)}
