@@ -125,6 +125,8 @@
     });
   }
 
+  window.shUpload = upload; // the new notes-pack page uploads its PDFs right after the first save
+
   // ---- PDFs ----
   var pf = document.getElementById('shcPdf');
   if (pf) pf.addEventListener('submit', function (e) {

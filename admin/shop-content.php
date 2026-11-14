@@ -192,6 +192,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($old) sh_media_unlink($old);
                 admin_flash('PDF deleted.');
                 break;
+            case 'pdf_link': // a PDF from a Google Drive / Dropbox / direct link
+                $r = sh_pdf_from_link($pdo, $pid, (string)($_POST['url'] ?? ''), (string)($_POST['title'] ?? ''));
+                admin_log('shop_upload', "Added PDF \"{$r['title']}\" from a link to store product #$pid");
+                if ($ajax) { header('Content-Type: application/json'); exit(json_encode(['ok' => true] + $r)); }
+                admin_flash('PDF added: ' . $r['title'] . ($r['pages'] ? ' (' . $r['pages'] . ' pages)' : '') . '.');
+                break;
             case 'move_file':
                 shc_move($pdo, 'sh_files', $id, $pid, (int)($_POST['dir'] ?? 1) < 0 ? -1 : 1);
                 break;

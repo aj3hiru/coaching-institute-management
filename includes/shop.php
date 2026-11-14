@@ -1720,3 +1720,51 @@ function sh_teacher_info(PDO $pdo, int $uid): array
 {
     try { $q = $pdo->prepare("SELECT * FROM sh_teacher_info WHERE user_id = ?"); $q->execute([$uid]); return $q->fetch(PDO::FETCH_ASSOC) ?: []; } catch (Throwable) { return []; }
 }
+
+// ─── A PDF from a link (Google Drive / Dropbox / any direct PDF link): downloaded into the store's own protected files,
+// so students open it in the same viewer as an uploaded PDF (the source link is never shown to them) ─────────────────
+function sh_pdf_link_url(string $u): string
+{
+    if (preg_match('~drive\.google\.com/(?:file/d/|open\?id=|uc\?(?:.*&)?id=)([\w-]{20,})~', $u, $m)
+        || preg_match('~docs\.google\.com/.*?/d/([\w-]{20,})~', $u, $m)) return 'https://drive.usercontent.google.com/download?id=' . $m[1] . '&export=download&confirm=t';
+    if (preg_match('~^https?://(www\.)?dropbox\.com/~i', $u)) return preg_replace('~([?&])dl=0~', '$1dl=1', $u) . (str_contains($u, 'dl=') ? '' : (str_contains($u, '?') ? '&' : '?') . 'dl=1');
+    return $u;
+}
+
+/** Downloads the PDF at $url into product $pid (as one of its PDF files). Returns the new row; throws on a bad link. */
+function sh_pdf_from_link(PDO $pdo, int $pid, string $url, string $title = ''): array
+{
+    $url = trim($url);
+    if (!preg_match('~^https?://~i', $url)) throw new RuntimeException('Paste the full link, starting with https://');
+    $host = (string)parse_url($url, PHP_URL_HOST);
+    $ip = $host !== '' ? gethostbyname($host) : '';
+    if ($ip === '' || !filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) throw new RuntimeException('This link does not open from the internet.');
+    $dir = sh_media_dir(); @mkdir($dir . '/' . $pid, 0750, true);
+    $tmp = $dir . '/' . $pid . '/.dl-' . bin2hex(random_bytes(6));
+    $fh = @fopen($tmp, 'wb'); if (!$fh) throw new RuntimeException('Could not save the file on the server.');
+    $max = 300 * 1024 * 1024; $name = '';
+    $ch = curl_init(sh_pdf_link_url($url));
+    curl_setopt_array($ch, [CURLOPT_FILE => $fh, CURLOPT_FOLLOWLOCATION => true, CURLOPT_MAXREDIRS => 6, CURLOPT_CONNECTTIMEOUT => 15, CURLOPT_TIMEOUT => 300,
+        CURLOPT_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS, CURLOPT_REDIR_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS, CURLOPT_USERAGENT => 'Mozilla/5.0 (compatible; StoreBot/1.0)',
+        CURLOPT_NOPROGRESS => false, CURLOPT_PROGRESSFUNCTION => fn($c, $dt, $d) => ($dt > $max || $d > $max) ? 1 : 0,
+        CURLOPT_HEADERFUNCTION => function ($c, $h) use (&$name) { if (preg_match('~filename\*?=(?:UTF-8\'\')?"?([^";\r\n]+)~i', $h, $m)) $name = rawurldecode(trim($m[1])); return strlen($h); }]);
+    $ok = curl_exec($ch); $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE); $got = (float)curl_getinfo($ch, CURLINFO_SIZE_DOWNLOAD); curl_close($ch); fclose($fh);
+    $head = (string)@file_get_contents($tmp, false, null, 0, 1024);
+    if (!$ok || $code >= 400 || !str_starts_with(ltrim($head), '%PDF')) {
+        @unlink($tmp);
+        $drive = (bool)preg_match('~google\.com~', $url);
+        if ($got > $max) throw new RuntimeException('The PDF is bigger than 300 MB.');
+        throw new RuntimeException($drive ? 'Google Drive did not give the PDF. In Drive set sharing to "Anyone with the link", then paste the link again.'
+            : ($ok && $code < 400 ? 'This link does not open a PDF file (it opens a web page). Use the direct link to the .pdf file.' : 'The link did not open (' . ($code ?: 'no answer') . '). Check it in your browser.'));
+    }
+    $rel = $pid . '/f-' . bin2hex(random_bytes(6)) . '.pdf';
+    if (!@rename($tmp, $dir . '/' . $rel)) { @unlink($tmp); throw new RuntimeException('Could not save the file on the server.'); }
+    @chmod($dir . '/' . $rel, 0640);
+    $size = (int)filesize($dir . '/' . $rel);
+    $pages = preg_match_all('#/Type\s*/Page[^s]#', (string)file_get_contents($dir . '/' . $rel, false, null, 0, 20 * 1024 * 1024), $mm) ? (count($mm[0]) ?: null) : null;
+    $title = trim($title) !== '' ? trim($title) : (trim(preg_replace('~\.pdf$~i', '', $name ?: basename((string)parse_url($url, PHP_URL_PATH)))) ?: 'Notes');
+    if (preg_match('~^(view|download|uc|open|edit)$~i', $title)) $title = 'Notes'; // a Drive link has no real file name in its path
+    $sort = (int)$pdo->query("SELECT COALESCE(MAX(sort),0) + 1 FROM sh_files WHERE product_id = $pid")->fetchColumn();
+    $pdo->prepare("INSERT INTO sh_files (product_id, title, file, size, pages, free, sort, lesson_id) VALUES (?, ?, ?, ?, ?, 0, ?, NULL)")->execute([$pid, mb_substr($title, 0, 200), $rel, $size, $pages, $sort]);
+    return ['id' => (int)$pdo->lastInsertId(), 'title' => mb_substr($title, 0, 200), 'pages' => $pages, 'size' => $size];
+}

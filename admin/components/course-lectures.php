@@ -10,7 +10,7 @@ $ytl = $pdo->query("SELECT id, yt_list, yt_synced FROM sh_sections WHERE product
 $files = array_values(array_filter(sh_files($pdo, $pid), fn($f) => empty($f['lesson_id']))); // lecture notes are managed on the lecture
 $editL = (int)($_GET['lesson'] ?? 0);
 $el = $editL ? ($pdo->query("SELECT * FROM sh_lessons WHERE id = $editL AND product_id = $pid")->fetch(PDO::FETCH_ASSOC) ?: null) : null;
-$mb = fn($b) => $b ? ($b >= 1073741824 ? round($b / 1073741824, 2) . ' GB' : round($b / 1048576, 1) . ' MB') : '';
+$mb = fn($n) => $n >= 1048576 ? round($n / 1048576, 1) . ' MB' : max(1, round($n / 1024)) . ' KB';
 $used = (int)$pdo->query("SELECT COALESCE(SUM(size),0) FROM sh_lessons WHERE product_id = $pid")->fetchColumn() + (int)$pdo->query("SELECT COALESCE(SUM(size),0) FROM sh_files WHERE product_id = $pid")->fetchColumn();
 $free = @disk_free_space(sh_media_dir());
 $secOpts = function (int $sel) use ($secs) { $h = '<option value="0">— No chapter —</option>'; foreach ($secs as $k => $t) $h .= '<option value="' . $k . '"' . ($sel === (int)$k ? ' selected' : '') . '>' . ci_e($t) . '</option>'; return $h; };
@@ -165,6 +165,7 @@ foreach ($blocks as $s): $open = count($blocks) <= 3 || $si < 2; ?>
 <?php endif; ?>
 
 <!-- PDFs -->
+<style>.shc-or{display:flex;align-items:center;gap:10px;margin:16px 0 10px;color:#9ca3af;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em}.shc-or::before,.shc-or::after{content:"";flex:1;height:1px;background:#e5e7eb}</style>
 <div class="ci-card" id="pdfs"><div class="ci-card-h"><h3><?= $isCourse ? 'PDF notes for the whole course' : 'PDF files' ?></h3><span class="shc-small"><?= count($files) ?> file<?= count($files) === 1 ? '' : 's' ?></span></div><div class="ci-card-b">
 <form id="shcPdf" class="shc-up" onsubmit="return false"><div class="ci-grid3">
   <div class="ci-f" style="grid-column:span 2"><label>PDF file(s)</label><input type="file" name="pfile" accept="application/pdf,.pdf" multiple required><span class="ci-hint">Choose one or many PDFs (up to 300 MB each).</span></div>
@@ -172,8 +173,16 @@ foreach ($blocks as $s): $open = count($blocks) <= 3 || $si < 2; ?>
   <div class="shc-bar"><i></i></div><p class="shc-small" data-st style="margin:6px 0 0"></p>
   <div style="margin-top:10px"><button class="ci-btn" type="submit"><i class="fas fa-upload"></i> Upload PDF</button></div>
 </form>
+<form method="post" action="/admin/shop-content.php?id=<?= $pid ?>" class="shc-link" data-busy="Downloading the PDF…"><?= csrf_field() ?><input type="hidden" name="action" value="pdf_link"><input type="hidden" name="anchor" value="pdfs">
+  <div class="shc-or"><span>or add from a link</span></div>
+  <div class="ci-grid3">
+    <div class="ci-f" style="grid-column:span 2"><label>PDF link</label><input name="url" type="url" required maxlength="1000" placeholder="Google Drive, Dropbox or a direct .pdf link — https://…"><span class="ci-hint">Google Drive: set sharing to "Anyone with the link". The PDF is copied here, so students never see the link.</span></div>
+    <div class="ci-f"><label>Title</label><input name="title" maxlength="200" placeholder="the file name if empty"></div></div>
+  <div style="margin-top:10px"><button class="ci-btn ci-ghost" type="submit"><i class="fas fa-link"></i> Add from link</button></div>
+</form>
+<script>document.querySelectorAll('form.shc-link').forEach(function (f) { f.addEventListener('submit', function () { var b = f.querySelector('button[type=submit]'); b.disabled = true; b.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + f.dataset.busy; }); });</script>
 </div><div class="ci-card-b ci-p0">
-<?php if ($files): ?><div class="ci-table-wrap"><table class="ci-table"><tbody>
+<?php if ($files): ?><div class="ci-table-wrap"><table class="ci-table" data-sheet="off"><tbody>
 <?php foreach ($files as $f): ?>
 <tr><td><form method="post" action="/admin/shop-content.php?id=<?= $pid ?>" style="display:flex;gap:6px"><?= csrf_field() ?><input type="hidden" name="action" value="rename_file"><input type="hidden" name="id" value="<?= (int)$f['id'] ?>"><input type="hidden" name="anchor" value="pdfs"><input name="title" value="<?= ci_e($f['title']) ?>" maxlength="200" aria-label="PDF title" style="flex:1;border:1px solid transparent;background:transparent;font-weight:700;padding:4px 6px" onchange="this.form.submit()"></form></td>
   <td class="shc-small"><?= $mb((int)$f['size']) ?><?= $f['pages'] ? ' · ' . (int)$f['pages'] . ' pages' : '' ?></td>

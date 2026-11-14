@@ -228,6 +228,13 @@ $badge = fn($s) => '<span class="ci-badge ' . ['published' => 'ci-b-green', 'dra
     </div></div>
     <div class="meta-panel"><div class="meta-panel-header"><span>Web address</span></div><div class="meta-panel-body"><div class="sx-link"><span>Web address:</span> <span class="ci-muted"><?= ci_e($base) ?></span><input name="slug" id="sxSlug" maxlength="150" placeholder="made-from-the-name" value="<?= ci_e($ep['slug'] ?? '') ?>"></div></div></div>
     <?php endif; ?>
+    <?php if (!$isC && !$ep): // a new notes pack: its PDFs can be chosen right here (saved right after the pack is made) ?>
+    <div class="meta-panel" id="newPdfPanel"><div class="meta-panel-header"><span><i class="fas fa-file-pdf" style="color:#dc2626"></i> PDF files</span></div><div class="meta-panel-body">
+      <div class="ci-f"><label>Upload PDF file(s)</label><input type="file" id="newPdfFiles" accept="application/pdf,.pdf" multiple><span class="ci-hint">One or many PDFs, up to 300 MB each.</span></div>
+      <div class="ci-f" style="margin-top:12px"><label>or a PDF link</label><input type="url" id="newPdfLink" maxlength="1000" placeholder="Google Drive, Dropbox or a direct .pdf link — https://…"><span class="ci-hint">Google Drive: sharing "Anyone with the link". The PDF is copied here; students never see the link.</span></div>
+      <p class="ci-muted" id="newPdfSt" style="margin:10px 0 0;font-size:13px" hidden></p>
+    </div></div>
+    <?php endif; ?>
     <div class="meta-panel"><div class="meta-panel-header"><span><?= $isC ? 'About this course' : 'About these notes' ?></span></div><div class="meta-panel-body">
       <textarea name="description" rows="9" maxlength="20000" placeholder="Describe the <?= $isC ? 'course' : 'notes' ?> — chapters, who it is for, how it helps."><?= ci_e($ep['description'] ?? '') ?></textarea>
     </div></div>
@@ -280,6 +287,50 @@ $badge = fn($s) => '<span class="ci-badge ' . ['published' => 'ci-b-green', 'dra
 <?php if ($ep): $p = $ep; ?>
 <div class="shp-lect-h" id="lectures"><h2><i class="fas <?= $isC ? 'fa-film' : 'fa-file-pdf' ?>"></i> <?= $isC ? 'Lectures' : 'PDF files' ?></h2><?php if ($isC): ?><a class="ci-btn" href="/admin/shop-lectures.php?course=<?= (int)$ep['id'] ?>"><i class="fas fa-table-list"></i> Open Lectures</a><?php endif; ?></div>
 <?php $lcSummary = $isC; require __DIR__ . '/components/course-lectures.php'; ?>
+<?php endif; ?>
+<?php if ($open && !$isC && !$ep): ?>
+<script>window.SHC = { pid: 0, csrf: <?= json_encode(csrf_token(), JSON_HEX_TAG) ?>, self: '' };</script>
+<script src="/assets/js/shop-admin.js?v=<?= @filemtime(ROOT_PATH . '/assets/js/shop-admin.js') ?: 1 ?>" defer></script>
+<script>
+(function () { // new notes pack with PDFs chosen: save the pack, then add the link and upload the files into it, then open it
+  var form = document.querySelector('form.sx-form'), files = document.getElementById('newPdfFiles'), link = document.getElementById('newPdfLink'), st = document.getElementById('newPdfSt');
+  if (!form || !files) return;
+  var csrf = (form.querySelector('[name=_csrf],[name=csrf_token]') || {}).value || (window.SHC || {}).csrf;
+  function say(t, bad) { st.hidden = false; st.textContent = t; st.style.color = bad ? '#b91c1c' : ''; }
+  form.addEventListener('submit', function (e) {
+    var fl = [].slice.call(files.files || []), url = link.value.trim();
+    if (!fl.length && !url) return; // nothing to attach: the normal save
+    var bad = fl.filter(function (f) { return !/\.pdf$/i.test(f.name); });
+    if (bad.length) { e.preventDefault(); say(bad[0].name + ' is not a PDF.', true); return; }
+    if (!form.reportValidity()) { e.preventDefault(); return; }
+    e.preventDefault();
+    var btns = form.querySelectorAll('button[type=submit]'); btns.forEach(function (b) { b.disabled = true; });
+    var fd = new FormData(form); fd.set('go_content', '1');
+    say('Saving the notes pack…');
+    fetch(location.pathname + location.search, { method: 'POST', body: fd, credentials: 'same-origin' }).then(function (r) {
+      var m = r.url.match(/[?&]edit=(\d+)/); if (!m) throw { form: 1 };
+      var id = +m[1], chain = Promise.resolve(), problems = [];
+      if (url) chain = chain.then(function () {
+        say('Downloading the PDF from the link…');
+        var b = new URLSearchParams({ action: 'pdf_link', ajax: '1', url: url, _csrf: csrf, csrf_token: csrf });
+        return fetch('/admin/shop-content.php?id=' + id, { method: 'POST', body: b, credentials: 'same-origin' }).then(function (x) { return x.json(); })
+          .then(function (d) { if (d.error) problems.push('Link: ' + d.error); }).catch(function () { problems.push('Link: could not add it.'); });
+      });
+      fl.forEach(function (f, i) { chain = chain.then(function () {
+        return window.shUpload(f, { kind: 'f', target: id, title: '', onProgress: function (fr) { say('Uploading ' + (fl.length > 1 ? (i + 1) + ' of ' + fl.length + ' — ' : '') + f.name + ' · ' + Math.round(fr * 100) + '%'); } })
+          .catch(function (err) { problems.push(f.name + ': ' + (err && err.message || 'upload failed')); });
+      }); });
+      return chain.then(function () {
+        if (problems.length) alert('The notes pack is saved, but:\n' + problems.join('\n') + '\n\nYou can add the PDF again on the next page.');
+        location.href = '/admin/shop-products.php?edit=' + id + '&type=notes#lectures';
+      });
+    }).catch(function (err) {
+      if (err && err.form) { btns.forEach(function (b) { b.disabled = false; }); st.hidden = true; form.submit(); return; } // the server had something to say about the form: show it
+      btns.forEach(function (b) { b.disabled = false; }); say('Could not save — check the internet and try again.', true);
+    });
+  });
+})();
+</script>
 <?php endif; ?>
 <script>
 (function () { // intro video: show its picture, name and length; fill the course name if it is empty
