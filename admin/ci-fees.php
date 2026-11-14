@@ -158,7 +158,7 @@ $qs = function (array $over = []) {
   <div class="ci-f cf-custom"<?= $period === 'custom' ? '' : ' hidden' ?>><label>From</label><input type="date" name="from" value="<?= ci_e($period === 'custom' ? $from : $today) ?>"<?= $period === 'custom' ? '' : ' disabled' ?>></div>
   <div class="ci-f cf-custom"<?= $period === 'custom' ? '' : ' hidden' ?>><label>To</label><input type="date" name="to" value="<?= ci_e($period === 'custom' ? $to : $today) ?>"<?= $period === 'custom' ? '' : ' disabled' ?>></div>
   <?php if ($tab === 'payments'): ?>
-  <div class="ci-f"><label>Paid by</label><select name="method"><option value="">Any</option><?php foreach (CI_METHODS as $k => $l): ?><option value="<?= $k ?>" <?= $method === $k ? 'selected' : '' ?>><?= $l ?></option><?php endforeach; ?></select></div>
+  <div class="ci-f"><label>Payment mode</label><select name="method"><option value="">Any</option><?php foreach (CI_METHODS as $k => $l): ?><option value="<?= $k ?>" <?= $method === $k ? 'selected' : '' ?>><?= $l ?></option><?php endforeach; ?></select></div>
   <?php endif; ?>
   <div class="ci-f"><label>Course</label><select name="course"><option value="0">All courses</option><?php foreach ($L['courses'] as $id => $c): ?><option value="<?= $id ?>" <?= $fCourse === $id ? 'selected' : '' ?>><?= ci_e($c['name']) ?></option><?php endforeach; ?></select></div>
   <div class="ci-f"><label>Batch</label><select name="batch"><option value="0">All batches</option><?php foreach ($L['batches'] as $id => $b): ?><option value="<?= $id ?>" <?= $fBatch === $id ? 'selected' : '' ?>><?= ci_e($b['name']) ?></option><?php endforeach; ?></select></div>

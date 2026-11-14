@@ -284,7 +284,7 @@ $rowHtml = function (array $r, int $idx) use ($L): string {
     $h .= '<div class="ci-f"><label>Fee plan</label><select name="e_type[]" class="ci-type"><option value="full"' . ($type === 'full' ? ' selected' : '') . '>One-time fee</option><option value="installment"' . ($type === 'installment' ? ' selected' : '') . '>Installment</option></select></div>';
     $h .= '<div class="ci-f"><label>Fee for this student (₹)</label><input name="e_final[]" class="ci-final" type="number" min="0" step="0.01" value="' . ci_e($num($r['final'] ?? null)) . '" data-list="' . ci_e($num($r['list'] ?? null)) . '"></div>';
     if ($id) {
-        $h .= '<div class="ci-f"><label>Status</label><select name="e_status[]">';
+        $h .= '<div class="ci-f"><label>Course status</label><select name="e_status[]">';
         foreach (['active' => 'Active', 'completed' => 'Completed', 'left' => 'Left', 'dropped' => 'Dropped'] as $k => $l) $h .= '<option value="' . $k . '"' . (($r['status'] ?? '') === $k ? ' selected' : '') . '>' . $l . '</option>';
         $h .= '</select></div>';
     } else {
@@ -353,7 +353,7 @@ $v = fn($k) => ci_e($form[$k] ?? '');
     <div class="ci-f"><label>Class <span class="ci-req">*</span></label><select name="class_id" id="ci-class"><option value=""></option><?php foreach ($L['classes'] as $cid => $cn): ?><option value="<?= $cid ?>" <?= (int)($form['class_id'] ?? 0) === $cid ? 'selected' : '' ?>><?= ci_e($cn) ?></option><?php endforeach; ?></select></div>
     <div class="ci-f"><label>Roll no.</label><input type="text" name="roll_no" maxlength="20" value="<?= $v('roll_no') ?>" placeholder="Next in the class"></div>
     <div class="ci-f"><label>Admission date</label><input type="date" name="admission_date" value="<?= $v('admission_date') ?>"></div>
-    <div class="ci-f"><label>Status</label><select name="status"><?php foreach (['active' => 'Active', 'completed' => 'Completed', 'left' => 'Left'] as $k => $l): ?><option value="<?= $k ?>" <?= ($form['status'] ?? 'active') === $k ? 'selected' : '' ?>><?= $l ?></option><?php endforeach; ?></select></div>
+    <div class="ci-f"><label>Student status</label><select name="status"><?php foreach (['active' => 'Active', 'completed' => 'Completed', 'left' => 'Left'] as $k => $l): ?><option value="<?= $k ?>" <?= ($form['status'] ?? 'active') === $k ? 'selected' : '' ?>><?= $l ?></option><?php endforeach; ?></select></div>
     <div class="ci-f"><label>Student type</label><select name="stype" id="ci-stype"><?php foreach (CI_STYPES as $k => $l): ?><option value="<?= $k ?>" <?= ($form['stype'] ?? 'institute') === $k ? 'selected' : '' ?>><?= $l ?></option><?php endforeach; ?></select></div>
     <div class="ci-f"><label>Password <small class="ci-muted" style="font-weight:400">(online login)</small></label><div class="ci-pwf"><input type="password" name="spass" id="ci-spass" minlength="4" maxlength="72" autocomplete="new-password" placeholder="<?= $student ? 'empty = keep' : 'empty = mobile number' ?>"><button type="button" class="ci-pw-eye" aria-label="Show password" onclick="var i=document.getElementById('ci-spass'),s=i.type==='password';i.type=s?'text':'password';this.querySelector('i').className='fas '+(s?'fa-eye-slash':'fa-eye')"><i class="fas fa-eye"></i></button></div><span class="ci-hint"><?= $student ? 'Type a new one to change it.' : 'Login: mobile number + this password.' ?></span></div>
   </div>

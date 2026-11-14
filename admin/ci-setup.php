@@ -120,8 +120,8 @@ if ($tab === 'sessions' && $ps && !$ps['is_current'] && $me['role'] === 'admin')
 <form method="post"><?= csrf_field() ?><input type="hidden" name="action" value="session_save"><input type="hidden" name="id" value="<?= (int)($es['id'] ?? 0) ?>">
   <div class="ci-grid2 ci-mgrid">
   <div class="ci-f" style="grid-column:1/-1"><label>Session name <span class="ci-req">*</span></label><input name="name" required maxlength="40" placeholder="2026-27" value="<?= ci_e($es['name'] ?? '') ?>"></div>
-  <div class="ci-f"><label>Starts</label><input type="date" name="start_date" value="<?= ci_e($es['start_date'] ?? '') ?>"></div>
-  <div class="ci-f"><label>Ends</label><input type="date" name="end_date" value="<?= ci_e($es['end_date'] ?? '') ?>"></div>
+  <div class="ci-f"><label>Session start date</label><input type="date" name="start_date" value="<?= ci_e($es['start_date'] ?? '') ?>"></div>
+  <div class="ci-f"><label>Session end date</label><input type="date" name="end_date" value="<?= ci_e($es['end_date'] ?? '') ?>"></div>
   <div class="ci-f" style="grid-column:1/-1"><label style="display:flex;gap:8px;align-items:center;font-weight:500"><input type="checkbox" name="is_current" value="1" style="width:auto;height:auto" <?= !empty($es['is_current']) || !$sessions ? 'checked' : '' ?>> This is the current session</label></div>
   </div>
   <div class="ci-mfoot"><button type="button" class="ci-btn ci-ghost" data-close>Cancel</button><button class="ci-btn" type="submit"><i class="fas fa-check"></i> Save session</button></div>

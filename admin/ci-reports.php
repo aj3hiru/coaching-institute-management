@@ -129,12 +129,12 @@ $pre = ['type' => in_array((string)($_GET['type'] ?? ''), $types, true) ? (strin
     <?php if ($ciOK): ?>
     <form class="rp-pane ci-filters" data-pane="students" onsubmit="return false">
       <div class="ci-f"><label>Student type</label><select name="type"><option value="">All students</option><option value="institute">Institute only</option><option value="online">Online only</option><option value="both">Both (institute + online)</option></select></div>
-      <div class="ci-f"><label>Status</label><select name="status"><?php foreach (['active' => 'Active', 'left' => 'Left', 'completed' => 'Completed', 'all' => 'All'] as $k => $l): ?><option value="<?= $k ?>"><?= $l ?></option><?php endforeach; ?></select></div>
+      <div class="ci-f"><label>Student status</label><select name="status"><?php foreach (['active' => 'Active', 'left' => 'Left', 'completed' => 'Completed', 'all' => 'All'] as $k => $l): ?><option value="<?= $k ?>"><?= $l ?></option><?php endforeach; ?></select></div>
       <div class="ci-f"><label>Class</label><select name="class"><option value="0">All classes</option><?php foreach ($L['classes'] as $id => $n): ?><option value="<?= $id ?>"><?= ci_e($n) ?></option><?php endforeach; ?></select></div>
       <div class="ci-f"><label>Course</label><select name="course"><option value="0">All courses</option><?php foreach ($courses as $c): ?><option value="<?= (int)$c['id'] ?>"><?= ci_e($c['name'] . $tag($c['status'])) ?></option><?php endforeach; ?></select></div>
       <div class="ci-f"><label>Batch</label><select name="batch"><option value="0">All batches</option><?php foreach ($batches as $b): ?><option value="<?= (int)$b['id'] ?>"><?= ci_e($b['name'] . ' · ' . $b['course_name'] . $tag($b['status'])) ?></option><?php endforeach; ?></select></div>
       <div class="ci-f"><label>Session</label><select name="session"><option value="0">All sessions</option><?php foreach ($L['sessions'] as $id => $n): ?><option value="<?= $id ?>"><?= ci_e($n) ?></option><?php endforeach; ?></select></div>
-      <div class="ci-f"><label>Fee</label><select name="fee"><option value="">Any</option><option value="due">Has due</option><option value="overdue">Due date passed</option><option value="paid">Fully paid</option></select></div>
+      <div class="ci-f"><label>Fee status</label><select name="fee"><option value="">Any</option><option value="due">Has due</option><option value="overdue">Due date passed</option><option value="paid">Fully paid</option></select></div>
       <div class="ci-f"><label>Admitted from</label><input type="date" name="from"></div>
       <div class="ci-f"><label>Admitted to</label><input type="date" name="to"></div>
     </form>

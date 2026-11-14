@@ -375,7 +375,7 @@ if (function_exists('sh_perm') && sh_perm($me, 'customers')) { sh_tables($pdo); 
 <div class="ci-modal" id="ci-collect" hidden><div class="ci-modal-box" role="dialog" aria-modal="true" aria-labelledby="ci-collect-h">
   <div class="ci-card-h"><h3 id="ci-collect-h">Collect fee — <?= ci_e($s['name']) ?></h3><button type="button" class="ci-x" data-close aria-label="Close"><i class="fas fa-times"></i></button></div>
   <form method="post" class="ci-card-b"><?= csrf_field() ?><input type="hidden" name="action" value="pay"><input type="hidden" name="id" value="<?= $id ?>">
-    <div class="ci-f"><label>For</label><select name="enrollment_id" id="ci-pay-for" required><?php foreach ($payable as $e): ?>
+    <div class="ci-f"><label>Fee for course</label><select name="enrollment_id" id="ci-pay-for" required><?php foreach ($payable as $e): ?>
       <option value="<?= (int)$e['id'] ?>" data-due="<?= (float)$e['due'] ?>" data-net="<?= (float)$e['net'] ?>" data-inst="<?= ($e['fee_type'] ?? 'full') === 'installment' ? 1 : 0 ?>" data-n="<?= count($byEnr[$e['id']] ?? []) + 1 ?>"><?= ci_e($e['course_name'] . ($e['batch_name'] ? ' · ' . $e['batch_name'] : '')) ?> — due <?= ci_money0($e['due']) ?></option>
     <?php endforeach; ?></select></div>
     <div class="ci-chips" id="ci-chips"></div>

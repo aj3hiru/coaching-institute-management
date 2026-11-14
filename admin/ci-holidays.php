@@ -64,9 +64,9 @@ $days = fn(array $h) => (int)round((strtotime($h['to_date']) - strtotime($h['fro
 <div class="hd-grid">
   <form class="ci-card hd-form" method="post" data-ds="Add holiday"><?= csrf_field() ?><input type="hidden" name="action" value="add">
     <div class="ci-card-h"><h3>Add a holiday</h3></div><div class="ci-card-b">
-      <div class="ci-f"><label>Name <span class="ci-req">*</span></label><input name="title" required maxlength="150" placeholder="e.g. Holi, Summer vacation"></div>
-      <div class="ci-grid2" style="gap:12px"><div class="ci-f"><label>From <span class="ci-req">*</span></label><input type="date" name="from_date" required value="<?= $today ?>"></div>
-        <div class="ci-f"><label>To</label><input type="date" name="to_date" value="<?= $today ?>"></div></div>
+      <div class="ci-f"><label>Holiday name <span class="ci-req">*</span></label><input name="title" required maxlength="150" placeholder="e.g. Holi, Summer vacation"></div>
+      <div class="ci-grid2" style="gap:12px"><div class="ci-f"><label>First day <span class="ci-req">*</span></label><input type="date" name="from_date" required value="<?= $today ?>"></div>
+        <div class="ci-f"><label>Last day</label><input type="date" name="to_date" value="<?= $today ?>"></div></div>
       <div class="ci-f"><label>For</label><div class="hd-for">
         <label><input type="radio" name="for" value="all" checked><i class="fas fa-layer-group"></i> All</label>
         <label><input type="radio" name="for" value="course"><i class="fas fa-book-open"></i> Course</label>
