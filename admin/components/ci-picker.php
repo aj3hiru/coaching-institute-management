@@ -22,7 +22,7 @@ $__P = ci_lists($pdo);
   <div class="ci-card-b">
     <p class="ci-muted" id="ci-pick-to" style="margin:0 0 12px"></p>
     <form class="ci-pick-f" onsubmit="return false">
-      <div class="ci-f ci-pick-q"><label>Search</label><input name="q" placeholder="Name, mobile, email, reg. no. or father's name" autocomplete="off"></div>
+      <div class="ci-f ci-pick-q"><label>Search</label><input name="q" placeholder="Name, mobile, email, admission ID or father's name" autocomplete="off"></div>
       <div class="ci-f"><label>Class</label><select name="class"><option value="0">All classes</option><?php foreach ($__P['classes'] as $k => $n): ?><option value="<?= (int)$k ?>"><?= ci_e($n) ?></option><?php endforeach; ?></select></div>
       <div class="ci-f"><label>Course</label><select name="course"><option value="0">All courses</option><?php foreach ($__P['courses'] as $k => $c): ?><option value="<?= (int)$k ?>"><?= ci_e($c['name']) ?></option><?php endforeach; ?></select></div>
       <div class="ci-f"><label>Batch</label><select name="batch"><option value="0">All batches</option><?php foreach ($__P['batches'] as $k => $b): ?><option value="<?= (int)$k ?>"><?= ci_e($b['name'] . ($b['session_name'] ? ' (' . $b['session_name'] . ')' : '')) ?></option><?php endforeach; ?></select></div>

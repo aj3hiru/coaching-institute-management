@@ -266,7 +266,7 @@ if (function_exists('sh_perm') && sh_perm($me, 'customers')) { sh_tables($pdo); 
 
 <?php
   $age = $s['dob'] ? (new DateTime($s['dob']))->diff(new DateTime())->y : null;
-  $allKv = array_filter(['Full name' => $s['name'], 'Reg. no.' => $s['reg_no'], 'Class' => $s['class_name'], "Father's name" => $s['father_name'], "Mother's name" => $s['mother_name'],
+  $allKv = array_filter(['Full name' => $s['name'], 'Admission ID' => $s['reg_no'], 'Class' => $s['class_name'], "Father's name" => $s['father_name'], "Mother's name" => $s['mother_name'],
       'Mobile' => $s['mobile'], 'Alternate mobile' => $s['alt_mobile'], 'Email' => $s['email'], 'Date of birth' => $s['dob'] ? ci_date($s['dob']) . ' (' . $age . ' yrs)' : '', 'Gender' => $s['gender'],
       'Address' => $s['address'], 'City' => $s['city'], 'State' => $s['state'], 'PIN code' => $s['pincode'], 'School / College' => $s['school'], 'Admission date' => ci_date($s['admission_date']),
       'Status' => ucfirst($s['status']) . ($s['status'] === 'left' && $s['left_on'] ? ' (' . ci_date($s['left_on']) . ')' : ''), 'Added' => date('d M Y, h:i A', strtotime($s['created_at'])) . ($s['added_by'] ? ' by ' . $s['added_by'] : '')]);
@@ -275,7 +275,7 @@ if (function_exists('sh_perm') && sh_perm($me, 'customers')) { sh_tables($pdo); 
   <aside class="ci-pf-side">
     <div class="ci-card ci-det" data-ds="Student details"><div class="ci-card-h"><h3>Student details</h3><?php if (ci_perm($me, 'edit_student')): ?><?= ci_ico('edit', '/admin/student-edit.php?id=' . $id, 'Edit details') ?><?php endif; ?></div><div class="ci-card-b">
       <?php // only what the card on top does not show: it has name, ID, class, status, both mobiles, father, admission date and the city (or the address when there is no city)
-        $detKv = array_diff_key($allKv, array_flip(['Full name', 'Reg. no.', 'Class', 'Mobile', 'Alternate mobile', "Father's name", 'Status', 'Admission date', $s['city'] ? 'City' : 'Address'])); ?>
+        $detKv = array_diff_key($allKv, array_flip(['Full name', 'Admission ID', 'Class', 'Mobile', 'Alternate mobile', "Father's name", 'Status', 'Admission date', $s['city'] ? 'City' : 'Address'])); ?>
       <?php // shown up to the PIN code; the rest (school, added by, notes) after "See more"
         $keys = array_keys($detKv); $cut = array_search('PIN code', $keys, true);
         if ($cut === false) { $cut = array_search('School / College', $keys, true); $cut = $cut === false ? count($keys) - 1 : $cut - 1; }

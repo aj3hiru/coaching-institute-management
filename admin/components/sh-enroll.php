@@ -17,7 +17,7 @@ $__eback = $_SERVER['REQUEST_URI'] ?? '/admin/shop-orders.php';
     <div class="she-tabs" role="tablist">
       <button type="button" data-who="acc" class="on">Online account</button><button type="button" data-who="stu">Institute student</button><button type="button" data-who="new">New student</button>
     </div>
-    <div class="she-pane" data-pane="acc stu"><input class="she-q" type="search" placeholder="Search name, mobile, email or reg. no." autocomplete="off"><div class="she-res" aria-live="polite"></div></div>
+    <div class="she-pane" data-pane="acc stu"><input class="she-q" type="search" placeholder="Search name, mobile, email or admission ID" autocomplete="off"><div class="she-res" aria-live="polite"></div></div>
     <div class="she-pane ci-grid2 ci-mgrid" data-pane="new" hidden>
       <div class="ci-f"><label>Full name <span class="ci-req">*</span></label><input name="n_name" maxlength="150"></div>
       <div class="ci-f"><label>Mobile <span class="ci-req">*</span></label><input name="n_mobile" inputmode="numeric" maxlength="14" placeholder="10 digits"></div>
@@ -54,7 +54,7 @@ $__eback = $_SERVER['REQUEST_URI'] ?? '/admin/shop-orders.php';
     [].forEach.call(f.querySelectorAll('[data-who]'), function (b) { b.classList.toggle('on', b.getAttribute('data-who') === w); });
     [].forEach.call(f.querySelectorAll('.she-pane'), function (p) { p.hidden = p.getAttribute('data-pane').split(' ').indexOf(w) < 0; });
     f.querySelector('[name=n_name]').required = f.querySelector('[name=n_mobile]').required = w === 'new';
-    if (w !== 'new') { q.placeholder = w === 'acc' ? 'Search name, mobile or email of the online account' : 'Search name, mobile, reg. no. or father\'s name'; search(); }
+    if (w !== 'new') { q.placeholder = w === 'acc' ? 'Search name, mobile or email of the online account' : 'Search name, mobile, admission ID or father\'s name'; search(); }
   }
   function pickPerson(kind, id, name, sub) {
     f.uid.value = kind === 'acc' ? id : ''; f.sid.value = kind === 'stu' ? id : ''; f.who.value = kind;

@@ -88,7 +88,7 @@ table.lines{width:100%;border-collapse:collapse;font-size:13px;border:1px solid 
     <div class="doc"><h2>INVOICE</h2><table>
       <tr><td>Invoice No.:</td><td><?= ci_e($no) ?></td></tr>
       <tr><td>Date:</td><td><?= date('d M Y', strtotime($paidOn)) ?></td></tr>
-      <?php if ($o['reg_no']): ?><tr><td>Reg. No.:</td><td><?= ci_e($o['reg_no']) ?></td></tr><?php endif; ?>
+      <?php if ($o['reg_no']): ?><tr><td>Admission ID:</td><td><?= ci_e($o['reg_no']) ?></td></tr><?php endif; ?>
     </table><span class="st <?= $o['status'] === 'paid' ? 'paid' : 'no' ?>"><?= $status ?></span></div>
   </div>
   <div class="boxes">

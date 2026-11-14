@@ -336,7 +336,7 @@ $v = fn($k) => ci_e($form[$k] ?? '');
 <form method="post" enctype="multipart/form-data" id="ci-student-form" class="ci-float" novalidate>
 <?= csrf_field() ?><input type="hidden" name="id" value="<?= (int)$id ?>">
 
-<div class="ci-card"><div class="ci-card-h"><h3>Student details</h3><?php if ($student): ?><span class="ci-muted">Reg. no. <b><?= ci_e($student['reg_no']) ?></b></span><?php endif; ?></div><div class="ci-card-b">
+<div class="ci-card"><div class="ci-card-h"><h3>Student details</h3><?php if ($student): ?><span class="ci-muted">Admission ID <b><?= ci_e($student['reg_no']) ?></b></span><?php endif; ?></div><div class="ci-card-b">
   <div class="ci-photo" style="margin-bottom:16px">
     <span class="ci-photo-prev" id="ci-photo-prev"><?= ci_avatar($form, 90) ?></span>
     <div class="ci-f ci-nofloat"><label>Photo</label><input type="file" name="photo" id="ci-photo-in" accept="image/jpeg,image/png,image/webp" style="height:auto;padding:6px"><span class="ci-hint">Passport size · JPG, PNG or WebP, up to 3 MB.</span>

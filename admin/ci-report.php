@@ -46,7 +46,7 @@ $studentRows = function (string $where, array $args, bool $showBatch) use ($pdo,
     }
     return [$rows, $t];
 };
-$studentHead = fn(bool $b) => array_merge(['Reg. No.', 'Student', 'Mobile'], $b ? ['Batch'] : [], ['Joined', 'Status', 'Fee', 'Paid', 'Due']);
+$studentHead = fn(bool $b) => array_merge(['Admission ID', 'Student', 'Mobile'], $b ? ['Batch'] : [], ['Joined', 'Status', 'Fee', 'Paid', 'Due']);
 $moneyCols = fn(bool $b) => $b ? [6, 7, 8] : [5, 6, 7]; // Fee, Paid, Due
 $summary = fn(array $t) => [['Students (all time)', (string)$t['n']], ['Studying now', (string)$t['active']], ['Completed', (string)$t['completed']], ['Left / dropped in between', (string)$t['left']],
     ['Total fee (after discounts)', $rs($t['fee'])], ['Fee collected', $rs($t['paid'])], ['Fee still due', $rs($t['due'])]];
@@ -75,7 +75,7 @@ if ($type === 'student_att') { // one student's attendance for one month (?id=&m
     $mName = date('F Y', strtotime($from));
     $out(['title' => 'ATTENDANCE REPORT', 'subtitle' => 'Month: ' . $mName, 'no' => 'AT-' . $s['reg_no'] . '-' . str_replace('-', '', $m), 'file' => 'attendance_' . $s['reg_no'] . '_' . $m,
         'boxes' => [
-            ['head' => 'STUDENT', 'rows' => [['Name', $s['name']], ['Adm. ID', $s['reg_no']], ['Class', $s['class_name'] ?: '-'], ["Father's name", $s['father_name'] ?: '-'], ['Batch', (string)$bq->fetchColumn() ?: '-']]],
+            ['head' => 'STUDENT', 'rows' => [['Name', $s['name']], ['Admission ID', $s['reg_no']], ['Class', $s['class_name'] ?: '-'], ["Father's name", $s['father_name'] ?: '-'], ['Batch', (string)$bq->fetchColumn() ?: '-']]],
             ['head' => 'SUMMARY', 'rows' => [['Month', $mName . ($to < date('Y-m-t', strtotime($from)) ? ' (till ' . $d($to) . ')' : '')], ['Class days', (string)$c['days']], ['Present', $c['present'] . ' day(s)'],
                 ['Absent / Leave', $c['absent'] . ' / ' . $c['leave'] . ' day(s)'], ['Holidays', $c['holiday'] . ' day(s)'], ['Attendance', $c['pct'] === null ? '-' : $c['pct'] . '%']]],
         ],
@@ -147,7 +147,7 @@ if ($type === 'student') {
     if ($ou) $notes[] = 'Online: ' . count($oAcc) . ' course(s) / notes given, ' . count(array_filter($oAcc, fn($a) => !$a['revoked'] && empty($a['blocked']) && (!$a['expires_at'] || strtotime($a['expires_at']) > time()))) . ' open now; ' . count($oPaid) . ' paid order(s) for ' . $rs($oPaidSum) . '.';
     $out(['title' => 'STUDENT REPORT', 'subtitle' => 'Student record and fee statement', 'no' => 'SR-' . $s['reg_no'], 'file' => 'student-report_' . $s['reg_no'],
         'boxes' => [
-            ['head' => 'STUDENT', 'rows' => [['Name', $s['name']], ['Reg. No.', $s['reg_no']], ["Father's name", $s['father_name'] ?: '-'], ['Mobile', $s['mobile'] . ($s['alt_mobile'] ? ', ' . $s['alt_mobile'] : '')], ['Address', trim(implode(', ', array_filter([$s['address'], $s['city'], $s['state'], $s['pincode']]))) ?: '-']]],
+            ['head' => 'STUDENT', 'rows' => [['Name', $s['name']], ['Admission ID', $s['reg_no']], ["Father's name", $s['father_name'] ?: '-'], ['Mobile', $s['mobile'] . ($s['alt_mobile'] ? ', ' . $s['alt_mobile'] : '')], ['Address', trim(implode(', ', array_filter([$s['address'], $s['city'], $s['state'], $s['pincode']]))) ?: '-']]],
             ['head' => 'DETAILS', 'rows' => [['Student type', CI_STYPES[$s['stype'] ?? 'institute'] ?? 'Institute'], ['Class', $s['class_name'] ?: '-'], ['Admission', $d($s['admission_date'])], ['Status', $withDate($s['status'], $s['left_on'])], ['Email', $s['email'] ?: '-']]],
         ],
         'sections' => array_values(array_filter([
@@ -242,7 +242,7 @@ if ($type === 'class') {
         ],
         'sections' => [
             ['title' => 'Courses of this Class', 'head' => ['Course', 'Course fee', 'Status'], 'body' => array_map(fn($c) => [$c['name'], $rs($c['fee']), $st($c['status'])], $courses), 'right' => [1], 'empty' => 'No courses linked to this class.'],
-            ['title' => 'Students', 'right_text' => $t['n'] . ' student(s)', 'head' => ['Reg. No.', 'Student', 'Mobile', 'Courses', 'Status', 'Fee', 'Paid', 'Due'], 'body' => $rows, 'right' => [5, 6, 7], 'small' => true,
+            ['title' => 'Students', 'right_text' => $t['n'] . ' student(s)', 'head' => ['Admission ID', 'Student', 'Mobile', 'Courses', 'Status', 'Fee', 'Paid', 'Due'], 'body' => $rows, 'right' => [5, 6, 7], 'small' => true,
                 'foot' => $rows ? [['', 'Total', '', '', '', $rs($t['fee']), $rs($t['paid']), $rs($t['due'])]] : null, 'empty' => 'No students in this class.'],
         ],
         'notes' => ['Class ' . $k['name'] . ': ' . $t['n'] . ' student(s), ' . $t['active'] . ' studying now, ' . $t['left'] . ' left.', 'Fee: ' . $rs($t['fee']) . ' in total, ' . $rs($t['paid']) . ' collected, ' . $rs($t['due']) . ' still due.']]);
@@ -350,7 +350,7 @@ if ($type === 'fees') {
     $modeRows = []; foreach ($byMode as $m => $v) $modeRows[$m] = [count(array_filter($rows, fn($r) => isset(ci_pay_split($r[0])[$m]))), $v];
     $sections = [
         $sumTable('By payment mode', 'Mode', $modeRows),
-        ['title' => 'Payments', 'right_text' => count($rows) . ' payment(s)', 'head' => ['No.', 'Date', 'Receipt', 'Student', 'Reg. no.', 'Course / batch', 'Mode', 'Collected by', 'Amount'],
+        ['title' => 'Payments', 'right_text' => count($rows) . ' payment(s)', 'head' => ['No.', 'Date', 'Receipt', 'Student', 'Admission ID', 'Course / batch', 'Mode', 'Collected by', 'Amount'],
             'body' => array_map(fn($r, $i) => [$i + 1, $d($r[0]['paid_on']), $r[0]['receipt_no'], $r[0]['name'], $r[0]['reg_no'],
                 ($r[0]['course_name'] ?: '-') . ($r[0]['batch_name'] ? ' / ' . $r[0]['batch_name'] : ''), ci_pay_mode($r[0]), $r[0]['username'] ?: '-', $rs0($r[1])], $rows, array_keys($rows)),
             'foot' => $rows ? [['', '', '', '', '', '', '', 'Total', $rs0($total)]] : null, 'right' => [8], 'small' => true, 'empty' => 'No fee was collected in this period.'],
@@ -468,7 +468,7 @@ if ($type === 'attendance') { // ?period=today|week|month|lastmonth|custom (&fro
     if ($cls) $label[] = ['Class', (string)$pdo->query("SELECT name FROM ci_classes WHERE id = $cls")->fetchColumn()];
     if ($crs) $label[] = ['Course', (string)$pdo->query("SELECT name FROM ci_courses WHERE id = $crs")->fetchColumn()];
     if ($bat) $label[] = ['Batch', (string)$pdo->query("SELECT name FROM ci_batches WHERE id = $bat")->fetchColumn()];
-    $sections = [['title' => 'Students', 'right_text' => count($rows) . ' student(s)', 'head' => ['Adm. ID', 'Student', 'Class', 'Batch', 'Present', 'Absent', 'Leave', 'Holiday', 'Class days', 'Attendance'],
+    $sections = [['title' => 'Students', 'right_text' => count($rows) . ' student(s)', 'head' => ['Admission ID', 'Student', 'Class', 'Batch', 'Present', 'Absent', 'Leave', 'Holiday', 'Class days', 'Attendance'],
         'body' => $rows, 'right' => [4, 5, 6, 7, 8, 9], 'empty' => 'No students for this choice.']];
     if ($days && count($days) <= 62) { // day by day
         $dr = [];
@@ -483,7 +483,7 @@ if ($type === 'attendance') { // ?period=today|week|month|lastmonth|custom (&fro
         foreach ($list as $k => $r) { $m = $marks[$k] ?? []; $line = [$r['reg_no'], $r['name']];
             foreach ($dl as $dt) $line[] = isset($m[$dt]) ? strtoupper($m[$dt][0]) : (date('w', strtotime($dt)) === '0' ? 'S' : '-');
             $c = array_count_values($m); $line[] = (string)($c['present'] ?? 0); $line[] = $pct($c['present'] ?? 0, ($c['present'] ?? 0) + ($c['absent'] ?? 0) + ($c['leave'] ?? 0)); $reg[] = $line; }
-        $sections[] = ['title' => 'Register', 'right_text' => 'P present · A absent · L leave · H holiday · S Sunday', 'head' => array_merge(['Adm. ID', 'Student'], array_map(fn($dt) => date('j', strtotime($dt)), $dl), ['P', '%']),
+        $sections[] = ['title' => 'Register', 'right_text' => 'P present · A absent · L leave · H holiday · S Sunday', 'head' => array_merge(['Admission ID', 'Student'], array_map(fn($dt) => date('j', strtotime($dt)), $dl), ['P', '%']),
             'body' => $reg, 'small' => true, 'right' => [], 'empty' => ''];
     }
     $out(['title' => 'ATTENDANCE REPORT', 'subtitle' => $plabel . ' · ' . $d($a) . ($a !== $b ? ' to ' . $d($b) : ''), 'no' => 'AT-' . date('Ymd', strtotime($b)) . '-' . count($rows),

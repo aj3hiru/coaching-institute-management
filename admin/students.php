@@ -136,7 +136,7 @@ $filtered = $f['type'] !== '' || $f['q'] !== '' || $f['class'] || $f['course'] |
 
 <div class="ci-card"><div class="ci-card-b"><form method="get" class="ci-filters" id="ci-filter">
   <div class="ci-f"><label>Student type</label><select name="type"><option value="">All students</option><?php foreach (['institute' => 'Institute only', 'online' => 'Online only', 'both' => 'Both (institute + online)'] as $k => $l): ?><option value="<?= $k ?>" <?= $f['type'] === $k ? 'selected' : '' ?>><?= $l ?></option><?php endforeach; ?></select></div>
-  <div class="ci-f" style="grid-column:span 2"><label>Search</label><input name="q" value="<?= ci_e($f['q']) ?>" placeholder="Name, mobile, reg. no., father's name, email"></div>
+  <div class="ci-f" style="grid-column:span 2"><label>Search</label><input name="q" value="<?= ci_e($f['q']) ?>" placeholder="Name, mobile, admission ID, father's name, email"></div>
   <div class="ci-f"><label>Class</label><select name="class"><option value="0">All classes</option><?php foreach ($L['classes'] as $id => $n): ?><option value="<?= $id ?>" <?= $f['class'] === $id ? 'selected' : '' ?>><?= ci_e($n) ?></option><?php endforeach; ?></select></div>
   <div class="ci-f"><label>Course</label><select name="course" id="ci-f-course"><option value="0">All courses</option><?php foreach ($L['courses'] as $id => $c): ?><option value="<?= $id ?>" <?= $f['course'] === $id ? 'selected' : '' ?>><?= ci_e($c['name']) ?></option><?php endforeach; ?></select></div>
   <div class="ci-f"><label>Batch</label><select name="batch" id="ci-f-batch"><option value="0">All batches</option><?php foreach ($L['batches'] as $id => $b): ?><option value="<?= $id ?>" data-c="<?= (int)$b['course_id'] ?>" <?= $f['batch'] === $id ? 'selected' : '' ?>><?= ci_e($b['name'] . ($b['timing'] ? ' · ' . $b['timing'] : '')) ?></option><?php endforeach; ?></select></div>
@@ -146,7 +146,7 @@ $filtered = $f['type'] !== '' || $f['q'] !== '' || $f['class'] || $f['course'] |
   <div class="ci-f"><label>Address / city / PIN</label><input name="place" value="<?= ci_e($f['place']) ?>" placeholder="e.g. Bettiah"></div>
   <div class="ci-f"><label>Admitted from</label><input type="date" name="from" value="<?= ci_e($f['from']) ?>"></div>
   <div class="ci-f"><label>Admitted to</label><input type="date" name="to" value="<?= ci_e($f['to']) ?>"></div>
-  <div class="ci-f"><label>Sort</label><select name="sort"><?php foreach (['new' => 'Newest first', 'old' => 'Oldest first', 'name' => 'Name A–Z', 'reg' => 'Reg. no.', 'due' => 'Highest due'] as $k => $l): ?><option value="<?= $k ?>" <?= $f['sort'] === $k ? 'selected' : '' ?>><?= $l ?></option><?php endforeach; ?></select></div>
+  <div class="ci-f"><label>Sort</label><select name="sort"><?php foreach (['new' => 'Newest first', 'old' => 'Oldest first', 'name' => 'Name A–Z', 'reg' => 'Admission ID', 'due' => 'Highest due'] as $k => $l): ?><option value="<?= $k ?>" <?= $f['sort'] === $k ? 'selected' : '' ?>><?= $l ?></option><?php endforeach; ?></select></div>
   <div class="ci-fbtn"><button class="ci-btn" type="submit"><i class="fas fa-filter"></i> Filter</button><?php if ($filtered): ?><a class="ci-btn ci-ghost" href="/admin/students.php">Clear</a><?php endif; ?></div>
 </form></div></div>
 

@@ -248,7 +248,7 @@ function edu_csv_students(PDO $pdo, array $f): array
         round((float)$r['net'], 2), round((float)$r['paid'], 2), round(max(0, (float)$r['net'] - (float)$r['paid']), 2), $r['notes']];
     return $rows;
 }
-const EDU_CSV_STUDENT_HEAD = ['Reg. no.', 'Name', 'Type', "Father's name", "Mother's name", 'Date of birth', 'Gender', 'Mobile', 'Alternate mobile', 'Email', 'Address', 'City', 'State', 'PIN code', 'Class', 'School', 'Status', 'Admission date', 'Institute courses / batches', 'Online courses / notes', 'Fee', 'Paid', 'Due', 'Notes'];
+const EDU_CSV_STUDENT_HEAD = ['Admission ID', 'Name', 'Type', "Father's name", "Mother's name", 'Date of birth', 'Gender', 'Mobile', 'Alternate mobile', 'Email', 'Address', 'City', 'State', 'PIN code', 'Class', 'School', 'Status', 'Admission date', 'Institute courses / batches', 'Online courses / notes', 'Fee', 'Paid', 'Due', 'Notes'];
 
 /** Students from a CSV: needs Name + Mobile; a student with the same name + mobile is skipped. Returns [added, skipped, errors]. */
 function edu_csv_import_students(PDO $pdo, string $file, int $by): array
@@ -314,7 +314,7 @@ function edu_csv_orders(PDO $pdo, array $f): array
         ['paid' => 'Paid', 'created' => 'Not paid', 'failed' => 'Failed'][$o['status']] ?? $o['status'], str_starts_with((string)$o['rzp_order'], 'manual_') ? 'Office' : 'Online', $o['method'], $o['rzp_payment']];
     return $rows;
 }
-const EDU_CSV_ORDER_HEAD = ['Order', 'Date', 'Student', 'Mobile', 'Email', 'Reg. no.', 'Item', 'Amount', 'Status', 'Where', 'Method', 'Payment id'];
+const EDU_CSV_ORDER_HEAD = ['Order', 'Date', 'Student', 'Mobile', 'Email', 'Admission ID', 'Item', 'Amount', 'Status', 'Where', 'Method', 'Payment id'];
 
 /** Fee payments (receipts) CSV for a date range. */
 function edu_csv_fees(PDO $pdo, array $f): array
@@ -327,4 +327,4 @@ function edu_csv_fees(PDO $pdo, array $f): array
     foreach ($q as $p) $rows[] = [$p['receipt_no'], $p['paid_on'], $p['reg_no'], $p['name'], $p['mobile'], $p['course'], $p['batch'], round((float)$p['amount'], 2), ci_pay_mode($p), $p['note'], $p['username']];
     return $rows;
 }
-const EDU_CSV_FEE_HEAD = ['Receipt', 'Date', 'Reg. no.', 'Student', 'Mobile', 'Course', 'Batch', 'Amount', 'Paid by', 'Note', 'Collected by'];
+const EDU_CSV_FEE_HEAD = ['Receipt', 'Date', 'Admission ID', 'Student', 'Mobile', 'Course', 'Batch', 'Amount', 'Paid by', 'Note', 'Collected by'];

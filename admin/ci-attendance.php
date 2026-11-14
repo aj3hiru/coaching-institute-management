@@ -229,7 +229,7 @@ tr.at-hl td{background:#fefce8}
 </div>
 
 <div class="ci-card" data-ds="Students"><div class="ci-card-b ci-p0 ci-table-wrap"><table class="ci-table" id="atT" data-sheet="off">
-  <thead><tr><th class="at-sn">S.No.</th><th>Student</th><th>Adm. ID</th><th>Class</th><th>Batch</th><th>Attendance</th><th>Check-in / out</th></tr></thead>
+  <thead><tr><th class="at-sn">S.No.</th><th>Student</th><th>Admission ID</th><th>Class</th><th>Batch</th><th>Attendance</th><th>Check-in / out</th></tr></thead>
   <tbody>
   <?php if (!$rows): ?><tr><td colspan="7" class="ci-empty">No students for these filters. Students show here when they are in an active batch / course.</td></tr><?php endif; ?>
   <?php foreach ($rows as $i => $r): ?>

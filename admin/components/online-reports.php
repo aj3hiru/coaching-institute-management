@@ -82,7 +82,7 @@ if ($type === 'ostudents') {
                     ['head' => 'ACCOUNTS', 'rows' => [['Accounts', (string)count($all)], ['Bought something', (string)$buyers], ['Own nothing yet', (string)count(array_filter($all, fn($u) => !(int)$u['owned']))],
                         ['Online only', (string)count(array_filter($all, fn($u) => ($u['stype'] ?? '') === 'online'))], ['Both (institute + online)', (string)count(array_filter($all, fn($u) => in_array($u['stype'] ?? '', ['both', 'institute'], true)))], ['Total spent (listed)', $rs($spent)]]]],
         'sections' => [
-            ['title' => 'Online students', 'right_text' => count($rows) . ' account(s)', 'head' => ['No.', 'Name', 'Mobile', 'Email', 'Joined', 'Last login', 'Owns', 'Free', 'Paid orders', 'Spent', 'Reg. no. · Type'],
+            ['title' => 'Online students', 'right_text' => count($rows) . ' account(s)', 'head' => ['No.', 'Name', 'Mobile', 'Email', 'Joined', 'Last login', 'Owns', 'Free', 'Paid orders', 'Spent', 'Admission ID · Type'],
                 'body' => array_map(fn($u, $i) => [$i + 1, $u['name'], $u['mobile'], $u['email'] ?: '-', $d($u['created_at']), $u['last_login'] ? $d($u['last_login']) : '-', (string)(int)$u['owned'], (string)(int)$u['freec'], (string)(int)$u['orders'], $rs0($u['spent']), ($u['reg_no'] ? $u['reg_no'] . ' · ' : '') . (CI_STYPES[$u['stype'] ?? ''] ?? '-')], $rows, array_keys($rows)),
                 'foot' => $rows ? [['', 'Total', '', '', '', '', (string)array_sum(array_column($rows, 'owned')), (string)array_sum(array_column($rows, 'freec')), (string)array_sum(array_column($rows, 'orders')), $rs0($spent), '']] : null,
                 'right' => [6, 7, 8, 9], 'small' => true, 'empty' => 'No online accounts here.'],

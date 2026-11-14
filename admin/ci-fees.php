@@ -49,7 +49,7 @@ if ($tab === 'payments') {
     $st->execute($a);
     $rows = $st->fetchAll(PDO::FETCH_ASSOC);
     if ($csv) {
-        ci_csv("fee-payments-$from-to-$to.csv", ['Receipt', 'Date', 'Reg. no.', 'Student', 'Mobile', 'Course', 'Batch', 'Paid by', 'Amount', 'Due now', 'Note', 'Entered by'],
+        ci_csv("fee-payments-$from-to-$to.csv", ['Receipt', 'Date', 'Admission ID', 'Student', 'Mobile', 'Course', 'Batch', 'Paid by', 'Amount', 'Due now', 'Note', 'Entered by'],
             array_map(fn($r) => [$r['receipt_no'], $r['paid_on'], $r['reg_no'], $r['name'], $r['mobile'], $r['course_name'], $r['batch_name'], ci_pay_mode($r),
                 number_format((float)$r['amount'], 2, '.', ''), $r['due_now'] === null ? '' : ((float)$r['due_now'] > 0.004 ? number_format((float)$r['due_now'], 2, '.', '') : 'Full Paid'), $r['note'], $r['username']], $rows));
     }
@@ -74,7 +74,7 @@ if ($tab === 'payments') {
     $st->execute($a);
     $rows = $st->fetchAll(PDO::FETCH_ASSOC);
     if ($csv) {
-        ci_csv('fee-dues-' . ($from !== '' ? "$from-to-$to" : 'all') . '.csv', ['Reg. no.', 'Student', 'Mobile', 'Alternate mobile', 'Course', 'Batch', 'Fee', 'Discount', 'Paid', 'Due', 'Next due date'],
+        ci_csv('fee-dues-' . ($from !== '' ? "$from-to-$to" : 'all') . '.csv', ['Admission ID', 'Student', 'Mobile', 'Alternate mobile', 'Course', 'Batch', 'Fee', 'Discount', 'Paid', 'Due', 'Next due date'],
             array_map(fn($r) => [$r['reg_no'], $r['name'], $r['mobile'], $r['alt_mobile'], $r['course_name'], $r['batch_name'], number_format((float)$r['fee'], 2, '.', ''),
                 number_format((float)$r['discount'], 2, '.', ''), number_format((float)$r['paid'], 2, '.', ''), number_format((float)$r['due'], 2, '.', ''), $r['due_date']], $rows));
     }
@@ -97,7 +97,7 @@ if (($_GET['export'] ?? '') === 'pdf') {
         $mode = []; foreach ($byMethod as $m => $v) $mode[] = [CI_METHODS[$m] ?? ucfirst($m), $money($v)];
         $doc = ['title' => 'FEE COLLECTION REPORT', 'subtitle' => 'Fees received', 'no' => $no, 'file' => 'fees-report_' . ($from ?: 'all') . '_' . ($to ?: 'all'), 'landscape' => true,
             'boxes' => [['head' => 'REPORT FOR', 'rows' => array_slice($flt, 0, 6)], ['head' => 'FIGURES', 'rows' => array_slice(array_merge([['Receipts', (string)count($rows)], ['Total received', $money($sum)]], $mode), 0, 6)]],
-            'sections' => [['title' => 'Fees received', 'right_text' => count($rows) . ' receipt(s)', 'head' => ['No.', 'Receipt', 'Date', 'Reg. No.', 'Student', 'Mobile', 'Course / batch', 'Paid by', 'Amount', 'Due now', 'Entered by'],
+            'sections' => [['title' => 'Fees received', 'right_text' => count($rows) . ' receipt(s)', 'head' => ['No.', 'Receipt', 'Date', 'Admission ID', 'Student', 'Mobile', 'Course / batch', 'Paid by', 'Amount', 'Due now', 'Entered by'],
                 'body' => $body, 'foot' => $body ? [['', '', '', '', 'Total', '', '', '', $money($sum), '', '']] : null, 'right' => [8, 9], 'small' => true, 'empty' => 'No fees in this period.']],
             'notes' => [count($rows) . ' receipt(s), ' . $money($sum) . ' received (' . $periodTxt . ').', 'Due now = what is still left on that course today.']];
     } else {
@@ -109,7 +109,7 @@ if (($_GET['export'] ?? '') === 'pdf') {
         }
         $doc = ['title' => 'FEE DUES REPORT', 'subtitle' => 'Fee still to come', 'no' => $no, 'file' => 'dues-report_' . ($from ?: 'all') . '_' . ($to ?: 'all'), 'landscape' => true,
             'boxes' => [['head' => 'REPORT FOR', 'rows' => array_slice($flt, 0, 6)], ['head' => 'FIGURES', 'rows' => [['Students with due', (string)count($rows)], ['Fee (after discount)', $money($tf)], ['Paid', $money($tp)], ['Due', $money($sum)]]]],
-            'sections' => [['title' => 'Dues', 'right_text' => count($rows) . ' course(s)', 'head' => ['No.', 'Reg. No.', 'Student', 'Mobile', 'Course / batch', 'Fee', 'Paid', 'Due', 'Next due date'],
+            'sections' => [['title' => 'Dues', 'right_text' => count($rows) . ' course(s)', 'head' => ['No.', 'Admission ID', 'Student', 'Mobile', 'Course / batch', 'Fee', 'Paid', 'Due', 'Next due date'],
                 'body' => $body, 'foot' => $body ? [['', '', 'Total', '', '', $money($tf), $money($tp), $money($sum), '']] : null, 'right' => [5, 6, 7], 'small' => true, 'empty' => 'No dues for these filters.']],
             'notes' => [count($rows) . ' course(s) with fee still due: ' . $money($sum) . ' in total (' . $periodTxt . ').']];
     }
@@ -153,7 +153,7 @@ $qs = function (array $over = []) {
 </div>
 <?php endif; ?>
 <div class="ci-card"><div class="ci-card-b"><form method="get" class="ci-filters">
-  <div class="ci-f"><label>Search</label><input name="q" value="<?= ci_e($q) ?>" placeholder="Name, mobile, reg. no.<?= $tab === 'payments' ? ', receipt' : '' ?>"></div>
+  <div class="ci-f"><label>Search</label><input name="q" value="<?= ci_e($q) ?>" placeholder="Name, mobile, admission ID<?= $tab === 'payments' ? ', receipt' : '' ?>"></div>
   <div class="ci-f"><label><?= $tab === 'dues' ? 'Due date' : 'Period' ?></label><select name="period" id="cfPeriod"><?php foreach ($PERIODS as $k => $l): ?><option value="<?= $k ?>" <?= $period === $k ? 'selected' : '' ?>><?= $l ?></option><?php endforeach; ?></select></div>
   <div class="ci-f cf-custom"<?= $period === 'custom' ? '' : ' hidden' ?>><label>From</label><input type="date" name="from" value="<?= ci_e($period === 'custom' ? $from : $today) ?>"<?= $period === 'custom' ? '' : ' disabled' ?>></div>
   <div class="ci-f cf-custom"<?= $period === 'custom' ? '' : ' hidden' ?>><label>To</label><input type="date" name="to" value="<?= ci_e($period === 'custom' ? $to : $today) ?>"<?= $period === 'custom' ? '' : ' disabled' ?>></div>

@@ -104,7 +104,7 @@ table.lines{width:100%;border-collapse:collapse;font-size:13px;border:1px solid 
       <tr><td>Receipt No.:</td><td><?= ci_e($r['receipt_no']) ?></td></tr>
       <tr><td>Date:</td><td><?= ci_date($r['paid_on']) ?></td></tr>
       <?php if ($r['session_name']): ?><tr><td>Session:</td><td><?= ci_e($r['session_name']) ?></td></tr><?php endif; ?>
-      <tr><td>Reg. No.:</td><td><?= ci_e($r['reg_no']) ?></td></tr>
+      <tr><td>Admission ID:</td><td><?= ci_e($r['reg_no']) ?></td></tr>
     </table></div>
   </div>
   <div class="boxes">
@@ -145,7 +145,7 @@ table.lines{width:100%;border-collapse:collapse;font-size:13px;border:1px solid 
     <tr><td>Receipt</td><td class="r"><?= ci_e($r['receipt_no']) ?></td></tr>
     <tr><td>Date</td><td class="r"><?= ci_date($r['paid_on']) ?></td></tr>
     <tr><td>Student</td><td class="r"><?= ci_e($r['name']) ?></td></tr>
-    <tr><td>Reg. No.</td><td class="r"><?= ci_e($r['reg_no']) ?></td></tr>
+    <tr><td>Admission ID</td><td class="r"><?= ci_e($r['reg_no']) ?></td></tr>
     <tr><td>Course</td><td class="r"><?= ci_e($r['course_name'] ?? '—') ?></td></tr>
     <?php if ($r['batch_name']): ?><tr><td>Batch</td><td class="r"><?= ci_e($r['batch_name']) ?></td></tr><?php endif; ?>
     <tr><td>Plan</td><td class="r"><?= $isInst ? 'Installment ' . (int)$instNo : 'Final fee' ?></td></tr>

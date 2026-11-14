@@ -27,7 +27,7 @@
             institute: d.institute, generated: d.generated, viewer: d.viewer,
             boxes: [{ head: 'REPORT FOR', rows: (d.filters.length ? d.filters : ['All students']).slice(0, 6).map(function (f) { var i = f.indexOf(': '); return i > 0 ? [f.slice(0, i), f.slice(i + 2)] : ['Filter', f]; }) },
                     { head: 'FIGURES', rows: [['Students', String(d.rows.length) + ' (Institute ' + t.Institute + ' · Online ' + t.Online + ' · Both ' + t.Both + ')'], ['Active', String(t.active)], ['Left', String(t.left)], ['Fee collected', rs(t.paid)], ['Fee due', rs(t.due)]] }],
-            sections: [{ title: 'Students', right_text: d.rows.length + ' student(s)', head: ['No.', 'Reg. No.', 'Student', 'Type', 'Mobile', 'Class', 'Courses / batches', 'Admission', 'Status', 'Fee', 'Paid', 'Due'], body: body,
+            sections: [{ title: 'Students', right_text: d.rows.length + ' student(s)', head: ['No.', 'Admission ID', 'Student', 'Type', 'Mobile', 'Class', 'Courses / batches', 'Admission', 'Status', 'Fee', 'Paid', 'Due'], body: body,
                 foot: body.length ? [['', '', 'Total', '', '', '', '', '', '', rs(t.fee), rs(t.paid), rs(t.due)]] : null, right: [9, 10, 11], small: true, empty: 'No students match these filters.' }],
             notes: [d.rows.length + ' student(s) in this list: ' + t.active + ' active, ' + t.left + ' left · Institute ' + t.Institute + ', Online ' + t.Online + ', Both ' + t.Both + '.', 'Fee: ' + rs(t.fee) + ' in total, ' + rs(t.paid) + ' collected, ' + rs(t.due) + ' still due.']
         };
