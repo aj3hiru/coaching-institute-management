@@ -21,8 +21,19 @@ if ($act !== '') {
         if ($date !== $today) $out(['ok' => false, 'kind' => 'error', 'msg' => 'Scanning works for today only — switch the date to today.']);
         $r = ci_att_scan($pdo, (string)($_POST['code'] ?? ''), (int)($_POST['batch'] ?? 0), (int)$me['id']);
         $s = $r['student'] ?? null;
+        $more = [];
+        if ($s) { // for the scan screen's card: batches, fee due, today's times
+            $q = $pdo->prepare("SELECT (SELECT COALESCE(SUM(" . CI_DUE_SQL . "),0) FROM ci_enrollments e WHERE e.student_id = ?) AS due,
+                (SELECT GROUP_CONCAT(DISTINCT b.name ORDER BY b.name SEPARATOR ', ') FROM ci_enrollments e JOIN ci_batches b ON b.id = e.batch_id WHERE e.student_id = ? AND e.status = 'active' AND b.status = 'active') AS batches,
+                (SELECT MIN(in_at) FROM ci_attendance WHERE student_id = ? AND att_date = CURDATE()) AS in_at, (SELECT MAX(out_at) FROM ci_attendance WHERE student_id = ? AND att_date = CURDATE()) AS out_at");
+            $sid = (int)$s['id']; $q->execute([$sid, $sid, $sid, $sid]); $more = $q->fetch(PDO::FETCH_ASSOC) ?: [];
+        }
         $out(['ok' => $r['ok'], 'kind' => $r['kind'], 'msg' => $r['msg'], 'student' => $s ? ['id' => (int)$s['id'], 'name' => $s['name'], 'reg' => $s['reg_no'],
-            'class' => $s['class_name'], 'photo' => ci_photo_url($s['photo'] ?? ''), 'avatar' => ci_avatar($s, 56)] : null, 'time' => date('h:i A')]);
+            'class' => $s['class_name'], 'photo' => ci_photo_url($s['photo'] ?? ''), 'avatar' => ci_avatar($s, 56),
+            'father' => (string)($s['father_name'] ?? ''), 'mobile' => (string)$s['mobile'], 'batches' => (string)($more['batches'] ?? ''),
+            'due' => round((float)($more['due'] ?? 0), 2), 'due_text' => (float)($more['due'] ?? 0) > 0 ? ci_money0($more['due']) : '',
+            'in' => !empty($more['in_at']) ? date('h:i A', strtotime($more['in_at'])) : '', 'out' => !empty($more['out_at']) ? date('h:i A', strtotime($more['out_at'])) : ''] : null,
+            'time' => date('h:i A')]);
     }
     if ($act === 'mark') { // one or many [student, batch] pairs → one status
         $status = (string)($_POST['status'] ?? '');
@@ -138,6 +149,12 @@ $checkedIn = count(array_filter($rows, fn($r) => $r['status'] === 'present' && $
 .at-scan input{width:100%;box-sizing:border-box;height:46px;padding:0 12px;border:2px solid var(--ci-acc,#4a3369);font:inherit;font-size:16px;letter-spacing:.04em}
 .at-scan input:focus{outline:none;box-shadow:0 0 0 3px rgba(74,51,105,.15)}
 .ci-table .at-sn{width:1%;white-space:nowrap;text-align:center;padding-left:12px;padding-right:6px;color:#6b7280}
+.at-scr{position:fixed;inset:0;z-index:1000;background:rgba(17,12,28,.55);display:flex;align-items:center;justify-content:center;padding:16px}
+.at-scr[hidden]{display:none}
+.at-scr-box{width:min(1100px,100%);height:min(820px,100%);background:#fff;display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(0,0,0,.3)}
+.at-scr-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;border-bottom:1px solid #e5e7eb}.at-scr-h b{font-size:15px}.at-scr-h .ci-muted{font-size:13px}
+.at-scr iframe{flex:1;width:100%;border:0;min-height:0}
+@media (max-width:700px){.at-scr{padding:0}.at-scr-h .ci-muted{display:none}}
 .at-scan small{display:block;margin-top:6px;color:#6b7280;font-size:12px}
 .at-scan-row{display:flex;gap:8px}.at-scan-row input{flex:1;min-width:0}.at-scan-row button{flex:none;height:46px;padding:0 16px;border:0;background:var(--ci-acc,#4a3369);color:#fff;font:inherit;font-size:14px;font-weight:700;cursor:pointer}.at-scan-row button:disabled{opacity:.5;cursor:not-allowed}
 .at-last{display:flex;gap:12px;align-items:center;margin-top:12px;padding:10px;border:1px solid #e5e7eb;min-height:56px}
@@ -169,7 +186,7 @@ tr.at-hl td{background:#fefce8}
 </style>
 </head>
 <body>
-<?php admin_shell_open('Attendance', date('l, d M Y', strtotime($f['date'])), '<div class="ci-top-actions"><button type="button" class="ci-btn ci-ghost" id="atSetBtn"><i class="fas fa-clock"></i> Check-out time</button><a class="ci-btn ci-ghost" href="/admin/ci-reports.php?type=attendance"><i class="fas fa-file-pdf"></i> Attendance report</a></div>'); ?>
+<?php admin_shell_open('Attendance', date('l, d M Y', strtotime($f['date'])), '<div class="ci-top-actions">' . ($isToday ? '<button type="button" class="ci-btn" id="atScrBtn"><i class="fas fa-id-card"></i> Scan screen</button>' : '') . '<button type="button" class="ci-btn ci-ghost" id="atSetBtn"><i class="fas fa-clock"></i> Check-out time</button><a class="ci-btn ci-ghost" href="/admin/ci-reports.php?type=attendance"><i class="fas fa-file-pdf"></i> Attendance report</a></div>'); ?>
 <div class="ci">
 <div class="at-top">
   <form class="ci-filters" method="get" id="atF" data-ds="Filters" style="margin:0">
@@ -226,6 +243,10 @@ tr.at-hl td{background:#fefce8}
 </table></div></div>
 </div>
 
+<div class="at-scr" id="atScr" hidden><div class="at-scr-box" role="dialog" aria-modal="true" aria-label="Scan screen">
+  <div class="at-scr-h"><b><i class="fas fa-id-card"></i> Scan screen</b><span class="ci-muted">Scan cards one after another — each card shows here and is marked at once.</span><span style="flex:1"></span>
+    <a class="ci-btn ci-ghost" href="/admin/ci-scan.php" target="_blank" rel="noopener"><i class="fas fa-up-right-from-square"></i> Open in new tab</a><button type="button" class="ci-btn ci-ghost" data-close aria-label="Close"><i class="fas fa-times"></i></button></div>
+  <iframe title="Scan screen" data-src="/admin/ci-scan.php?embed=1"></iframe></div></div>
 <div class="ci-modal" id="atSet" hidden><div class="ci-modal-box" role="dialog" aria-modal="true" aria-labelledby="atSetH">
   <div class="ci-card-h"><h3 id="atSetH">Check-out time</h3><button type="button" class="ci-x" data-close aria-label="Close"><i class="fas fa-times"></i></button></div>
   <form class="ci-card-b" id="atSetF">
@@ -254,6 +275,19 @@ tr.at-hl td{background:#fefce8}
   // filters: a change shows the list at once
   var F = document.getElementById('atF');
   F.addEventListener('change', function (e) { if (e.target.name !== 'q') F.submit(); });
+  // live search: the list filters while typing (name, admission ID, mobile); Enter still searches every batch on the server
+  var QI = F.querySelector('[name=q]'), noHit = null;
+  function liveQ() {
+    var q = QI.value.trim().toLowerCase(), qn = /^\d+$/.test(q) ? q.replace(/^0+/, '') : null, n = 0;
+    document.querySelectorAll('#atT tr[data-sid]').forEach(function (tr) {
+      var nm = tr.querySelector('.at-name a').textContent.toLowerCase(), reg = (tr.dataset.reg || '').toLowerCase(), mob = tr.querySelector('.at-name small').textContent;
+      var hit = !q || nm.indexOf(q) > -1 || reg.indexOf(q) > -1 || mob.indexOf(q) > -1 || (qn !== null && qn !== '' && reg.replace(/^0+/, '') === qn);
+      tr.hidden = !hit; if (hit) n++;
+    });
+    if (!noHit) { noHit = document.createElement('tr'); noHit.innerHTML = '<td colspan="7" class="ci-empty">No student in this list matches — press Enter to search all batches.</td>'; document.querySelector('#atT tbody').appendChild(noHit); }
+    noHit.hidden = !!n || !document.querySelector('#atT tr[data-sid]');
+  }
+  if (QI) { QI.addEventListener('input', liveQ); if (QI.value) liveQ(); }
   // P / A / L on a row (clicking the chosen one again clears it)
   function setRow(tr, st) { tr.querySelectorAll('.at-st button').forEach(function (b) { b.classList.toggle('on', b.dataset.s === st); }); var t = tr.querySelector('.at-t'); t.dataset.st = st; if (st !== 'present') { t.dataset.in = ''; t.dataset.out = ''; } drawT(t); }
   // check-in / out cell: times, or a button to check in / out by hand (today, a student without a card)
@@ -323,13 +357,16 @@ tr.at-hl td{background:#fefce8}
     if (window.EduDialog) EduDialog.confirm(text, { title: 'Attendance', ok: rest ? 'Mark absent' : 'Mark present' }).then(function (y) { if (y) go(); }); else if (confirm(text)) go();
   }); });
   // barcode scanner (types the admission ID + Enter) or typing by hand
-  var scan = document.getElementById('atScan'), last = document.getElementById('atLast'), busy = false;
+  var scan = document.getElementById('atScan'), last = document.getElementById('atLast');
   function esc(t) { return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   var scanF = document.getElementById('atScanF');
   if (scanF) scanF.addEventListener('submit', function (e) {
     e.preventDefault();
-    var code = scan.value.trim(); if (!code || busy) return; busy = true; scan.value = '';
-    post({ action: 'scan', code: code, batch: BATCH }).then(function (d) {
+    var code = scan.value.trim(); if (!code) return; scan.value = ''; // no waiting: fast scans each go at once
+    post({ action: 'scan', code: code, batch: BATCH }).then(function (d) { applyScan(d, code, true); }).catch(function () { toast('Could not reach the server — scan again.', false); }).then(function () { scan.focus(); });
+  });
+  // a scan's answer → the "last scan" box and the student's row (also used by the Scan screen popup)
+  function applyScan(d, code, sound) {
       var s = d.student;
       last.className = 'at-last ' + (d.kind || 'error'); last.hidden = false;
       last.innerHTML = (s ? s.avatar : '<i class="fas fa-circle-xmark" style="font-size:28px;color:#dc2626"></i>') + '<div><b>' + esc(s ? s.name : code) + '</b><span>' + esc(d.msg) + '</span>'
@@ -343,9 +380,17 @@ tr.at-hl td{background:#fefce8}
           tr.classList.add('at-hl'); setTimeout(function () { tr.classList.remove('at-hl'); }, 2500);
         });
       }
-      try { var a = new (window.AudioContext || window.webkitAudioContext)(), o = a.createOscillator(); o.frequency.value = d.ok ? 880 : 220; o.connect(a.destination); o.start(); o.stop(a.currentTime + 0.12); } catch (x) {}
-    }).catch(function () { toast('Could not reach the server — scan again.', false); }).then(function () { busy = false; scan.focus(); });
-  });
+      if (sound) try { var a = new (window.AudioContext || window.webkitAudioContext)(), o = a.createOscillator(); o.frequency.value = d.ok ? 880 : 220; o.connect(a.destination); o.start(); o.stop(a.currentTime + 0.12); } catch (x) {}
+  }
+  // Scan screen popup (the same page as "Open in new tab"); its scans update this list too
+  var scr = document.getElementById('atScr'), scrBtn = document.getElementById('atScrBtn');
+  if (scr && scrBtn) {
+    var fr = scr.querySelector('iframe');
+    scrBtn.addEventListener('click', function () { if (!fr.src) fr.src = fr.dataset.src; scr.hidden = false; setTimeout(function () { try { fr.contentWindow.document.getElementById('code').focus(); } catch (x) {} }, 300); });
+    scr.addEventListener('click', function (e) { if (e.target === scr || e.target.closest('[data-close]')) { scr.hidden = true; if (scan) scan.focus(); } });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !scr.hidden) scr.hidden = true; });
+    window.addEventListener('message', function (e) { if (e.origin === location.origin && e.data && e.data.ciScan) applyScan(e.data.ciScan, '', false); });
+  }
   // check-out time setting
   var m = document.getElementById('atSet'), sf = document.getElementById('atSetF');
   document.getElementById('atSetBtn').addEventListener('click', function () { m.hidden = false; sf.min_out.focus(); });
