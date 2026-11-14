@@ -258,7 +258,8 @@ if (function_exists('sh_perm') && sh_perm($me, 'customers')) { sh_tables($pdo); 
 <div class="ci-pf">
   <aside class="ci-pf-side">
     <div class="ci-card ci-det sv-fold" data-ds="Student details"><div class="ci-card-h" role="button" tabindex="0" aria-expanded="false"><h3>Student details</h3><?php if (ci_perm($me, 'edit_student')): ?><?= ci_ico('edit', '/admin/student-edit.php?id=' . $id, 'Edit details') ?><?php endif; ?></div><div class="ci-card-b">
-      <?php $detKv = array_diff_key($allKv, array_flip(['Full name', 'Reg. no.', 'Class', 'Mobile', 'Status', 'Admission date'])); // the card on top already shows these ?>
+      <?php // only what the card on top does not show: it has name, ID, class, status, both mobiles, father, admission date and the city (or the address when there is no city)
+        $detKv = array_diff_key($allKv, array_flip(['Full name', 'Reg. no.', 'Class', 'Mobile', 'Alternate mobile', "Father's name", 'Status', 'Admission date', $s['city'] ? 'City' : 'Address'])); ?>
       <dl class="ci-kv ci-kv1 sv-det"><?php foreach ($detKv as $k => $v): ?><dt><?= ci_e($k) ?></dt><dd><?= ci_e($v) ?></dd><?php endforeach; ?></dl>
       <?php if ($s['notes']): ?><div class="ci-det-notes"><b>Notes</b><br><?= nl2br(ci_e($s['notes'])) ?></div><?php endif; ?>
     </div></div>
