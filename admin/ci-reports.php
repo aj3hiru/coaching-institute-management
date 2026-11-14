@@ -18,6 +18,9 @@ $L = ci_lists($pdo);
 $students = $pdo->query("SELECT s.id, s.reg_no, s.name, s.status, c.name AS class_name FROM ci_students s LEFT JOIN ci_classes c ON c.id = s.class_id ORDER BY s.name")->fetchAll(PDO::FETCH_ASSOC);
 $courses = $pdo->query("SELECT id, name, status FROM ci_courses ORDER BY status = 'active' DESC, name")->fetchAll(PDO::FETCH_ASSOC);
 $batches = $pdo->query("SELECT b.id, b.name, b.status, c.name AS course_name, se.name AS session_name FROM ci_batches b LEFT JOIN ci_courses c ON c.id = b.course_id LEFT JOIN ci_sessions se ON se.id = b.session_id ORDER BY b.status = 'active' DESC, c.name, b.name")->fetchAll(PDO::FETCH_ASSOC);
+// attendance / ID cards: only the institute's (offline) side — courses that have batches, batches, non-online students
+$instCourses = array_values(array_filter($courses, fn($c) => (int)$pdo->query("SELECT COUNT(*) FROM ci_batches WHERE course_id = " . (int)$c['id'])->fetchColumn() > 0));
+$instStudents = $pdo->query("SELECT s.id, s.reg_no, s.name FROM ci_students s WHERE s.stype <> 'online' AND s.status = 'active' ORDER BY s.name")->fetchAll(PDO::FETCH_ASSOC);
 $tag = fn(string $st) => $st === 'active' ? '' : ' — ' . ucfirst($st);
 $canFees = ci_perm($me, 'fees');
 $types = ($canFees ? ['fees'] : []) + [];
@@ -145,14 +148,14 @@ $pre = ['type' => in_array((string)($_GET['type'] ?? ''), $types, true) ? (strin
     <form class="rp-pane ci-filters" data-pane="attendance" data-generic onsubmit="return false" hidden>
       <div class="ci-f"><label>Period</label><select name="period"><?php foreach (['month' => 'This month', 'lastmonth' => 'Last month', 'week' => 'This week', 'today' => 'Today', 'yesterday' => 'Yesterday', 'custom' => 'Choose dates'] as $k => $l): ?><option value="<?= $k ?>"><?= $l ?></option><?php endforeach; ?></select></div><?= $dates ?>
       <div class="ci-f"><label>Class</label><select name="class"><option value="0">All classes</option><?php foreach ($L['classes'] as $id => $n): ?><option value="<?= $id ?>"><?= ci_e($n) ?></option><?php endforeach; ?></select></div>
-      <div class="ci-f"><label>Course</label><select name="course"><option value="0">All courses</option><?php foreach ($courses as $c): ?><option value="<?= (int)$c['id'] ?>"><?= ci_e($c['name'] . $tag($c['status'])) ?></option><?php endforeach; ?></select></div>
+      <div class="ci-f"><label>Course</label><select name="course"><option value="0">All courses</option><?php foreach ($instCourses as $c): ?><option value="<?= (int)$c['id'] ?>"><?= ci_e($c['name'] . $tag($c['status'])) ?></option><?php endforeach; ?></select></div>
       <div class="ci-f"><label>Batch</label><select name="batch"><option value="0">All batches</option><?php foreach ($batches as $b): ?><option value="<?= (int)$b['id'] ?>"><?= ci_e($b['name'] . ' · ' . $b['course_name'] . $tag($b['status'])) ?></option><?php endforeach; ?></select></div>
     </form>
     <form class="rp-pane ci-filters" data-pane="idcards" onsubmit="return false" hidden>
       <div class="ci-f"><label>Class</label><select name="class"><option value="0">All classes</option><?php foreach ($L['classes'] as $id => $n): ?><option value="<?= $id ?>"><?= ci_e($n) ?></option><?php endforeach; ?></select></div>
-      <div class="ci-f"><label>Course</label><select name="course"><option value="0">All courses</option><?php foreach ($courses as $c): if ($c['status'] !== 'active') continue; ?><option value="<?= (int)$c['id'] ?>"><?= ci_e($c['name']) ?></option><?php endforeach; ?></select></div>
+      <div class="ci-f"><label>Course</label><select name="course"><option value="0">All courses</option><?php foreach ($instCourses as $c): if ($c['status'] !== 'active') continue; ?><option value="<?= (int)$c['id'] ?>"><?= ci_e($c['name']) ?></option><?php endforeach; ?></select></div>
       <div class="ci-f"><label>Batch</label><select name="batch"><option value="0">All batches</option><?php foreach ($batches as $b): if ($b['status'] !== 'active') continue; ?><option value="<?= (int)$b['id'] ?>"><?= ci_e($b['name'] . ' · ' . $b['course_name']) ?></option><?php endforeach; ?></select></div>
-      <div class="ci-f"><label>One student</label><select name="student" data-search><option value="0">All students of the choice</option><?php foreach ($students as $st): ?><option value="<?= (int)$st['id'] ?>"><?= ci_e(($st['reg_no'] ?? '') . ' · ' . $st['name']) ?></option><?php endforeach; ?></select></div>
+      <div class="ci-f"><label>One student</label><select name="student" data-search><option value="0">All students of the choice</option><?php foreach ($instStudents as $st): ?><option value="<?= (int)$st['id'] ?>"><?= ci_e(($st['reg_no'] ?? '') . ' · ' . $st['name']) ?></option><?php endforeach; ?></select></div>
       <p class="ci-muted" style="grid-column:1/-1;margin:0;font-size:13px"><i class="fas fa-print"></i> The cards open in a new tab, ready to print or save as PDF (9 cards on an A4 page).</p>
     </form>
     <?php endif; ?>

@@ -94,8 +94,10 @@ if (!array_intersect(array_keys($_GET), ['date', 'course', 'batch', 'class', 'q'
     foreach ($batches as $b) if ($b['start_time'] && $b['end_time'] && $b['start_time'] <= $soon && $now <= $b['end_time']) { $running = $b; break; }
 }
 if ($running) $f['batch'] = (int)$running['id'];
-$courses = $pdo->query("SELECT id, name FROM ci_courses WHERE status = 'active' ORDER BY name")->fetchAll(PDO::FETCH_KEY_PAIR);
-$w = ["s.status = 'active'", "s.stype <> 'online'", "e.status = 'active'", "(e.batch_id IS NULL OR b.status = 'active')", "(e.enrolled_on IS NULL OR e.enrolled_on <= ?)"];
+// attendance is only for the institute's (offline) batches: courses with no active batch and online students never show
+$courses = $pdo->query("SELECT c.id, c.name FROM ci_courses c WHERE c.status = 'active' AND EXISTS (SELECT 1 FROM ci_batches b WHERE b.course_id = c.id AND b.status = 'active') ORDER BY c.name")->fetchAll(PDO::FETCH_KEY_PAIR);
+$L['classes'] = $pdo->query("SELECT k.id, k.name FROM ci_classes k WHERE EXISTS (SELECT 1 FROM ci_students s JOIN ci_enrollments e ON e.student_id = s.id AND e.status = 'active' JOIN ci_batches b ON b.id = e.batch_id AND b.status = 'active' WHERE s.class_id = k.id AND s.stype <> 'online' AND s.status = 'active') ORDER BY k.sort, k.name")->fetchAll(PDO::FETCH_KEY_PAIR);
+$w = ["s.status = 'active'", "s.stype <> 'online'", "e.status = 'active'", "e.batch_id IS NOT NULL", "b.status = 'active'", "(e.enrolled_on IS NULL OR e.enrolled_on <= ?)"];
 $a = [$f['date']];
 if ($f['course']) { $w[] = 'e.course_id = ?'; $a[] = $f['course']; }
 if ($f['batch']) { $w[] = 'e.batch_id = ?'; $a[] = $f['batch']; }

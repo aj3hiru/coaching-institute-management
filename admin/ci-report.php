@@ -398,7 +398,7 @@ if ($type === 'attendance') { // ?period=today|week|month|lastmonth|custom (&fro
     ci_att_autoclose($pdo, $a, $b); // past classes: the ones not marked are absent
     $hols = ci_holidays_between($pdo, $a, $b);
     // who is in the report: students of the institute's batches / courses in that scope, plus anyone with attendance marked in it
-    $w = ["s.stype <> 'online'"]; $args = [];
+    $w = ["s.stype <> 'online'", "e.batch_id IS NOT NULL"]; $args = []; // only the institute's batches
     if ($cls) { $w[] = 's.class_id = ?'; $args[] = $cls; }
     if ($crs) { $w[] = 'e.course_id = ?'; $args[] = $crs; }
     if ($bat) { $w[] = 'e.batch_id = ?'; $args[] = $bat; }
