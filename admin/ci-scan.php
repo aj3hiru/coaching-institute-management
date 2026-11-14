@@ -75,13 +75,43 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Ari
 .top .sp{flex:1}
 .top .clk{font-variant-numeric:tabular-nums;font-weight:700;color:#374151;font-size:15px;text-align:right;line-height:1.2}.top .clk small{display:block;font-weight:500;color:#6b7280;font-size:12px}
 .top a{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px;border:1px solid #d1d5db;background:#fff;color:#374151;font-size:13px;font-weight:600;text-decoration:none}
-/* connection: green = online, amber = slow / sending the waiting scans, red = no internet or logged out */
-.net{display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 12px;border:1px solid #d1d5db;background:#fff;font-size:13px;font-weight:600;color:#374151;white-space:nowrap}
-.net i{width:9px;height:9px;border-radius:50%;background:#16a34a;box-shadow:0 0 0 3px rgba(22,163,74,.18);flex:none}
-.net.slow i{background:#d97706;box-shadow:0 0 0 3px rgba(217,119,6,.2)}
-.net.off{border-color:#fca5a5;background:#fff5f5;color:#991b1b}.net.off i{background:#dc2626;box-shadow:0 0 0 3px rgba(220,38,38,.2);animation:blink 1s infinite}
+/* connection badge: animated icon per state — ok (tick drawn + soft pulse), sync (turning arrows), retry (wifi waves),
+   off (waves fade + slash drawn), login (lock shakes) */
+.net{display:inline-flex;align-items:center;gap:8px;height:34px;padding:0 12px 0 8px;border:1px solid #d1d5db;border-radius:99px;background:#fff;font-size:13px;font-weight:600;color:#374151;white-space:nowrap;transition:background .3s,border-color .3s,color .3s}
+.net .n-ico{position:relative;display:block;width:22px;height:22px;flex:none;animation:n-in .35s cubic-bezier(.2,.9,.3,1.3)}
+.net svg{width:100%;height:100%;display:block;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;overflow:visible}
+.net span{transition:opacity .2s}.net span em{font-style:normal;font-weight:500;opacity:.75;margin-right:1px}
 .net a{height:auto;padding:0;border:0;background:none;color:inherit;text-decoration:underline}
-@keyframes blink{50%{opacity:.3}}
+@keyframes n-in{from{transform:scale(.4);opacity:0}to{transform:none;opacity:1}}
+/* ok */
+.net.n-ok{border-color:#bbf7d0;background:#f0fdf4;color:#166534}
+.net.n-ok .n-ico{color:#16a34a}
+.net.n-ok .n-ico::before{content:"";position:absolute;inset:0;border-radius:50%;background:rgba(22,163,74,.35);animation:n-pulse 2.4s ease-out infinite}
+.n-ring{stroke-dasharray:60;stroke-dashoffset:60;animation:n-draw .5s ease-out forwards}
+.n-tick{stroke-dasharray:16;stroke-dashoffset:16;animation:n-draw .35s .4s ease-out forwards}
+@keyframes n-draw{to{stroke-dashoffset:0}}
+@keyframes n-pulse{0%{transform:scale(.7);opacity:.9}70%,100%{transform:scale(1.9);opacity:0}}
+/* sync */
+.net.n-sync{border-color:#fde68a;background:#fffbeb;color:#92400e}.net.n-sync .n-ico{color:#d97706}
+.n-spin{animation:n-rot 1s linear infinite;transform-origin:12px 12px}
+@keyframes n-rot{to{transform:rotate(360deg)}}
+/* retry: waves light up one after another */
+.net.n-retry{border-color:#fde68a;background:#fffbeb;color:#92400e}.net.n-retry .n-ico{color:#d97706}
+.n-wifi .w1,.n-wifi .w2,.n-wifi .w3{opacity:.2;animation:n-wave 1.5s ease-in-out infinite}
+.n-wifi .w2{animation-delay:.2s}.n-wifi .w3{animation-delay:.4s}.n-wifi .w0{fill:currentColor;stroke:none}
+@keyframes n-wave{0%,100%{opacity:.2}35%,60%{opacity:1}}
+/* off: waves dim, the slash is drawn, then the icon breathes */
+.net.n-off{border-color:#fca5a5;background:#fef2f2;color:#991b1b}.net.n-off .n-ico{color:#dc2626;animation:n-in .35s cubic-bezier(.2,.9,.3,1.3),n-breath 1.6s .6s ease-in-out infinite}
+.n-cut .w1,.n-cut .w2,.n-cut .w3{animation:none;opacity:.35}
+.n-slash{stroke-width:2.6;stroke-dasharray:25;stroke-dashoffset:25;animation:n-draw .35s .15s ease-out forwards}
+@keyframes n-breath{50%{opacity:.45}}
+/* logged out */
+.net.n-login{border-color:#fca5a5;background:#fef2f2;color:#991b1b}.net.n-login .n-ico{color:#dc2626}
+.n-lock{animation:n-shake .6s .2s ease-in-out 2;transform-origin:12px 20px}.n-lock circle{fill:currentColor;stroke:none}
+.n-shackle{animation:n-open 2.4s 1.2s ease-in-out infinite;transform-origin:16px 10.5px}
+@keyframes n-shake{20%,60%{transform:rotate(-10deg)}40%,80%{transform:rotate(10deg)}}
+@keyframes n-open{0%,70%,100%{transform:none}80%,90%{transform:translateY(-1.6px)}}
+@media (prefers-reduced-motion:reduce){.net *,.net *::before{animation:none!important;stroke-dashoffset:0!important}}
 .inp{display:flex;justify-content:center;padding:14px 16px 0}
 .inp form{display:flex;width:min(520px,100%);gap:8px}
 .inp input{flex:1;min-width:0;height:46px;padding:0 14px;border:2px solid var(--p);font:inherit;font-size:17px;letter-spacing:.04em;background:#fff}
@@ -161,12 +191,12 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Ari
 @keyframes spin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.ld-s li.on span{animation:none}}
 <?php if ($embed): ?>.top .nt{display:none}<?php endif; ?>
-@media (max-width:600px){.top{gap:8px;padding:10px 12px}.top b{font-size:14px}.top .clk{display:none}.net span{display:none}.top a{padding:0 8px}}
+@media (max-width:600px){.top{gap:8px;padding:10px 12px}.top b{font-size:14px}.top .clk{display:none}.net span{display:none}.net{padding:0 6px}.top a{padding:0 8px}}
 </style>
 </head>
 <body>
 <div class="top"><?php if ($logo): ?><img src="<?= ci_e($logo) ?>" alt=""><?php endif; ?><b><?= ci_e($inst['name']) ?></b><span class="sp"></span>
-  <div class="net" id="net" role="status" aria-live="polite"><i></i><span>Online</span></div>
+  <div class="net" id="net" role="status" aria-live="polite"><i class="n-ico"></i><span><em>Status:</em> Connecting</span></div>
   <div class="clk"><span id="clk"></span><small><?= date('l, d M Y') ?></small></div>
   <?php if (!$embed): ?><a href="/admin/ci-attendance.php">← Attendance</a><?php endif; ?></div>
 <div class="inp"><form id="f" autocomplete="off"><input id="code" inputmode="text" placeholder="Scan card / admission ID" aria-label="Admission ID" autofocus><button type="submit">Mark</button></form></div>
@@ -225,12 +255,25 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Ari
   try { Q = JSON.parse(localStorage.getItem(QK) || '[]').filter(function (x) { return x && x.code && x.day === DAY; }); } catch (x) { Q = []; }
   function save() { try { localStorage.setItem(QK, JSON.stringify(Q.map(function (x) { return { id: x.id, code: x.code, at: x.at, day: x.day }; }))); } catch (x) {} }
   var net = document.getElementById('net');
+  // the connection badge: one animated icon per state, redrawn only when the state changes (so the animation is not restarted)
+  var ICO = {
+    ok: '<svg viewBox="0 0 24 24"><circle class="n-ring" cx="12" cy="12" r="9.5"/><path class="n-tick" d="M7.5 12.4l3 3 6-6.4"/></svg>',
+    sync: '<svg viewBox="0 0 24 24" class="n-spin"><path d="M20 12a8 8 0 0 1-13.7 5.6"/><path d="M4 12a8 8 0 0 1 13.7-5.6"/><path d="M17.7 2.8v3.8h-3.8"/><path d="M6.3 21.2v-3.8h3.8"/></svg>',
+    retry: '<svg viewBox="0 0 24 24" class="n-wifi"><path class="w3" d="M2.5 9a14 14 0 0 1 19 0"/><path class="w2" d="M5.5 12.4a9.5 9.5 0 0 1 13 0"/><path class="w1" d="M8.6 15.8a5 5 0 0 1 6.8 0"/><circle class="w0" cx="12" cy="19.2" r="1.3"/></svg>',
+    off: '<svg viewBox="0 0 24 24" class="n-wifi n-cut"><path class="w3" d="M2.5 9a14 14 0 0 1 19 0"/><path class="w2" d="M5.5 12.4a9.5 9.5 0 0 1 13 0"/><path class="w1" d="M8.6 15.8a5 5 0 0 1 6.8 0"/><circle class="w0" cx="12" cy="19.2" r="1.3"/><path class="n-slash" d="M3.5 3.5l17 17"/></svg>',
+    login: '<svg viewBox="0 0 24 24" class="n-lock"><rect x="5" y="10.5" width="14" height="10" rx="2"/><path class="n-shackle" d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15.5" r="1.2"/></svg>'
+  };
+  var netKey = '';
   function netShow() {
-    var wait = Q.length, off = loggedOut || !navigator.onLine || fails >= 2;
-    net.className = 'net' + (off ? ' off' : (wait ? ' slow' : ''));
-    net.innerHTML = '<i></i><span>' + (loggedOut ? 'Logged out — <a href="/admin-login" target="_blank" rel="noopener">log in again</a>' + (wait ? ' · ' + wait + ' waiting' : '')
-      : off ? 'No internet' + (wait ? ' · ' + wait + ' scan' + (wait > 1 ? 's' : '') + ' waiting — sent by itself when back' : '')
-      : wait ? 'Saving ' + wait + '…' : 'Online · all saved') + '</span>';
+    var wait = Q.length, k = loggedOut ? 'login' : (!navigator.onLine || fails >= 3) ? 'off' : fails > 0 ? 'retry' : (wait || busy) ? 'sync' : 'ok';
+    // professional wording: "Status: Live" and so on; the count is the scans kept on this computer, not yet on the server
+    var txt = '<em>Status:</em> ' + (k === 'login' ? 'Session expired — <a href="/admin-login" target="_blank" rel="noopener">Sign in</a>' + (wait ? ' · ' + wait + ' queued' : '')
+      : k === 'off' ? 'Offline' + (wait ? ' · ' + wait + ' queued' : '')
+      : k === 'retry' ? 'Reconnecting' + (wait ? ' · ' + wait + ' queued' : '')
+      : k === 'sync' ? 'Syncing · ' + Math.max(wait, 1) : 'Live');
+    if (k !== netKey) { netKey = k; net.className = 'net n-' + k; net.innerHTML = '<i class="n-ico">' + ICO[k] + '</i><span></span>'; }
+    net.querySelector('span').innerHTML = txt;
+    net.title = k === 'ok' ? 'Live — connected, every scan is saved on the server' : k === 'sync' ? 'Syncing — sending scans to the server' : k === 'retry' ? 'Reconnecting — the server did not answer, trying again' : k === 'off' ? 'Offline — scans are kept on this computer and synced automatically when the connection is back' : 'Session expired — sign in again in another tab; queued scans sync by themselves';
   }
   // ---- instant: the students' list is kept in the browser; a scan is decided and shown at once, then sent in the queue ----
   var RK = 'ciScanRoster', SK = 'ciScanState', R = { min: 10, by: {} }, S = { day: DAY, st: {} }, srvOff = 0;
@@ -280,7 +323,7 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Ari
           var by = {}; d.list.forEach(function (x) { var k = norm(x.reg), old = R.by[k]; by[k] = x; if (x.photo && (!old || old.photo !== x.photo || !R.v)) PH.push(x.photo); });
           R.by = by; R.v = d.v; R.n = d.n; R.bytes = txt.length; photoPump();
         }
-        R.min = d.min; R.day = d.day; R.since = d.t;
+        R.min = d.min; R.day = d.day; R.since = d.t; fails = 0; lastOk = Date.now();
         // what the server already has wins; a scan still waiting in the queue stays
         (d.att || []).forEach(function (a) { var k = norm(a[0]), m = S.st[k] || (S.st[k] = {}); if (a[1]) m['in'] = a[1] * 1000; if (a[2]) m.out = a[2] * 1000; });
         saveS(); try { localStorage.setItem(RK, JSON.stringify(R)); } catch (x) {}
@@ -370,10 +413,10 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Ari
     clearTimeout(idleT); idleT = setTimeout(idle, 9000);
   }
   // ---- keep-alive: every 20 s (and when the screen / internet comes back) ----
-  var pinging = false;
+  var pinging = false, reT = null;
   function refreshToken(force) {
     if (pinging && !force) return Promise.resolve(false); pinging = true;
-    var ctl = window.AbortController ? new AbortController() : null, to = setTimeout(function () { if (ctl) ctl.abort(); }, 6000);
+    var ctl = window.AbortController ? new AbortController() : null, to = setTimeout(function () { if (ctl) ctl.abort(); }, 10000);
     return fetch('/admin/ci-scan.php?ping=1&_=' + Date.now(), { credentials: 'same-origin', cache: 'no-store', headers: { 'X-Requested-With': 'fetch' }, signal: ctl ? ctl.signal : undefined })
       .then(function (r) { if (r.redirected && /admin-login/.test(r.url)) throw { login: 1 }; return r.json(); })
       .then(function (d) {
@@ -383,13 +426,20 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Ari
         if (d.day !== DAY && !Q.length) { location.reload(); return false; } // a new day: fresh page
         pump(); netShow(); return true;
       })
-      .catch(function (e) { clearTimeout(to); pinging = false; if (e && e.login) loggedOut = true; else fails = Math.max(fails, 2); netShow(); return false; });
+      .catch(function (e) {
+        clearTimeout(to); pinging = false;
+        if (e && e.login) loggedOut = true;
+        else { fails++; clearTimeout(reT); reT = setTimeout(function () { refreshToken(true); }, fails < 3 ? 3000 : 8000); } // one miss is not "offline": check again soon
+        netShow(); return false;
+      });
   }
   setInterval(refreshToken, 20000);
+  // watchdog: a tab open for hours gets its timers slowed by the browser — if nothing worked for 45 s, check right away
+  setInterval(function () { if (!pinging && Date.now() - lastOk > 45000) refreshToken(true); }, 5000);
   setInterval(function () { loadRoster(); }, 60000); // the students' list every minute ("same" when nothing changed)
   setInterval(function () { if (Q.length) pump(); }, 5000);
   window.addEventListener('online', function () { fails = 0; Q.forEach(function (x) { x.next = 0; }); refreshToken(true); pump(); });
-  window.addEventListener('offline', netShow);
+  window.addEventListener('offline', function () { netShow(); });
   document.addEventListener('visibilitychange', function () { if (!document.hidden) { refreshToken(true); keepAwake(); } });
   // the door screen never sleeps (where the browser allows it)
   var lock = null;
@@ -427,7 +477,7 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Ari
   refreshToken(true).then(function (online) {
     if (!online) {
       if (loggedOut) { ldSet(15, 1, 'Logged out — log in again in another tab, this screen carries on by itself'); return; }
-      if (cached) { ldDone('Offline — using the saved list of ' + Object.keys(R.by).length + ' students'); return; }
+      if (cached) { ldDone('Status: Offline — using the saved list of ' + Object.keys(R.by).length + ' students'); return; }
       ldDone('Offline — cards show when the internet is back'); return;
     }
     ldTxt(1, 'Online · logged in');
