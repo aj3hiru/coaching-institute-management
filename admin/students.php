@@ -155,7 +155,7 @@ $filtered = $f['type'] !== '' || $f['q'] !== '' || $f['class'] || $f['course'] |
 <thead><tr><th>Student</th><th>Mobile</th><th>Class</th><th>Courses / batches</th><th>Admission</th><th class="ci-num">Fee due</th><th>Action</th></tr></thead><tbody>
 <?php if (!$students): ?><tr><td colspan="7" class="ci-empty"><?= $filtered ? 'No students match these filters.' : 'No students yet. <a href="/admin/student-edit.php">Add the first student</a>.' ?></td></tr><?php endif; ?>
 <?php $back = $qs(['page' => $page]); foreach ($students as $s): $sid = (int)$s['id']; ?>
-<tr><td><div class="ci-person"><?= ci_avatar($s, 36) ?><div><a href="/admin/student-view.php?id=<?= $sid ?>"><?= ci_e($s['name']) ?></a><small><?= ci_e($s['reg_no']) ?> <span class="ci-tb ci-tb-<?= ci_e($s['stype'] ?? 'institute') ?>"><?= ci_e(CI_STYPES[$s['stype'] ?? 'institute'] ?? '') ?></span></small></div></div></td>
+<tr><td><div class="ci-person"><?= ci_avatar($s, 36) ?><div><a href="/admin/student-view.php?id=<?= $sid ?>"><?= ci_e($s['name']) ?></a><small><?= ci_e($s['reg_no']) ?></small></div></div></td>
 <td><?= ci_tel($s['mobile']) ?></td>
 <td><?= ci_e($s['class_name'] ?? '—') ?></td>
 <td><?php $cs = array_filter(explode('||', (string)$s['courses'])); $os = array_filter(explode('||', (string)$s['online'])); echo ($cs || $os) ? implode('<br>', array_merge(array_map('ci_e', $cs), array_map(fn($t) => '<span class="ci-onl"><i class="fas fa-laptop"></i> ' . ci_e($t) . '</span>', $os))) : '<span class="ci-muted">—</span>'; ?></td>
