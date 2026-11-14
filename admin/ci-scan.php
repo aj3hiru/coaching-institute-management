@@ -80,26 +80,29 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Ari
 .net{display:inline-flex;align-items:center;gap:8px;height:34px;padding:0 12px 0 8px;border:1px solid #d1d5db;border-radius:99px;background:#fff;font-size:13px;font-weight:600;color:#374151;white-space:nowrap;transition:background .3s,border-color .3s,color .3s}
 .net .n-ico{position:relative;display:block;width:22px;height:22px;flex:none;animation:n-in .35s cubic-bezier(.2,.9,.3,1.3)}
 .net svg{width:100%;height:100%;display:block;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;overflow:visible}
-.net span{transition:opacity .2s}.net span em{font-style:normal;font-weight:500;opacity:.75;margin-right:1px}
+.net span{transition:opacity .2s;animation:n-txt .3s ease-out}
+@keyframes n-txt{from{opacity:0;transform:translateX(-4px)}to{opacity:1;transform:none}}.net span em{font-style:normal;font-weight:500;opacity:.75;margin-right:1px}
 .net a{height:auto;padding:0;border:0;background:none;color:inherit;text-decoration:underline}
 @keyframes n-in{from{transform:scale(.4);opacity:0}to{transform:none;opacity:1}}
 /* ok */
 .net.n-ok{border-color:#bbf7d0;background:#f0fdf4;color:#166534}
 .net.n-ok .n-ico{color:#16a34a}
-.net.n-ok .n-ico::before{content:"";position:absolute;inset:0;border-radius:50%;background:rgba(22,163,74,.35);animation:n-pulse 2.4s ease-out infinite}
-.n-ring{stroke-dasharray:60;stroke-dashoffset:60;animation:n-draw .5s ease-out forwards}
-.n-tick{stroke-dasharray:16;stroke-dashoffset:16;animation:n-draw .35s .4s ease-out forwards}
-@keyframes n-draw{to{stroke-dashoffset:0}}
-@keyframes n-pulse{0%{transform:scale(.7);opacity:.9}70%,100%{transform:scale(1.9);opacity:0}}
+.net.n-ok .n-ico::before{content:"";position:absolute;left:50%;top:50%;width:8px;height:8px;margin:-4px 0 0 -4px;border-radius:50%;background:rgba(22,163,74,.45);animation:n-pulse 2s ease-out infinite}
+.n-live .l0{fill:currentColor;stroke:none;transform-origin:12px 12px;animation:n-dot 2s ease-in-out infinite}
+.n-live .l1,.n-live .l2{opacity:.15;animation:n-ripple 2s ease-out infinite}
+.n-live .l2{animation-delay:.25s}
+@keyframes n-ripple{0%{opacity:.15}20%{opacity:1}55%,100%{opacity:.15}}
+@keyframes n-dot{0%,100%{transform:scale(1)}15%{transform:scale(1.25)}}
+@keyframes n-pulse{0%{transform:scale(1);opacity:.8}70%,100%{transform:scale(3.4);opacity:0}}
 /* sync */
 .net.n-sync{border-color:#fde68a;background:#fffbeb;color:#92400e}.net.n-sync .n-ico{color:#d97706}
 .n-spin{animation:n-rot 1s linear infinite;transform-origin:12px 12px}
 @keyframes n-rot{to{transform:rotate(360deg)}}
 /* retry: waves light up one after another */
 .net.n-retry{border-color:#fde68a;background:#fffbeb;color:#92400e}.net.n-retry .n-ico{color:#d97706}
-.n-wifi .w1,.n-wifi .w2,.n-wifi .w3{opacity:.2;animation:n-wave 1.5s ease-in-out infinite}
-.n-wifi .w2{animation-delay:.2s}.n-wifi .w3{animation-delay:.4s}.n-wifi .w0{fill:currentColor;stroke:none}
-@keyframes n-wave{0%,100%{opacity:.2}35%,60%{opacity:1}}
+.n-wifi .w1,.n-wifi .w2,.n-wifi .w3{opacity:.18;animation:n-wave 1.6s cubic-bezier(.4,0,.2,1) infinite}
+.n-wifi .w2{animation-delay:.18s}.n-wifi .w3{animation-delay:.36s}.n-wifi .w0{fill:currentColor;stroke:none}
+@keyframes n-wave{0%,100%{opacity:.18}30%,55%{opacity:1}}
 /* off: waves dim, the slash is drawn, then the icon breathes */
 .net.n-off{border-color:#fca5a5;background:#fef2f2;color:#991b1b}.net.n-off .n-ico{color:#dc2626;animation:n-in .35s cubic-bezier(.2,.9,.3,1.3),n-breath 1.6s .6s ease-in-out infinite}
 .n-cut .w1,.n-cut .w2,.n-cut .w3{animation:none;opacity:.35}
@@ -257,7 +260,7 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Ari
   var net = document.getElementById('net');
   // the connection badge: one animated icon per state, redrawn only when the state changes (so the animation is not restarted)
   var ICO = {
-    ok: '<svg viewBox="0 0 24 24"><circle class="n-ring" cx="12" cy="12" r="9.5"/><path class="n-tick" d="M7.5 12.4l3 3 6-6.4"/></svg>',
+    ok: '<svg viewBox="0 0 24 24" class="n-live"><circle class="l0" cx="12" cy="12" r="2.6"/><path class="l1" d="M8.2 8.2a5.4 5.4 0 0 0 0 7.6M15.8 8.2a5.4 5.4 0 0 1 0 7.6"/><path class="l2" d="M5.1 5.1a9.8 9.8 0 0 0 0 13.8M18.9 5.1a9.8 9.8 0 0 1 0 13.8"/></svg>',
     sync: '<svg viewBox="0 0 24 24" class="n-spin"><path d="M20 12a8 8 0 0 1-13.7 5.6"/><path d="M4 12a8 8 0 0 1 13.7-5.6"/><path d="M17.7 2.8v3.8h-3.8"/><path d="M6.3 21.2v-3.8h3.8"/></svg>',
     retry: '<svg viewBox="0 0 24 24" class="n-wifi"><path class="w3" d="M2.5 9a14 14 0 0 1 19 0"/><path class="w2" d="M5.5 12.4a9.5 9.5 0 0 1 13 0"/><path class="w1" d="M8.6 15.8a5 5 0 0 1 6.8 0"/><circle class="w0" cx="12" cy="19.2" r="1.3"/></svg>',
     off: '<svg viewBox="0 0 24 24" class="n-wifi n-cut"><path class="w3" d="M2.5 9a14 14 0 0 1 19 0"/><path class="w2" d="M5.5 12.4a9.5 9.5 0 0 1 13 0"/><path class="w1" d="M8.6 15.8a5 5 0 0 1 6.8 0"/><circle class="w0" cx="12" cy="19.2" r="1.3"/><path class="n-slash" d="M3.5 3.5l17 17"/></svg>',
