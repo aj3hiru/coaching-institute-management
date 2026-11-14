@@ -263,7 +263,8 @@ tr.at-hl td{background:#fefce8}
 (function () {
   var CSRF = <?= json_encode(csrf_token(), JSON_HEX_TAG) ?>, DATE = <?= json_encode($f['date'], JSON_HEX_TAG) ?>, BATCH = <?= (int)$f['batch'] ?>, TODAY = <?= $isToday ? 'true' : 'false' ?>;
   // the class on now: 15 minutes after it ends the students who did not come become absent — reload then to show it
-  <?php if ($running): ?>setTimeout(function () { location.reload(); }, Math.max(5000, <?= (strtotime($today . ' ' . $running['end_time']) + CI_ATT_GRACE * 60 - time()) * 1000 + 5000 ?>));<?php endif; ?>
+  // (not while the Scan screen popup is open — it waits until the popup is closed)
+  <?php if ($running): ?>setTimeout(function again() { var p = document.getElementById('atScr'); if (p && !p.hidden) { setTimeout(again, 20000); return; } location.reload(); }, Math.max(5000, <?= (strtotime($today . ' ' . $running['end_time']) + CI_ATT_GRACE * 60 - time()) * 1000 + 5000 ?>));<?php endif; ?>
   function post(data) {
     var fd = new FormData(); fd.append('_csrf', CSRF); fd.append('date', DATE);
     Object.keys(data).forEach(function (k) { fd.append(k, data[k]); });

@@ -256,9 +256,30 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Ari
   // ---- sending: a queue kept in the browser, so no scan is ever lost ----
   // every scan goes out at once (up to 6 together); no internet / server busy → it stays in the queue and is tried again
   // (1 s, 2 s, 4 s … up to 15 s, and at once when the internet comes back), sent with how long ago it was scanned
-  var QK = 'ciScanQ', Q = [], busy = 0, MAX = 6, fails = 0, lastOk = Date.now(), loggedOut = false, retryT = null, recent = {};
-  try { Q = JSON.parse(localStorage.getItem(QK) || '[]').filter(function (x) { return x && x.code && x.day === DAY; }); } catch (x) { Q = []; }
-  function save() { try { localStorage.setItem(QK, JSON.stringify(Q.map(function (x) { return { id: x.id, code: x.code, at: x.at, day: x.day }; }))); } catch (x) {} }
+  // each open scan screen (popup, tab) has its own queue in the browser, so two open at once never overwrite each other;
+  // a queue left by a screen that was closed (no heartbeat for 40 s) is taken over and sent by the one still open
+  var TAB = (function () { var t = ''; try { t = sessionStorage.getItem('ciScanTab') || ''; if (!t) { t = Date.now().toString(36) + Math.random().toString(36).slice(2, 6); sessionStorage.setItem('ciScanTab', t); } } catch (x) { t = 'x' + Date.now().toString(36); } return t; })();
+  var QK = 'ciScanQ:' + TAB, HK = 'ciScanHB:' + TAB, Q = [], busy = 0, MAX = 6, fails = 0, lastOk = Date.now(), loggedOut = false, retryT = null, recent = {};
+  function readQ(k) { try { return (JSON.parse(localStorage.getItem(k) || '[]') || []).filter(function (x) { return x && x.code && x.day === DAY; }); } catch (x) { return []; } }
+  Q = readQ(QK);
+  function save() { try { if (Q.length) localStorage.setItem(QK, JSON.stringify(Q.map(function (x) { return { id: x.id, code: x.code, at: x.at, day: x.day }; }))); else localStorage.removeItem(QK); } catch (x) {} }
+  function beat() { try { localStorage.setItem(HK, String(Date.now())); } catch (x) {} }
+  function adopt() { // queues of closed screens (and the old single queue) → this one
+    var got = 0, have = {}; Q.forEach(function (x) { have[x.id] = 1; });
+    try {
+      for (var i = localStorage.length - 1; i >= 0; i--) {
+        var k = localStorage.key(i); if (!k) continue;
+        var other = k === 'ciScanQ' ? 'old' : (k.indexOf('ciScanQ:') === 0 && k !== QK ? k.slice(8) : '');
+        if (!other) { if (k.indexOf('ciScanHB:') === 0 && Date.now() - (+localStorage.getItem(k) || 0) > 86400000) localStorage.removeItem(k); continue; }
+        if (other !== 'old' && Date.now() - (+localStorage.getItem('ciScanHB:' + other) || 0) < 40000) continue; // still open
+        readQ(k).forEach(function (x) { if (!have[x.id]) { x.seq = ++seq; x.tries = 0; Q.push(x); have[x.id] = 1; got++; } });
+        localStorage.removeItem(k); localStorage.removeItem('ciScanHB:' + other);
+      }
+    } catch (x) {}
+    if (got) { save(); pump(); }
+  }
+  beat(); setInterval(beat, 10000); setTimeout(adopt, 1500); setInterval(adopt, 30000);
+  setInterval(function () { var t = Date.now() - 10000; for (var k in recent) if (recent[k] < t) delete recent[k]; }, 60000); // forget old double-read marks
   var net = document.getElementById('net');
   // the connection badge: one animated icon per state, redrawn only when the state changes (so the animation is not restarted)
   var ICO = {
@@ -268,15 +289,21 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Ari
     off: '<svg viewBox="0 0 24 24" class="n-wifi n-cut"><path class="w3" d="M2.5 9a14 14 0 0 1 19 0"/><path class="w2" d="M5.5 12.4a9.5 9.5 0 0 1 13 0"/><path class="w1" d="M8.6 15.8a5 5 0 0 1 6.8 0"/><circle class="w0" cx="12" cy="19.2" r="1.3"/><path class="n-slash" d="M3.5 3.5l17 17"/></svg>',
     login: '<svg viewBox="0 0 24 24" class="n-lock"><rect x="5" y="10.5" width="14" height="10" rx="2"/><path class="n-shackle" d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15.5" r="1.2"/></svg>'
   };
-  var netKey = '';
+  var netKey = '', syncSince = 0, holdT = null;
   function netShow() {
     var wait = Q.length, k = loggedOut ? 'login' : (!navigator.onLine || fails >= 3) ? 'off' : fails > 0 ? 'retry' : (wait || busy) ? 'sync' : 'ok';
+    // fast scanning sends and finishes many times a second: "Syncing" shows only when sending takes longer than 0.7 s, and
+    // stays at least 1 s — so the badge does not blink between Live and Syncing on every scan
+    clearTimeout(holdT);
+    if (k === 'sync' && netKey === 'ok') { if (!syncSince) syncSince = Date.now(); if (Date.now() - syncSince < 700) { holdT = setTimeout(netShow, 720 - (Date.now() - syncSince)); k = 'ok'; } }
+    else if (k !== 'sync') syncSince = 0;
+    if (k === 'ok' && netKey === 'sync' && Date.now() - net._at < 1000) { holdT = setTimeout(netShow, 1000 - (Date.now() - net._at) + 20); k = 'sync'; }
     // professional wording: "Status: Live" and so on; the count is the scans kept on this computer, not yet on the server
     var txt = '<em>Status:</em> ' + (k === 'login' ? 'Session expired — <a href="/admin-login" target="_blank" rel="noopener">Sign in</a>' + (wait ? ' · ' + wait + ' queued' : '')
       : k === 'off' ? 'Offline' + (wait ? ' · ' + wait + ' queued' : '')
       : k === 'retry' ? 'Reconnecting' + (wait ? ' · ' + wait + ' queued' : '')
       : k === 'sync' ? 'Syncing · ' + Math.max(wait, 1) : 'Live');
-    if (k !== netKey) { netKey = k; net.className = 'net n-' + k; net.innerHTML = '<i class="n-ico">' + ICO[k] + '</i><span></span>'; }
+    if (k !== netKey) { netKey = k; net._at = Date.now(); net.className = 'net n-' + k; net.innerHTML = '<i class="n-ico">' + ICO[k] + '</i><span></span>'; }
     net.querySelector('span').innerHTML = txt;
     net.title = k === 'ok' ? 'Live — connected, every scan is saved on the server' : k === 'sync' ? 'Syncing — sending scans to the server' : k === 'retry' ? 'Reconnecting — the server did not answer, trying again' : k === 'off' ? 'Offline — scans are kept on this computer and synced automatically when the connection is back' : 'Session expired — sign in again in another tab; queued scans sync by themselves';
   }
@@ -286,7 +313,14 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Ari
   function hm(ms) { var d = new Date(ms), h = d.getHours(), m = d.getMinutes(); return ('0' + (h % 12 || 12)).slice(-2) + ':' + ('0' + m).slice(-2) + (h < 12 ? ' AM' : ' PM'); }
   try { var r0 = JSON.parse(localStorage.getItem(RK) || 'null'); if (r0 && r0.by) R = r0; } catch (x) {} // kept from day to day
   try { var s0 = JSON.parse(localStorage.getItem(SK) || 'null'); if (s0 && s0.day === DAY) S = s0; } catch (x) {}
-  function saveS() { try { localStorage.setItem(SK, JSON.stringify(S)); } catch (x) {} }
+  function mergeS(o) { // today's in / out from another open screen: the earliest check-in and the latest check-out win
+    if (!o || o.day !== DAY || !o.st) return;
+    for (var k in o.st) { var a = o.st[k] || {}, m = S.st[k] || (S.st[k] = {});
+      if (a['in'] && (!m['in'] || a['in'] < m['in'])) m['in'] = a['in'];
+      if (a.out && (!m.out || a.out > m.out)) m.out = a.out; }
+  }
+  function saveS() { try { mergeS(JSON.parse(localStorage.getItem(SK) || 'null')); localStorage.setItem(SK, JSON.stringify(S)); } catch (x) {} }
+  window.addEventListener('storage', function (e) { if (e.key === SK && e.newValue) try { mergeS(JSON.parse(e.newValue)); } catch (x) {} });
   var loading = null;
   // photos: in the background, 4 at a time, paused while scans are being sent — they never slow the scanning
   var PH = [], phBusy = 0;
