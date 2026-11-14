@@ -54,11 +54,9 @@ body{margin:0;background:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,"S
 .idc-h div{min-width:0;line-height:1.2}
 .idc-h b{display:block;font-family:Georgia,"Times New Roman",serif;font-size:3.7mm;font-weight:700;letter-spacing:.02em;text-transform:uppercase;color:var(--idc);line-height:1.05}
 .idc-h small{display:block;font-size:1.6mm;color:#4b5563;margin-top:.5mm}
-/* title label: a pill between two thin lines */
-.idc-t{display:flex;align-items:center;gap:1.4mm;padding:.6mm 2.6mm .2mm}
-.idc-t::before,.idc-t::after{content:"";flex:1;height:.3mm;background:linear-gradient(90deg,transparent,var(--idc2))}
-.idc-t::after{background:linear-gradient(90deg,var(--idc2),transparent)}
-.idc-t span{flex:none;padding:.75mm 2.6mm .65mm;border-radius:5mm;background:linear-gradient(135deg,var(--idc),#6a4c94);color:#fff;font-size:1.75mm;font-weight:800;letter-spacing:.16em;line-height:1;box-shadow:0 0 0 .3mm #fff,0 0 0 .55mm var(--idc2)}
+/* title label like the reference card's tagline strip: a light band with slanted ends, dark text, a dark rule under it */
+.idc-t{background:var(--idc);padding:1mm 2.4mm 1.1mm;border-bottom:.6mm solid var(--idc2)}
+.idc-t span{display:block;padding:.85mm 0 .75mm;background:#e9e2f4;color:var(--idc);text-align:center;font-size:1.85mm;font-weight:800;letter-spacing:.2em;line-height:1;clip-path:polygon(1.4mm 0,100% 0,calc(100% - 1.4mm) 100%,0 100%)}
 .idc-bc{padding:1.4mm 1.4mm .4mm}
 .idc-bc svg{width:100%;height:10mm;display:block} /* full card width: thick bars (~0.42 mm) for any scanner */
 .idc-ph{width:19mm;height:24.4mm;margin:1.6mm auto 0;border:.35mm solid var(--idc);padding:.4mm;background:#fff} /* passport 7:9 */
