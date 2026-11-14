@@ -54,7 +54,7 @@ body{margin:0;background:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,"S
 .idc-h div{min-width:0;line-height:1.2}
 .idc-h b{display:block;font-family:Georgia,"Times New Roman",serif;font-size:3.7mm;font-weight:700;letter-spacing:.02em;text-transform:uppercase;color:var(--idc);line-height:1.05}
 .idc-h small{display:block;font-size:1.6mm;color:#4b5563;margin-top:.5mm}
-.idc-t{background:#fcd34d;color:var(--idc);text-align:center;font-size:1.95mm;font-weight:800;letter-spacing:.24em;padding:.9mm 0;border-top:.4mm solid var(--idc);border-bottom:.6mm solid var(--idc)} /* yellow, so it stands out */
+.idc-t{background:#fcd34d;color:var(--idc);text-align:center;font-size:1.95mm;font-weight:800;letter-spacing:.24em;padding:.9mm 0} /* yellow, so it stands out; no border */
 .idc-bc{padding:1.4mm 1.4mm .4mm}
 .idc-bc svg{width:100%;height:10mm;display:block} /* full card width: thick bars (~0.42 mm) for any scanner */
 .idc-ph{width:19mm;height:24.4mm;margin:1.6mm auto 0;border:.35mm solid var(--idc);padding:.4mm;background:#fff} /* passport 7:9 */
