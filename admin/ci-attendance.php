@@ -4,7 +4,7 @@
 // (barcode = admission ID): the first scan checks in, a scan after the set minutes checks out.
 require_once __DIR__ . '/components/guard.php';
 require_once INCLUDES_PATH . '/institute.php';
-$me = ci_page_start($pdo, ['attendance']);
+$me = ci_page_start($pdo, ['attendance'], ($_POST['action'] ?? '') === 'scan'); // a scan skips the table checks: fast at 100+ scans a minute
 $today = date('Y-m-d');
 $ST = ['present' => 'Present', 'absent' => 'Absent', 'leave' => 'Leave', 'holiday' => 'Holiday'];
 
@@ -14,12 +14,13 @@ if ($act !== '') {
     header('Content-Type: application/json; charset=utf-8');
     header('Cache-Control: no-store');
     $out = function (array $d, int $code = 200) { http_response_code($code); exit(json_encode($d, JSON_UNESCAPED_UNICODE)); };
-    if (!hash_equals(csrf_token(), (string)($_POST['_csrf'] ?? ''))) $out(['ok' => false, 'msg' => 'This page had expired. Please reload it.'], 400);
+    if (!hash_equals(csrf_token(), (string)($_POST['_csrf'] ?? ''))) $out(['ok' => false, 'kind' => 'error', 'csrf' => 1, 'msg' => 'This page had expired. Please reload it.'], 400);
+    session_write_close(); // let go of the session lock: scans sent together are worked on together, not one after another
     $date = ci_clean_date($_POST['date'] ?? '') ?: $today;
     if ($date > $today) $out(['ok' => false, 'msg' => 'Attendance cannot be marked for a future date.'], 400);
     if ($act === 'scan') {
         if ($date !== $today) $out(['ok' => false, 'kind' => 'error', 'msg' => 'Scanning works for today only — switch the date to today.']);
-        $r = ci_att_scan($pdo, (string)($_POST['code'] ?? ''), (int)($_POST['batch'] ?? 0), (int)$me['id']);
+        $r = ci_att_scan($pdo, (string)($_POST['code'] ?? ''), (int)($_POST['batch'] ?? 0), (int)$me['id'], (int)($_POST['ago'] ?? 0));
         $s = $r['student'] ?? null;
         $more = [];
         if ($s) { // for the scan screen's card: batches, fee due, today's times
@@ -33,7 +34,7 @@ if ($act !== '') {
             'father' => (string)($s['father_name'] ?? ''), 'mobile' => (string)$s['mobile'], 'batches' => (string)($more['batches'] ?? ''),
             'due' => round((float)($more['due'] ?? 0), 2), 'due_text' => (float)($more['due'] ?? 0) > 0 ? ci_money0($more['due']) : '',
             'in' => !empty($more['in_at']) ? date('h:i A', strtotime($more['in_at'])) : '', 'out' => !empty($more['out_at']) ? date('h:i A', strtotime($more['out_at'])) : ''] : null,
-            'time' => date('h:i A')]);
+            'time' => date('h:i A', $r['ts'] ?? time())]);
     }
     if ($act === 'mark') { // one or many [student, batch] pairs → one status
         $status = (string)($_POST['status'] ?? '');

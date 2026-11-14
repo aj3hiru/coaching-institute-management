@@ -599,12 +599,12 @@ function ci_head(): void
 }
 
 /** Opens an institute admin page: guard + tables. $need = permissions of which the user needs at least one (none = any). */
-function ci_page_start(PDO $pdo, array $need = []): array
+function ci_page_start(PDO $pdo, array $need = [], bool $light = false): array
 {
     $me = admin_guard(['admin', 'editor', 'author', 'teacher', 'accountant']);
     $ok = $need ? (bool)array_filter($need, fn($k) => ci_perm($me, $k)) : ci_can($me);
     if (!$ok) { http_response_code(403); exit('Access Denied'); }
-    ci_tables($pdo);
+    if (!$light) ci_tables($pdo); // $light: quick JSON calls (scan, keep-alive) skip the table checks — the page itself already ran them
     return $me;
 }
 
@@ -866,9 +866,11 @@ function ci_barcode_svg(string $text, int $height = 40, float $module = 1.4): st
  * (present), a scan after the set minutes checks them out. $batch limits it to one batch; otherwise every active batch of
  * the student. Returns ['ok' => bool, 'msg' => text, 'student' => row, 'kind' => in|out|wait|done|error].
  */
-function ci_att_scan(PDO $pdo, string $code, int $batch, int $userId): array
+function ci_att_scan(PDO $pdo, string $code, int $batch, int $userId, int $ago = 0): array
 {
     $code = trim($code);
+    // $ago: a scan the scan screen had to keep while the internet was down is saved with the time it was scanned (today only)
+    $ts = max(strtotime('today'), time() - max(0, min($ago, 6 * 3600)));
     if ($code === '') return ['ok' => false, 'kind' => 'error', 'msg' => 'Scan an ID card or type the admission ID.'];
     $q = $pdo->prepare("SELECT s.*, c.name AS class_name FROM ci_students s LEFT JOIN ci_classes c ON c.id = s.class_id WHERE s.reg_no = ? AND s.stype <> 'online' LIMIT 1");
     $q->execute([$code]);
@@ -883,7 +885,7 @@ function ci_att_scan(PDO $pdo, string $code, int $batch, int $userId): array
         if (!in_array($batch, $mine, true)) return ['ok' => false, 'kind' => 'error', 'student' => $s, 'msg' => $s['name'] . ' is not in this batch.'];
         $list = [$batch];
     } else $list = $mine ?: [0];
-    $today = date('Y-m-d'); $now = date('Y-m-d H:i:s'); $min = ci_att_min_out(); $kind = 'done'; $msg = '';
+    $today = date('Y-m-d'); $now = date('Y-m-d H:i:s', $ts); $min = ci_att_min_out(); $kind = 'done'; $msg = '';
     $hols = ci_holidays_between($pdo, $today, $today);
     if ($hols) {
         $cq = $pdo->prepare("SELECT course_id FROM ci_batches WHERE id = ?");
@@ -897,16 +899,16 @@ function ci_att_scan(PDO $pdo, string $code, int $batch, int $userId): array
         if (!$r || !$r['in_at']) {
             $pdo->prepare("INSERT INTO ci_attendance (student_id, batch_id, att_date, status, in_at, source, marked_by) VALUES (?,?,?,'present',?, 'scan', ?)
                 ON DUPLICATE KEY UPDATE status = 'present', in_at = VALUES(in_at), source = 'scan', marked_by = VALUES(marked_by), updated_at = NOW()")->execute([(int)$s['id'], $b, $today, $now, $userId]);
-            $kind = 'in'; $msg = 'Checked in at ' . date('h:i A');
+            $kind = 'in'; $msg = 'Checked in at ' . date('h:i A', $ts);
         } elseif (!$r['out_at']) {
             $open = strtotime($r['in_at']) + $min * 60;
-            if (time() >= $open) {
+            if ($ts >= $open) {
                 $pdo->prepare("UPDATE ci_attendance SET out_at = ?, updated_at = NOW() WHERE id = ?")->execute([$now, (int)$r['id']]);
-                $kind = 'out'; $msg = 'Checked out at ' . date('h:i A');
+                $kind = 'out'; $msg = 'Checked out at ' . date('h:i A', $ts);
             } elseif ($kind !== 'in') { $kind = 'wait'; $msg = 'Already checked in at ' . date('h:i A', strtotime($r['in_at'])) . '. Check-out opens at ' . date('h:i A', $open) . ' (after ' . $min . ' min).'; }
         } elseif ($kind === 'done') $msg = 'Already checked out at ' . date('h:i A', strtotime($r['out_at'])) . '.';
     }
-    return ['ok' => $kind === 'in' || $kind === 'out', 'kind' => $kind, 'msg' => $msg, 'student' => $s];
+    return ['ok' => $kind === 'in' || $kind === 'out', 'kind' => $kind, 'msg' => $msg, 'student' => $s, 'ts' => $ts];
 }
 
 /** "7:00–8:30 AM" / "4:00 PM - 5:30 PM" / "6–8 AM" → ['07:00:00', '08:30:00'], or null. */
