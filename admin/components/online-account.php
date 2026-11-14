@@ -50,7 +50,7 @@ function oa_side(array $oa, array $me): void
     if ($u) echo $u['status'] === 'active' ? '<span class="ci-badge ci-b-green">Active</span>' : '<span class="ci-badge ci-b-red"><i class="fas fa-ban"></i> Suspended</span>';
     echo '</div><div class="ci-card-b">';
     if (!$u) {
-        echo '<p class="ci-muted" style="margin:0 0 10px">No online login yet. Make one: the login is the mobile number ' . ci_e($s['mobile']) . ' and the password you set (empty = the mobile number).</p>';
+        echo '<p class="ci-muted" style="margin:0 0 10px">No online login yet.</p>';
         echo '<form method="post" action="/admin/shop-customers.php">' . oa_hidden($oa, 'create', ['student_id' => (int)$s['id']]) . '<div class="ci-f"><label>Password</label><input name="pass" minlength="4" autocomplete="new-password" placeholder="empty = mobile number"></div><button class="ci-btn" type="submit" style="margin-top:8px"><i class="fas fa-user-plus"></i> Make online login</button></form>';
         echo '</div></div>';
         return;
