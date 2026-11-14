@@ -198,6 +198,14 @@ $tel = fn(?string $m) => ci_tel($m);
 .sv-fold:not(.open)>.ci-card-h{border-bottom:0}
 .sv-fold:not(.open)>.ci-card-b{display:none}
 @media print{.sv-fold>.ci-card-b{display:block!important}}
+/* the invoice button on a course: receipt icon + how many payments (2x, 3x) — opens that course's payments */
+.sv-inv{display:inline-flex;align-items:center;gap:5px;height:32px;padding:0 10px 0 8px;border:1px solid #d1d5db;border-radius:8px;background:#fff;color:#4a3369;font:inherit;font-size:13px;cursor:pointer;transition:background .15s,border-color .15s}
+.sv-inv:hover{background:#f5f3ff;border-color:#c4b5fd}
+.sv-inv b{font-weight:800;font-size:12.5px;font-variant-numeric:tabular-nums}
+.sv-other{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px}
+.sv-pm-sum{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
+.sv-pm-sum div{flex:1;min-width:84px;padding:8px 12px;border:1px solid #e5e7eb;border-radius:8px;background:#fafafa}
+.sv-pm-sum small{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#6b7280}.sv-pm-sum b{font-size:16px}
 </style>
 </head>
 <body>
@@ -268,13 +276,15 @@ if (function_exists('sh_perm') && sh_perm($me, 'customers')) { sh_tables($pdo); 
   <div class="ci-pf-main">
     <div class="ci-sec-h" data-ds="Courses &amp; batches"><h3>Institute courses &amp; batches <span class="ci-muted">(<?= count($enr) ?>)</span></h3><?php if (ci_perm($me, 'edit_student') || ci_perm($me, 'add_student')): ?><button type="button" class="ci-btn ci-sm ci-noprint" data-open="ci-addc"><?= ci_svg('book-plus') ?> Add to course / batch</button><?php endif; ?></div>
     <?php if (!$enr): ?><div class="ci-card"><div class="ci-card-b ci-empty">Not in any institute course / batch yet.</div></div><?php endif; ?>
+    <?php $payModals = []; $enrIds = array_flip(array_map('intval', array_column($enr, 'id')));
+      $invIco = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h14v18l-2.3-1.5L14.3 21 12 19.5 9.7 21l-2.4-1.5L5 21z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>'; ?>
     <?php foreach ($enr as $e): $eid = (int)$e['id']; $bi = $batchInfo[$e['batch_id']] ?? []; $dropped = $e['status'] === 'dropped'; $inst = ($e['fee_type'] ?? 'full') === 'installment'; $ep = array_reverse($byEnr[$eid] ?? []); $late = $e['due_date'] && $e['due_date'] < date('Y-m-d') && (float)$e['due'] > 0.004; ?>
     <div class="ci-cc<?= $e['status'] !== 'active' ? ' is-off' : '' ?>" id="enr-<?= $eid ?>">
       <div class="ci-cc-h">
         <div class="ci-cc-t"><h4><?= ci_e($e['course_name'] ?? '—') ?></h4>
           <div class="ci-cc-tags"><span class="ci-badge <?= $inst ? 'ci-b-blue' : 'ci-b-violet' ?>"><?= $inst ? 'Installment' : 'Final fee' ?></span><?= ci_status_badge($e['status']) ?><?= (float)$e['due'] > 0.004 ? '<span class="ci-badge ci-b-red">Due ' . ci_money0($e['due']) . '</span>' : ((float)$e['paid'] > 0 ? '<span class="ci-badge ci-b-green">Paid</span>' : '') ?><?= $late ? '<span class="ci-badge ci-b-amber">Due date passed</span>' : '' ?></div>
           <div class="ci-cc-meta"><?= ci_e(implode(' · ', array_filter([$e['batch_name'] ? 'Batch ' . $e['batch_name'] : 'No batch', $e['timing'], $bi['days'] ?? '', ($bi['teacher'] ?? '') ? 'Teacher ' . $bi['teacher'] : '', $e['session_name'] ? 'Session ' . $e['session_name'] : '']))) ?></div></div>
-        <div class="ci-icos ci-noprint"><?php if (!$dropped && (float)$e['due'] > 0.004 && ci_perm($me, 'fees')): ?><button type="button" class="ci-btn ci-sm" data-collect="<?= $eid ?>"><?= ci_svg('rupee') ?> Collect</button><?php endif; ?><?php if (ci_perm($me, 'edit_student')): ?><?= ci_ico('edit', '/admin/student-edit.php?id=' . $id . '#enr-' . $eid, 'Change course / fee') ?><?php endif; ?></div>
+        <div class="ci-icos ci-noprint"><?php if ($ep): $payModals[] = ['id' => 'pay-' . $eid, 'title' => $e['course_name'] ?? 'Course', 'e' => $e, 'inst' => $inst, 'list' => $ep]; ?><button type="button" class="sv-inv" data-open="pay-<?= $eid ?>" title="Payments &amp; receipts (<?= count($ep) ?>)" aria-label="Payments and receipts, <?= count($ep) ?>"><?= $invIco ?><b><?= count($ep) ?>x</b></button><?php endif; ?><?php if (!$dropped && (float)$e['due'] > 0.004 && ci_perm($me, 'fees')): ?><button type="button" class="ci-btn ci-sm" data-collect="<?= $eid ?>"><?= ci_svg('rupee') ?> Collect</button><?php endif; ?><?php if (ci_perm($me, 'edit_student')): ?><?= ci_ico('edit', '/admin/student-edit.php?id=' . $id . '#enr-' . $eid, 'Change course / fee') ?><?php endif; ?></div>
       </div>
       <div class="ci-cc-money">
         <div><small>Course fee</small><b><?= ci_money0($e['fee']) ?></b></div>
@@ -284,27 +294,11 @@ if (function_exists('sh_perm') && sh_perm($me, 'customers')) { sh_tables($pdo); 
         <div><small>Due</small><b class="<?= (float)$e['due'] > 0.004 ? 'ci-r' : 'ci-g' ?>"><?= ci_money0($e['due']) ?></b></div>
         <div><small>Next due</small><b<?= $late ? ' class="ci-r"' : '' ?>><?= (float)$e['due'] > 0.004 && $e['due_date'] ? ci_date($e['due_date']) : '—' ?></b></div>
       </div>
-      <details class="ci-cc-pays"<?= $ep ? '' : ' hidden' ?>><summary><?= $inst ? 'Installments paid' : 'Payments' ?> (<?= count($ep) ?>)</summary>
-        <table class="ci-table ci-plan"><thead><tr><th><?= $inst ? 'Installment' : '#' ?></th><th>Date</th><th>Receipt</th><th>Paid by</th><th class="ci-num">Amount</th><th class="ci-noprint"></th></tr></thead><tbody>
-        <?php foreach ($ep as $p): ?><tr><td><b><?= $inst ? 'Installment ' . $p['no'] : $p['no'] ?></b></td><td class="ci-nw"><?= ci_date($p['paid_on']) ?></td><td><?= ci_e($p['receipt_no']) ?></td><td><?= ci_e(ci_pay_mode($p)) ?><?= $p['username'] ? '<small class="ci-by">by ' . ci_e($p['username']) . '</small>' : '' ?></td><td class="ci-num"><b class="ci-g"><?= ci_money($p['amount']) ?></b></td><td class="ci-noprint"><a class="ci-ico" href="/admin/ci-receipt.php?id=<?= (int)$p['id'] ?>" target="_blank" aria-label="Print receipt"><?= ci_svg('print') ?></a></td></tr><?php endforeach; ?>
-        </tbody></table></details>
     </div>
     <?php endforeach; ?>
 
-    <?php if ($enr || $pays): // an online-only student has no institute fees to show ?>
-    <div class="ci-card" data-ds="Fee statement" style="margin-top:16px"><div class="ci-card-h"><h3>Institute fee statement</h3><div class="ci-actions ci-noprint"><button type="button" class="ci-btn ci-ghost ci-sm" onclick="window.print()"><?= ci_svg('print') ?> Print</button></div></div>
-    <div class="ci-card-b ci-p0 ci-table-wrap"><table class="ci-table" data-sheet="off">
-    <thead><tr><th>Date</th><th>Receipt</th><th>For</th><th>Paid by</th><th class="ci-num">Amount</th><th class="ci-num">Balance after</th><th class="ci-noprint"></th></tr></thead><tbody>
-    <?php if (!$pays): ?><tr><td colspan="7" class="ci-empty">No payments yet.</td></tr><?php endif; ?>
-    <?php foreach ($pays as $p): ?>
-    <tr<?= (int)$p['id'] === $newReceipt ? ' class="ci-hl"' : '' ?>><td class="ci-nw"><?= ci_date($p['paid_on']) ?></td><td class="ci-nw"><b><?= ci_e($p['receipt_no']) ?></b><?= $p['note'] ? '<small class="ci-muted" style="display:block">' . ci_e($p['note']) . '</small>' : '' ?></td><td><?= ci_e($p['course_name'] ?? '—') ?></td>
-    <td><?= ci_e(ci_pay_mode($p)) ?><?= $p['username'] ? '<small class="ci-by">by ' . ci_e($p['username']) . '</small>' : '' ?></td><td class="ci-num"><b class="ci-g"><?= ci_money($p['amount']) ?></b></td><td class="ci-num"><?= ci_money($p['balance']) ?></td>
-    <td class="ci-noprint"><div class="ci-icos"><a class="ci-ico" href="/admin/ci-receipt.php?id=<?= (int)$p['id'] ?>" target="_blank" aria-label="Print receipt"><?= ci_svg('print') ?></a>
-    <?php if ($me['role'] === 'admin'): ?><?= ci_post_ico('trash', 'Delete payment', ['action' => 'pay_delete', 'id' => $id, 'payment_id' => $p['id']], 'Delete payment ' . $p['receipt_no'] . '? The due goes up again.') ?><?php endif; ?>
-    </div></td></tr>
-    <?php endforeach; ?>
-    <?php if ($pays): ?><tr class="ci-total-row"><td colspan="4">Total paid</td><td class="ci-num"><?= ci_money($tot['paid']) ?></td><td class="ci-num"><?= ci_money($tot['due']) ?></td><td class="ci-noprint"></td></tr><?php endif; ?>
-    </tbody></table></div></div>
+    <?php $other = array_values(array_filter($pays, fn($p) => !isset($enrIds[(int)$p['enrollment_id']]))); if ($other): $payModals[] = ['id' => 'pay-other', 'title' => 'Other payments', 'e' => null, 'inst' => false, 'list' => array_reverse($other)]; ?>
+    <div class="ci-card" style="margin-top:12px"><div class="ci-card-b sv-other"><span>Other payments <span class="ci-muted">— not linked to a course above</span></span><button type="button" class="sv-inv ci-noprint" data-open="pay-other"><?= $invIco ?><b><?= count($other) ?>x</b></button></div></div>
     <?php endif; ?>
     <?php if ($s['stype'] !== 'online'): // ---- attendance: one month as a calendar (any month since admission), printable
       $mNow = date('Y-m'); $mFirst = substr((string)($s['admission_date'] ?: $s['created_at']), 0, 7) ?: $mNow;
@@ -380,6 +374,22 @@ if (function_exists('sh_perm') && sh_perm($me, 'customers')) { sh_tables($pdo); 
   </form>
 </div></div>
 <?php endif; ?>
+<?php foreach ($payModals ?? [] as $pm): $e = $pm['e']; // one popup per course: every payment for it, newest first, with receipts
+  $asc = array_reverse($pm['list']); $left = $e ? (float)$e['net'] : 0.0; $bal = [];
+  foreach ($asc as $p) { $left -= (float)$p['amount']; $bal[(int)$p['id']] = max(0, $left); } ?>
+<div class="ci-modal" id="<?= ci_e($pm['id']) ?>" hidden><div class="ci-modal-box ci-modal-wide" role="dialog" aria-modal="true" aria-labelledby="<?= ci_e($pm['id']) ?>-h">
+  <div class="ci-card-h"><h3 id="<?= ci_e($pm['id']) ?>-h"><?= $invIco ?? '' ?> <?= ci_e($pm['title']) ?> <span class="ci-muted">· <?= count($pm['list']) ?> payment<?= count($pm['list']) === 1 ? '' : 's' ?></span></h3><button type="button" class="ci-x" data-close aria-label="Close"><i class="fas fa-xmark"></i></button></div>
+  <div class="ci-card-b">
+    <?php if ($e): ?><div class="sv-pm-sum"><div><small>Fee</small><b><?= ci_money0($e['net']) ?></b></div><div><small>Paid</small><b class="ci-g"><?= ci_money0($e['paid']) ?></b></div><div><small>Due</small><b class="<?= (float)$e['due'] > 0.004 ? 'ci-r' : 'ci-g' ?>"><?= ci_money0($e['due']) ?></b></div><?php if ((float)$e['due'] > 0.004 && $e['due_date']): ?><div><small>Next due</small><b><?= ci_date($e['due_date']) ?></b></div><?php endif; ?></div><?php endif; ?>
+    <div class="ci-table-wrap"><table class="ci-table" data-sheet="off"><thead><tr><th><?= $pm['inst'] ? 'Installment' : '#' ?></th><th>Date</th><th>Receipt</th><th>Paid by</th><th class="ci-num">Amount</th><?= $e ? '<th class="ci-num">Balance</th>' : '' ?><th class="ci-noprint"></th></tr></thead><tbody>
+    <?php foreach ($pm['list'] as $p): ?><tr<?= (int)$p['id'] === $newReceipt ? ' class="ci-hl"' : '' ?>><td><b><?= (int)$p['no'] ?></b></td><td class="ci-nw"><?= ci_date($p['paid_on']) ?></td><td class="ci-nw"><b><?= ci_e($p['receipt_no']) ?></b><?= $p['note'] ? '<small class="ci-muted" style="display:block">' . ci_e($p['note']) . '</small>' : '' ?></td>
+      <td><?= ci_e(ci_pay_mode($p)) ?><?= $p['username'] ? '<small class="ci-by">by ' . ci_e($p['username']) . '</small>' : '' ?></td><td class="ci-num"><b class="ci-g"><?= ci_money($p['amount']) ?></b></td><?= $e ? '<td class="ci-num">' . ci_money($bal[(int)$p['id']] ?? 0) . '</td>' : '' ?>
+      <td class="ci-noprint"><div class="ci-icos"><a class="ci-ico" href="/admin/ci-receipt.php?id=<?= (int)$p['id'] ?>" target="_blank" aria-label="Print receipt <?= ci_e($p['receipt_no']) ?>" title="Print receipt"><?= ci_svg('print') ?></a><?php if ($me['role'] === 'admin'): ?><?= ci_post_ico('trash', 'Delete payment', ['action' => 'pay_delete', 'id' => $id, 'payment_id' => $p['id']], 'Delete payment ' . $p['receipt_no'] . '? The due goes up again.') ?><?php endif; ?></div></td></tr>
+    <?php endforeach; ?>
+    </tbody></table></div>
+  </div>
+</div></div>
+<?php endforeach; ?>
 <?php if ($payable): ?>
 <div class="ci-modal" id="ci-collect" hidden><div class="ci-modal-box" role="dialog" aria-modal="true" aria-labelledby="ci-collect-h">
   <div class="ci-card-h"><h3 id="ci-collect-h">Collect fee — <?= ci_e($s['name']) ?></h3><button type="button" class="ci-x" data-close aria-label="Close"><i class="fas fa-times"></i></button></div>
