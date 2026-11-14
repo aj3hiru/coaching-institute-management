@@ -12,14 +12,14 @@ $ping = isset($_GET['ping']); $roster = isset($_GET['roster']);
 $me = ci_page_start($pdo, ['attendance'], $ping || $roster);
 if ($roster) {
     // the students' list for the instant card, kept in the browser and only sent again when it changed:
-    //  · details (name, photo, class, batch, father, mobile, fee due, today a holiday?) carry a fingerprint (v); the browser
+    //  · details (name, photo, class, batch, father, fee due — no mobile number, today a holiday?) carry a fingerprint (v); the browser
     //    sends the one it has — same → "same" (a few bytes), changed → the whole list again (gzip: ~150–250 KB for 5000)
     //  · today's check-in / check-out come as changes since the browser's last call (since)
     header('Content-Type: application/json; charset=utf-8'); header('Cache-Control: no-store');
     session_write_close();
     if (!headers_sent() && str_contains((string)($_SERVER['HTTP_ACCEPT_ENCODING'] ?? ''), 'gzip') && !ini_get('zlib.output_compression')) ob_start('ob_gzhandler');
     $today = date('Y-m-d'); $now = time();
-    $rows = $pdo->query("SELECT s.id, s.reg_no, s.name, s.father_name, s.mobile, s.photo, c.name AS class_name,
+    $rows = $pdo->query("SELECT s.id, s.reg_no, s.name, s.father_name, s.photo, c.name AS class_name,
             (SELECT COALESCE(SUM(" . CI_DUE_SQL . "), 0) FROM ci_enrollments e WHERE e.student_id = s.id) AS due
         FROM ci_students s LEFT JOIN ci_classes c ON c.id = s.class_id
         WHERE s.status = 'active' AND s.stype <> 'online'
@@ -34,7 +34,7 @@ if ($roster) {
         $open = array_filter($bs, fn($b) => !ci_holiday_on($hols, $today, (int)$b['id'], (int)$b['course_id']));
         $regOf[(int)$r['id']] = $r['reg_no'];
         $list[] = ['reg' => $r['reg_no'], 'name' => $r['name'], 'class' => $r['class_name'], 'batches' => implode(', ', array_unique(array_column($bs, 'name'))),
-            'father' => (string)($r['father_name'] ?? ''), 'mobile' => (string)$r['mobile'], 'photo' => ci_photo_url($r['photo'] ?? ''),
+            'father' => (string)($r['father_name'] ?? ''), 'photo' => ci_photo_url($r['photo'] ?? ''),
             'due' => round((float)$r['due'], 2), 'due_text' => (float)$r['due'] > 0 ? ci_money0($r['due']) : '', 'hol' => $bs && !$open ? 1 : 0];
     }
     $v = substr(md5($today . ci_att_min_out() . json_encode($list)), 0, 16);
@@ -196,18 +196,17 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Ari
     st.className = 'st ' + k;
     st.textContent = (k === 'in' ? '✓ ' : k === 'out' ? '✓ ' : '') + HEAD[k] + (s ? ' — ' + s.name : '') + (k === 'in' || k === 'out' ? ' · ' + d.time : '');
     if (!s) { box.innerHTML = '<div class="ph err"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></svg><b>' + esc(d.msg || 'Not found') + '</b><span>' + esc(code) + '</span></div>'; return; }
-    var rows = [['Admission ID', s.reg], ['Class', s['class'] || '—'], ['Batch', s.batches || '—'], ["Father's Name", s.father || '—'], ['Contact No.', s.mobile || '—']];
+    var rows = [['Admission ID', s.reg], ['Class', s['class'] || '—'], ['Batch', s.batches || '—'], ["Father's Name", s.father || '—']]; // no mobile number on the scan screen's card
     var fee = s.due > 0 ? '<span class="fee due">DUE · ' + esc(s.due_text) + '</span>' : '<span class="fee paid">✓ FULL PAID</span>';
     var tm = (s['in'] ? 'In <b>' + esc(s['in']) + '</b>' : '') + (s.out ? ' · Out <b>' + esc(s.out) + '</b>' : '');
     box.innerHTML = '<div class="card pop"><div class="c-h">' + (LOGO ? '<img src="' + esc(LOGO) + '" alt="">' : '') + '<div><b>' + esc(INST.name) + '</b>' + (INST.address ? '<small>' + esc(INST.address) + '</small>' : '') + '</div></div>'
       + '<div class="c-t">STUDENT IDENTITY CARD</div>'
       + '<div class="c-b"><div class="c-ph">' + photo(s) + '</div><div class="c-d"><div class="c-nm">' + esc(s.name) + '</div><table>'
-      + rows.map(function (r) { return '<tr><th>' + r[0] + '</th><td>' + (r[0] === 'Contact No.' && s.mobile ? TEL : '') + esc(r[1]) + '</td></tr>'; }).join('') + '</table></div></div>'
+      + rows.map(function (r) { return '<tr><th>' + r[0] + '</th><td>' + esc(r[1]) + '</td></tr>'; }).join('') + '</table></div></div>'
       + '<div class="c-f">' + fee + '<span class="tm">' + (k === 'wait' || k === 'done' ? esc(d.msg) : tm) + '</span></div><div class="c-bar"></div>'
       + '<div class="mk ' + k + '" title="' + esc(d.msg) + '"><svg viewBox="0 0 54 54"><circle cx="27" cy="27" r="23.5"/><path d="' + MARK[k] + '"/></svg></div></div>';
   }
   // only the students who just became present (check-in) — not check-outs, repeat scans or errors; one row, slides once
-  var TEL = '<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="#16a34a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-.12em;margin-right:.3em"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg>';
   function addRecent(d, k) {
     var s = d.student; if (d.kind !== 'in' || !s) return;
     var el = document.createElement('div'); el.className = 'new'; el.title = d.msg || ''; el.setAttribute('data-k', k || '');
@@ -290,7 +289,7 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Ari
     return loading;
   }
   function local(k, s, now) { // the same rules as the server: 1st scan in; again after the set minutes out; else wait / done
-    var m = S.st[k] || (S.st[k] = {}), card = { reg: s.reg, name: s.name, 'class': s['class'], batches: s.batches, father: s.father, mobile: s.mobile, photo: s.photo, due: s.due, due_text: s.due_text };
+    var m = S.st[k] || (S.st[k] = {}), card = { reg: s.reg, name: s.name, 'class': s['class'], batches: s.batches, father: s.father, photo: s.photo, due: s.due, due_text: s.due_text };
     var d = { ok: false, kind: 'done', time: hm(now), student: card };
     if (s.hol && R.day === DAY) { d.kind = 'error'; d.msg = 'Today is a holiday for ' + s.name + "'s batch."; return d; }
     if (!m['in']) { m['in'] = now; d.ok = true; d.kind = 'in'; d.msg = 'Checked in at ' + hm(now); }
