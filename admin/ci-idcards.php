@@ -55,18 +55,17 @@ body{margin:0;background:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,"S
 .idc-h b{display:block;font-family:Georgia,"Times New Roman",serif;font-size:3.7mm;font-weight:700;letter-spacing:.02em;text-transform:uppercase;color:var(--idc);line-height:1.05}
 .idc-h small{display:block;font-size:1.6mm;color:#4b5563;margin-top:.5mm}
 .idc-t{background:var(--idc);color:#fff;text-align:center;font-size:1.95mm;font-weight:700;letter-spacing:.24em;padding:.9mm 0;border-bottom:.6mm solid var(--idc2)}
-.idc-bc{padding:1.2mm 1.4mm .5mm;text-align:center}
-.idc-bc svg{width:100%;height:auto;display:block} /* full card width: thick bars (~0.42 mm) for any scanner */
-.idc-bc span{display:block;font-size:1.9mm;font-weight:700;letter-spacing:.3em;font-family:ui-monospace,Menlo,Consolas,monospace;margin-top:.2mm}
-.idc-b{display:flex;gap:2.2mm;padding:1.2mm 2.6mm 0}
-.idc-ph{flex:none;width:24mm;height:30.86mm;border:.35mm solid #9ca3af;overflow:hidden;background:#e5e7eb} /* passport 7:9 */
+.idc-bc{padding:1.4mm 1.4mm .4mm}
+.idc-bc svg{width:100%;height:10mm;display:block} /* full card width: thick bars (~0.42 mm) for any scanner */
+.idc-ph{width:19mm;height:24.4mm;margin:1.6mm auto 0;border:.35mm solid var(--idc);padding:.4mm;background:#fff} /* passport 7:9 */
 .idc-ph img,.idc-ph svg{width:100%;height:100%;object-fit:cover;object-position:50% 30%;display:block}
-.idc-k{min-width:0;flex:1;display:flex;flex-direction:column;justify-content:space-between;padding:.2mm 0}
-.idc-k i,.idc-x i{display:block;font-style:normal;font-size:1.5mm;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#6b7280}
-.idc-k b,.idc-x b{display:block;font-size:2.3mm;font-weight:700;color:#111827;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.idc-k .nm b{font-size:2.7mm;font-weight:800;color:var(--idc);white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
-.idc-x{display:grid;grid-template-columns:1fr 1fr;gap:1.4mm 2mm;padding:2mm 2.6mm 1.6mm;flex:1;align-content:start}
-.idc-x .w{grid-column:1/-1}.idc-x .w b{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;font-weight:600}
+.idc-nm{margin:1.2mm 2.6mm 0;text-align:center;font-size:3mm;font-weight:800;color:var(--idc);line-height:1.15;text-transform:uppercase;letter-spacing:.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.idc-d{margin:1.4mm 3mm 0;border-collapse:collapse;width:calc(100% - 6mm);font-size:2.05mm;line-height:1.25;table-layout:fixed}
+.idc-d th{width:17mm;padding:.35mm 0;text-align:left;font-weight:600;color:#4b5563;vertical-align:top;white-space:nowrap}
+.idc-d td{padding:.35mm 0 .35mm 1mm;font-weight:700;color:#111827;vertical-align:top;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.idc-d td::before{content:": ";font-weight:600;color:#4b5563;margin-left:-1mm}
+.idc-d td.ad{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;font-weight:600}
+.idc-sp{flex:1}
 .idc-f{height:1.6mm;background:var(--idc);border-top:.5mm solid var(--idc2)}
 @page{size:A4 portrait;margin:8mm 10mm} /* 3 × 3 portrait cards on a page */
 @media print{
@@ -87,20 +86,17 @@ body{margin:0;background:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,"S
       <?php if ($inst['address']): ?><small><?= ci_e($inst['address']) ?></small><?php endif; ?>
       <?php if ($inst['phone']): ?><small>Ph: <?= ci_e($inst['phone']) ?></small><?php endif; ?></div></div>
     <div class="idc-t">STUDENT IDENTITY CARD</div>
-    <div class="idc-bc"><?= ci_barcode_svg((string)$s['reg_no'], 30, 1) ?><span><?= ci_e($s['reg_no']) ?></span></div>
-    <div class="idc-b">
-      <div class="idc-ph"><?= ($u = ci_photo_url($s['photo'] ?? '')) ? '<img src="' . ci_e($u) . '" alt="">' : ci_photo_blank() ?></div>
-      <div class="idc-k">
-        <div class="nm"><i>Name</i><b><?= ci_e($s['name']) ?></b></div>
-        <div><i>Admission ID</i><b><?= ci_e($s['reg_no']) ?></b></div>
-        <div><i>Roll No.</i><b><?= ci_e($s['roll_no'] ?: '—') ?></b></div>
-        <div><i>Father's name</i><b><?= ci_e(trim((string)($s['father_name'] ?? '')) ?: '—') ?></b></div>
-      </div>
-    </div>
-    <div class="idc-x">
-      <div class="w"><i>Contact no.</i><b><?= ci_e($s['mobile'] . (!empty($s['alt_mobile']) ? ', ' . $s['alt_mobile'] : '')) ?></b></div>
-      <?php if ($ad !== ''): ?><div class="w"><i>Address</i><b><?= ci_e($ad) ?></b></div><?php endif; ?>
-    </div>
+    <div class="idc-bc"><?= str_replace('<svg ', '<svg preserveAspectRatio="none" ', ci_barcode_svg((string)$s['reg_no'], 30, 1)) ?></div>
+    <div class="idc-ph"><?= ($u = ci_photo_url($s['photo'] ?? '')) ? '<img src="' . ci_e($u) . '" alt="">' : ci_photo_blank() ?></div>
+    <div class="idc-nm"><?= ci_e($s['name']) ?></div>
+    <table class="idc-d">
+      <tr><th>Admission ID</th><td><?= ci_e($s['reg_no']) ?></td></tr>
+      <tr><th>Roll No.</th><td><?= ci_e($s['roll_no'] ?: '—') ?></td></tr>
+      <tr><th>Father's Name</th><td><?= ci_e(trim((string)($s['father_name'] ?? '')) ?: '—') ?></td></tr>
+      <tr><th>Contact No.</th><td><?= ci_e($s['mobile']) ?></td></tr>
+      <?php if ($ad !== ''): ?><tr><th>Address</th><td class="ad"><?= ci_e($ad) ?></td></tr><?php endif; ?>
+    </table>
+    <div class="idc-sp"></div>
     <div class="idc-f"></div>
   </div>
 <?php endforeach; ?>
