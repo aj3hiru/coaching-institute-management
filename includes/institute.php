@@ -757,6 +757,16 @@ function ci_svg(string $n): string
     return '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' . ($p[$n] ?? '') . '</svg>';
 }
 
+/** A mobile number with a phone icon in front, as a call link (tap on a phone to call). Empty → $empty. */
+function ci_tel(?string $m, string $empty = ''): string
+{
+    $m = trim((string)$m);
+    if ($m === '') return $empty;
+    return '<a class="ci-tel" href="tel:' . ci_e(preg_replace('~[^0-9+]~', '', $m)) . '" title="Call ' . ci_e($m) . '">'
+        . '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg>'
+        . ci_e($m) . '</a>';
+}
+
 function ci_ico(string $icon, ?string $href, string $label, string $kind = 'link', string $extra = ''): string
 {
     $cls = 'ci-ico' . ($icon === 'trash' || $icon === 'logout' ? ' ci-ico-danger' : '') . ($icon === 'check' || $icon === 'rupee' ? ' ci-ico-ok' : '');

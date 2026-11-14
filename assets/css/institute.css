@@ -380,3 +380,10 @@ div.ci-then-online{align-items:center;cursor:default}div.ci-then-online>span{fle
 .ci-ochip{display:inline-block;margin:2px 6px 2px 0;padding:2px 8px;border-radius:4px;background:#fff;border:1px solid #a5f3fc;font-size:12.5px}.ci-ochip.off{opacity:.55;text-decoration:line-through}
 .ci-flash{animation:ciFlash .9s ease}
 @keyframes ciFlash{0%{box-shadow:0 0 0 3px rgba(124,58,237,.35)}100%{box-shadow:0 0 0 0 rgba(124,58,237,0)}}
+
+/* a mobile number: phone icon in front, call link */
+.ci-tel{display:inline-flex;align-items:center;gap:5px;color:inherit;text-decoration:none;white-space:nowrap;font-variant-numeric:tabular-nums}
+.ci-tel svg{flex:none;color:#16a34a}
+.ci-tel:hover{color:#15803d;text-decoration:underline}
+@media print{.ci-tel{color:inherit}}
+small .ci-tel{font-weight:400!important;color:inherit!important} /* under a name: stays like the small grey text */

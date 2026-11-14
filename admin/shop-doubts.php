@@ -58,7 +58,7 @@ $courses = $pdo->query("SELECT p.id, p.title FROM sh_products p WHERE p.type = '
 <thead><tr><th>Student</th><th>Doubt</th><th>Date</th><th>Status</th><th>Action</th></tr></thead><tbody>
 <?php if (!$rows): ?><tr><td colspan="5" class="ci-empty">No doubts here.</td></tr><?php endif; ?>
 <?php foreach ($rows as $r): ?>
-<tr><td><b><?= ci_e($r['name']) ?></b><small class="ci-muted" style="display:block"><?= ci_e($r['mobile']) ?></small></td>
+<tr><td><b><?= ci_e($r['name']) ?></b><small class="ci-muted" style="display:block"><?= ci_tel($r['mobile']) ?></small></td>
 <td><div class="sd-ctx"><?= ci_e($r['course']) ?> › <?= ci_e($r['chapter'] ?? '') ?> › <a href="<?= ci_e(sh_learn_url($r['slug'], 'l=' . (int)$r['lesson_id'], true)) ?>" target="_blank"><?= ci_e($r['lecture']) ?></a></div>
   <div class="sd-q"><?= ci_e($r['question']) ?></div>
   <?php if ($r['answer']): ?><div class="sd-a"><b>Answer</b><p><?= nl2br(ci_e($r['answer'])) ?></p></div>

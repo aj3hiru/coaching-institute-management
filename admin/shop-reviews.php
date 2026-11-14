@@ -78,7 +78,7 @@ $rf = fn(array $r): string => ci_e(json_encode(['id' => (int)$r['id'], 'rating' 
 <thead><tr><th>Student</th><th>Course / notes</th><th>Rating</th><th>Review</th><th>Date</th><th>Status</th><th>Action</th></tr></thead><tbody>
 <?php if (!$rows): ?><tr><td colspan="7" class="ci-empty"><?= $status === 'pending' ? 'No reviews are waiting for approval.' : 'No reviews here.' ?></td></tr><?php endif; ?>
 <?php foreach ($rows as $r): ?>
-<tr><td class="shr-who"><a href="/admin/shop-customers.php?id=<?= (int)$r['user_id'] ?>"><b><?= ci_e($r['name']) ?></b></a><small><?= ci_e($r['mobile']) ?></small></td>
+<tr><td class="shr-who"><a href="/admin/shop-customers.php?id=<?= (int)$r['user_id'] ?>"><b><?= ci_e($r['name']) ?></b></a><small><?= ci_tel($r['mobile']) ?></small></td>
 <td><a class="shr-item" href="<?= ci_e(sh_url($r)) ?>#reviews" target="_blank"><?= ci_e($r['title']) ?><small><?= $r['type'] === 'notes' ? 'PDF notes' : 'Video course' ?></small></a></td>
 <td class="shr-st" data-sort="<?= (int)$r['rating'] ?>"><?= str_repeat('★', (int)$r['rating']) ?><i><?= str_repeat('★', 5 - (int)$r['rating']) ?></i></td>
 <td><div class="shr-body"><?= $r['body'] ? ci_e($r['body']) : '<span class="ci-muted">(rating only)</span>' ?></div></td>

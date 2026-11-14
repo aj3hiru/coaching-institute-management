@@ -174,7 +174,7 @@ $qs = function (array $over = []) {
 <?php if (!$rows): ?><tr><td colspan="8" class="ci-empty">No payments <?= $period === 'today' ? 'today' : 'in this period' ?>.</td></tr><?php endif; ?>
 <?php foreach ($rows as $r): ?>
 <tr><td><b><?= ci_e($r['receipt_no']) ?></b></td><td><?= ci_date($r['paid_on']) ?></td>
-<td><div class="ci-person"><?= ci_avatar($r, 30) ?><div><a href="/admin/student-view.php?id=<?= (int)$r['student_id'] ?>"><?= ci_e($r['name']) ?></a><small><?= ci_e($r['reg_no']) ?> · <?= ci_e($r['mobile']) ?></small></div></div></td>
+<td><div class="ci-person"><?= ci_avatar($r, 30) ?><div><a href="/admin/student-view.php?id=<?= (int)$r['student_id'] ?>"><?= ci_e($r['name']) ?></a><small><?= ci_e($r['reg_no']) ?> · <?= ci_tel($r['mobile']) ?></small></div></div></td>
 <td><?= ci_e($r['course_name'] ?? '—') ?><?= $r['batch_name'] ? '<small class="ci-muted" style="display:block">' . ci_e($r['batch_name']) . '</small>' : '' ?></td>
 <td><?= ci_e(ci_pay_mode($r)) ?><?= $r['note'] ? '<small class="ci-muted" style="display:block">' . ci_e($r['note']) . '</small>' : '' ?><?= $r['username'] ? '<small class="ci-by">by ' . ci_e($r['username']) . '</small>' : '' ?></td>
 <td class="ci-num"><b><?= ci_money($r['amount']) ?></b></td>
@@ -188,7 +188,7 @@ $qs = function (array $over = []) {
 <thead><tr><th>Student</th><th>Course / batch</th><th class="ci-num">Fee</th><th class="ci-num">Paid</th><th class="ci-num">Due</th><th>Next due date</th><th></th></tr></thead><tbody>
 <?php if (!$rows): ?><tr><td colspan="7" class="ci-empty"><?= $period === 'all' ? 'No dues. Everyone has paid.' : 'No dues with a due date ' . ($period === 'today' ? 'today' : 'in this period') . '.' ?> <a href="?period=all">See all dues</a></td></tr><?php endif; ?>
 <?php foreach ($rows as $r): $lateRow = $r['due_date'] && $r['due_date'] < date('Y-m-d'); ?>
-<tr><td><div class="ci-person"><?= ci_avatar($r, 30) ?><div><a href="/admin/student-view.php?id=<?= (int)$r['sid'] ?>"><?= ci_e($r['name']) ?></a><small><?= ci_e($r['reg_no']) ?> · <a href="tel:<?= ci_e($r['mobile']) ?>"><?= ci_e($r['mobile']) ?></a></small></div></div></td>
+<tr><td><div class="ci-person"><?= ci_avatar($r, 30) ?><div><a href="/admin/student-view.php?id=<?= (int)$r['sid'] ?>"><?= ci_e($r['name']) ?></a><small><?= ci_e($r['reg_no']) ?> · <?= ci_tel($r['mobile']) ?></small></div></div></td>
 <td><?= ci_e($r['course_name'] ?? '—') ?><?= $r['batch_name'] ? '<small class="ci-muted" style="display:block">' . ci_e($r['batch_name']) . '</small>' : '' ?></td>
 <td class="ci-num"><?= ci_money0((float)$r['fee'] - (float)$r['discount']) ?></td><td class="ci-num"><?= ci_money0($r['paid']) ?></td>
 <td class="ci-num"><button type="button" class="cf-due" data-collect-sid="<?= (int)$r['sid'] ?>" data-eid="<?= (int)$r['id'] ?>" title="Collect the due"><?= ci_money0($r['due']) ?> <i class="fas fa-indian-rupee-sign"></i></button></td>

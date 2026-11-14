@@ -165,7 +165,7 @@ $address = trim(implode(', ', array_filter([$s['address'], $s['city'], $s['state
 $waText = 'Namaste, ' . $s['name'] . ' (' . $s['reg_no'] . ')' . ($tot['due'] > 0 ? ' ki baaki fee ' . ci_money0($tot['due']) . ' hai' . ($next ? ', agli tareekh ' . ci_date($next['date']) . ' ko.' : '.') : '.') . ' — ' . edu_site_name();
 $wa = ci_wa($s['mobile'], $waText);
 $kv = fn(array $rows) => implode('', array_map(fn($k, $v) => ($v === null || $v === '' ? '' : '<dt>' . $k . '</dt><dd>' . $v . '</dd>'), array_keys($rows), $rows));
-$tel = fn(?string $m) => $m ? '<a href="tel:' . ci_e($m) . '">' . ci_e($m) . '</a>' : '';
+$tel = fn(?string $m) => ci_tel($m);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -204,7 +204,7 @@ $tel = fn(?string $m) => $m ? '<a href="tel:' . ci_e($m) . '">' . ci_e($m) . '</
       <h2><?= ci_e($s['name']) ?></h2>
       <div class="ci-ph-tags"><span class="ci-badge ci-b-violet"><?= ci_e($s['reg_no']) ?></span><span class="ci-badge ci-tb-<?= ci_e($s['stype'] ?? 'institute') ?>"><?= ci_e((CI_STYPES[$s['stype'] ?? 'institute'] ?? '') . ' student') ?></span><?= ci_status_badge($s['status']) ?><?= $s['class_name'] ? '<span class="ci-badge ci-b-blue">Class ' . ci_e($s['class_name']) . '</span>' : '' ?><?= $tot['due'] > 0.004 ? '<span class="ci-badge ci-b-red">Due ' . ci_money0($tot['due']) . '</span>' : ($tot['net'] > 0 ? '<span class="ci-badge ci-b-green">Fee fully paid</span>' : '') ?></div>
       <div class="ci-ph-meta">
-        <span><i class="fas fa-phone"></i> <?= $tel($s['mobile']) ?><?= $s['alt_mobile'] ? ' · ' . $tel($s['alt_mobile']) : '' ?></span>
+        <span><?= $tel($s['mobile']) ?><?= $s['alt_mobile'] ? ' · ' . $tel($s['alt_mobile']) : '' ?></span>
         <?php if ($s['father_name']): ?><span><i class="fas fa-user"></i> S/D of <?= ci_e($s['father_name']) ?></span><?php endif; ?>
         <?php if ($s['city'] || $s['address']): ?><span><i class="fas fa-location-dot"></i> <?= ci_e($s['city'] ?: $s['address']) ?></span><?php endif; ?>
         <span><i class="fas fa-calendar"></i> Admitted <?= ci_date($s['admission_date']) ?></span>

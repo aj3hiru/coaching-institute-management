@@ -110,7 +110,7 @@ $badge = fn($s) => '<span class="ci-badge ' . ['paid' => 'ci-b-green', 'created'
 <?php if (!$rows): ?><tr><td colspan="8" class="ci-empty">No orders for these filters.</td></tr><?php endif; ?>
 <?php foreach ($rows as $o): ?>
 <tr><td class="ci-nw" data-l="Order"><b><?= ci_e($o['order_no'] ?: '#' . $o['id']) ?></b></td>
-<td data-l="Buyer"><a href="<?= $o['student_id'] ? '/admin/student-view.php?id=' . (int)$o['student_id'] . '#online' : '/admin/shop-customers.php?id=' . (int)$o['user_id'] ?>"><?= ci_e($o['name'] ?? 'Deleted') ?></a><small class="ci-muted" style="display:block"><?= ci_e($o['mobile'] ?? '') ?></small></td>
+<td data-l="Buyer"><a href="<?= $o['student_id'] ? '/admin/student-view.php?id=' . (int)$o['student_id'] . '#online' : '/admin/shop-customers.php?id=' . (int)$o['user_id'] ?>"><?= ci_e($o['name'] ?? 'Deleted') ?></a><small class="ci-muted" style="display:block"><?= ci_tel($o['mobile'] ?? '') ?></small></td>
 <td data-l="Item"><?= ci_e($o['title']) ?></td><td class="ci-num" data-l="Amount"><?= ci_money0($o['amount']) ?></td><td data-l="Status"><?= $badge($o['status']) ?><?= $o['error'] && $o['status'] !== 'paid' ? '<small class="ci-muted" style="display:block">' . ci_e(mb_strimwidth($o['error'], 0, 60, '…')) . '</small>' : '' ?></td>
 <td data-l="Access"><?= $access($o) ?></td>
 <td class="ci-nw" data-l="Payment"><?= str_starts_with((string)$o['rzp_order'], 'demo_') ? '<span class="ci-badge ci-b-amber">Demo</span> ' : (str_starts_with((string)$o['rzp_order'], 'manual_') ? '<span class="ci-badge ci-b-blue">Office</span> ' : '') ?><small><?= ci_e($o['rzp_payment'] ?: ($o['rzp_order'] ?: '—')) ?></small><?= $o['method'] ? '<small class="ci-muted" style="display:block">' . ci_e($o['method']) . '</small>' : '' ?>

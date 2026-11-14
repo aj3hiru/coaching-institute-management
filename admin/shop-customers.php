@@ -212,7 +212,7 @@ if ($id) {
 $cvBlocked = count(array_filter($acc, fn($x) => !empty($x['blocked']))); $cvPaid = array_filter($ord, fn($o) => $o['status'] === 'paid'); $cvSpent = array_sum(array_column($cvPaid, 'amount')); ?>
 <div class="cv-head">
   <span class="cv-av"><?php if ($av = sh_avatar_url($cu)): ?><img src="<?= ci_e($av) ?>" alt=""><?php else: ?><?= ci_e(mb_strtoupper(mb_substr(trim($cu['name']), 0, 1))) ?><?php endif; ?></span>
-  <div class="cv-who"><h2><?= ci_e($cu['name']) ?></h2><div class="cv-contact"><a href="tel:<?= ci_e($cu['mobile']) ?>"><i class="fas fa-phone"></i> <?= ci_e($cu['mobile']) ?></a><a href="mailto:<?= ci_e($cu['email']) ?>"><i class="fas fa-envelope"></i> <?= ci_e($cu['email']) ?></a></div>
+  <div class="cv-who"><h2><?= ci_e($cu['name']) ?></h2><div class="cv-contact"><?= ci_tel($cu['mobile']) ?><a href="mailto:<?= ci_e($cu['email']) ?>"><i class="fas fa-envelope"></i> <?= ci_e($cu['email']) ?></a></div>
     <div class="cv-badges"><?= $cu['status'] === 'active' ? '<span class="ci-badge ci-b-green">Active</span>' : '<span class="ci-badge ci-b-red"><i class="fas fa-ban"></i> Suspended</span>' ?><?= $cvBlocked ? '<span class="ci-badge ci-b-amber">Blocked from ' . $cvBlocked . ' course' . ($cvBlocked === 1 ? '' : 's') . '</span>' : '' ?><?= !empty($cu['block_free']) ? '<span class="ci-badge ci-b-amber">No free courses</span>' : '' ?><?= !empty($cu['sid']) ? '<a class="ci-badge ci-b-grey" href="/admin/student-view.php?id=' . (int)$cu['sid'] . '"><i class="fas fa-school"></i> Institute student · ' . ci_e($cu['reg_no']) . '</a>' : '' ?></div>
     <?php if (!empty($cu['block_note']) && ($cu['status'] !== 'active' || $cvBlocked || !empty($cu['block_free']))): ?><p class="cv-note"><i class="fas fa-circle-info"></i> <?= ci_e($cu['block_note']) ?></p><?php endif; ?></div>
   <div class="cv-acts"><?php if (sh_perm($me, 'orders')): ?><button type="button" class="ci-btn" data-enroll="Enroll <?= ci_e($cu['name']) ?>" data-enroll-uid="<?= $id ?>" data-enroll-name="<?= ci_e($cu['name']) ?>"><i class="fas fa-cart-shopping"></i> Enroll</button><?php endif; ?><button type="button" class="ci-btn ci-ghost cv-ban" data-block="<?= $id ?>"><i class="fas fa-ban"></i> Block / suspend</button></div>
@@ -302,7 +302,7 @@ $cvBlocked = count(array_filter($acc, fn($x) => !empty($x['blocked']))); $cvPaid
 <?php if (!$list): ?><tr><td colspan="9" class="ci-empty"><?= $total || $qq !== '' || $show !== '' || $joined !== '' ? 'No account matches — change the filters.' : 'No accounts yet.' ?></td></tr><?php endif; ?>
 <?php foreach ($list as $r): $susp = $r['status'] !== 'active'; ?>
 <tr class="<?= $susp ? 'cu-off' : '' ?>"><td><a class="cu-who" href="?id=<?= (int)$r['id'] ?>"><span class="cu-av"><?= ci_e(mb_strtoupper(mb_substr(trim($r['name']), 0, 1))) ?></span><span><b><?= ci_e($r['name']) ?></b><small><?= ci_e($r['email']) ?></small></span></a></td>
-<td class="ci-nw"><?= ci_e($r['mobile']) ?></td>
+<td class="ci-nw"><?= ci_tel($r['mobile']) ?></td>
 <td><?= $r['student_id'] ? '<a href="/admin/student-view.php?id=' . (int)$r['student_id'] . '"><i class="fas fa-school"></i> Student</a>' : '<span class="ci-muted">—</span>' ?></td>
 <td class="ci-num"><?= (int)$r['items'] ?></td><td class="ci-num"><?= ci_money0($r['spent']) ?></td>
 <td class="ci-nw"><?= date('d M Y', strtotime($r['created_at'])) ?></td><td class="ci-nw"><?= $r['last_login'] ? date('d M Y', strtotime($r['last_login'])) : '<span class="ci-muted">Never</span>' ?></td>

@@ -72,11 +72,13 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Ari
 .ph b{font-size:clamp(18px,2.4vw,24px);color:var(--p)}
 .ph.err{border-color:#fca5a5;color:#991b1b;background:#fff5f5}.ph.err b{color:var(--bad)}
 /* recent scans */
-.rec{display:flex;gap:8px;overflow-x:auto;padding:0 16px 16px;justify-content:center;flex-wrap:wrap}
-.rec div{display:flex;align-items:center;gap:8px;padding:6px 12px 6px 6px;background:#fff;border:1px solid #e5e7eb;border-left:4px solid #9ca3af;font-size:13px;max-width:260px;animation:pop .3s ease-out}
-.rec div img,.rec div svg{width:28px;height:36px;object-fit:cover;flex:none}
-.rec div span{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.rec div em{font-style:normal;color:#6b7280;font-size:12px;margin-left:4px}
-.rec .in{border-left-color:var(--ok)}.rec .out{border-left-color:var(--out)}.rec .wait,.rec .done{border-left-color:var(--warn)}.rec .error{border-left-color:var(--bad)}
+.rec{overflow:hidden;padding:0 16px 16px;-webkit-mask-image:linear-gradient(90deg,#000 88%,transparent);mask-image:linear-gradient(90deg,#000 88%,transparent)} /* one row: the newest present slides in once from the left */
+.rec-t{display:flex;flex-wrap:nowrap;gap:8px;width:max-content;will-change:transform}
+.rec-t div{display:flex;align-items:center;gap:8px;flex:none;padding:6px 12px 6px 6px;background:#fff;border:1px solid #e5e7eb;border-left:4px solid var(--ok);font-size:13px;max-width:300px}
+.rec-t div.new{animation:recin .45s ease-out}
+@keyframes recin{from{opacity:0}to{opacity:1}}
+.rec-t div img,.rec-t div svg{width:28px;height:36px;object-fit:cover;flex:none}
+.rec-t div span{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.rec-t div em{font-style:normal;color:#6b7280;font-size:12px;margin-left:4px}
 <?php if ($embed): ?>.top .nt{display:none}<?php endif; ?>
 @media (max-width:600px){.top b{font-size:15px}.top .clk small{display:none}}
 </style>
@@ -87,7 +89,7 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Ari
   <?php if (!$embed): ?><a href="/admin/ci-attendance.php">← Attendance</a><?php endif; ?></div>
 <div class="inp"><form id="f" autocomplete="off"><input id="code" inputmode="text" placeholder="Scan card / admission ID" aria-label="Admission ID" autofocus><button type="submit">Mark</button></form></div>
 <div class="stage"><div class="st idle" id="st">Ready — scan an ID card</div><div id="box"></div></div>
-<div class="rec" id="rec" aria-label="Recent scans"></div>
+<div class="rec" aria-label="Checked in now"><div class="rec-t" id="rec"></div></div>
 <script>
 (function () {
   var CSRF = <?= json_encode(csrf_token(), JSON_HEX_TAG) ?>, LOGO = <?= json_encode($logo, JSON_HEX_TAG | JSON_UNESCAPED_SLASHES) ?>, INST = <?= json_encode(['name' => $inst['name'], 'address' => $inst['address'], 'phone' => $inst['phone']], JSON_HEX_TAG | JSON_UNESCAPED_UNICODE) ?>;
@@ -113,15 +115,21 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Ari
     box.innerHTML = '<div class="card pop"><div class="c-h">' + (LOGO ? '<img src="' + esc(LOGO) + '" alt="">' : '') + '<div><b>' + esc(INST.name) + '</b>' + (INST.address ? '<small>' + esc(INST.address) + '</small>' : '') + '</div></div>'
       + '<div class="c-t">STUDENT IDENTITY CARD</div>'
       + '<div class="c-b"><div class="c-ph">' + photo(s) + '</div><div class="c-d"><div class="c-nm">' + esc(s.name) + '</div><table>'
-      + rows.map(function (r) { return '<tr><th>' + r[0] + '</th><td>' + esc(r[1]) + '</td></tr>'; }).join('') + '</table></div></div>'
+      + rows.map(function (r) { return '<tr><th>' + r[0] + '</th><td>' + (r[0] === 'Contact No.' && s.mobile ? TEL : '') + esc(r[1]) + '</td></tr>'; }).join('') + '</table></div></div>'
       + '<div class="c-f">' + fee + '<span class="tm">' + (k === 'wait' || k === 'done' ? esc(d.msg) : tm) + '</span></div><div class="c-bar"></div>'
       + '<div class="mk ' + k + '" title="' + esc(d.msg) + '"><svg viewBox="0 0 54 54"><circle cx="27" cy="27" r="23.5"/><path d="' + MARK[k] + '"/></svg></div></div>';
   }
-  function addRecent(d, code) {
-    var s = d.student, k = d.kind || 'error', el = document.createElement('div');
-    el.className = k; el.title = d.msg || '';
-    el.innerHTML = (s ? photo(s) : '') + '<span><b>' + esc(s ? s.name : code) + '</b><em>' + esc(HEAD[k]) + ' · ' + esc(d.time || '') + '</em></span>';
-    rec.insertBefore(el, rec.firstChild); while (rec.children.length > 8) rec.removeChild(rec.lastChild);
+  // only the students who just became present (check-in) — not check-outs, repeat scans or errors; one row, slides once
+  var TEL = '<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="#16a34a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-.12em;margin-right:.3em"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg>';
+  function addRecent(d) {
+    var s = d.student; if (d.kind !== 'in' || !s) return;
+    var el = document.createElement('div'); el.className = 'new'; el.title = d.msg || '';
+    el.innerHTML = photo(s) + '<span><b>' + esc(s.name) + '</b><em>' + esc(s.reg_no || '') + ' · ' + esc(d.time || '') + '</em></span>';
+    rec.insertBefore(el, rec.firstChild); while (rec.children.length > 20) rec.removeChild(rec.lastChild);
+    var w = el.offsetWidth + 8; // the row moves right by one name, once
+    rec.style.transition = 'none'; rec.style.transform = 'translateX(-' + w + 'px)'; void rec.offsetWidth;
+    rec.style.transition = 'transform .45s cubic-bezier(.2,.8,.2,1)'; rec.style.transform = 'translateX(0)';
+    setTimeout(function () { el.classList.remove('new'); }, 500);
   }
   // every scan goes out at once (no waiting for the one before); the newest answer is the one on screen
   function send(c) {

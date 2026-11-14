@@ -57,7 +57,7 @@ $cnt = $pdo->query("SELECT status, COUNT(*) FROM sh_reports GROUP BY status")->f
 <thead><tr><th>Student</th><th>About</th><th>Message</th><th>Date</th><th>Status</th><th>Action</th></tr></thead><tbody>
 <?php if (!$rows): ?><tr><td colspan="6" class="ci-empty">No reports here.</td></tr><?php endif; ?>
 <?php foreach ($rows as $r): ?>
-<tr><td><a href="/admin/shop-customers.php?id=<?= (int)$r['user_id'] ?>"><b><?= ci_e($r['name']) ?></b></a><small class="ci-muted" style="display:block"><?= ci_e($r['mobile'] ?? '') ?></small><small class="ci-muted" style="display:block"><?= ci_e($r['email'] ?? '') ?></small></td>
+<tr><td><a href="/admin/shop-customers.php?id=<?= (int)$r['user_id'] ?>"><b><?= ci_e($r['name']) ?></b></a><small class="ci-muted" style="display:block"><?= ci_tel($r['mobile'] ?? '') ?></small><small class="ci-muted" style="display:block"><?= ci_e($r['email'] ?? '') ?></small></td>
 <td class="ci-nw"><?= ci_e($topics[$r['topic']] ?? $r['topic']) ?></td>
 <td><div class="srp-msg"><?= ci_e($r['message']) ?></div>
   <?php if ($r['file']): ?><a class="srp-att" href="?file=<?= (int)$r['id'] ?>" target="_blank"><i class="fas fa-paperclip"></i> <?= ci_e($r['file_name'] ?: 'Attachment') ?> (<?= round($r['size'] / 1048576, 1) ?> MB)</a><?php endif; ?>
