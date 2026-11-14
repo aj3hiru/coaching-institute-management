@@ -201,6 +201,21 @@ $tel = fn(?string $m) => ci_tel($m);
 .sv-kpi small{display:block;font-size:11.5px;color:#6b7280;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media (max-width:1100px){.sv-kpis{flex-basis:100%}}
 @media (max-width:600px){.sv-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.sv-kpi{padding:8px 10px;gap:8px}.sv-kpi>i{width:26px;height:26px}.sv-kpi small{white-space:normal}}
+/* the top card's buttons: icons and text buttons the same height, on one line */
+.ci-ph .ci-actions{align-items:center}
+.ci-ph .ci-actions .ci-ico,.ci-ph .ci-actions .ci-ico-form .ci-ico{width:36px;height:36px}
+.ci-ph .ci-actions .ci-btn{height:36px}
+.ci-ph .ci-actions .ci-ico-form{display:inline-flex;margin:0}
+/* attendance month: the same height and frame as the PDF button next to it */
+#attendance .ci-card-h select{height:30px;padding:0 28px 0 10px;border:1px solid #d1d5db;border-radius:6px;background:#fff;font:inherit;font-size:13px;color:#374151;cursor:pointer}
+#attendance .ci-card-h .ci-actions{align-items:center}
+/* reset password popup */
+.sv-pw-f .ci-f{margin:0 0 8px}.sv-pw-who{margin:0 0 12px;font-size:14px;color:#374151}
+.sv-pw-dob{border:0;background:none;padding:0;color:var(--ci-acc,#4a3369);font:inherit;font-size:13px;text-decoration:underline;cursor:pointer}
+.sv-pw-acts{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:14px}.sv-pw-more{margin-left:auto;font-size:13px;color:#6b7280}
+.sv-see{display:inline-flex;align-items:center;gap:6px;margin-top:10px;padding:0;border:0;background:none;color:var(--ci-acc,#4a3369);font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.sv-see i{font-size:11px;transition:transform .2s}.sv-see.open i{transform:rotate(180deg)}
+.sv-det-more .sv-det{margin-top:0}
 </style>
 </head>
 <body>
@@ -242,6 +257,7 @@ if (function_exists('sh_perm') && sh_perm($me, 'customers')) { sh_tables($pdo); 
     <?= ci_ico('pdf', null, 'Student report (PDF)', 'button', ' data-report="student" data-id="' . $id . '"') ?>
     <?php if (ci_perm($me, 'edit_student')): ?><?= ci_ico('edit', '/admin/student-edit.php?id=' . $id, 'Edit student') ?><button type="button" class="ci-btn ci-ghost" data-open="ci-addc" title="Add to an institute course and batch (offline classes)"><i class="fas fa-plus"></i> Add to Batch</button><?php endif; ?>
     <?php if (function_exists('sh_perm') && sh_perm($me, 'orders')): ?><button type="button" class="ci-btn ci-ghost" data-enroll="Enroll <?= ci_e($s['name']) ?>" data-enroll-sid="<?= $id ?>" data-enroll-name="<?= ci_e($s['name']) ?>" title="Give an online course or PDF notes (paid)"><i class="fas fa-plus"></i> Add to Course</button><?php endif; ?>
+    <?php if ($oa): ?><button type="button" class="ci-btn ci-ghost" data-open="sv-pw"><i class="fas fa-key"></i> <?= $oa['u'] ? 'Reset Password' : 'Make Login' ?></button><?php endif; ?>
     <?php if (ci_is_admin($me)): $imp = ci_del_student_impact($pdo, $id); ?><?= ci_post_ico('trash', 'Delete student', ['action' => 'delete', 'id' => $id], 'Delete student ' . $s['name'] . ' (' . $s['reg_no'] . ')?' . ($imp['text'] ? "\n\nThis also deletes " . $imp['text'] . '.' : '') . "\nThis cannot be undone.") ?><?php endif; ?>
     <?php if ($payable && ci_perm($me, 'fees')): ?><button type="button" class="ci-btn" data-collect="<?= (int)$payable[0]['id'] ?>"><i class="fas fa-indian-rupee-sign"></i> Collect Fee</button><?php endif; ?>
   </div>
@@ -257,13 +273,22 @@ if (function_exists('sh_perm') && sh_perm($me, 'customers')) { sh_tables($pdo); 
 ?>
 <div class="ci-pf">
   <aside class="ci-pf-side">
-    <div class="ci-card ci-det sv-fold" data-ds="Student details"><div class="ci-card-h" role="button" tabindex="0" aria-expanded="false"><h3>Student details</h3><?php if (ci_perm($me, 'edit_student')): ?><?= ci_ico('edit', '/admin/student-edit.php?id=' . $id, 'Edit details') ?><?php endif; ?></div><div class="ci-card-b">
+    <div class="ci-card ci-det" data-ds="Student details"><div class="ci-card-h"><h3>Student details</h3><?php if (ci_perm($me, 'edit_student')): ?><?= ci_ico('edit', '/admin/student-edit.php?id=' . $id, 'Edit details') ?><?php endif; ?></div><div class="ci-card-b">
       <?php // only what the card on top does not show: it has name, ID, class, status, both mobiles, father, admission date and the city (or the address when there is no city)
         $detKv = array_diff_key($allKv, array_flip(['Full name', 'Reg. no.', 'Class', 'Mobile', 'Alternate mobile', "Father's name", 'Status', 'Admission date', $s['city'] ? 'City' : 'Address'])); ?>
-      <dl class="ci-kv ci-kv1 sv-det"><?php foreach ($detKv as $k => $v): ?><dt><?= ci_e($k) ?></dt><dd><?= ci_e($v) ?></dd><?php endforeach; ?></dl>
-      <?php if ($s['notes']): ?><div class="ci-det-notes"><b>Notes</b><br><?= nl2br(ci_e($s['notes'])) ?></div><?php endif; ?>
+      <?php // shown up to the PIN code; the rest (school, added by, notes) after "See more"
+        $keys = array_keys($detKv); $cut = array_search('PIN code', $keys, true);
+        if ($cut === false) { $cut = array_search('School / College', $keys, true); $cut = $cut === false ? count($keys) - 1 : $cut - 1; }
+        $detTop = array_slice($detKv, 0, $cut + 1, true); $detMore = array_slice($detKv, $cut + 1, null, true); ?>
+      <?php if ($detTop): ?><dl class="ci-kv ci-kv1 sv-det"><?php foreach ($detTop as $k => $v): ?><dt><?= ci_e($k) ?></dt><dd><?= ci_e($v) ?></dd><?php endforeach; ?></dl><?php endif; ?>
+      <?php if ($detMore || $s['notes']): ?>
+      <div class="sv-det-more" hidden>
+        <?php if ($detMore): ?><dl class="ci-kv ci-kv1 sv-det"><?php foreach ($detMore as $k => $v): ?><dt><?= ci_e($k) ?></dt><dd><?= ci_e($v) ?></dd><?php endforeach; ?></dl><?php endif; ?>
+        <?php if ($s['notes']): ?><div class="ci-det-notes"><b>Notes</b><br><?= nl2br(ci_e($s['notes'])) ?></div><?php endif; ?>
+      </div>
+      <button type="button" class="sv-see" aria-expanded="false" onclick="var m=this.previousElementSibling,o=m.hidden;m.hidden=!o;this.setAttribute('aria-expanded',o);this.firstChild.textContent=o?'See less ':'See more ';this.classList.toggle('open',o)">See more <i class="fas fa-chevron-down"></i></button>
+      <?php endif; ?>
     </div></div>
-    <?php if ($oa) oa_side($oa, $me); // online account (login, status, password, block) ?>
     <div class="ci-card" data-ds="Class history"><div class="ci-card-h"><h3>Class history</h3></div><div class="ci-card-b">
       <ul class="ci-timeline">
         <?php foreach ($history as $h): ?><li><b><?= ci_e($h['from_name'] ?? '—') ?> → <?= ci_e($h['to_name'] ?? '—') ?></b><small><?= ci_date($h['changed_on']) ?><?= $h['session_name'] ? ' · ' . ci_e($h['session_name']) : '' ?><?= $h['note'] ? ' · ' . ci_e($h['note']) : '' ?></small></li><?php endforeach; ?>
@@ -374,6 +399,20 @@ if (function_exists('sh_perm') && sh_perm($me, 'customers')) { sh_tables($pdo); 
   </div>
 </div></div>
 <?php endforeach; ?>
+<?php if ($oa): $ou = $oa['u']; $dobPass = $s['dob'] ? date('dmY', strtotime($s['dob'])) : ''; // online login: reset its password, or make it ?>
+<div class="ci-modal" id="sv-pw" hidden><div class="ci-modal-box" role="dialog" aria-modal="true" aria-labelledby="sv-pw-h">
+  <div class="ci-card-h"><h3 id="sv-pw-h"><i class="fas fa-key"></i> <?= $ou ? 'Reset password' : 'Make online login' ?></h3><button type="button" class="ci-x" data-close aria-label="Close"><i class="fas fa-xmark"></i></button></div>
+  <form method="post" action="/admin/shop-customers.php" class="ci-card-b sv-pw-f">
+    <?= oa_hidden($oa, $ou ? 'password' : 'create', $ou ? [] : ['student_id' => (int)$s['id']]) ?>
+    <p class="sv-pw-who"><b><?= ci_e($s['name']) ?></b> · login with <b><?= ci_e($ou ? $ou['mobile'] : $s['mobile']) ?></b><?php if ($ou): ?> · <span class="ci-badge <?= $ou['status'] === 'active' ? 'ci-b-green">Active' : 'ci-b-red">Suspended' ?></span><?php endif; ?></p>
+    <div class="ci-f"><label>New password</label><input name="pass" minlength="4" autocomplete="new-password" placeholder="<?= $ou ? 'Empty = a new one is made and shown' : 'Empty = date of birth (DDMMYYYY)' ?>"></div>
+    <?php if ($dobPass): ?><button type="button" class="sv-pw-dob" data-pass="<?= ci_e($dobPass) ?>">Use date of birth (<?= ci_e($dobPass) ?>)</button><?php endif; ?>
+    <div class="sv-pw-acts"><button class="ci-btn" type="submit"><?= ci_svg('check') ?> <?= $ou ? 'Save password' : 'Make login' ?></button><button type="button" class="ci-btn ci-ghost" data-close>Cancel</button>
+      <?php if ($ou): ?><a class="sv-pw-more" href="/admin/shop-customers.php?id=<?= (int)$ou['id'] ?>">Email, status &amp; blocks →</a><?php endif; ?></div>
+  </form>
+</div></div>
+<script>document.querySelectorAll('.sv-pw-dob').forEach(function (b) { b.addEventListener('click', function () { var i = b.form.querySelector('[name=pass]'); i.value = b.dataset.pass; i.focus(); }); });</script>
+<?php endif; ?>
 <?php if ($payable): ?>
 <div class="ci-modal" id="ci-collect" hidden><div class="ci-modal-box" role="dialog" aria-modal="true" aria-labelledby="ci-collect-h">
   <div class="ci-card-h"><h3 id="ci-collect-h">Collect fee — <?= ci_e($s['name']) ?></h3><button type="button" class="ci-x" data-close aria-label="Close"><i class="fas fa-times"></i></button></div>
