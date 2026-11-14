@@ -5,3 +5,5 @@ cj_smart_cache/
 vendor/
 .DS_Store
 /logo.webp
+cache/
+.edu-slugmap.json
