@@ -153,7 +153,7 @@ $pre = ['type' => in_array((string)($_GET['type'] ?? ''), $types, true) ? (strin
       <div class="ci-f"><label>Course</label><select name="course"><option value="0">All courses</option><?php foreach ($courses as $c): if ($c['status'] !== 'active') continue; ?><option value="<?= (int)$c['id'] ?>"><?= ci_e($c['name']) ?></option><?php endforeach; ?></select></div>
       <div class="ci-f"><label>Batch</label><select name="batch"><option value="0">All batches</option><?php foreach ($batches as $b): if ($b['status'] !== 'active') continue; ?><option value="<?= (int)$b['id'] ?>"><?= ci_e($b['name'] . ' · ' . $b['course_name']) ?></option><?php endforeach; ?></select></div>
       <div class="ci-f"><label>One student</label><select name="student" data-search><option value="0">All students of the choice</option><?php foreach ($students as $st): ?><option value="<?= (int)$st['id'] ?>"><?= ci_e(($st['reg_no'] ?? '') . ' · ' . $st['name']) ?></option><?php endforeach; ?></select></div>
-      <p class="ci-muted" style="grid-column:1/-1;margin:0;font-size:13px"><i class="fas fa-print"></i> The cards open in a new tab, ready to print or save as PDF (10 cards on an A4 page).</p>
+      <p class="ci-muted" style="grid-column:1/-1;margin:0;font-size:13px"><i class="fas fa-print"></i> The cards open in a new tab, ready to print or save as PDF (9 cards on an A4 page).</p>
     </form>
     <?php endif; ?>
     <?php if ($storeOK): ?><form class="rp-pane ci-filters" data-pane="store" data-generic onsubmit="return false" hidden>

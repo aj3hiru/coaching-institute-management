@@ -1,8 +1,8 @@
 <?php
 // Student ID cards (Institute only) — opened from Reports → ID Cards, printed or saved as PDF from the browser.
-// Card (85.6 × 54 mm, the size of a bank card): the institute's logo, name, address, phone and email on top; the student's
+// Card (54 × 85.6 mm portrait, the size of a bank card): the institute's logo, name, address, phone and email on top; the student's
 // photo, name, class, roll no., admission ID, mobile, address and batch; a Code 128 barcode of the admission ID that the
-// attendance page's barcode scanner reads. 10 cards on an A4 page.
+// attendance page's barcode scanner reads. 9 cards on an A4 page.
 require_once __DIR__ . '/components/guard.php';
 require_once INCLUDES_PATH . '/institute.php';
 $me = ci_page_start($pdo);
@@ -45,35 +45,36 @@ body{margin:0;background:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,"S
 .bar .sp{flex:1}
 .bar a,.bar button{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 14px;border:1px solid #d1d5db;background:#fff;color:#374151;font:inherit;font-size:14px;font-weight:600;text-decoration:none;cursor:pointer}
 .bar button.pr{background:var(--idc);border-color:var(--idc);color:#fff}
-.sheet{width:210mm;margin:16px auto;padding:10mm;background:#fff;display:grid;grid-template-columns:repeat(2,85.6mm);justify-content:center;gap:5mm 8mm;align-content:start}
+.sheet{width:210mm;margin:16px auto;padding:10mm;background:#fff;display:grid;grid-template-columns:repeat(3,54mm);justify-content:center;gap:6mm 8mm;align-content:start}
 .empty{max-width:600px;margin:40px auto;padding:20px;background:#fff;border:1px solid #e5e7eb;text-align:center;color:#6b7280}
-.idc{width:85.6mm;height:54mm;border:.3mm solid #c9ced6;border-radius:3mm;overflow:hidden;display:flex;flex-direction:column;background:#fff;break-inside:avoid;page-break-inside:avoid}
-.idc-h{display:flex;align-items:center;gap:2mm;padding:1.6mm 2.6mm;background:var(--idc);color:#fff;min-height:11.5mm}
-.idc-h img{width:8.5mm;height:8.5mm;object-fit:contain;background:#fff;border-radius:50%;padding:.5mm;flex:none}
-.idc-h div{min-width:0;line-height:1.15}
-.idc-h b{display:block;font-size:3.3mm;font-weight:800;letter-spacing:.02em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.idc-h small{display:block;font-size:1.85mm;opacity:.92;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.idc-t{background:var(--idc2);color:#fff;text-align:center;font-size:1.9mm;font-weight:700;letter-spacing:.18em;padding:.4mm 0}
-.idc-b{flex:1;display:flex;gap:2.6mm;padding:1.8mm 2.6mm 0;min-height:0}
-.idc-ph{flex:none;width:16.5mm;height:20mm;border:.3mm solid #c9ced6;border-radius:1mm;overflow:hidden;background:#e5e7eb}
+/* portrait card, 54 × 85.6 mm (bank-card size) */
+.idc{position:relative;width:54mm;height:85.6mm;border:.3mm solid #c9ced6;border-radius:3mm;overflow:hidden;display:flex;flex-direction:column;background:#fff;break-inside:avoid;page-break-inside:avoid}
+.idc-h{display:flex;align-items:center;gap:2mm;padding:2.4mm 2.6mm 2.2mm;background:var(--idc);color:#fff}
+.idc-h img{width:11mm;height:11mm;object-fit:contain;background:#fff;border-radius:50%;padding:.6mm;flex:none}
+.idc-h div{min-width:0;line-height:1.2}
+.idc-h b{display:block;font-size:3.6mm;font-weight:800;letter-spacing:.03em;text-transform:uppercase;line-height:1.05}
+.idc-h small{display:block;font-size:1.7mm;opacity:.9;margin-top:.5mm}
+.idc-t{background:var(--idc2);color:#fff;text-align:center;font-size:1.9mm;font-weight:700;letter-spacing:.2em;padding:.7mm 0}
+.idc-b{display:flex;gap:2.4mm;padding:2.6mm 2.6mm 0}
+.idc-ph{flex:none;width:19mm;height:24mm;border:.5mm solid var(--idc);border-radius:1.4mm;overflow:hidden;background:#e5e7eb}
 .idc-ph img,.idc-ph svg{width:100%;height:100%;object-fit:cover;display:block}
-.idc-d{min-width:0;flex:1;font-size:2.15mm;line-height:1.32}
-.idc-d .nm{font-size:3mm;font-weight:800;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:.4mm}
-.idc-d dl{display:grid;grid-template-columns:auto 1fr;gap:0 1.5mm;margin:0}
-.idc-d dt{color:#6b7280}.idc-d dd{margin:0;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.idc-d dd.ad{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;font-weight:500}
-.idc-f{display:flex;align-items:flex-end;justify-content:space-between;gap:2mm;padding:.8mm 2.6mm 1.4mm}
-.idc-bc{display:flex;flex-direction:column;align-items:flex-start}
-.idc-bc svg{height:7.5mm;width:auto;display:block}
-.idc-bc span{font-size:1.9mm;letter-spacing:.2em;font-family:ui-monospace,Menlo,Consolas,monospace;margin-top:.2mm}
-.idc-s{text-align:right;font-size:1.8mm;color:#374151;line-height:1.3}
-.idc-s i{display:block;width:15mm;border-top:.25mm solid #6b7280;margin:3.5mm 0 .3mm auto}
-@page{size:A4 portrait;margin:8mm 10mm} /* 5 rows of 54 mm cards fit the 281 mm height */
+.idc-k{min-width:0;flex:1;display:flex;flex-direction:column;gap:1.1mm}
+.idc-k i,.idc-x i{display:block;font-style:normal;font-size:1.55mm;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--idc)}
+.idc-k b,.idc-x b{display:block;font-size:2.35mm;font-weight:700;color:#111827;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.idc-k .nm b{font-size:2.8mm;font-weight:800;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.idc-x{display:grid;grid-template-columns:1fr 1fr;gap:1.1mm 2mm;padding:2mm 2.6mm 0;flex:1;align-content:start}
+.idc-x .w{grid-column:1/-1}.idc-x .w b{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;font-weight:600}
+.idc-s{display:flex;justify-content:space-between;align-items:flex-end;padding:0 2.6mm 1mm;font-size:1.6mm;color:#374151}
+.idc-s span:last-child{text-align:center}.idc-s em{display:block;width:15mm;border-top:.25mm solid #6b7280;margin-bottom:.3mm}
+.idc-bc{border-top:.6mm solid var(--idc);padding:1.2mm 2.6mm 1.4mm;text-align:center;background:#fff}
+.idc-bc svg{height:8.5mm;width:auto;max-width:100%;display:block;margin:0 auto}
+.idc-bc span{display:block;font-size:2.1mm;font-weight:700;letter-spacing:.25em;font-family:ui-monospace,Menlo,Consolas,monospace;margin-top:.3mm}
+@page{size:A4 portrait;margin:8mm 10mm} /* 3 × 3 portrait cards on a page */
 @media print{
   body{background:#fff}.bar{display:none}
-  .sheet{width:auto;margin:0;padding:0;gap:2.4mm 8mm}
+  .sheet{width:auto;margin:0;padding:0;gap:4mm 8mm}
 }
-@media screen and (max-width:820px){.sheet{width:auto;grid-template-columns:85.6mm;padding:6mm}}
+@media screen and (max-width:820px){.sheet{width:auto;grid-template-columns:54mm;padding:6mm}}
 </style>
 </head>
 <body>
@@ -85,21 +86,24 @@ body{margin:0;background:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,"S
   <div class="idc">
     <div class="idc-h"><?php if ($logo): ?><img src="<?= ci_e($logo) ?>" alt=""><?php endif; ?><div><b><?= ci_e($inst['name']) ?></b>
       <?php if ($inst['address']): ?><small><?= ci_e($inst['address']) ?></small><?php endif; ?>
-      <small><?= ci_e(implode(' · ', array_filter([$inst['phone'] ? 'Ph: ' . $inst['phone'] : '', $inst['email']]))) ?></small></div></div>
+      <small><?= ci_e(implode(' · ', array_filter([$inst['phone'], $inst['email']]))) ?></small></div></div>
     <div class="idc-t">STUDENT IDENTITY CARD</div>
     <div class="idc-b">
       <div class="idc-ph"><?= ($u = ci_photo_url($s['photo'] ?? '')) ? '<img src="' . ci_e($u) . '" alt="">' : '<svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" fill="#c9ced6"/><circle cx="32" cy="25" r="12" fill="#fff"/><path d="M8 64c1.6-13 11.6-21 24-21s22.4 8 24 21z" fill="#fff"/></svg>' ?></div>
-      <div class="idc-d"><div class="nm"><?= ci_e($s['name']) ?></div><dl>
-        <dt>Class</dt><dd><?= ci_e($s['class_name'] ?: '—') ?></dd>
-        <dt>Roll No.</dt><dd><?= ci_e($s['roll_no'] ?: '—') ?></dd>
-        <dt>Admission ID</dt><dd><?= ci_e($s['reg_no']) ?></dd>
-        <dt>Mobile</dt><dd><?= ci_e($s['mobile']) ?></dd>
-        <?php if ($s['batches']): ?><dt>Batch</dt><dd><?= ci_e($s['batches']) ?></dd><?php endif; ?>
-        <?php if ($ad !== ''): ?><dt>Address</dt><dd class="ad"><?= ci_e($ad) ?></dd><?php endif; ?>
-      </dl></div>
+      <div class="idc-k">
+        <div class="nm"><i>Student name</i><b><?= ci_e($s['name']) ?></b></div>
+        <div><i>Admission ID</i><b><?= ci_e($s['reg_no']) ?></b></div>
+        <div><i>Class · Roll</i><b><?= ci_e(($s['class_name'] ?: '—') . ' · ' . ($s['roll_no'] ?: '—')) ?></b></div>
+      </div>
     </div>
-    <div class="idc-f"><div class="idc-bc"><?= ci_barcode_svg((string)$s['reg_no'], 40, 1.4) ?><span><?= ci_e($s['reg_no']) ?></span></div>
-      <div class="idc-s"><?= $session !== '' ? 'Session ' . ci_e($session) : '' ?><i></i>Authorised sign</div></div>
+    <div class="idc-x">
+      <div><i>Mobile</i><b><?= ci_e($s['mobile']) ?></b></div>
+      <div><i>Session</i><b><?= ci_e($session !== '' ? $session : '—') ?></b></div>
+      <?php if ($s['batches']): ?><div class="w"><i>Batch</i><b><?= ci_e($s['batches']) ?></b></div><?php endif; ?>
+      <?php if ($ad !== ''): ?><div class="w"><i>Address</i><b><?= ci_e($ad) ?></b></div><?php endif; ?>
+    </div>
+    <div class="idc-s"><span></span><span><em></em>Authorised sign</span></div>
+    <div class="idc-bc"><?= ci_barcode_svg((string)$s['reg_no'], 40, 1.4) ?><span><?= ci_e($s['reg_no']) ?></span></div>
   </div>
 <?php endforeach; ?>
 </div><?php endif; ?>
