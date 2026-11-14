@@ -137,6 +137,7 @@ $checkedIn = count(array_filter($rows, fn($r) => $r['status'] === 'present' && $
 .at-scan h3{margin:0 0 10px;font-size:15px;display:flex;align-items:center;gap:8px}.at-scan h3 i{color:var(--ci-acc,#4a3369)}
 .at-scan input{width:100%;box-sizing:border-box;height:46px;padding:0 12px;border:2px solid var(--ci-acc,#4a3369);font:inherit;font-size:16px;letter-spacing:.04em}
 .at-scan input:focus{outline:none;box-shadow:0 0 0 3px rgba(74,51,105,.15)}
+.ci-table .at-sn{width:1%;white-space:nowrap;text-align:center;padding-left:12px;padding-right:6px;color:#6b7280}
 .at-scan small{display:block;margin-top:6px;color:#6b7280;font-size:12px}
 .at-scan-row{display:flex;gap:8px}.at-scan-row input{flex:1;min-width:0}.at-scan-row button{flex:none;height:46px;padding:0 16px;border:0;background:var(--ci-acc,#4a3369);color:#fff;font:inherit;font-size:14px;font-weight:700;cursor:pointer}.at-scan-row button:disabled{opacity:.5;cursor:not-allowed}
 .at-last{display:flex;gap:12px;align-items:center;margin-top:12px;padding:10px;border:1px solid #e5e7eb;min-height:56px}
@@ -207,12 +208,12 @@ tr.at-hl td{background:#fefce8}
 </div>
 
 <div class="ci-card" data-ds="Students"><div class="ci-card-b ci-p0 ci-table-wrap"><table class="ci-table" id="atT" data-sheet="off">
-  <thead><tr><th class="ci-num">S.No.</th><th>Adm. ID</th><th>Student</th><th>Class</th><th>Batch</th><th>Attendance</th><th>Check-in / out</th></tr></thead>
+  <thead><tr><th class="at-sn">S.No.</th><th>Adm. ID</th><th>Student</th><th>Class</th><th>Batch</th><th>Attendance</th><th>Check-in / out</th></tr></thead>
   <tbody>
   <?php if (!$rows): ?><tr><td colspan="7" class="ci-empty">No students for these filters. Students show here when they are in an active batch / course.</td></tr><?php endif; ?>
   <?php foreach ($rows as $i => $r): ?>
   <tr data-sid="<?= (int)$r['id'] ?>" data-bid="<?= (int)$r['batch_id'] ?>" data-reg="<?= ci_e($r['reg_no']) ?>">
-    <td class="ci-num ci-muted"><?= $i + 1 ?></td>
+    <td class="at-sn"><?= $i + 1 ?></td>
     <td class="ci-nw"><b><?= ci_e($r['reg_no']) ?></b></td>
     <td><div class="at-name"><?= ci_avatar($r, 34) ?><div><a href="/admin/student-view.php?id=<?= (int)$r['id'] ?>#attendance"><?= ci_e($r['name']) ?></a><small><?= ci_e($r['mobile']) ?></small></div></div></td>
     <td class="ci-nw"><?= ci_e($r['class_name'] ?: '—') ?></td>
