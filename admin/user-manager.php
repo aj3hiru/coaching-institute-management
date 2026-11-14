@@ -2,13 +2,13 @@
 // Users & Authors — WordPress-style: one form creates the login account and the author profile shown on posts
 // (photo, bio, qualifications, social links… — the E-E-A-T details search engines look for).
 require_once __DIR__ . '/components/guard.php';
-$me = admin_guard(['admin', 'editor', 'teacher', 'accountant']);
+$me = admin_guard(['admin', 'editor', 'author', 'teacher', 'accountant']);
 $isAdmin = $me['role'] === 'admin';
 if (!$isAdmin && !admin_can('users.create') && !admin_can('users.edit')) { http_response_code(403); exit('Access Denied'); }
 $myPerms = json_decode((string)($me['permissions'] ?? ''), true) ?: [];
 $canGive = edu_roles_assignable($me['role'], $myPerms); // admin: every role · blog admin: author, editor · editor: author · User Manager (teacher / accountant): teachers, accountants
 // a teacher / accountant with "User Manager": manages staff, and can give only the permissions they hold themselves
-$officeMgr = in_array($me['role'], ['teacher', 'accountant'], true) && (bool)$canGive;
+$officeMgr = in_array($me['role'], ['teacher', 'accountant', 'author'], true) && (bool)$canGive;
 if (!$canGive) { http_response_code(403); exit('Access Denied'); }
 
 // ─── Permissions: the same groups as before, with defaults per role ───────────────────────────────────────────
@@ -26,7 +26,7 @@ const UM_PERMS = [
     'files' => ['access_file_manager' => 'File Manager'],
     'security' => ['view_logs' => 'View Logs', 'manage_blacklist' => 'Blacklist', 'manage_recaptcha' => 'reCAPTCHA'],
     'institute' => ['add_student' => 'Add student', 'edit_student' => 'Edit student', 'batches' => 'Manage batches', 'courses' => 'Manage courses', 'fees' => 'Manage fee & dues', 'sessions' => 'Manage sessions', 'classes' => 'Manage classes', 'attendance' => 'Attendance (mark, edit, holidays)', 'att_scan' => 'Scan screen only (ID card scanning)'],
-    'store' => ['products' => 'Courses & notes (add, edit, upload)', 'orders' => 'Orders & sales reports', 'customers' => 'Customers', 'settings' => 'Store settings (Razorpay keys)', 'teacher' => 'Teacher'],
+    'store' => ['products' => 'Courses & notes', 'orders' => 'Orders & reports', 'customers' => 'Customers', 'settings' => 'Store settings', 'teacher' => 'Teacher'],
 ];
 const UM_ICONS = ['dashboard_access' => 'fa-tachometer-alt', 'blogs' => 'fa-blog', 'media' => 'fa-photo-video', 'push_notifications' => 'fa-bell', 'users' => 'fa-users', 'authors' => 'fa-feather-alt', 'analytics' => 'fa-chart-bar', 'ads' => 'fa-ad', 'settings' => 'fa-cog', 'pages' => 'fa-file-alt', 'files' => 'fa-folder', 'security' => 'fa-shield-alt'];
 
@@ -228,9 +228,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $pdo->prepare("INSERT INTO authors (" . implode(', ', array_keys($vals)) . ") VALUES (" . rtrim(str_repeat('?, ', count($vals)), ', ') . ")")->execute(array_values($vals));
             }
             $pdo->commit();
-            // teacher profile (Online Store → Teacher): subject and the "Meet our teachers" card on the homepage
+            // teacher details (role Teacher, or Online Store → Teacher): subject and the "Meet our teachers" card on the homepage
             $tp = json_decode((string)$perms, true) ?: [];
-            if (!empty($tp['store']['teacher']) && is_file(INCLUDES_PATH . '/shop.php')) {
+            if (($role === 'teacher' || !empty($tp['store']['teacher'])) && isset($_POST['t_subject']) && is_file(INCLUDES_PATH . '/shop.php')) {
                 require_once INCLUDES_PATH . '/shop.php'; sh_tables($pdo);
                 $pdo->prepare("INSERT INTO sh_teacher_info (user_id, subject, about, show_home, sort) VALUES (?, ?, ?, ?, ?)
                     ON DUPLICATE KEY UPDATE subject = VALUES(subject), about = VALUES(about), show_home = VALUES(show_home), sort = VALUES(sort)")
@@ -346,10 +346,10 @@ foreach ($rows as $r) {
 .perm-item.perm-off{opacity:.45;cursor:not-allowed}
 #umPermBox .perm-item{flex-wrap:wrap}
 #umPermBox .perm-lock .perm-grid{opacity:.45;pointer-events:none}
-.perm-lockbar{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:-2px 0 8px;padding:7px 10px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;color:#92400e;font-size:.8rem;font-weight:600}
-.perm-lockbar button{padding:3px 10px;border:1px solid #d97706;border-radius:6px;background:#fff;color:#b45309;font:inherit;font-size:.78rem;cursor:pointer}
-.perm-lockbar button:hover{background:#d97706;color:#fff}
 #umPermBox .perm-item small{flex-basis:100%;padding-left:24px;margin-top:2px;color:var(--gray-500);font-size:.74rem;line-height:1.35;font-weight:400}
+.um-sub{margin:.25rem 0 .6rem;font-size:.8rem;font-weight:700;color:var(--primary,#4a3369);text-transform:uppercase;letter-spacing:.04em}
+.um-teach{padding:.75rem .9rem .25rem;margin:0 0 1rem;border:1px dashed var(--gray-200,#e5e7eb);border-radius:10px;background:var(--gray-50,#f9fafb)}
+.um-check{display:flex;align-items:center;gap:.5rem;cursor:pointer;margin:.1rem 0 .6rem;font-size:.875rem}
 .um-del-note{background:var(--warning-light,#fef3c7);color:#92400e;border-radius:10px;padding:.75rem 1rem;font-size:.875rem;margin-bottom:1rem}
 </style>
 </head>
@@ -441,6 +441,15 @@ foreach ($rows as $r) {
           <div class="form-group"><label>Profile Address</label><input type="text" name="slug" class="form-control" maxlength="150" placeholder="Made from the display name"><div class="um-hint"><?= $esc(rtrim(SITE_URL, '/')) ?>/author/<b id="umSlugPrev">…</b></div></div>
           <div class="form-group"><label>Designation</label><input type="text" name="designation" class="form-control" maxlength="150" placeholder="e.g. Senior Education Writer"></div>
         </div>
+        <div class="um-teach" id="umTeach" hidden>
+          <div class="um-sub"><i class="fas fa-chalkboard-user"></i> Teacher details</div>
+          <div class="form-row">
+            <div class="form-group"><label>Subject(s) taught</label><input type="text" name="t_subject" class="form-control" maxlength="255" placeholder="e.g. Mathematics, Physics"></div>
+            <div class="form-group"><label>Homepage order</label><input type="number" name="t_sort" class="form-control" value="0"></div>
+          </div>
+          <div class="form-group"><label>One line about the teacher</label><input type="text" name="t_about" class="form-control" maxlength="500" placeholder="e.g. Makes Maths easy with simple tricks"></div>
+          <label class="um-check"><input type="checkbox" name="t_show" value="1" checked> Show in "Meet our teachers" on the homepage</label>
+        </div>
         <div class="form-group"><label>Bio</label><textarea name="bio" class="form-control" rows="4" placeholder="A few lines about the author's experience and expertise — shown in the author box under each post"></textarea></div>
         <div class="form-row">
           <div class="form-group"><label>Qualifications</label><input type="text" name="qualifications" class="form-control" placeholder="e.g. M.A. Political Science, B.Ed"></div>
@@ -473,43 +482,33 @@ foreach ($rows as $r) {
         <div class="adv-panel"><div class="perm-panel">
           <div class="perm-group" data-scope="blog"><div class="perm-group-title"><i class="fas fa-blog"></i> Blogs</div><div class="perm-grid">
             <label class="perm-item"><input type="radio" name="p_blog" value="none" data-simple="blog"> No access</label>
-            <label class="perm-item"><input type="radio" name="p_blog" value="own" data-simple="blog"> Add / edit own posts <small>(own media &amp; own analytics)</small></label>
-            <label class="perm-item"><input type="radio" name="p_blog" value="all" data-simple="blog"> All posts <small>(all media, pages, SEO &amp; site analytics)</small></label>
-            <label class="perm-item"><input type="checkbox" name="p_ads" value="1" data-simple="ads"> Ads (Ad Inserter)</label>
+            <label class="perm-item"><input type="radio" name="p_blog" value="own" data-simple="blog"> Own posts</label>
+            <label class="perm-item"><input type="radio" name="p_blog" value="all" data-simple="blog"> All posts</label>
+            <label class="perm-item"><input type="checkbox" name="p_ads" value="1" data-simple="ads"> Ads</label>
           </div></div>
           <div class="perm-group" data-scope="all"><div class="perm-group-title"><i class="fas fa-bell"></i> Push Notifications</div><div class="perm-grid">
-            <label class="perm-item"><input type="checkbox" name="p_push" value="1" data-simple="push"> Send push</label>
-            <label class="perm-item"><input type="checkbox" name="p_push_adv" value="1" data-simple="push_adv"> Advanced <small>(change keys, import / export)</small></label>
+            <label class="perm-item"><input type="checkbox" name="p_push" value="1" data-simple="push"> Send</label>
+            <label class="perm-item"><input type="checkbox" name="p_push_adv" value="1" data-simple="push_adv"> Advanced</label>
           </div></div>
           <?php $mine = fn(string $g, string $k) => $isAdmin || !empty($myPerms[$g][$k]); $myScope = (string)($myPerms['student_scope'] ?? ''); ?>
-          <div class="perm-group" data-scope="office"><div class="perm-group-title"><i class="fas fa-people-group"></i> Students they work with</div><div class="perm-grid">
-            <?php foreach (CI_SCOPES as $k => $l): $off = !$isAdmin && $myScope !== '' && $k !== $myScope; ?><label class="perm-item<?= $off ? ' perm-off' : '' ?>"><input type="radio" name="p_scope" value="<?= $k ?>" data-simple="scope"<?= $off ? ' disabled' : '' ?>> <?= $esc($l) ?><?= $k === 'institute' ? ' <small>Institute + "Both" students</small>' : ($k === 'online' ? ' <small>Online + "Both" students</small>' : ' <small>Every student</small>') ?></label><?php endforeach; ?>
+          <div class="perm-group" data-scope="office"><div class="perm-group-title"><i class="fas fa-people-group"></i> Students</div><div class="perm-grid">
+            <?php foreach (CI_SCOPES as $k => $l): $off = !$isAdmin && $myScope !== '' && $k !== $myScope; ?><label class="perm-item<?= $off ? ' perm-off' : '' ?>"><input type="radio" name="p_scope" value="<?= $k ?>" data-simple="scope"<?= $off ? ' disabled' : '' ?>> <?= $esc($l) ?></label><?php endforeach; ?>
           </div></div>
           <div class="perm-group" data-scope="office"><div class="perm-group-title"><i class="fas fa-user-graduate"></i> Institute Management</div><div class="perm-grid">
             <?php foreach (UM_PERMS['institute'] as $k => $l): if ($k === 'attendance' || $k === 'att_scan') continue; $off = !$mine('institute', $k); ?><label class="perm-item<?= $off ? ' perm-off' : '' ?>"<?= $off ? ' title="You do not have this permission yourself"' : '' ?>><input type="checkbox" name="p_inst[<?= $k ?>]" value="1" data-simple="inst.<?= $k ?>"<?= $off ? ' disabled' : '' ?>> <?= $esc($l) ?></label><?php endforeach; ?>
           </div></div>
           <div class="perm-group" data-scope="office"><div class="perm-group-title"><i class="fas fa-clipboard-user"></i> Attendance</div><div class="perm-grid">
-            <?php foreach (['attendance' => 'Full attendance <small>Mark P / A / L, check-out all, scan screen, holidays</small>', 'att_scan' => 'Scan screen only <small>For the gate — only scans ID cards, nothing else</small>'] as $k => $l): $off = !$mine('institute', $k); ?><label class="perm-item<?= $off ? ' perm-off' : '' ?>"<?= $off ? ' title="You do not have this permission yourself"' : '' ?>><input type="checkbox" name="p_inst[<?= $k ?>]" value="1" data-simple="inst.<?= $k ?>"<?= $off ? ' disabled' : '' ?>> <?= $l ?></label><?php endforeach; ?>
+            <?php foreach (['attendance' => 'Full attendance', 'att_scan' => 'Scan screen only'] as $k => $l): $off = !$mine('institute', $k); ?><label class="perm-item<?= $off ? ' perm-off' : '' ?>"<?= $off ? ' title="You do not have this permission yourself"' : '' ?>><input type="checkbox" name="p_inst[<?= $k ?>]" value="1" data-simple="inst.<?= $k ?>"<?= $off ? ' disabled' : '' ?>> <?= $l ?></label><?php endforeach; ?>
           </div></div>
           <div class="perm-group" data-scope="office"><div class="perm-group-title"><i class="fas fa-store"></i> Online Store</div><div class="perm-grid" id="umStorePerms">
             <?php foreach (UM_PERMS['store'] as $k => $l): $off = !$mine('store', $k); ?><label class="perm-item<?= $off ? ' perm-off' : '' ?>"<?= $off ? ' title="You do not have this permission yourself"' : '' ?>><input type="checkbox" name="p_store[<?= $k ?>]" value="1" data-simple="store.<?= $k ?>"<?= $off ? ' disabled' : '' ?>> <?= $esc($l) ?></label><?php endforeach; ?>
           </div></div>
           <?php if ($isAdmin): ?><div class="perm-group" data-scope="office"><div class="perm-group-title"><i class="fas fa-users-gear"></i> User Manager</div><div class="perm-grid">
             <label class="perm-item"><input type="radio" name="p_users" value="none" data-simple="users"> No access</label>
-            <label class="perm-item"><input type="radio" name="p_users" value="manage" data-simple="users"> Manage staff <small>Add / edit / suspend teachers &amp; accountants — gives only their own permissions</small></label>
-            <label class="perm-item"><input type="checkbox" name="p_users_del" value="1" data-simple="users_del"> Can also delete staff <small>Only with "Manage staff"</small></label>
+            <label class="perm-item"><input type="radio" name="p_users" value="manage" data-simple="users"> Manage staff</label>
+            <label class="perm-item"><input type="checkbox" name="p_users_del" value="1" data-simple="users_del"> Delete staff</label>
           </div></div><?php endif; ?>
         </div></div>
-        <div class="um-teach" id="umTeach" hidden>
-          <div class="form-section-title"><i class="fas fa-chalkboard-user"></i> Teacher profile <span style="font-size:.72rem;font-weight:400;color:var(--gray-500)">— the card in "Meet our teachers" on the homepage and "Taught by" on courses</span></div>
-          <p class="um-hint" style="margin:0 0 .6rem">The photo, display name, qualifications and experience come from the <b>Author Profile</b> above — use a passport-size photo.</p>
-          <div class="form-row">
-            <div class="form-group"><label>Subject(s) taught</label><input type="text" name="t_subject" class="form-control" maxlength="255" placeholder="e.g. Mathematics, Physics"></div>
-            <div class="form-group"><label>Order on the homepage</label><input type="number" name="t_sort" class="form-control" value="0"></div>
-          </div>
-          <div class="form-group"><label>One line about the teacher <span style="font-weight:400;color:var(--gray-500)">(optional)</span></label><input type="text" name="t_about" class="form-control" maxlength="500" placeholder="e.g. Makes Maths easy with simple tricks"></div>
-          <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;margin:.25rem 0 .5rem"><input type="checkbox" name="t_show" value="1" checked> Show in "Meet our teachers" on the homepage</label>
-        </div>
         </div>
         <?php endif; ?>
       </div>
@@ -539,6 +538,7 @@ window.UM = (function () {
   var roleDefaults = <?= json_encode(array_combine(array_keys(EDU_ROLES), array_map('um_role_perms', array_keys(EDU_ROLES))), JSON_HEX_TAG) ?>;
   // which permission boxes belong to which role: blog roles → Blogs; teacher / accountant → Institute + Online Store; admin → everything
   var ROLE_SCOPE = <?= json_encode(array_combine(array_keys(EDU_ROLES), array_map('edu_role_scope', array_keys(EDU_ROLES))), JSON_HEX_TAG) ?>;
+  var MGR = <?= $officeMgr ? 'true' : 'false' ?>; // a User Manager (teacher / accountant), not an admin
   var m = document.getElementById('umModal'), f = document.getElementById('umForm'), permBox = document.getElementById('umPermBox');
   document.body.appendChild(m); document.body.appendChild(document.getElementById('umDel'));
   function setPerms(p) {
@@ -564,29 +564,20 @@ window.UM = (function () {
   function scopeBox(role) { // show only the permission groups the role can hold
     var sc = ROLE_SCOPE[role] || 'blog', box = document.getElementById('umPermBox');
     if (!box) return;
-    // every group stays visible; a group the chosen role cannot hold is locked, with a one-click role change on it
-    var offered = Array.prototype.map.call(f.role.options, function (o) { return o.value; }), barDone = {};
+    // Advance Access does not depend on the role: every group is open for every staff role (the role only gives the
+    // starting ticks). A User Manager (not an admin) cannot give blog or push permissions.
     box.querySelectorAll('[data-scope]').forEach(function (g) {
-      var gs = g.dataset.scope;
-      if (gs === 'all') { g.hidden = sc !== 'all'; return; } // push notifications: admins only
-      var ok = sc === 'all' || gs === sc;
-      var roles = (gs === 'office' ? ['teacher', 'accountant'] : ['editor', 'author']).filter(function (r) { return offered.indexOf(r) >= 0; });
-      g.hidden = !ok && !roles.length;
-      g.classList.toggle('perm-lock', !ok);
-      g.querySelectorAll('input').forEach(function (i) { if (i.dataset.lk === undefined) i.dataset.lk = i.disabled ? '1' : '0'; i.disabled = !ok || i.dataset.lk === '1'; });
-      var bar = g.querySelector('.perm-lockbar');
-      if (!ok && roles.length && !barDone[gs]) { barDone[gs] = 1; // one line per part, on its first group
-        if (!bar) { bar = document.createElement('div'); bar.className = 'perm-lockbar'; g.querySelector('.perm-group-title').after(bar); }
-        bar.innerHTML = '<i class="fas fa-lock"></i> ' + (gs === 'office' ? 'For Teacher / Accountant role' : 'For Author / Editor (blog) role') + ' — ' + roles.map(function (r) { return '<button type="button" data-role="' + r + '">Make ' + ({ teacher: 'Teacher', accountant: 'Accountant', editor: 'Editor', author: 'Author' })[r] + '</button>'; }).join(' ');
-      } else if (bar) bar.remove();
+      g.hidden = false;
+      var lock = MGR && (g.dataset.scope === 'blog' || g.dataset.scope === 'all');
+      g.classList.toggle('perm-lock', lock); if (lock) g.hidden = true;
+      g.querySelectorAll('input').forEach(function (i) { if (i.dataset.lk === undefined) i.dataset.lk = i.disabled ? '1' : '0'; i.disabled = lock || i.dataset.lk === '1'; });
     });
     var note = document.getElementById('umScopeNote');
-    if (note) note.textContent = sc === 'all' ? 'Admins can do everything.' : role === 'blog_admin' ? 'Blog Admin: the whole blog — all posts, categories, tags, comments, media, analytics, ads, code snippets, blog Customize, and blog authors / editors. Nothing outside the blog.' : sc === 'blog' ? 'Blog only — nothing outside the blog (institute, store, settings).' : 'Institute and online store only — no blog.';
+    if (note) { note.textContent = sc === 'all' ? 'Admins can do everything.' : role === 'blog_admin' ? 'Blog Admin: the whole blog.' : ''; note.hidden = !note.textContent; }
     var adv = box.querySelector('.adv-panel'), tog = box.querySelector('.adv-toggle');
     if (role === 'admin' || role === 'blog_admin') { adv.hidden = true; tog.hidden = true; } else { adv.hidden = false; tog.hidden = false; }
   }
-  f.addEventListener('click', function (e) { var b = e.target.closest('.perm-lockbar button[data-role]'); if (!b) return; f.role.value = b.dataset.role; UM.applyRole(b.dataset.role); });
-  function teachBox() { var b = document.getElementById('umTeach'), c = f.querySelector('[name="p_store[teacher]"]'); if (b) b.hidden = !(c && c.checked); }
+  function teachBox() { var b = document.getElementById('umTeach'), c = f.querySelector('[name="p_store[teacher]"]'); if (b) b.hidden = !(f.role.value === 'teacher' || (c && c.checked)); }
   function slugify(s) { return (s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''); }
   function slugPrev() { document.getElementById('umSlugPrev').textContent = slugify(f.slug.value) || slugify(f.name.value) || slugify(f.username.value) || '…'; }
   ['slug', 'name', 'username'].forEach(function (n) { f[n].addEventListener('input', slugPrev); });
@@ -620,7 +611,7 @@ window.UM = (function () {
       setTimeout(function () { (r ? f.name : f.username).focus(); }, 50);
     },
     close: function () { m.classList.remove('open'); document.body.style.overflow = ''; },
-    applyRole: function (role) { setPerms(roleDefaults[role] || roleDefaults.author); scopeBox(role); },
+    applyRole: function (role) { setPerms(roleDefaults[role] || roleDefaults.author); scopeBox(role); teachBox(); },
     eye: function (b) { var i = b.previousElementSibling; i.type = i.type === 'password' ? 'text' : 'password'; b.firstElementChild.className = 'fas ' + (i.type === 'password' ? 'fa-eye' : 'fa-eye-slash'); },
     pick: function () { EduMedia.pick(function (it) { photo(it.path); }); },
     photo: photo,

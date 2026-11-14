@@ -128,7 +128,7 @@ define('CI_PERMS', ['add_student' => 'Add student', 'edit_student' => 'Edit stud
     'fees' => 'Manage fee & dues', 'sessions' => 'Manage sessions', 'classes' => 'Manage classes', 'attendance' => 'Attendance (mark, edit, holidays)',
     'att_scan' => 'Scan screen only (ID card scanning)']);
 // which students a staff member works with (Users → Advance Access): '' both · 'institute' · 'online'. "Both"-type students count for either.
-if (!defined('CI_SCOPES')) define('CI_SCOPES', ['' => 'Institute + Online students', 'institute' => 'Only institute students', 'online' => 'Only online students']);
+if (!defined('CI_SCOPES')) define('CI_SCOPES', ['' => 'All students', 'institute' => 'Institute only', 'online' => 'Online only']);
 
 function ci_perm(array $u, string $key): bool
 {

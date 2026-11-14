@@ -1,7 +1,7 @@
 <?php
 // Tag Manager — create, edit, switch off and delete tags, and attach a tag to posts.
 require_once __DIR__ . '/components/guard.php';
-$me = admin_guard(['admin', 'editor', 'author']);
+$me = admin_guard(['admin', 'editor', 'author', 'teacher', 'accountant']);
 if (!admin_can('blogs.manage_tags')) { http_response_code(403); exit('Access Denied'); }
 
 function tag_slug(string $s): string

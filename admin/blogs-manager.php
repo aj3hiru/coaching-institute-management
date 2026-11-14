@@ -1,7 +1,7 @@
 <?php
 // All Posts — same layout as the new CMS: status tabs, filters, search, row actions, bulk actions, mobile cards.
 require_once __DIR__ . '/components/guard.php';
-$me = admin_guard(['admin', 'editor', 'author']);
+$me = admin_guard(['admin', 'editor', 'author', 'teacher', 'accountant']);
 if (!admin_blog_access()) { http_response_code(403); exit('Access Denied'); } // Users → Blogs → No access
 // "own posts" users (Blog → Add / edit own) see and manage only their own posts; "all posts" users see everything
 $isAuthor = $me['role'] !== 'admin' && !admin_can('blogs.edit_all');

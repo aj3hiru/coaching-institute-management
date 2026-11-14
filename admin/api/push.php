@@ -4,7 +4,7 @@
 ini_set('display_errors', '0'); // JSON only; problems go to the error log
 require_once $_SERVER['DOCUMENT_ROOT'] . '/admin/components/guard.php';
 require_once INCLUDES_PATH . '/push.php';
-admin_guard(['admin', 'editor', 'author']);
+admin_guard(['admin', 'editor', 'author', 'teacher', 'accountant']);
 if (!admin_can('push_notifications.send')) { http_response_code(403); header('Content-Type: application/json; charset=utf-8'); echo json_encode(['error' => 'You are not allowed to send notifications.']); exit; }
 
 $action = $_GET['action'] ?? $_POST['action'] ?? '';

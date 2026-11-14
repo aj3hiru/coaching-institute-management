@@ -3,7 +3,7 @@
 // filter by status or post and search. Replies from here show on the post with the "Admin" badge.
 require_once __DIR__ . '/components/guard.php';
 require_once INCLUDES_PATH . '/mailer.php';
-$me = admin_guard(['admin', 'editor', 'author']);
+$me = admin_guard(['admin', 'editor', 'author', 'teacher', 'accountant']);
 if (!admin_can('blogs.manage_comments')) { http_response_code(403); exit('Access Denied'); }
 $adminEmail = defined('CONTACT_EMAIL') ? CONTACT_EMAIL : ((function_exists('es') ? (es('general', 'contact_email', '') ?: es('general', 'admin_email', '')) : '') ?: 'contact@' . preg_replace('/^www\./', '', (string)parse_url(SITE_URL, PHP_URL_HOST))); // Settings → General → contact email
 $adminName = edu_site_name() . ' Support';

@@ -28,8 +28,9 @@ function edu_role_allows(string $role, string $group): bool
     $scope = edu_role_scope($role);
     if ($scope === 'all') return true;
     if ($group === 'dashboard_access') return $scope !== '';
-    if ($scope === 'blog') return in_array($group, ['blogs', 'media', 'analytics', 'ads', 'files', 'authors', 'users'], true);
-    if ($scope === 'office') return in_array($group, ['institute', 'store', 'student_scope', 'users'], true); // users: User Manager (staff only), when an admin gives it
+    // every staff role may hold whatever an admin ticks in Users → Advance Access (the role only gives the starting ticks);
+    // site settings, security, pages and the rest stay with admins
+    if ($scope === 'blog' || $scope === 'office') return in_array($group, ['blogs', 'media', 'analytics', 'ads', 'files', 'authors', 'users', 'push_notifications', 'institute', 'store', 'student_scope'], true);
     return false;
 }
 
@@ -54,7 +55,7 @@ function edu_roles_assignable(string $role, $perms = null): array
     if ($role === 'admin') return array_keys(EDU_ROLES);
     if ($role === 'blog_admin') return ['author', 'editor'];
     if ($role === 'editor') return ['author'];
-    if ($role === 'teacher' || $role === 'accountant') {
+    if ($role === 'teacher' || $role === 'accountant' || $role === 'author') { // with "User Manager" from an admin: teachers and accountants
         $p = is_array($perms) ? $perms : (json_decode((string)$perms, true) ?: []);
         return !empty($p['users']['create']) || !empty($p['users']['edit']) ? ['teacher', 'accountant'] : [];
     }

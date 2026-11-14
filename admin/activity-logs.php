@@ -2,7 +2,7 @@
 // Activity Logs — who did what and when: search, filter by action, user and date, and clear old entries.
 // Only this site's actions are shown (entries other apps wrote into the same table, e.g. "ecom_…", are left out).
 require_once __DIR__ . '/components/guard.php';
-$me = admin_guard(['admin', 'editor', 'author']);
+$me = admin_guard(['admin', 'editor', 'author', 'teacher', 'accountant']);
 if (!admin_can('security.view_logs')) { http_response_code(403); exit('Access Denied'); }
 $isAdmin = $me['role'] === 'admin';
 // Only what the site's users (staff) do — entries about students (their records, fees, enrolments, online accounts,

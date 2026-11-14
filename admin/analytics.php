@@ -4,7 +4,7 @@
 // Data: includes/ea.php (collected by assets/js/ea.js). Authors only see visits to their own posts.
 require_once __DIR__ . '/components/guard.php';
 require_once INCLUDES_PATH . '/ea.php';
-$me = admin_guard(['admin', 'editor', 'author']);
+$me = admin_guard(['admin', 'editor', 'author', 'teacher', 'accountant']);
 if (!admin_can('analytics.view_basic')) { http_response_code(403); exit('Access Denied'); }
 ea_tables($pdo);
 

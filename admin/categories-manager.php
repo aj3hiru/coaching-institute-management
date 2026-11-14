@@ -3,7 +3,7 @@
 // default: posts saved without a category go there, and posts of a deleted category move there. It cannot be deleted.
 require_once __DIR__ . '/components/guard.php';
 require_once INCLUDES_PATH . '/taxonomy.php';
-$me = admin_guard(['admin', 'editor', 'author']);
+$me = admin_guard(['admin', 'editor', 'author', 'teacher', 'accountant']);
 if (!admin_can('blogs.manage_categories')) { http_response_code(403); exit('Access Denied'); }
 $defaultId = edu_default_category($pdo);
 

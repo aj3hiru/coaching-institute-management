@@ -5,7 +5,7 @@
 // uploads folder but not listed yet (older uploads), so the library shows everything.
 require_once __DIR__ . '/components/guard.php';
 require_once INCLUDES_PATH . '/media.php';
-$me = admin_guard(['admin', 'editor', 'author']);
+$me = admin_guard(['admin', 'editor', 'author', 'teacher', 'accountant']);
 if (!admin_can('files.access_file_manager') && !admin_can('media.upload')) { http_response_code(403); exit('Access Denied'); }
 $canDelete = admin_can('media.delete') || $me['role'] === 'admin';
 // course notes PDFs (PDF Media of the online store) are a filter here too — for staff who manage courses

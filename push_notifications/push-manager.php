@@ -5,7 +5,7 @@
 require_once $_SERVER['DOCUMENT_ROOT'] . '/admin/components/guard.php';
 require_once INCLUDES_PATH . '/push.php';
 require_once INCLUDES_PATH . '/theme.php';
-admin_guard(['admin', 'editor', 'author']);
+admin_guard(['admin', 'editor', 'author', 'teacher', 'accountant']);
 if (!admin_can('push_notifications.send')) { http_response_code(403); exit('Access Denied'); }
 
 $pdo = edu_push_db();
