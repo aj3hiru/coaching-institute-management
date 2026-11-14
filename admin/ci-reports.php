@@ -21,10 +21,10 @@ $batches = $pdo->query("SELECT b.id, b.name, b.status, c.name AS course_name, se
 $tag = fn(string $st) => $st === 'active' ? '' : ' — ' . ucfirst($st);
 $canFees = ci_perm($me, 'fees');
 $types = ($canFees ? ['fees'] : []) + [];
-if ($ciOK) array_push($types, 'students', 'student', 'course', 'batch', 'class');
+if ($ciOK) array_push($types, 'students', 'student', 'course', 'batch', 'class', 'attendance', 'idcards');
 if ($storeOK) array_push($types, 'store', 'ostudents');
 if ($prodOK) array_push($types, 'ocourses', 'ocourse', 'onotes');
-$GROUPS = ['institute' => ['Institute', ['fees' => ['fa-indian-rupee-sign', 'Fee collection'], 'students' => ['fa-users', 'Students (filtered)'], 'student' => ['fa-user', 'One student'], 'course' => ['fa-book-open', 'Course'], 'batch' => ['fa-layer-group', 'Batch'], 'class' => ['fa-school', 'Class']]],
+$GROUPS = ['institute' => ['Institute', ['fees' => ['fa-indian-rupee-sign', 'Fee collection'], 'students' => ['fa-users', 'Students (filtered)'], 'student' => ['fa-user', 'One student'], 'course' => ['fa-book-open', 'Course'], 'batch' => ['fa-layer-group', 'Batch'], 'class' => ['fa-school', 'Class'], 'attendance' => ['fa-clipboard-user', 'Attendance'], 'idcards' => ['fa-id-card', 'ID Cards']]],
     'online' => ['Online', ['store' => ['fa-store', 'Online sales'], 'ostudents' => ['fa-user-graduate', 'Online students'], 'ocourses' => ['fa-photo-film', 'Online courses'], 'ocourse' => ['fa-film', 'One online course'], 'onotes' => ['fa-file-pdf', 'PDF notes']]]];
 $periodOpts = fn(string $sel, bool $all = true) => implode('', array_map(fn($k, $l) => '<option value="' . $k . '"' . ($k === $sel ? ' selected' : '') . '>' . $l . '</option>', array_keys($o = ['today' => 'Today', 'yesterday' => 'Yesterday', 'week' => 'This week', 'month' => 'This month', 'lastmonth' => 'Last month', 'year' => 'This year'] + ($all ? ['all' => 'All time'] : []) + ['custom' => 'Choose dates']), $o));
 $dates = '<div class="ci-f rp-cd" hidden><label>From</label><input type="date" name="from" value="' . date('Y-m-01') . '" max="' . date('Y-m-d') . '"></div><div class="ci-f rp-cd" hidden><label>To</label><input type="date" name="to" value="' . date('Y-m-d') . '" max="' . date('Y-m-d') . '"></div>';
@@ -142,6 +142,19 @@ $pre = ['type' => in_array((string)($_GET['type'] ?? ''), $types, true) ? (strin
     <div class="rp-pane rp-two" data-pane="course" hidden><div class="ci-f"><label>Course (active or completed)</label><select data-id><option value="all">All courses</option><?php foreach ($courses as $c): ?><option value="<?= (int)$c['id'] ?>" <?= $pre['type'] === 'course' && $pre['id'] === (int)$c['id'] ? 'selected' : '' ?>><?= ci_e($c['name'] . $tag($c['status'])) ?></option><?php endforeach; ?></select></div><div class="ci-f rp-all-st" hidden><label>Status</label><select data-st><option value="all">All</option><option value="active">Active</option><option value="completed">Completed</option><option value="inactive">Inactive</option></select></div></div>
     <div class="rp-pane rp-two" data-pane="batch" hidden><div class="ci-f"><label>Batch (active or completed)</label><select data-id><option value="all">All batches</option><?php foreach ($batches as $b): ?><option value="<?= (int)$b['id'] ?>" <?= $pre['type'] === 'batch' && $pre['id'] === (int)$b['id'] ? 'selected' : '' ?>><?= ci_e($b['name'] . ' · ' . $b['course_name'] . ($b['session_name'] ? ' (' . $b['session_name'] . ')' : '') . $tag($b['status'])) ?></option><?php endforeach; ?></select></div><div class="ci-f rp-all-st" hidden><label>Status</label><select data-st><option value="all">All</option><option value="active">Active</option><option value="completed">Completed</option><option value="inactive">Inactive</option></select></div></div>
     <div class="rp-pane" data-pane="class" hidden><div class="ci-f"><label>Class</label><select data-id><option value="all">All classes</option><?php foreach ($L['classes'] as $id => $n): ?><option value="<?= $id ?>" <?= $pre['type'] === 'class' && $pre['id'] === $id ? 'selected' : '' ?>><?= ci_e($n) ?></option><?php endforeach; ?></select></div></div>
+    <form class="rp-pane ci-filters" data-pane="attendance" data-generic onsubmit="return false" hidden>
+      <div class="ci-f"><label>Period</label><select name="period"><?php foreach (['month' => 'This month', 'lastmonth' => 'Last month', 'week' => 'This week', 'today' => 'Today', 'yesterday' => 'Yesterday', 'custom' => 'Choose dates'] as $k => $l): ?><option value="<?= $k ?>"><?= $l ?></option><?php endforeach; ?></select></div><?= $dates ?>
+      <div class="ci-f"><label>Class</label><select name="class"><option value="0">All classes</option><?php foreach ($L['classes'] as $id => $n): ?><option value="<?= $id ?>"><?= ci_e($n) ?></option><?php endforeach; ?></select></div>
+      <div class="ci-f"><label>Course</label><select name="course"><option value="0">All courses</option><?php foreach ($courses as $c): ?><option value="<?= (int)$c['id'] ?>"><?= ci_e($c['name'] . $tag($c['status'])) ?></option><?php endforeach; ?></select></div>
+      <div class="ci-f"><label>Batch</label><select name="batch"><option value="0">All batches</option><?php foreach ($batches as $b): ?><option value="<?= (int)$b['id'] ?>"><?= ci_e($b['name'] . ' · ' . $b['course_name'] . $tag($b['status'])) ?></option><?php endforeach; ?></select></div>
+    </form>
+    <form class="rp-pane ci-filters" data-pane="idcards" onsubmit="return false" hidden>
+      <div class="ci-f"><label>Class</label><select name="class"><option value="0">All classes</option><?php foreach ($L['classes'] as $id => $n): ?><option value="<?= $id ?>"><?= ci_e($n) ?></option><?php endforeach; ?></select></div>
+      <div class="ci-f"><label>Course</label><select name="course"><option value="0">All courses</option><?php foreach ($courses as $c): if ($c['status'] !== 'active') continue; ?><option value="<?= (int)$c['id'] ?>"><?= ci_e($c['name']) ?></option><?php endforeach; ?></select></div>
+      <div class="ci-f"><label>Batch</label><select name="batch"><option value="0">All batches</option><?php foreach ($batches as $b): if ($b['status'] !== 'active') continue; ?><option value="<?= (int)$b['id'] ?>"><?= ci_e($b['name'] . ' · ' . $b['course_name']) ?></option><?php endforeach; ?></select></div>
+      <div class="ci-f"><label>One student</label><select name="student" data-search><option value="0">All students of the choice</option><?php foreach ($students as $st): ?><option value="<?= (int)$st['id'] ?>"><?= ci_e(($st['reg_no'] ?? '') . ' · ' . $st['name']) ?></option><?php endforeach; ?></select></div>
+      <p class="ci-muted" style="grid-column:1/-1;margin:0;font-size:13px"><i class="fas fa-print"></i> The cards open in a new tab, ready to print or save as PDF (10 cards on an A4 page).</p>
+    </form>
     <?php endif; ?>
     <?php if ($storeOK): ?><form class="rp-pane ci-filters" data-pane="store" data-generic onsubmit="return false" hidden>
       <div class="ci-f"><label>Period</label><select name="period"><?php foreach (['today' => 'Today', 'yesterday' => 'Yesterday', 'week' => 'This week', 'month' => 'This month', 'lastmonth' => 'Last month', 'year' => 'This year', 'all' => 'All time', 'custom' => 'Choose dates'] as $k => $l): ?><option value="<?= $k ?>" <?= $k === 'month' ? 'selected' : '' ?>><?= $l ?></option><?php endforeach; ?></select></div>
@@ -183,6 +196,8 @@ $pre = ['type' => in_array((string)($_GET['type'] ?? ''), $types, true) ? (strin
     document.querySelectorAll('.rp-types button').forEach(function (b) { b.classList.toggle('on', b.dataset.type === t); });
     document.querySelectorAll('.rp-pane').forEach(function (p) { p.hidden = p.dataset.pane !== t; });
     out.innerHTML = ''; last = null; reset();
+    document.querySelectorAll('.rp-pdf').forEach(function (x) { x.hidden = t === 'idcards'; }); // ID cards print from their own page
+    document.querySelectorAll('.rp-view').forEach(function (x) { x.innerHTML = t === 'idcards' ? '<i class="fas fa-id-card"></i> Open ID cards' : '<i class="fas fa-eye"></i> View report'; });
   }
   // ---- after View report: tick what goes into the PDF (header always); preview and download follow the ticks ----
   var opts = document.getElementById('rpOpts'), pdfBtns = document.querySelectorAll('.rp-pdf'), shown = null, sel = {};
@@ -243,6 +258,11 @@ $pre = ['type' => in_array((string)($_GET['type'] ?? ''), $types, true) ? (strin
       .then(function (d) { if (d.error) throw new Error(d.error); last = d.kind === 'students' ? window.ciReportFromStudents(d) : d; lastKey = u; msg.textContent = ''; then(last); })
       .catch(function (e) { msg.textContent = 'Could not load the report: ' + e.message; });
   }
+  document.querySelectorAll('.rp-view').forEach(function (b) { b.addEventListener('click', function (ev) {
+    if (type === 'idcards') { ev.stopImmediatePropagation(); var f = document.querySelector('.rp-pane[data-pane=idcards]'), q = new URLSearchParams();
+      [].forEach.call(f.elements, function (el) { if (el.name && el.value && el.value !== '0') q.set(el.name, el.value); });
+      window.open('/admin/ci-idcards.php' + (q.toString() ? '?' + q.toString() : ''), '_blank'); return; }
+  }, true); });
   document.querySelectorAll('.rp-view').forEach(function (b) { b.addEventListener('click', function () { load(function (d) {
     var fresh = shown !== d; shown = d; if (fresh) buildOpts(d); paint();
     pdfBtns.forEach(function (x) { x.disabled = false; x.title = ''; });

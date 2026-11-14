@@ -82,6 +82,20 @@ function ci_tables(PDO $pdo): void
         $q = $pdo->prepare("SELECT COUNT(*) FROM ci_students WHERE reg_no = ?"); $q->execute([$newNo]);
         if (!(int)$q->fetchColumn()) $pdo->prepare("UPDATE ci_students SET reg_no = ? WHERE id = ?")->execute([$newNo, $sid]);
     }
+    // attendance: one row per student, batch (0 = no batch) and day; a scan of the ID card sets check-in, a later scan check-out
+    $pdo->exec("CREATE TABLE IF NOT EXISTS ci_attendance (
+        id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, student_id INT UNSIGNED NOT NULL, batch_id INT UNSIGNED NOT NULL DEFAULT 0, att_date DATE NOT NULL,
+        status VARCHAR(8) NOT NULL DEFAULT 'present', in_at DATETIME NULL, out_at DATETIME NULL, source VARCHAR(8) NOT NULL DEFAULT 'manual',
+        marked_by INT NULL, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME NULL,
+        UNIQUE KEY uq_day (student_id, batch_id, att_date), KEY k_date (att_date, batch_id)) $opt");
+    // roll number in the class (on the ID card and the attendance list); students who had none get one in admission order
+    if (!$pdo->query("SHOW COLUMNS FROM ci_students LIKE 'roll_no'")->fetch()) {
+        $pdo->exec("ALTER TABLE ci_students ADD COLUMN roll_no VARCHAR(20) NULL AFTER reg_no");
+        $n = []; $up = $pdo->prepare("UPDATE ci_students SET roll_no = ? WHERE id = ?");
+        foreach ($pdo->query("SELECT id, class_id FROM ci_students WHERE stype <> 'online' AND class_id IS NOT NULL ORDER BY class_id, admission_date, id") as $r) {
+            $c = (int)$r['class_id']; $n[$c] = ($n[$c] ?? 0) + 1; $up->execute([(string)$n[$c], (int)$r['id']]);
+        }
+    }
     // a fresh install gets the current academic session and a starter list of classes (both editable in Setup)
     if (!(int)$pdo->query("SELECT COUNT(*) FROM ci_sessions")->fetchColumn()) {
         $y = (int)date('Y');
@@ -97,7 +111,7 @@ function ci_tables(PDO $pdo): void
 
 /** Institute permissions (Users → Advance Access → Institute). Admins have all of them. */
 define('CI_PERMS', ['add_student' => 'Add student', 'edit_student' => 'Edit student', 'batches' => 'Manage batches', 'courses' => 'Manage courses',
-    'fees' => 'Manage fee & dues', 'sessions' => 'Manage sessions', 'classes' => 'Manage classes']);
+    'fees' => 'Manage fee & dues', 'sessions' => 'Manage sessions', 'classes' => 'Manage classes', 'attendance' => 'Take attendance']);
 
 function ci_perm(array $u, string $key): bool
 {
@@ -749,3 +763,86 @@ function ci_report_assets(): void
 }
 
 }
+
+/** The next roll number in a class (highest number + 1). */
+function ci_next_roll(PDO $pdo, ?int $classId, int $exceptId = 0): ?string
+{
+    if (!$classId) return null;
+    $q = $pdo->prepare("SELECT MAX(CAST(roll_no AS UNSIGNED)) FROM ci_students WHERE class_id = ? AND id <> ? AND roll_no REGEXP '^[0-9]+$'");
+    $q->execute([$classId, $exceptId]);
+    return (string)((int)$q->fetchColumn() + 1);
+}
+
+/** Minutes after check-in before a second scan counts as check-out (Attendance → Settings). */
+function ci_att_min_out(): int
+{
+    return max(0, min(720, (int)(function_exists('es') ? es('institute', 'att_min_out', 60) : 60)));
+}
+
+/** Code 128 (set B) barcode as an inline SVG — what a USB / Bluetooth barcode scanner reads back as text. */
+function ci_barcode_svg(string $text, int $height = 40, float $module = 1.4): string
+{
+    static $P = ['212222','222122','222221','121223','121322','131222','122213','122312','132212','221213','221312','231212','112232','122132','122231','113222','123122','123221','223211','221132',
+        '221231','213212','223112','312131','311222','321122','321221','312212','322112','322211','212123','212321','232121','111323','131123','131321','112313','132113','132311','211313',
+        '231113','231311','112133','112331','132131','113123','113321','133121','313121','211331','231131','213113','213311','213131','311123','311321','331121','312113','312311','332111',
+        '314111','221411','431111','111224','111422','121124','121421','141122','141221','112214','112412','122114','122411','142112','142211','241211','221114','413111','241112','134111',
+        '111242','121142','121241','114212','124112','124211','411212','421112','421211','212141','214121','412121','111143','111341','131141','114113','114311','411113','411311','113141',
+        '114131','311141','411131','211412','211214','211232','2331112'];
+    $text = preg_replace('/[^\x20-\x7E]/', '', $text);
+    $codes = [104]; $sum = 104;
+    foreach (str_split($text) as $i => $ch) { $v = ord($ch) - 32; $codes[] = $v; $sum += ($i + 1) * $v; }
+    $codes[] = $sum % 103; $codes[] = 106;
+    $x = 10 * $module; $bars = '';
+    foreach ($codes as $c) {
+        foreach (str_split($P[$c]) as $k => $w) {
+            $wd = (int)$w * $module;
+            if ($k % 2 === 0) $bars .= '<rect x="' . round($x, 2) . '" y="0" width="' . round($wd, 2) . '" height="' . $height . '"/>';
+            $x += $wd;
+        }
+    }
+    $w = round($x + 10 * $module, 2);
+    return '<svg class="ci-barcode" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' . $w . ' ' . $height . '" width="' . $w . '" height="' . $height . '" role="img" aria-label="Barcode ' . htmlspecialchars($text, ENT_QUOTES) . '" shape-rendering="crispEdges"><rect width="100%" height="100%" fill="#fff"/><g fill="#000">' . $bars . '</g></svg>';
+}
+
+/**
+ * One scan of an ID card (or a typed admission ID) on the attendance page: the first scan of the day checks the student in
+ * (present), a scan after the set minutes checks them out. $batch limits it to one batch; otherwise every active batch of
+ * the student. Returns ['ok' => bool, 'msg' => text, 'student' => row, 'kind' => in|out|wait|done|error].
+ */
+function ci_att_scan(PDO $pdo, string $code, int $batch, int $userId): array
+{
+    $code = trim($code);
+    if ($code === '') return ['ok' => false, 'kind' => 'error', 'msg' => 'Scan an ID card or type the admission ID.'];
+    $q = $pdo->prepare("SELECT s.*, c.name AS class_name FROM ci_students s LEFT JOIN ci_classes c ON c.id = s.class_id WHERE s.reg_no = ? AND s.stype <> 'online' LIMIT 1");
+    $q->execute([$code]);
+    $s = $q->fetch(PDO::FETCH_ASSOC);
+    if (!$s && ctype_digit($code)) { $q->execute([str_pad($code, 6, '0', STR_PAD_LEFT)]); $s = $q->fetch(PDO::FETCH_ASSOC); } // "17" → "000017"
+    if (!$s) return ['ok' => false, 'kind' => 'error', 'msg' => 'No institute student with admission ID ' . $code . '.'];
+    if ($s['status'] !== 'active') return ['ok' => false, 'kind' => 'error', 'student' => $s, 'msg' => $s['name'] . ' is not an active student (' . $s['status'] . ').'];
+    $bq = $pdo->prepare("SELECT DISTINCT e.batch_id FROM ci_enrollments e JOIN ci_batches b ON b.id = e.batch_id WHERE e.student_id = ? AND e.status = 'active' AND b.status = 'active'");
+    $bq->execute([(int)$s['id']]);
+    $mine = array_map('intval', $bq->fetchAll(PDO::FETCH_COLUMN));
+    if ($batch) {
+        if (!in_array($batch, $mine, true)) return ['ok' => false, 'kind' => 'error', 'student' => $s, 'msg' => $s['name'] . ' is not in this batch.'];
+        $list = [$batch];
+    } else $list = $mine ?: [0];
+    $today = date('Y-m-d'); $now = date('Y-m-d H:i:s'); $min = ci_att_min_out(); $kind = 'done'; $msg = '';
+    $get = $pdo->prepare("SELECT * FROM ci_attendance WHERE student_id = ? AND batch_id = ? AND att_date = ?");
+    foreach ($list as $b) {
+        $get->execute([(int)$s['id'], $b, $today]);
+        $r = $get->fetch(PDO::FETCH_ASSOC);
+        if (!$r || !$r['in_at']) {
+            $pdo->prepare("INSERT INTO ci_attendance (student_id, batch_id, att_date, status, in_at, source, marked_by) VALUES (?,?,?,'present',?, 'scan', ?)
+                ON DUPLICATE KEY UPDATE status = 'present', in_at = VALUES(in_at), source = 'scan', marked_by = VALUES(marked_by), updated_at = NOW()")->execute([(int)$s['id'], $b, $today, $now, $userId]);
+            $kind = 'in'; $msg = 'Checked in at ' . date('h:i A');
+        } elseif (!$r['out_at']) {
+            $open = strtotime($r['in_at']) + $min * 60;
+            if (time() >= $open) {
+                $pdo->prepare("UPDATE ci_attendance SET out_at = ?, updated_at = NOW() WHERE id = ?")->execute([$now, (int)$r['id']]);
+                $kind = 'out'; $msg = 'Checked out at ' . date('h:i A');
+            } elseif ($kind !== 'in') { $kind = 'wait'; $msg = 'Already checked in at ' . date('h:i A', strtotime($r['in_at'])) . '. Check-out opens at ' . date('h:i A', $open) . ' (after ' . $min . ' min).'; }
+        } elseif ($kind === 'done') $msg = 'Already checked out at ' . date('h:i A', strtotime($r['out_at'])) . '.';
+    }
+    return ['ok' => $kind === 'in' || $kind === 'out', 'kind' => $kind, 'msg' => $msg, 'student' => $s];
+}
+

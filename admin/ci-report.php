@@ -360,4 +360,74 @@ if ($type === 'classes') {
             'right' => [2, 3, 4, 5, 6, 7, 8], 'empty' => 'No classes.']],
         'notes' => ['All classes together: fee ' . $rs($tf) . ', collected ' . $rs($tp) . ', still due ' . $rs($td) . '.']]);
 }
+if ($type === 'attendance') { // ?period=today|week|month|lastmonth|custom (&from=&to=) &class= &course= &batch=
+    $today = date('Y-m-d'); $per = (string)($_GET['period'] ?? 'month');
+    [$a, $b, $plabel] = match ($per) {
+        'today' => [$today, $today, 'Today'],
+        'yesterday' => [date('Y-m-d', strtotime('-1 day')), date('Y-m-d', strtotime('-1 day')), 'Yesterday'],
+        'week' => [date('Y-m-d', strtotime('monday this week')), $today, 'This week'],
+        'lastmonth' => [date('Y-m-01', strtotime('first day of last month')), date('Y-m-t', strtotime('first day of last month')), date('F Y', strtotime('first day of last month'))],
+        'custom' => [ci_clean_date($_GET['from'] ?? '') ?: date('Y-m-01'), ci_clean_date($_GET['to'] ?? '') ?: $today, 'Chosen dates'],
+        default => [date('Y-m-01'), $today, date('F Y')],
+    };
+    if ($a > $b) [$a, $b] = [$b, $a];
+    if ($b > $today) $b = $today;
+    $cls = (int)($_GET['class'] ?? 0); $crs = (int)($_GET['course'] ?? 0); $bat = (int)($_GET['batch'] ?? 0);
+    // who is in the report: students of the institute's batches / courses in that scope, plus anyone with attendance marked in it
+    $w = ["s.stype <> 'online'"]; $args = [];
+    if ($cls) { $w[] = 's.class_id = ?'; $args[] = $cls; }
+    if ($crs) { $w[] = 'e.course_id = ?'; $args[] = $crs; }
+    if ($bat) { $w[] = 'e.batch_id = ?'; $args[] = $bat; }
+    $q = $pdo->prepare("SELECT s.id, s.name, s.reg_no, s.roll_no, cl.name AS class_name, COALESCE(e.batch_id, 0) AS bid, b.name AS batch_name
+        FROM ci_enrollments e JOIN ci_students s ON s.id = e.student_id LEFT JOIN ci_batches b ON b.id = e.batch_id LEFT JOIN ci_classes cl ON cl.id = s.class_id
+        WHERE " . implode(' AND ', $w) . " AND ((e.status = 'active' AND s.status = 'active' AND (e.enrolled_on IS NULL OR e.enrolled_on <= ?))
+            OR EXISTS (SELECT 1 FROM ci_attendance x WHERE x.student_id = s.id AND x.batch_id = COALESCE(e.batch_id, 0) AND x.att_date BETWEEN ? AND ?))
+        ORDER BY cl.sort IS NULL, cl.sort, CAST(s.roll_no AS UNSIGNED), s.name");
+    $q->execute(array_merge($args, [$b, $a, $b]));
+    $list = []; foreach ($q as $r) $list[$r['id'] . '-' . $r['bid']] ??= $r;
+    $marks = []; $days = [];
+    if ($list) {
+        $ids = implode(',', array_unique(array_map(fn($r) => (int)$r['id'], $list)));
+        $mq = $pdo->prepare("SELECT student_id, batch_id, att_date, status FROM ci_attendance WHERE student_id IN ($ids) AND att_date BETWEEN ? AND ?");
+        $mq->execute([$a, $b]);
+        foreach ($mq as $m) { $k = $m['student_id'] . '-' . $m['batch_id']; if (!isset($list[$k])) continue; $marks[$k][$m['att_date']] = $m['status']; $days[$m['att_date']] = true; }
+    }
+    ksort($days);
+    $pct = fn(int $p, int $n) => $n ? round($p / $n * 100) . '%' : '-';
+    $rows = []; $T = ['present' => 0, 'absent' => 0, 'leave' => 0];
+    foreach ($list as $k => $r) {
+        $c = array_count_values($marks[$k] ?? []); $p = $c['present'] ?? 0; $ab = $c['absent'] ?? 0; $lv = $c['leave'] ?? 0;
+        $T['present'] += $p; $T['absent'] += $ab; $T['leave'] += $lv;
+        $rows[] = [$r['roll_no'] ?: '-', $r['reg_no'], $r['name'], $r['class_name'] ?: '-', $r['batch_name'] ?: '-', (string)$p, (string)$ab, (string)$lv, (string)($p + $ab + $lv), $pct($p, $p + $ab + $lv)];
+    }
+    $nDays = count($days); $allMarks = $T['present'] + $T['absent'] + $T['leave'];
+    $label = [];
+    if ($cls) $label[] = ['Class', (string)$pdo->query("SELECT name FROM ci_classes WHERE id = $cls")->fetchColumn()];
+    if ($crs) $label[] = ['Course', (string)$pdo->query("SELECT name FROM ci_courses WHERE id = $crs")->fetchColumn()];
+    if ($bat) $label[] = ['Batch', (string)$pdo->query("SELECT name FROM ci_batches WHERE id = $bat")->fetchColumn()];
+    $sections = [['title' => 'Students', 'right_text' => count($rows) . ' student(s)', 'head' => ['Roll', 'Adm. ID', 'Student', 'Class', 'Batch', 'Present', 'Absent', 'Leave', 'Days marked', 'Attendance'],
+        'body' => $rows, 'right' => [5, 6, 7, 8, 9], 'empty' => 'No students for this choice.']];
+    if ($days && count($days) <= 62) { // day by day
+        $dr = [];
+        foreach (array_keys($days) as $dt) { $c = ['present' => 0, 'absent' => 0, 'leave' => 0]; foreach ($marks as $mm) if (isset($mm[$dt])) $c[$mm[$dt]]++;
+            $dr[] = [date('d M Y, D', strtotime($dt)), (string)$c['present'], (string)$c['absent'], (string)$c['leave'], (string)(count($list) - array_sum($c)), $pct($c['present'], array_sum($c))]; }
+        $sections[] = ['title' => 'Day by day', 'right_text' => $nDays . ' day(s)', 'head' => ['Date', 'Present', 'Absent', 'Leave', 'Not marked', 'Attendance'], 'body' => $dr, 'right' => [1, 2, 3, 4, 5]];
+    }
+    $span = (strtotime($b) - strtotime($a)) / 86400 + 1;
+    if ($list && $span <= 31) { // the register: every day of the period, P / A / L
+        $dl = []; for ($t = strtotime($a); $t <= strtotime($b); $t += 86400) $dl[] = date('Y-m-d', $t);
+        $reg = [];
+        foreach ($list as $k => $r) { $m = $marks[$k] ?? []; $line = [$r['roll_no'] ?: '-', $r['name']];
+            foreach ($dl as $dt) $line[] = isset($m[$dt]) ? strtoupper($m[$dt][0]) : (date('w', strtotime($dt)) === '0' ? 'S' : '-');
+            $c = array_count_values($m); $line[] = (string)($c['present'] ?? 0); $line[] = $pct($c['present'] ?? 0, count($m)); $reg[] = $line; }
+        $sections[] = ['title' => 'Register', 'right_text' => 'P present · A absent · L leave · S Sunday', 'head' => array_merge(['Roll', 'Student'], array_map(fn($dt) => date('j', strtotime($dt)), $dl), ['P', '%']),
+            'body' => $reg, 'small' => true, 'right' => [], 'empty' => ''];
+    }
+    $out(['title' => 'ATTENDANCE REPORT', 'subtitle' => $plabel . ' · ' . $d($a) . ($a !== $b ? ' to ' . $d($b) : ''), 'no' => 'AT-' . date('Ymd', strtotime($b)) . '-' . count($rows),
+        'file' => 'attendance-report_' . $a . '_' . $b, 'landscape' => true,
+        'boxes' => [['head' => 'REPORT FOR', 'rows' => array_merge([['Period', $d($a) . ($a !== $b ? ' - ' . $d($b) : '')]], $label ?: [['Students', 'All institute batches']])],
+            ['head' => 'FIGURES', 'rows' => [['Students', (string)count($rows)], ['Days with attendance', (string)$nDays], ['Present marks', (string)$T['present']], ['Absent / leave', $T['absent'] . ' / ' . $T['leave']], ['Average attendance', $pct($T['present'], $allMarks)]]]],
+        'sections' => $sections,
+        'notes' => [count($rows) . ' student(s), ' . $nDays . ' day(s) with attendance between ' . $d($a) . ' and ' . $d($b) . '. Attendance % = present days out of the days marked for the student.']]);
+}
 $fail('Unknown report');

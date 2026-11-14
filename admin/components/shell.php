@@ -79,6 +79,7 @@ function admin_shell_nav(): array
                 $link(true, 'All Students', '/admin/students.php', 'fa-list'),
                 $link($cp('add_student'), 'Add Student', '/admin/student-edit.php', 'fa-user-plus'),
             ])],
+            $link($cp('attendance'), 'Attendance', '/admin/ci-attendance.php', 'fa-clipboard-user'),
             $link($cp('batches'), 'Batches', '/admin/ci-batches.php', 'fa-layer-group'),
             $link($cp('courses'), 'Courses', '/admin/ci-courses.php', 'fa-book-open'),
             $link($cp('fees'), 'Fees', '/admin/ci-fees.php', 'fa-indian-rupee-sign'),

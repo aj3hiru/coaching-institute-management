@@ -54,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'class_id' => isset($L['classes'][(int)($_POST['class_id'] ?? 0)]) ? (int)$_POST['class_id'] : null, 'school' => $student['school'] ?? null,
         'admission_date' => ci_clean_date($_POST['admission_date'] ?? '') ?: date('Y-m-d'),
         'status' => in_array($_POST['status'] ?? '', ['active', 'left', 'completed'], true) ? $_POST['status'] : 'active',
-        'notes' => $in('notes', 2000), 'photo' => $student['photo'] ?? null, 'reg_no' => $student['reg_no'] ?? '',
+        'notes' => $in('notes', 2000), 'photo' => $student['photo'] ?? null, 'reg_no' => $student['reg_no'] ?? '', 'roll_no' => $in('roll_no', 20),
         'stype' => isset(CI_STYPES[$_POST['stype'] ?? '']) ? $_POST['stype'] : ($student['stype'] ?? 'institute'),
     ];
     $spass = (string)($_POST['spass'] ?? ''); // online login password (empty: new student = mobile number, saved student = unchanged)
@@ -165,6 +165,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $form['name'], $form['father_name'] ?: null, $form['mother_name'] ?: null, $form['dob'], $form['gender'], $form['mobile'], $form['alt_mobile'] ?: null,
                 $form['email'] ?: null, $form['address'] ?: null, $form['city'] ?: null, $form['state'] ?: null, $form['pincode'] ?: null, $form['class_id'],
                 $form['school'] ?: null, $form['photo'], $form['status'], $form['stype'], $form['admission_date'], $form['notes'] ?: null, $id]);
+            // roll no.: as typed, or the next number of the class when left empty (institute students)
+            $roll = $form['roll_no'] !== '' ? $form['roll_no'] : ($form['stype'] !== 'online' && (($student['class_id'] ?? null) != $form['class_id'] || empty($student['roll_no'])) ? ci_next_roll($pdo, $form['class_id'], $id) : ($student['roll_no'] ?? null));
+            $pdo->prepare("UPDATE ci_students SET roll_no = ? WHERE id = ?")->execute([$roll ?: null, $id]);
             $receipt = null;
             foreach ($rows as $r) {
                 $eid = $r['id'];
@@ -348,6 +351,7 @@ $v = fn($k) => ci_e($form[$k] ?? '');
     <div class="ci-f"><label>Date of birth</label><input type="date" name="dob" max="<?= date('Y-m-d') ?>" value="<?= $v('dob') ?>"></div>
     <div class="ci-f"><label>Gender</label><select name="gender"><option value=""></option><?php foreach (['Male', 'Female', 'Other'] as $g): ?><option <?= ($form['gender'] ?? '') === $g ? 'selected' : '' ?>><?= $g ?></option><?php endforeach; ?></select></div>
     <div class="ci-f"><label>Class <span class="ci-req">*</span></label><select name="class_id" id="ci-class"><option value=""></option><?php foreach ($L['classes'] as $cid => $cn): ?><option value="<?= $cid ?>" <?= (int)($form['class_id'] ?? 0) === $cid ? 'selected' : '' ?>><?= ci_e($cn) ?></option><?php endforeach; ?></select></div>
+    <div class="ci-f"><label>Roll no.</label><input type="text" name="roll_no" maxlength="20" value="<?= $v('roll_no') ?>" placeholder="Next in the class"></div>
     <div class="ci-f"><label>Admission date</label><input type="date" name="admission_date" value="<?= $v('admission_date') ?>"></div>
     <div class="ci-f"><label>Status</label><select name="status"><?php foreach (['active' => 'Active', 'completed' => 'Completed', 'left' => 'Left'] as $k => $l): ?><option value="<?= $k ?>" <?= ($form['status'] ?? 'active') === $k ? 'selected' : '' ?>><?= $l ?></option><?php endforeach; ?></select></div>
     <div class="ci-f"><label>Student type</label><select name="stype" id="ci-stype"><?php foreach (CI_STYPES as $k => $l): ?><option value="<?= $k ?>" <?= ($form['stype'] ?? 'institute') === $k ? 'selected' : '' ?>><?= $l ?></option><?php endforeach; ?></select></div>

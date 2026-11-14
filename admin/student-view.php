@@ -173,6 +173,22 @@ $tel = fn(?string $m) => $m ? '<a href="tel:' . ci_e($m) . '">' . ci_e($m) . '</
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="robots" content="noindex, nofollow">
 <title><?= ci_e($s['name']) ?> - <?= ci_e(edu_site_name()) ?></title>
 <?php admin_shell_head(); ci_head(); ci_report_assets(); ?>
+<style id="svAttCss">
+.sv-att-sum{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
+.sv-att-sum span{padding:6px 12px;border:1px solid #e5e7eb;font-size:13px;color:#374151}.sv-att-sum b{margin-left:4px;font-size:15px}
+.sv-att-sum .p{border-color:#bbf7d0;background:#f0fdf4}.sv-att-sum .a{border-color:#fecaca;background:#fef2f2}.sv-att-sum .l{border-color:#fde68a;background:#fffbeb}
+.sv-cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.sv-cal-h{padding:4px 0;text-align:center;font-size:11.5px;font-weight:700;color:#6b7280;text-transform:uppercase}
+.sv-cal-d{position:relative;min-height:56px;padding:5px 6px;border:1px solid #e5e7eb;background:#fff;font-size:12px}
+.sv-cal-d b{font-size:12.5px;color:#374151}.sv-cal-d em{position:absolute;top:5px;right:6px;font-style:normal;font-weight:800;font-size:13px}
+.sv-cal-d small{display:block;margin-top:14px;font-size:10.5px;color:#4b5563}
+.sv-cal-d.is-x{border:0;background:none}.sv-cal-d.is-sun{background:#f9fafb}.sv-cal-d.is-fut{opacity:.45}
+.sv-cal-d.is-present{background:#f0fdf4;border-color:#86efac}.sv-cal-d.is-present em{color:#15803d}
+.sv-cal-d.is-absent{background:#fef2f2;border-color:#fca5a5}.sv-cal-d.is-absent em{color:#b91c1c}
+.sv-cal-d.is-leave{background:#fffbeb;border-color:#fcd34d}.sv-cal-d.is-leave em{color:#b45309}
+@media (max-width:640px){.sv-cal-d{min-height:44px;padding:3px}.sv-cal-d small{display:none}.sv-cal-d em{top:auto;bottom:3px;right:4px}}
+.sv-att-print{display:none}
+</style>
 </head>
 <body>
 <?php admin_shell_open('Student Profile', ci_e($s['reg_no'] . ' · ' . $s['name'])); ?>
@@ -185,7 +201,7 @@ $tel = fn(?string $m) => $m ? '<a href="tel:' . ci_e($m) . '">' . ci_e($m) . '</
     <?= ci_avatar($s, 88) ?>
     <div class="ci-ph-txt">
       <h2><?= ci_e($s['name']) ?></h2>
-      <div class="ci-ph-tags"><span class="ci-badge ci-b-violet"><?= ci_e($s['reg_no']) ?></span><span class="ci-badge ci-tb-<?= ci_e($s['stype'] ?? 'institute') ?>"><?= ci_e((CI_STYPES[$s['stype'] ?? 'institute'] ?? '') . ' student') ?></span><?= ci_status_badge($s['status']) ?><?= $s['class_name'] ? '<span class="ci-badge ci-b-blue">Class ' . ci_e($s['class_name']) . '</span>' : '' ?><?= $tot['due'] > 0.004 ? '<span class="ci-badge ci-b-red">Due ' . ci_money0($tot['due']) . '</span>' : ($tot['net'] > 0 ? '<span class="ci-badge ci-b-green">Fee fully paid</span>' : '') ?></div>
+      <div class="ci-ph-tags"><span class="ci-badge ci-b-violet"><?= ci_e($s['reg_no']) ?></span><?php if ($s['roll_no']): ?><span class="ci-badge">Roll <?= ci_e($s['roll_no']) ?></span><?php endif; ?><span class="ci-badge ci-tb-<?= ci_e($s['stype'] ?? 'institute') ?>"><?= ci_e((CI_STYPES[$s['stype'] ?? 'institute'] ?? '') . ' student') ?></span><?= ci_status_badge($s['status']) ?><?= $s['class_name'] ? '<span class="ci-badge ci-b-blue">Class ' . ci_e($s['class_name']) . '</span>' : '' ?><?= $tot['due'] > 0.004 ? '<span class="ci-badge ci-b-red">Due ' . ci_money0($tot['due']) . '</span>' : ($tot['net'] > 0 ? '<span class="ci-badge ci-b-green">Fee fully paid</span>' : '') ?></div>
       <div class="ci-ph-meta">
         <span><i class="fas fa-phone"></i> <?= $tel($s['mobile']) ?><?= $s['alt_mobile'] ? ' · ' . $tel($s['alt_mobile']) : '' ?></span>
         <?php if ($s['father_name']): ?><span><i class="fas fa-user"></i> S/D of <?= ci_e($s['father_name']) ?></span><?php endif; ?>
@@ -220,7 +236,7 @@ if (function_exists('sh_perm') && sh_perm($me, 'customers')) { sh_tables($pdo); 
 <?php
   $age = $s['dob'] ? (new DateTime($s['dob']))->diff(new DateTime())->y : null;
   $mainKv = array_filter(["Mother's name" => $s['mother_name'], 'Date of birth' => $s['dob'] ? ci_date($s['dob']) . ' (' . $age . ' yrs)' : '', 'Gender' => $s['gender'], 'Email' => $s['email']]);
-  $allKv = array_filter(['Full name' => $s['name'], 'Reg. no.' => $s['reg_no'], 'Class' => $s['class_name'], "Father's name" => $s['father_name'], "Mother's name" => $s['mother_name'],
+  $allKv = array_filter(['Full name' => $s['name'], 'Reg. no.' => $s['reg_no'], 'Roll no.' => $s['roll_no'], 'Class' => $s['class_name'], "Father's name" => $s['father_name'], "Mother's name" => $s['mother_name'],
       'Mobile' => $s['mobile'], 'Alternate mobile' => $s['alt_mobile'], 'Email' => $s['email'], 'Date of birth' => $s['dob'] ? ci_date($s['dob']) . ' (' . $age . ' yrs)' : '', 'Gender' => $s['gender'],
       'Address' => $s['address'], 'City' => $s['city'], 'State' => $s['state'], 'PIN code' => $s['pincode'], 'School / College' => $s['school'], 'Admission date' => ci_date($s['admission_date']),
       'Status' => ucfirst($s['status']) . ($s['status'] === 'left' && $s['left_on'] ? ' (' . ci_date($s['left_on']) . ')' : ''), 'Added' => date('d M Y, h:i A', strtotime($s['created_at'])) . ($s['added_by'] ? ' by ' . $s['added_by'] : '')]);
@@ -280,6 +296,55 @@ if (function_exists('sh_perm') && sh_perm($me, 'customers')) { sh_tables($pdo); 
     <?php endforeach; ?>
     <?php if ($pays): ?><tr class="ci-total-row"><td colspan="4">Total paid</td><td class="ci-num"><?= ci_money($tot['paid']) ?></td><td class="ci-num"><?= ci_money($tot['due']) ?></td><td class="ci-noprint"></td></tr><?php endif; ?>
     </tbody></table></div></div>
+    <?php if ($s['stype'] !== 'online'): // ---- attendance: one month as a calendar (any month since admission), printable
+      $mNow = date('Y-m'); $mFirst = substr((string)($s['admission_date'] ?: $s['created_at']), 0, 7) ?: $mNow;
+      $fq = $pdo->prepare("SELECT MIN(att_date) FROM ci_attendance WHERE student_id = ?"); $fq->execute([$id]); if ($fa = $fq->fetchColumn()) $mFirst = min($mFirst, substr($fa, 0, 7));
+      $am = preg_match('/^\d{4}-\d{2}$/', (string)($_GET['att'] ?? '')) ? (string)$_GET['att'] : $mNow; if ($am > $mNow) $am = $mNow; if ($am < $mFirst) $mFirst = $am;
+      $aq = $pdo->prepare("SELECT a.att_date, a.status, a.in_at, a.out_at, b.name AS batch FROM ci_attendance a LEFT JOIN ci_batches b ON b.id = a.batch_id WHERE a.student_id = ? AND a.att_date BETWEEN ? AND ? ORDER BY a.att_date");
+      $aq->execute([$id, $am . '-01', date('Y-m-t', strtotime($am . '-01'))]);
+      $byDay = []; foreach ($aq as $r) $byDay[$r['att_date']][] = $r;
+      $dayStatus = function (array $rs): string { $st = array_column($rs, 'status'); return in_array('present', $st, true) ? 'present' : (in_array('leave', $st, true) ? 'leave' : 'absent'); };
+      $cnt = ['present' => 0, 'absent' => 0, 'leave' => 0]; foreach ($byDay as $rs) $cnt[$dayStatus($rs)]++;
+      $marked = array_sum($cnt); $pc = $marked ? round($cnt['present'] / $marked * 100) : null;
+      $months = []; for ($t = strtotime($mFirst . '-01'); date('Y-m', $t) <= $mNow; $t = strtotime('+1 month', $t)) $months[date('Y-m', $t)] = date('F Y', $t);
+      $months = array_reverse($months, true);
+      $first = strtotime($am . '-01'); $lead = (int)date('N', $first) - 1; $nd = (int)date('t', $first); $todayD = date('Y-m-d');
+      $instInfo = ci_institute(); ?>
+    <div class="ci-card sv-att" id="attendance" data-ds="Attendance" style="margin-top:16px">
+      <div class="sv-att-print"><b><?= ci_e($instInfo['name']) ?></b><span><?= ci_e(implode(' · ', array_filter([$instInfo['address'], $instInfo['phone'], $instInfo['email']]))) ?></span>
+        <h2>Attendance — <?= ci_e($months[$am] ?? date('F Y', $first)) ?></h2>
+        <p><?= ci_e($s['name']) ?> · Adm. ID <?= ci_e($s['reg_no']) ?><?= $s['roll_no'] ? ' · Roll ' . ci_e($s['roll_no']) : '' ?><?= $s['class_name'] ? ' · Class ' . ci_e($s['class_name']) : '' ?></p></div>
+      <div class="ci-card-h"><h3>Attendance</h3><div class="ci-actions ci-noprint">
+        <form method="get" action="#attendance" style="display:inline-flex;gap:6px;align-items:center" onchange="this.submit()"><input type="hidden" name="id" value="<?= $id ?>"><select name="att" aria-label="Month"><?php foreach ($months as $k => $l): ?><option value="<?= $k ?>"<?= $k === $am ? ' selected' : '' ?>><?= $l ?></option><?php endforeach; ?></select></form>
+        <button type="button" class="ci-btn ci-ghost ci-sm" id="svAttPrint"><i class="fas fa-print"></i> Print</button></div></div>
+      <div class="ci-card-b">
+        <div class="sv-att-sum"><span class="p">Present <b><?= $cnt['present'] ?></b></span><span class="a">Absent <b><?= $cnt['absent'] ?></b></span><span class="l">Leave <b><?= $cnt['leave'] ?></b></span><span>Attendance <b><?= $pc === null ? '—' : $pc . '%' ?></b></span></div>
+        <div class="sv-cal" role="table" aria-label="Attendance calendar">
+          <?php foreach (['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as $wd): ?><div class="sv-cal-h"><?= $wd ?></div><?php endforeach; ?>
+          <?php for ($i = 0; $i < $lead; $i++): ?><div class="sv-cal-d is-x"></div><?php endfor; ?>
+          <?php for ($dd = 1; $dd <= $nd; $dd++): $dt = $am . '-' . str_pad((string)$dd, 2, '0', STR_PAD_LEFT); $rs = $byDay[$dt] ?? []; $st = $rs ? $dayStatus($rs) : '';
+            $in = $rs ? min(array_filter(array_column($rs, 'in_at')) ?: [null]) : null; $outT = $rs ? max(array_filter(array_column($rs, 'out_at')) ?: [null]) : null; ?>
+          <div class="sv-cal-d<?= $st ? ' is-' . $st : '' ?><?= date('N', strtotime($dt)) === '7' ? ' is-sun' : '' ?><?= $dt > $todayD ? ' is-fut' : '' ?>" title="<?= ci_e(date('D, d M Y', strtotime($dt)) . ($st ? ' — ' . ucfirst($st) : '') . ($rs ? ' · ' . implode(', ', array_filter(array_column($rs, 'batch'))) : '')) ?>">
+            <b><?= $dd ?></b><?php if ($st): ?><em><?= ['present' => 'P', 'absent' => 'A', 'leave' => 'L'][$st] ?></em><?php endif; ?>
+            <?php if ($in): ?><small><?= date('h:i', strtotime($in)) ?><?= $outT ? '–' . date('h:i', strtotime($outT)) : '' ?></small><?php endif; ?>
+          </div>
+          <?php endfor; ?>
+        </div>
+        <?php if (!$marked): ?><p class="ci-muted" style="margin:10px 0 0">No attendance marked in <?= ci_e($months[$am] ?? '') ?>.</p><?php endif; ?>
+      </div>
+    </div>
+    <script>
+    document.getElementById('svAttPrint').addEventListener('click', function () { // only this card, on its own page
+      var card = document.getElementById('attendance').cloneNode(true), css = document.getElementById('svAttCss').textContent;
+      card.querySelector('.ci-card-h').remove(); card.querySelector('.sv-att-print').style.display = 'block';
+      var w = window.open('', '_blank', 'width=900,height=1000'); if (!w) return;
+      w.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>Attendance</title><style>' + css + 'body{margin:0;padding:12mm;font-family:Arial,sans-serif;color:#111827;-webkit-print-color-adjust:exact;print-color-adjust:exact}'
+        + '.sv-att-print{margin:0 0 10px;padding:0 0 8px;border-bottom:1px solid #111}.sv-att-print b{font-size:18px}.sv-att-print span{display:block;font-size:11px;color:#374151}.sv-att-print h2{margin:10px 0 2px;font-size:16px}.sv-att-print p{margin:0;font-size:12px}'
+        + '.ci-muted{color:#6b7280}@page{size:A4;margin:0}</style></head><body>' + card.innerHTML + '</body></html>');
+      w.document.close(); w.focus(); setTimeout(function () { w.print(); }, 250);
+    });
+    </script>
+    <?php endif; ?>
     <?php if ($oa) { echo '<div style="height:20px"></div>'; oa_main($oa, $me); } ?>
   </div>
 </div>
