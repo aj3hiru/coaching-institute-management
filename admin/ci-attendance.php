@@ -235,7 +235,7 @@ tr.at-hl td{background:#fefce8}
   <?php foreach ($rows as $i => $r): ?>
   <tr data-sid="<?= (int)$r['id'] ?>" data-bid="<?= (int)$r['batch_id'] ?>" data-reg="<?= ci_e($r['reg_no']) ?>">
     <td class="at-sn"><?= $i + 1 ?></td>
-    <td><div class="at-name"><?= ci_avatar($r, 34) ?><div><a href="/admin/student-view.php?id=<?= (int)$r['id'] ?>#attendance"><?= ci_e($r['name']) ?></a><small><?= ci_tel($r['mobile']) ?></small></div></div></td>
+    <td><div class="at-name"><?= ci_avatar($r, 34) ?><div><a href="/admin/student-view.php?id=<?= (int)$r['id'] ?>"><?= ci_e($r['name']) ?></a><small><?= ci_tel($r['mobile']) ?></small></div></div></td>
     <td class="ci-nw"><b><?= ci_e($r['reg_no']) ?></b></td>
     <td class="ci-nw"><?= ci_e($r['class_name'] ?: '—') ?></td>
     <td><?= $r['batch_name'] ? ci_e($r['batch_name']) . ($r['timing'] ? '<small class="ci-muted" style="display:block">' . ci_e($r['timing']) . '</small>' : '') : '<span class="ci-muted">' . ci_e($r['course_name'] ?: 'No batch') . '</span>' ?></td>

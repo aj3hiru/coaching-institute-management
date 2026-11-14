@@ -246,10 +246,9 @@ if (function_exists('sh_perm') && sh_perm($me, 'customers')) { sh_tables($pdo); 
 <div class="ci-pf">
   <aside class="ci-pf-side">
     <div class="ci-card ci-det" data-ds="Student details"><div class="ci-card-h"><h3>Student details</h3><?php if (ci_perm($me, 'edit_student')): ?><?= ci_ico('edit', '/admin/student-edit.php?id=' . $id, 'Edit details') ?><?php endif; ?></div><div class="ci-card-b">
-      <?php if ($mainKv): ?><dl class="ci-kv ci-kv1"><?php foreach ($mainKv as $k => $v): ?><dt><?= ci_e($k) ?></dt><dd><?= ci_e($v) ?></dd><?php endforeach; ?></dl><?php else: ?><p class="ci-muted" style="margin:0">Nothing more than the card above.</p><?php endif; ?>
-      <div class="ci-det-all" hidden><dl class="ci-kv ci-kv1"><?php foreach ($allKv as $k => $v): ?><dt><?= ci_e($k) ?></dt><dd><?= ci_e($v) ?></dd><?php endforeach; ?></dl>
-        <?php if ($s['notes']): ?><div class="ci-det-notes"><b>Notes</b><br><?= nl2br(ci_e($s['notes'])) ?></div><?php endif; ?></div>
-      <button type="button" class="ci-more-btn" data-more>View all details <i class="fas fa-chevron-down"></i></button>
+      <?php $detKv = array_diff_key($allKv, array_flip(['Full name', 'Reg. no.', 'Class', 'Mobile', 'Status', 'Admission date'])); // the card on top already shows these ?>
+      <dl class="ci-kv ci-kv1 sv-det"><?php foreach ($detKv as $k => $v): ?><dt><?= ci_e($k) ?></dt><dd><?= ci_e($v) ?></dd><?php endforeach; ?></dl>
+      <?php if ($s['notes']): ?><div class="ci-det-notes"><b>Notes</b><br><?= nl2br(ci_e($s['notes'])) ?></div><?php endif; ?>
     </div></div>
     <?php if ($oa) oa_side($oa, $me); // online account (login, status, password, block) ?>
     <div class="ci-card" data-ds="Class history"><div class="ci-card-h"><h3>Class history</h3></div><div class="ci-card-b">
@@ -285,8 +284,9 @@ if (function_exists('sh_perm') && sh_perm($me, 'customers')) { sh_tables($pdo); 
     </div>
     <?php endforeach; ?>
 
+    <?php if ($enr || $pays): // an online-only student has no institute fees to show ?>
     <div class="ci-card" data-ds="Fee statement" style="margin-top:16px"><div class="ci-card-h"><h3>Institute fee statement</h3><div class="ci-actions ci-noprint"><button type="button" class="ci-btn ci-ghost ci-sm" onclick="window.print()"><?= ci_svg('print') ?> Print</button></div></div>
-    <div class="ci-card-b ci-p0 ci-table-wrap"><table class="ci-table">
+    <div class="ci-card-b ci-p0 ci-table-wrap"><table class="ci-table" data-sheet="off">
     <thead><tr><th>Date</th><th>Receipt</th><th>For</th><th>Paid by</th><th class="ci-num">Amount</th><th class="ci-num">Balance after</th><th class="ci-noprint"></th></tr></thead><tbody>
     <?php if (!$pays): ?><tr><td colspan="7" class="ci-empty">No payments yet.</td></tr><?php endif; ?>
     <?php foreach ($pays as $p): ?>
@@ -298,6 +298,7 @@ if (function_exists('sh_perm') && sh_perm($me, 'customers')) { sh_tables($pdo); 
     <?php endforeach; ?>
     <?php if ($pays): ?><tr class="ci-total-row"><td colspan="4">Total paid</td><td class="ci-num"><?= ci_money($tot['paid']) ?></td><td class="ci-num"><?= ci_money($tot['due']) ?></td><td class="ci-noprint"></td></tr><?php endif; ?>
     </tbody></table></div></div>
+    <?php endif; ?>
     <?php if ($s['stype'] !== 'online'): // ---- attendance: one month as a calendar (any month since admission), printable
       $mNow = date('Y-m'); $mFirst = substr((string)($s['admission_date'] ?: $s['created_at']), 0, 7) ?: $mNow;
       $fq = $pdo->prepare("SELECT MIN(att_date) FROM ci_attendance WHERE student_id = ?"); $fq->execute([$id]); if ($fa = $fq->fetchColumn()) $mFirst = min($mFirst, substr($fa, 0, 7));

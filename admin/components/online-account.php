@@ -84,6 +84,10 @@ function oa_main(array $oa, array $me): void
     $u = $oa['u']; $s = $oa['s']; $sell = sh_perm($me, 'orders');
     $enrollBtn = $sell ? '<button type="button" class="ci-btn ci-sm ci-noprint" data-enroll="Enroll ' . ci_e($s['name']) . '" data-enroll-sid="' . (int)$s['id'] . '" data-enroll-name="' . ci_e($s['name']) . '"><i class="fas fa-laptop"></i> Enroll in a course / notes (paid)</button>' : '';
     echo '<div class="ci-sec-h" id="online" data-ds="Online courses &amp; notes"><h3>Online courses &amp; notes <span class="ci-muted">(' . count(array_filter($oa['acc'], fn($x) => $x['source'] !== 'block')) . ')</span></h3>' . $enrollBtn . '</div>';
+    if (!$u && !$oa['acc'] && !$oa['ord']) { // nothing online yet: one short line instead of two empty tables
+        echo '<div class="ci-card"><div class="ci-card-b ci-empty" style="padding:14px 16px">No online course, notes or orders yet.</div></div>';
+        return;
+    }
     echo '<div class="ci-card">';
     if ($u) {
         echo '<div class="ci-card-b ci-noprint"><form method="post" action="/admin/shop-customers.php" class="oa-give">' . oa_hidden($oa, 'grant')
@@ -93,7 +97,7 @@ function oa_main(array $oa, array $me): void
             . '<div class="ci-f"><label>Note</label><input name="note" maxlength="200" placeholder="e.g. Offline batch student"></div>'
             . '<div class="ci-f"><label>&nbsp;</label><button class="ci-btn" type="submit"><i class="fas fa-key"></i> Give access</button></div></form></div>';
     }
-    echo '<div class="ci-card-b ci-p0 ci-table-wrap"><table class="ci-table"><thead><tr><th>Item</th><th>How</th><th>Since</th><th>Access</th><th class="ci-noprint">Action</th></tr></thead><tbody>';
+    echo '<div class="ci-card-b ci-p0 ci-table-wrap"><table class="ci-table" data-sheet="off"><thead><tr><th>Item</th><th>How</th><th>Since</th><th>Access</th><th class="ci-noprint">Action</th></tr></thead><tbody>';
     if (!$oa['acc']) echo '<tr><td colspan="5" class="ci-empty">No online course or notes yet.' . ($sell ? ' Use <b>Enroll in a course / notes (paid)</b> above.' : '') . '</td></tr>';
     foreach ($oa['acc'] as $x) {
         $how = ['purchase' => 'Bought', 'admin' => 'Given' . ($x['by_name'] ? ' by ' . ci_e($x['by_name']) : ''), 'free' => 'Free', 'block' => 'Never had it'][$x['source']] ?? ci_e($x['source']);
@@ -108,7 +112,8 @@ function oa_main(array $oa, array $me): void
     $paid = array_filter($oa['ord'], fn($o) => $o['status'] === 'paid');
     echo '<div class="ci-sec-h" data-ds="Online orders &amp; invoices" style="margin-top:16px"><h3>Online orders &amp; invoices <span class="ci-muted">(' . count($oa['ord']) . ')</span></h3>'
         . ($paid ? '<span class="ci-muted">' . count($paid) . ' paid · ' . ci_money0(array_sum(array_column($paid, 'amount'))) . '</span>' : '') . '</div>';
-    echo '<div class="ci-card"><div class="ci-card-b ci-p0 ci-table-wrap"><table class="ci-table"><thead><tr><th>Order</th><th>Item</th><th class="ci-num">Amount</th><th>Status</th><th>Paid by</th><th>Date</th><th class="ci-noprint">Invoice</th></tr></thead><tbody>';
+    if (!$oa['ord']) { echo '<div class="ci-card"><div class="ci-card-b ci-empty" style="padding:14px 16px">No online orders yet.</div></div>'; return; }
+    echo '<div class="ci-card"><div class="ci-card-b ci-p0 ci-table-wrap"><table class="ci-table" data-sheet="off"><thead><tr><th>Order</th><th>Item</th><th class="ci-num">Amount</th><th>Status</th><th>Paid by</th><th>Date</th><th class="ci-noprint">Invoice</th></tr></thead><tbody>';
     if (!$oa['ord']) echo '<tr><td colspan="7" class="ci-empty">No online orders yet.</td></tr>';
     foreach ($oa['ord'] as $o) {
         $office = str_starts_with((string)$o['rzp_order'], 'manual_');
