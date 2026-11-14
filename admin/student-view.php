@@ -176,7 +176,7 @@ $tel = fn(?string $m) => $m ? '<a href="tel:' . ci_e($m) . '">' . ci_e($m) . '</
 <style id="svAttCss">
 .sv-att-sum{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
 .sv-att-sum span{padding:6px 12px;border:1px solid #e5e7eb;font-size:13px;color:#374151}.sv-att-sum b{margin-left:4px;font-size:15px}
-.sv-att-sum .p{border-color:#bbf7d0;background:#f0fdf4}.sv-att-sum .a{border-color:#fecaca;background:#fef2f2}.sv-att-sum .l{border-color:#fde68a;background:#fffbeb}
+.sv-att-sum .p{border-color:#bbf7d0;background:#f0fdf4}.sv-att-sum .a{border-color:#fecaca;background:#fef2f2}.sv-att-sum .l{border-color:#fde68a;background:#fffbeb}.sv-att-sum .h{border-color:#ddd6fe;background:#f5f3ff}
 .sv-cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
 .sv-cal-h{padding:4px 0;text-align:center;font-size:11.5px;font-weight:700;color:#6b7280;text-transform:uppercase}
 .sv-cal-d{position:relative;min-height:56px;padding:5px 6px;border:1px solid #e5e7eb;background:#fff;font-size:12px}
@@ -186,6 +186,7 @@ $tel = fn(?string $m) => $m ? '<a href="tel:' . ci_e($m) . '">' . ci_e($m) . '</
 .sv-cal-d.is-present{background:#f0fdf4;border-color:#86efac}.sv-cal-d.is-present em{color:#15803d}
 .sv-cal-d.is-absent{background:#fef2f2;border-color:#fca5a5}.sv-cal-d.is-absent em{color:#b91c1c}
 .sv-cal-d.is-leave{background:#fffbeb;border-color:#fcd34d}.sv-cal-d.is-leave em{color:#b45309}
+.sv-cal-d.is-holiday{background:#f5f3ff;border-color:#c4b5fd}.sv-cal-d.is-holiday em{color:#6d28d9}.sv-cal-d.is-holiday small{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 @media (max-width:640px){.sv-cal-d{min-height:44px;padding:3px}.sv-cal-d small{display:none}.sv-cal-d em{top:auto;bottom:3px;right:4px}}
 .sv-att-print{display:none}
 </style>
@@ -300,12 +301,10 @@ if (function_exists('sh_perm') && sh_perm($me, 'customers')) { sh_tables($pdo); 
       $mNow = date('Y-m'); $mFirst = substr((string)($s['admission_date'] ?: $s['created_at']), 0, 7) ?: $mNow;
       $fq = $pdo->prepare("SELECT MIN(att_date) FROM ci_attendance WHERE student_id = ?"); $fq->execute([$id]); if ($fa = $fq->fetchColumn()) $mFirst = min($mFirst, substr($fa, 0, 7));
       $am = preg_match('/^\d{4}-\d{2}$/', (string)($_GET['att'] ?? '')) ? (string)$_GET['att'] : $mNow; if ($am > $mNow) $am = $mNow; if ($am < $mFirst) $mFirst = $am;
-      $aq = $pdo->prepare("SELECT a.att_date, a.status, a.in_at, a.out_at, b.name AS batch FROM ci_attendance a LEFT JOIN ci_batches b ON b.id = a.batch_id WHERE a.student_id = ? AND a.att_date BETWEEN ? AND ? ORDER BY a.att_date");
-      $aq->execute([$id, $am . '-01', date('Y-m-t', strtotime($am . '-01'))]);
-      $byDay = []; foreach ($aq as $r) $byDay[$r['att_date']][] = $r;
-      $dayStatus = function (array $rs): string { $st = array_column($rs, 'status'); return in_array('present', $st, true) ? 'present' : (in_array('leave', $st, true) ? 'leave' : 'absent'); };
-      $cnt = ['present' => 0, 'absent' => 0, 'leave' => 0]; foreach ($byDay as $rs) $cnt[$dayStatus($rs)]++;
-      $marked = array_sum($cnt); $pc = $marked ? round($cnt['present'] / $marked * 100) : null;
+      $AT = ci_att_student($pdo, $id, $am . '-01', date('Y-m-t', strtotime($am . '-01'))); // marks + holidays, by day
+      $byDay = $AT['days']; $marked = $AT['count']['days'] + $AT['count']['holiday'];
+      $cnt = ['present' => 0, 'absent' => 0, 'leave' => 0, 'holiday' => 0]; foreach ($byDay as $dk => $x) if ($dk <= date('Y-m-d')) $cnt[$x['status']]++; // counts till today (coming holidays only show)
+      $pc = ($cnt['present'] + $cnt['absent'] + $cnt['leave']) ? (int)round($cnt['present'] / ($cnt['present'] + $cnt['absent'] + $cnt['leave']) * 100) : null;
       $months = []; for ($t = strtotime($mFirst . '-01'); date('Y-m', $t) <= $mNow; $t = strtotime('+1 month', $t)) $months[date('Y-m', $t)] = date('F Y', $t);
       $months = array_reverse($months, true);
       $first = strtotime($am . '-01'); $lead = (int)date('N', $first) - 1; $nd = (int)date('t', $first); $todayD = date('Y-m-d');
@@ -318,15 +317,15 @@ if (function_exists('sh_perm') && sh_perm($me, 'customers')) { sh_tables($pdo); 
         <form method="get" action="#attendance" style="display:inline-flex;gap:6px;align-items:center" onchange="this.submit()"><input type="hidden" name="id" value="<?= $id ?>"><select name="att" aria-label="Month"><?php foreach ($months as $k => $l): ?><option value="<?= $k ?>"<?= $k === $am ? ' selected' : '' ?>><?= $l ?></option><?php endforeach; ?></select></form>
         <button type="button" class="ci-btn ci-ghost ci-sm" id="svAttPrint"><i class="fas fa-print"></i> Print</button></div></div>
       <div class="ci-card-b">
-        <div class="sv-att-sum"><span class="p">Present <b><?= $cnt['present'] ?></b></span><span class="a">Absent <b><?= $cnt['absent'] ?></b></span><span class="l">Leave <b><?= $cnt['leave'] ?></b></span><span>Attendance <b><?= $pc === null ? '—' : $pc . '%' ?></b></span></div>
+        <div class="sv-att-sum"><span class="p">Present <b><?= $cnt['present'] ?></b></span><span class="a">Absent <b><?= $cnt['absent'] ?></b></span><span class="l">Leave <b><?= $cnt['leave'] ?></b></span><span class="h">Holiday <b><?= $cnt['holiday'] ?></b></span><span>Attendance <b><?= $pc === null ? '—' : $pc . '%' ?></b></span></div>
         <div class="sv-cal" role="table" aria-label="Attendance calendar">
           <?php foreach (['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as $wd): ?><div class="sv-cal-h"><?= $wd ?></div><?php endforeach; ?>
           <?php for ($i = 0; $i < $lead; $i++): ?><div class="sv-cal-d is-x"></div><?php endfor; ?>
-          <?php for ($dd = 1; $dd <= $nd; $dd++): $dt = $am . '-' . str_pad((string)$dd, 2, '0', STR_PAD_LEFT); $rs = $byDay[$dt] ?? []; $st = $rs ? $dayStatus($rs) : '';
-            $in = $rs ? min(array_filter(array_column($rs, 'in_at')) ?: [null]) : null; $outT = $rs ? max(array_filter(array_column($rs, 'out_at')) ?: [null]) : null; ?>
-          <div class="sv-cal-d<?= $st ? ' is-' . $st : '' ?><?= date('N', strtotime($dt)) === '7' ? ' is-sun' : '' ?><?= $dt > $todayD ? ' is-fut' : '' ?>" title="<?= ci_e(date('D, d M Y', strtotime($dt)) . ($st ? ' — ' . ucfirst($st) : '') . ($rs ? ' · ' . implode(', ', array_filter(array_column($rs, 'batch'))) : '')) ?>">
-            <b><?= $dd ?></b><?php if ($st): ?><em><?= ['present' => 'P', 'absent' => 'A', 'leave' => 'L'][$st] ?></em><?php endif; ?>
-            <?php if ($in): ?><small><?= date('h:i', strtotime($in)) ?><?= $outT ? '–' . date('h:i', strtotime($outT)) : '' ?></small><?php endif; ?>
+          <?php for ($dd = 1; $dd <= $nd; $dd++): $dt = $am . '-' . str_pad((string)$dd, 2, '0', STR_PAD_LEFT); $x = $byDay[$dt] ?? null; $st = $x['status'] ?? '';
+            $in = $x['in'] ?? null; $outT = $x['out'] ?? null; ?>
+          <div class="sv-cal-d<?= $st ? ' is-' . $st : '' ?><?= date('N', strtotime($dt)) === '7' ? ' is-sun' : '' ?><?= $dt > $todayD ? ' is-fut' : '' ?>" title="<?= ci_e(date('D, d M Y', strtotime($dt)) . ($st ? ' — ' . ucfirst($st) : '') . (!empty($x['title']) ? ': ' . $x['title'] : '') . (!empty($x['batch']) ? ' · ' . $x['batch'] : '')) ?>">
+            <b><?= $dd ?></b><?php if ($st): ?><em><?= ['present' => 'P', 'absent' => 'A', 'leave' => 'L', 'holiday' => 'H'][$st] ?></em><?php endif; ?>
+            <?php if ($in): ?><small><?= date('h:i', strtotime($in)) ?><?= $outT ? '–' . date('h:i', strtotime($outT)) : '' ?></small><?php elseif (!empty($x['title'])): ?><small><?= ci_e($x['title']) ?></small><?php endif; ?>
           </div>
           <?php endfor; ?>
         </div>

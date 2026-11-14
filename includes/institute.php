@@ -96,6 +96,18 @@ function ci_tables(PDO $pdo): void
             $c = (int)$r['class_id']; $n[$c] = ($n[$c] ?? 0) + 1; $up->execute([(string)$n[$c], (int)$r['id']]);
         }
     }
+    // batch class time (start / end): the attendance page opens on the batch running now; "Timing" text is made from it.
+    // Old batches get it read from their timing text ("7:00–8:30 AM", "4:00–5:30 PM").
+    if (!$pdo->query("SHOW COLUMNS FROM ci_batches LIKE 'start_time'")->fetch()) {
+        $pdo->exec("ALTER TABLE ci_batches ADD COLUMN start_time TIME NULL AFTER timing, ADD COLUMN end_time TIME NULL AFTER start_time");
+        $up = $pdo->prepare("UPDATE ci_batches SET start_time = ?, end_time = ? WHERE id = ?");
+        foreach ($pdo->query("SELECT id, timing FROM ci_batches WHERE timing IS NOT NULL") as $b) if ($t = ci_parse_timing((string)$b['timing'])) $up->execute([$t[0], $t[1], (int)$b['id']]);
+    }
+    // holidays: from – to, for every course and batch, one course, or one batch (no class: not absent)
+    $pdo->exec("CREATE TABLE IF NOT EXISTS ci_holidays (
+        id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, title VARCHAR(150) NOT NULL, from_date DATE NOT NULL, to_date DATE NOT NULL,
+        course_id INT UNSIGNED NULL, batch_id INT UNSIGNED NULL, created_by INT NULL, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        KEY k_dates (from_date, to_date)) $opt");
     // a fresh install gets the current academic session and a starter list of classes (both editable in Setup)
     if (!(int)$pdo->query("SELECT COUNT(*) FROM ci_sessions")->fetchColumn()) {
         $y = (int)date('Y');
@@ -827,6 +839,12 @@ function ci_att_scan(PDO $pdo, string $code, int $batch, int $userId): array
         $list = [$batch];
     } else $list = $mine ?: [0];
     $today = date('Y-m-d'); $now = date('Y-m-d H:i:s'); $min = ci_att_min_out(); $kind = 'done'; $msg = '';
+    $hols = ci_holidays_between($pdo, $today, $today);
+    if ($hols) {
+        $cq = $pdo->prepare("SELECT course_id FROM ci_batches WHERE id = ?");
+        $list = array_values(array_filter($list, function ($b) use ($hols, $today, $cq) { $cq->execute([$b]); return !ci_holiday_on($hols, $today, $b, (int)$cq->fetchColumn()); }));
+        if (!$list) return ['ok' => false, 'kind' => 'error', 'student' => $s, 'msg' => 'Today is a holiday for ' . $s['name'] . "'s batch."];
+    }
     $get = $pdo->prepare("SELECT * FROM ci_attendance WHERE student_id = ? AND batch_id = ? AND att_date = ?");
     foreach ($list as $b) {
         $get->execute([(int)$s['id'], $b, $today]);
@@ -844,5 +862,103 @@ function ci_att_scan(PDO $pdo, string $code, int $batch, int $userId): array
         } elseif ($kind === 'done') $msg = 'Already checked out at ' . date('h:i A', strtotime($r['out_at'])) . '.';
     }
     return ['ok' => $kind === 'in' || $kind === 'out', 'kind' => $kind, 'msg' => $msg, 'student' => $s];
+}
+
+/** "7:00–8:30 AM" / "4:00 PM - 5:30 PM" / "6–8 AM" → ['07:00:00', '08:30:00'], or null. */
+function ci_parse_timing(string $t): ?array
+{
+    if (!preg_match('/(\d{1,2})(?:[:.](\d{2}))?\s*(am|pm)?\s*(?:–|—|-|to)\s*(\d{1,2})(?:[:.](\d{2}))?\s*(am|pm)?/i', $t, $m)) return null;
+    $ap2 = strtolower($m[6] ?? ''); $ap1 = strtolower($m[3] ?? '') ?: $ap2;
+    $h = function (int $h, string $ap) { if ($ap === 'pm' && $h < 12) $h += 12; if ($ap === 'am' && $h === 12) $h = 0; return $h; };
+    $a = $h((int)$m[1], $ap1); $b = $h((int)$m[4], $ap2);
+    if ($a > $b && !($m[3] ?? '') && $ap2 === 'pm') $a -= 12; // "11:30–1:00 PM": the start is in the morning
+    if ($a < 0 || $a > 23 || $b > 23) return null;
+    return [sprintf('%02d:%02d:00', $a, (int)($m[2] ?? 0)), sprintf('%02d:%02d:00', $b, (int)($m[5] ?? 0))];
+}
+
+/** "07:00:00", "08:30:00" → "7:00 AM – 8:30 AM". */
+function ci_time_range(?string $a, ?string $b): string
+{
+    if (!$a || !$b) return '';
+    return date('g:i A', strtotime($a)) . ' – ' . date('g:i A', strtotime($b));
+}
+
+/** Holidays touching [$from, $to] (each: title, from_date, to_date, course_id, batch_id). */
+function ci_holidays_between(PDO $pdo, string $from, string $to): array
+{
+    $q = $pdo->prepare("SELECT * FROM ci_holidays WHERE from_date <= ? AND to_date >= ? ORDER BY from_date");
+    $q->execute([$to, $from]);
+    return $q->fetchAll(PDO::FETCH_ASSOC);
+}
+
+/** The holiday (its title) on $date for a batch of a course, from a list of ci_holidays_between, or null. */
+function ci_holiday_on(array $hols, string $date, int $batchId, int $courseId): ?string
+{
+    foreach ($hols as $h) {
+        if ($date < $h['from_date'] || $date > $h['to_date']) continue;
+        if ($h['batch_id'] ? (int)$h['batch_id'] === $batchId : (!$h['course_id'] || (int)$h['course_id'] === $courseId)) return $h['title'];
+    }
+    return null;
+}
+
+/**
+ * Closes the attendance of past class times: in a batch whose attendance was taken on a day (at least one student present),
+ * every student of the batch who was not marked becomes Absent once the class time is over (today after its end time, any
+ * earlier day) — except on that batch's holidays. Runs when attendance is opened / reported, for [$from, $to].
+ */
+function ci_att_autoclose(PDO $pdo, string $from, string $to): int
+{
+    $today = date('Y-m-d'); if ($to > $today) $to = $today;
+    if ($from > $to) return 0;
+    $q = $pdo->prepare("SELECT a.batch_id, a.att_date, b.course_id, b.end_time FROM ci_attendance a JOIN ci_batches b ON b.id = a.batch_id
+        WHERE a.att_date BETWEEN ? AND ? AND a.batch_id > 0 GROUP BY a.batch_id, a.att_date, b.course_id, b.end_time
+        HAVING SUM(a.status = 'present') > 0 AND SUM(a.status = 'holiday') = 0");
+    $q->execute([$from, $to]);
+    $hols = ci_holidays_between($pdo, $from, $to);
+    $ins = $pdo->prepare("INSERT IGNORE INTO ci_attendance (student_id, batch_id, att_date, status, source)
+        SELECT DISTINCT e.student_id, e.batch_id, ?, 'absent', 'auto' FROM ci_enrollments e JOIN ci_students s ON s.id = e.student_id
+        WHERE e.batch_id = ? AND e.status = 'active' AND s.status = 'active' AND s.stype <> 'online' AND (e.enrolled_on IS NULL OR e.enrolled_on <= ?)");
+    $n = 0;
+    foreach ($q as $r) {
+        if ($r['att_date'] === $today && (!$r['end_time'] || date('H:i:s') < $r['end_time'])) continue; // class not over yet
+        if (ci_holiday_on($hols, $r['att_date'], (int)$r['batch_id'], (int)$r['course_id'])) continue;
+        $ins->execute([$r['att_date'], (int)$r['batch_id'], $r['att_date']]); $n += $ins->rowCount();
+    }
+    return $n;
+}
+
+/**
+ * One student's attendance by day for [$from, $to]: [date => ['status' => present|absent|leave|holiday, 'title', 'in', 'out', 'batch']].
+ * Marked days come from ci_attendance (present beats leave beats absent across batches); holidays of the student's batches
+ * fill the days with no mark. Counts: present, absent, leave, holiday, days (= present + absent + leave), pct.
+ */
+function ci_att_student(PDO $pdo, int $sid, string $from, string $to): array
+{
+    ci_att_autoclose($pdo, $from, $to);
+    $q = $pdo->prepare("SELECT a.att_date, a.status, a.in_at, a.out_at, b.name AS batch FROM ci_attendance a LEFT JOIN ci_batches b ON b.id = a.batch_id
+        WHERE a.student_id = ? AND a.att_date BETWEEN ? AND ? ORDER BY a.att_date");
+    $q->execute([$sid, $from, $to]);
+    $rank = ['present' => 4, 'holiday' => 3, 'leave' => 2, 'absent' => 1];
+    $days = [];
+    foreach ($q as $r) {
+        $d = $r['att_date']; $cur = $days[$d] ?? null;
+        if (!$cur || $rank[$r['status']] > $rank[$cur['status']]) $days[$d] = ['status' => $r['status'], 'title' => '', 'in' => $r['in_at'], 'out' => $r['out_at'], 'batch' => $r['batch']];
+        elseif ($r['in_at'] && !$cur['in']) $days[$d]['in'] = $r['in_at'];
+    }
+    // holidays of the student's batches / courses (only where nothing is marked)
+    $bq = $pdo->prepare("SELECT DISTINCT COALESCE(e.batch_id, 0) AS b, e.course_id AS c FROM ci_enrollments e WHERE e.student_id = ? AND e.status <> 'dropped'");
+    $bq->execute([$sid]);
+    $mine = $bq->fetchAll(PDO::FETCH_ASSOC);
+    $hols = ci_holidays_between($pdo, $from, $to);
+    if ($hols && $mine) for ($t = strtotime($from); $t <= strtotime($to); $t += 86400) {
+        $d = date('Y-m-d', $t); if (isset($days[$d])) continue;
+        foreach ($mine as $m) if ($title = ci_holiday_on($hols, $d, (int)$m['b'], (int)$m['c'])) { $days[$d] = ['status' => 'holiday', 'title' => $title, 'in' => null, 'out' => null, 'batch' => null]; break; }
+    }
+    ksort($days);
+    $c = ['present' => 0, 'absent' => 0, 'leave' => 0, 'holiday' => 0];
+    foreach ($days as $x) $c[$x['status']]++;
+    $c['days'] = $c['present'] + $c['absent'] + $c['leave'];
+    $c['pct'] = $c['days'] ? (int)round($c['present'] / $c['days'] * 100) : null;
+    return ['days' => $days, 'count' => $c];
 }
 

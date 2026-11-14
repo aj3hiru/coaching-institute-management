@@ -23,7 +23,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $fee = null; // batches have no fee of their own: the course fee is used
             $cap = trim((string)($_POST['capacity'] ?? '')) === '' ? null : max(0, (int)$_POST['capacity']);
             $status = in_array($_POST['status'] ?? '', ['active', 'completed', 'inactive'], true) ? $_POST['status'] : 'active';
-            $vals = [$name, $course, $session, trim((string)($_POST['timing'] ?? '')) ?: null, trim((string)($_POST['days'] ?? '')) ?: null, $start, $end, $cap, $fee,
+            // class time: from – to (the attendance page opens on the batch running now); "Timing" is made from it
+            $tm = fn($k) => preg_match('/^([01]?\d|2[0-3]):([0-5]\d)$/', trim((string)($_POST[$k] ?? '')), $m) ? sprintf('%02d:%02d:00', $m[1], $m[2]) : null;
+            $tFrom = $tm('start_time'); $tTo = $tm('end_time');
+            if (!$tFrom || !$tTo) throw new RuntimeException('Enter the class time: from and to.');
+            if ($tTo <= $tFrom) throw new RuntimeException('The class must end after it starts.');
+            $vals = [$name, $course, $session, ci_time_range($tFrom, $tTo), trim((string)($_POST['days'] ?? '')) ?: null, $start, $end, $cap, $fee,
                 trim((string)($_POST['teacher'] ?? '')) ?: null, $status];
             if ($id) {
                 $old = $pdo->prepare("SELECT course_id FROM ci_batches WHERE id = ?"); $old->execute([$id]);
@@ -33,9 +38,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $vals[] = $id;
                 $wasDone = (string)$pdo->query("SELECT status FROM ci_batches WHERE id = $id")->fetchColumn() === 'completed';
                 $pdo->prepare("UPDATE ci_batches SET name=?, course_id=?, session_id=?, timing=?, days=?, start_date=?, end_date=?, capacity=?, fee=?, teacher=?, status=? WHERE id=?")->execute($vals);
+                $pdo->prepare("UPDATE ci_batches SET start_time = ?, end_time = ? WHERE id = ?")->execute([$tFrom, $tTo, $id]);
                 if ($status === 'completed' && !$wasDone) ci_complete_batch($pdo, $id); // ends today, its students' course completed
             } else {
                 $pdo->prepare("INSERT INTO ci_batches (name, course_id, session_id, timing, days, start_date, end_date, capacity, fee, teacher, status) VALUES (?,?,?,?,?,?,?,?,?,?,?)")->execute($vals);
+                $pdo->prepare("UPDATE ci_batches SET start_time = ?, end_time = ? WHERE id = ?")->execute([$tFrom, $tTo, (int)$pdo->lastInsertId()]);
             }
             admin_log('ci_batch', "Saved batch $name");
             admin_flash('Batch saved.');
@@ -79,7 +86,7 @@ $eb = null;
 if ($edit) { $q = $pdo->prepare("SELECT * FROM ci_batches WHERE id = ?"); $q->execute([$edit]); $eb = $q->fetch(PDO::FETCH_ASSOC) ?: null; }
 $open = $eb || isset($_GET['new']); // ?new=1 / ?edit=N open the popup when the page loads
 $bf = function (array $b): string { // the data an Edit button puts into the popup form
-    return ci_e(json_encode(['id' => (int)$b['id'], 'name' => $b['name'], 'course_id' => (int)$b['course_id'], 'session_id' => (int)$b['session_id'] ?: '', 'status' => $b['status'], 'timing' => (string)$b['timing'],
+    return ci_e(json_encode(['id' => (int)$b['id'], 'name' => $b['name'], 'course_id' => (int)$b['course_id'], 'session_id' => (int)$b['session_id'] ?: '', 'status' => $b['status'], 'timing' => (string)$b['timing'], 'start_time' => $b['start_time'] ? substr($b['start_time'], 0, 5) : '', 'end_time' => $b['end_time'] ? substr($b['end_time'], 0, 5) : '',
         'days' => (string)$b['days'], 'teacher' => (string)$b['teacher'], 'capacity' => $b['capacity'] === null ? '' : (int)$b['capacity'], 'start_date' => (string)$b['start_date'], 'end_date' => (string)$b['end_date']], JSON_UNESCAPED_UNICODE));
 };
 $curSession = ci_current_session($pdo);
@@ -107,7 +114,8 @@ $curSession = ci_current_session($pdo);
   <div class="ci-f"><label>Course <span class="ci-req">*</span></label><select name="course_id" required><option value="">Choose…</option><?php foreach ($L['courses'] as $cid => $c): ?><option value="<?= $cid ?>" <?= (int)($eb['course_id'] ?? $fCourse) === $cid ? 'selected' : '' ?>><?= ci_e($c['name']) ?> (<?= ci_money0($c['fee']) ?>)</option><?php endforeach; ?></select></div>
   <div class="ci-f"><label>Session</label><select name="session_id"><option value="">—</option><?php foreach ($L['sessions'] as $sid => $sn): ?><option value="<?= $sid ?>" <?= (int)($eb['session_id'] ?? $curSession) === $sid ? 'selected' : '' ?>><?= ci_e($sn) ?></option><?php endforeach; ?></select></div>
   <div class="ci-f"><label>Status</label><select name="status"><?php foreach (['active' => 'Active', 'completed' => 'Completed', 'inactive' => 'Inactive'] as $k => $l): ?><option value="<?= $k ?>" <?= ($eb['status'] ?? 'active') === $k ? 'selected' : '' ?>><?= $l ?></option><?php endforeach; ?></select></div>
-  <div class="ci-f"><label>Timing</label><input name="timing" maxlength="80" placeholder="e.g. 7:00–9:00 AM" value="<?= ci_e($eb['timing'] ?? '') ?>"></div>
+  <div class="ci-f"><label>Class starts at <span class="ci-req">*</span></label><input type="time" name="start_time" required value="<?= ci_e(substr((string)($eb['start_time'] ?? ''), 0, 5)) ?>"></div>
+  <div class="ci-f"><label>Class ends at <span class="ci-req">*</span></label><input type="time" name="end_time" required value="<?= ci_e(substr((string)($eb['end_time'] ?? ''), 0, 5)) ?>"></div>
   <div class="ci-f"><label>Days</label><input name="days" maxlength="80" placeholder="e.g. Mon–Sat" value="<?= ci_e($eb['days'] ?? '') ?>"></div>
   <div class="ci-f"><label>Teacher</label><input name="teacher" maxlength="120" value="<?= ci_e($eb['teacher'] ?? '') ?>"></div>
   <div class="ci-f"><label>Seats</label><input type="number" name="capacity" min="0" placeholder="no limit" value="<?= ci_e($eb['capacity'] ?? '') ?>"></div>
