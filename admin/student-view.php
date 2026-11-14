@@ -190,6 +190,17 @@ $tel = fn(?string $m) => ci_tel($m);
 .sv-pm-sum{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
 .sv-pm-sum div{flex:1;min-width:84px;padding:8px 12px;border:1px solid #e5e7eb;border-radius:8px;background:#fafafa}
 .sv-pm-sum small{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#6b7280}.sv-pm-sum b{font-size:16px}
+/* the totals inside the top card, on the right of the name (3 × 2), under it on smaller screens */
+.sv-top{display:flex;gap:20px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.sv-top .ci-ph-main{flex:1 1 320px}
+.sv-kpis{flex:0 1 600px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.sv-kpi{display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid #eceef2;border-radius:10px;background:#fafbfc;min-width:0}
+.sv-kpi>i{flex:none;width:30px;height:30px;border-radius:8px;display:grid;place-items:center;font-size:13px}
+.sv-kpi>div{min-width:0}
+.sv-kpi b{display:block;font-size:15px;line-height:1.2;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sv-kpi small{display:block;font-size:11.5px;color:#6b7280;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:1100px){.sv-kpis{flex-basis:100%}}
+@media (max-width:600px){.sv-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.sv-kpi{padding:8px 10px;gap:8px}.sv-kpi>i{width:26px;height:26px}.sv-kpi small{white-space:normal}}
 </style>
 </head>
 <body>
@@ -198,7 +209,11 @@ $tel = fn(?string $m) => ci_tel($m);
 <?= admin_flash() ?>
 <?php if ($newReceipt): ?><div class="ci-alert ci-alert-ok"><i class="fas fa-receipt"></i> Saved. <a href="/admin/ci-receipt.php?id=<?= $newReceipt ?>" target="_blank"><b>Print receipt</b></a></div><?php endif; ?>
 
+<?php // one layout for every student (Institute / Online / Both): the same tiles, the same sections in the same order
+$oa = null;
+if (function_exists('sh_perm') && sh_perm($me, 'customers')) { sh_tables($pdo); require_once __DIR__ . '/components/online-account.php'; $oa = oa_load($pdo, $s); } ?>
 <div class="ci-card ci-ph"><div class="ci-card-b">
+  <div class="sv-top">
   <div class="ci-ph-main">
     <?= ci_avatar($s, 88) ?>
     <div class="ci-ph-txt">
@@ -212,6 +227,15 @@ $tel = fn(?string $m) => ci_tel($m);
       </div>
     </div>
   </div>
+  <div class="sv-kpis" aria-label="Totals">
+  <div class="sv-kpi"><i class="fas fa-file-invoice ci-i-violet"></i><div><b><?= ci_money0($tot['net']) ?></b><small>Institute fee · <?= count($enr) ?> course<?= count($enr) === 1 ? '' : 's' ?></small></div></div>
+  <div class="sv-kpi"><i class="fas fa-circle-check ci-i-green"></i><div><b><?= ci_money0($tot['paid']) ?></b><small>Fee paid · <?= count($pays) ?> receipt<?= count($pays) === 1 ? '' : 's' ?></small></div></div>
+  <div class="sv-kpi"><i class="fas fa-hourglass-half ci-i-red"></i><div><b><?= ci_money0($tot['due']) ?></b><small><?= $late > 0 ? 'Due · ' . ci_money0($late) . ' late' : ($next ? 'Due · next ' . ci_date($next['date']) : 'Due (baaki)') ?></small></div></div>
+  <div class="sv-kpi"><i class="fas fa-laptop ci-i-blue"></i><div><b><?= $oa ? (int)$oa['open'] : '—' ?></b><small>Online courses open</small></div></div>
+  <div class="sv-kpi"><i class="fas fa-cart-shopping ci-i-amber"></i><div><b><?= $oa ? ci_money0($oa['spent']) : '—' ?></b><small>Online orders<?= $oa ? ' · ' . (int)$oa['paid_n'] . ' paid' : '' ?></small></div></div>
+  <div class="sv-kpi"><i class="fas fa-right-to-bracket ci-i-violet"></i><div><b><?= $oa && $oa['u'] && $oa['u']['last_login'] ? date('d M Y', strtotime($oa['u']['last_login'])) : ($oa && $oa['u'] ? 'Never' : 'No login') ?></b><small>Last online login</small></div></div>
+  </div>
+  </div>
   <div class="ci-actions ci-noprint">
     <?php if ($s['mobile']): ?><?= ci_ico('phone', 'tel:' . $s['mobile'], 'Call') ?><?php endif; ?>
     <?php if ($wa): ?><a class="ci-ico ci-ico-ok" href="<?= ci_e($wa) ?>" target="_blank" rel="noopener" aria-label="WhatsApp"><i class="fab fa-whatsapp" style="font-size:16px"></i></a><?php endif; ?>
@@ -223,17 +247,6 @@ $tel = fn(?string $m) => ci_tel($m);
   </div>
 </div></div>
 
-<?php // one layout for every student (Institute / Online / Both): the same tiles, the same sections in the same order
-$oa = null;
-if (function_exists('sh_perm') && sh_perm($me, 'customers')) { sh_tables($pdo); require_once __DIR__ . '/components/online-account.php'; $oa = oa_load($pdo, $s); } ?>
-<div class="ci-stats ci-stats6 ci-pf-stats">
-  <div class="ci-stat"><i class="fas fa-file-invoice ci-i-violet"></i><div><b><?= ci_money0($tot['net']) ?></b><small>Institute fee · <?= count($enr) ?> course<?= count($enr) === 1 ? '' : 's' ?></small></div></div>
-  <div class="ci-stat"><i class="fas fa-circle-check ci-i-green"></i><div><b><?= ci_money0($tot['paid']) ?></b><small>Fee paid · <?= count($pays) ?> receipt<?= count($pays) === 1 ? '' : 's' ?></small></div></div>
-  <div class="ci-stat"><i class="fas fa-hourglass-half ci-i-red"></i><div><b><?= ci_money0($tot['due']) ?></b><small><?= $late > 0 ? 'Due · ' . ci_money0($late) . ' late' : ($next ? 'Due · next ' . ci_date($next['date']) : 'Due (baaki)') ?></small></div></div>
-  <div class="ci-stat"><i class="fas fa-laptop ci-i-blue"></i><div><b><?= $oa ? (int)$oa['open'] : '—' ?></b><small>Online courses / notes open</small></div></div>
-  <div class="ci-stat"><i class="fas fa-cart-shopping ci-i-amber"></i><div><b><?= $oa ? ci_money0($oa['spent']) : '—' ?></b><small>Online orders<?= $oa ? ' · ' . (int)$oa['paid_n'] . ' paid' : '' ?></small></div></div>
-  <div class="ci-stat"><i class="fas fa-right-to-bracket ci-i-violet"></i><div><b><?= $oa && $oa['u'] && $oa['u']['last_login'] ? date('d M Y', strtotime($oa['u']['last_login'])) : ($oa && $oa['u'] ? 'Never' : 'No login') ?></b><small>Last online login</small></div></div>
-</div>
 
 <?php
   $age = $s['dob'] ? (new DateTime($s['dob']))->diff(new DateTime())->y : null;
