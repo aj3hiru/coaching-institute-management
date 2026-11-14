@@ -10,30 +10,44 @@ require_once __DIR__ . '/components/guard.php';
 require_once INCLUDES_PATH . '/institute.php';
 $ping = isset($_GET['ping']); $roster = isset($_GET['roster']);
 $me = ci_page_start($pdo, ['attendance'], $ping || $roster);
-if ($roster) { // every institute student of an active batch, for the instant card: details, fee due, today's in / out, holiday
+if ($roster) {
+    // the students' list for the instant card, kept in the browser and only sent again when it changed:
+    //  · details (name, photo, class, batch, father, mobile, fee due, today a holiday?) carry a fingerprint (v); the browser
+    //    sends the one it has — same → "same" (a few bytes), changed → the whole list again (gzip: ~150–250 KB for 5000)
+    //  · today's check-in / check-out come as changes since the browser's last call (since)
     header('Content-Type: application/json; charset=utf-8'); header('Cache-Control: no-store');
     session_write_close();
-    $today = date('Y-m-d');
+    if (!headers_sent() && str_contains((string)($_SERVER['HTTP_ACCEPT_ENCODING'] ?? ''), 'gzip') && !ini_get('zlib.output_compression')) ob_start('ob_gzhandler');
+    $today = date('Y-m-d'); $now = time();
     $rows = $pdo->query("SELECT s.id, s.reg_no, s.name, s.father_name, s.mobile, s.photo, c.name AS class_name,
-            (SELECT COALESCE(SUM(" . CI_DUE_SQL . "), 0) FROM ci_enrollments e WHERE e.student_id = s.id) AS due,
-            (SELECT MIN(in_at) FROM ci_attendance a WHERE a.student_id = s.id AND a.att_date = CURDATE()) AS in_at,
-            (SELECT MAX(out_at) FROM ci_attendance a WHERE a.student_id = s.id AND a.att_date = CURDATE()) AS out_at
+            (SELECT COALESCE(SUM(" . CI_DUE_SQL . "), 0) FROM ci_enrollments e WHERE e.student_id = s.id) AS due
         FROM ci_students s LEFT JOIN ci_classes c ON c.id = s.class_id
         WHERE s.status = 'active' AND s.stype <> 'online'
-          AND EXISTS (SELECT 1 FROM ci_enrollments e JOIN ci_batches b ON b.id = e.batch_id WHERE e.student_id = s.id AND e.status = 'active' AND b.status = 'active')")->fetchAll(PDO::FETCH_ASSOC);
+          AND EXISTS (SELECT 1 FROM ci_enrollments e JOIN ci_batches b ON b.id = e.batch_id WHERE e.student_id = s.id AND e.status = 'active' AND b.status = 'active')
+        ORDER BY s.id")->fetchAll(PDO::FETCH_ASSOC);
     $bat = [];
     foreach ($pdo->query("SELECT e.student_id, b.id, b.name, b.course_id FROM ci_enrollments e JOIN ci_batches b ON b.id = e.batch_id WHERE e.status = 'active' AND b.status = 'active' ORDER BY b.name") as $b) $bat[(int)$b['student_id']][(int)$b['id']] = $b;
     $hols = ci_holidays_between($pdo, $today, $today);
-    $list = [];
+    $list = []; $regOf = [];
     foreach ($rows as $r) {
         $bs = $bat[(int)$r['id']] ?? [];
         $open = array_filter($bs, fn($b) => !ci_holiday_on($hols, $today, (int)$b['id'], (int)$b['course_id']));
+        $regOf[(int)$r['id']] = $r['reg_no'];
         $list[] = ['reg' => $r['reg_no'], 'name' => $r['name'], 'class' => $r['class_name'], 'batches' => implode(', ', array_unique(array_column($bs, 'name'))),
             'father' => (string)($r['father_name'] ?? ''), 'mobile' => (string)$r['mobile'], 'photo' => ci_photo_url($r['photo'] ?? ''),
-            'due' => round((float)$r['due'], 2), 'due_text' => (float)$r['due'] > 0 ? ci_money0($r['due']) : '',
-            'in' => $r['in_at'] ? strtotime($r['in_at']) : 0, 'out' => $r['out_at'] ? strtotime($r['out_at']) : 0, 'hol' => $bs && !$open ? 1 : 0];
+            'due' => round((float)$r['due'], 2), 'due_text' => (float)$r['due'] > 0 ? ci_money0($r['due']) : '', 'hol' => $bs && !$open ? 1 : 0];
     }
-    exit(json_encode(['ok' => true, 'day' => $today, 't' => time(), 'min' => ci_att_min_out(), 'list' => $list], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+    $v = substr(md5($today . ci_att_min_out() . json_encode($list)), 0, 16);
+    // today's in / out: everything (first call of the day) or only what changed since the last call (a few seconds of overlap)
+    $since = (int)($_GET['since'] ?? 0);
+    $aq = $pdo->prepare("SELECT student_id, MIN(in_at) AS i, MAX(out_at) AS o FROM ci_attendance WHERE att_date = ? AND status = 'present'"
+        . ($since > 0 ? " AND student_id IN (SELECT student_id FROM ci_attendance WHERE att_date = ? AND GREATEST(updated_at, created_at) >= ?)" : '') . " GROUP BY student_id");
+    $aq->execute($since > 0 ? [$today, $today, date('Y-m-d H:i:s', $since - 10)] : [$today]);
+    $att = [];
+    foreach ($aq as $a) if (isset($regOf[(int)$a['student_id']])) $att[] = [$regOf[(int)$a['student_id']], $a['i'] ? strtotime($a['i']) : 0, $a['o'] ? strtotime($a['o']) : 0];
+    $out = ['ok' => true, 'day' => $today, 't' => $now, 'min' => ci_att_min_out(), 'v' => $v, 'n' => count($list), 'att' => $att];
+    if (($_GET['v'] ?? '') === $v) $out['same'] = 1; else $out['list'] = $list;
+    exit(json_encode($out, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
 }
 if ($ping) { // keep-alive, every 20 s: keeps the login and the connection alive, gives the current form token, the server clock
     header('Content-Type: application/json; charset=utf-8'); header('Cache-Control: no-store');
@@ -117,7 +131,6 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Ari
 .rec-t{display:flex;flex-wrap:nowrap;gap:8px;width:max-content;will-change:transform}
 .rec-t div{display:flex;align-items:center;gap:8px;flex:none;padding:6px 12px 6px 6px;background:#fff;border:1px solid #e5e7eb;border-left:4px solid var(--ok);font-size:13px;max-width:300px}
 .rec-t div.new{animation:recin .45s ease-out}
-.rec-t div.bad{border-left-color:var(--bad);opacity:.6;text-decoration:line-through}
 @keyframes recin{from{opacity:0}to{opacity:1}}
 .rec-t div img,.rec-t div svg{width:28px;height:36px;object-fit:cover;flex:none}
 .rec-t div span{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.rec-t div em{font-style:normal;color:#6b7280;font-size:12px;margin-left:4px}
@@ -192,28 +205,34 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Ari
   var RK = 'ciScanRoster', SK = 'ciScanState', R = { min: 10, by: {} }, S = { day: DAY, st: {} }, srvOff = 0;
   function norm(c) { c = String(c).trim().toUpperCase(); return /^\d{1,5}$/.test(c) ? ('000000' + c).slice(-6) : c; }
   function hm(ms) { var d = new Date(ms), h = d.getHours(), m = d.getMinutes(); return ('0' + (h % 12 || 12)).slice(-2) + ':' + ('0' + m).slice(-2) + (h < 12 ? ' AM' : ' PM'); }
-  try { var r0 = JSON.parse(localStorage.getItem(RK) || 'null'); if (r0 && r0.day === DAY) R = r0; } catch (x) {}
+  try { var r0 = JSON.parse(localStorage.getItem(RK) || 'null'); if (r0 && r0.by) R = r0; } catch (x) {} // kept from day to day
   try { var s0 = JSON.parse(localStorage.getItem(SK) || 'null'); if (s0 && s0.day === DAY) S = s0; } catch (x) {}
   function saveS() { try { localStorage.setItem(SK, JSON.stringify(S)); } catch (x) {} }
+  var loading = false;
   function loadRoster() {
-    fetch('/admin/ci-scan.php?roster=1&_=' + Date.now(), { credentials: 'same-origin', cache: 'no-store', headers: { 'X-Requested-With': 'fetch' } })
+    if (loading) return; loading = true;
+    var u = '/admin/ci-scan.php?roster=1&v=' + encodeURIComponent(R.v || '') + '&since=' + (R.day === DAY && R.since ? R.since : 0) + '&_=' + Date.now();
+    fetch(u, { credentials: 'same-origin', cache: 'no-store', headers: { 'X-Requested-With': 'fetch' } })
       .then(function (r) { if (r.redirected && /admin-login/.test(r.url)) throw { login: 1 }; return r.json(); })
       .then(function (d) {
+        loading = false;
         if (!d || !d.ok) return;
         if (d.day !== DAY) { if (!Q.length) location.reload(); return; }
         srvOff = d.t * 1000 - Date.now(); // the server's clock, for check-out times
-        var by = {}; d.list.forEach(function (x) { by[norm(x.reg)] = x; });
-        R = { day: d.day, min: d.min, by: by, n: d.list.length };
+        if (d.list) { // the details changed: new list; photos only for new / changed students
+          var by = {}; d.list.forEach(function (x) { var k = norm(x.reg), old = R.by[k]; by[k] = x; if (x.photo && (!old || old.photo !== x.photo)) { var im = new Image(); im.src = x.photo; } });
+          R.by = by; R.v = d.v; R.n = d.n;
+        }
+        R.min = d.min; R.day = d.day; R.since = d.t;
         // what the server already has wins; a scan still waiting in the queue stays
-        d.list.forEach(function (x) { var k = norm(x.reg), m = S.st[k] || (S.st[k] = {}); if (x['in']) m['in'] = x['in'] * 1000; if (x.out) m.out = x.out * 1000; });
+        (d.att || []).forEach(function (a) { var k = norm(a[0]), m = S.st[k] || (S.st[k] = {}); if (a[1]) m['in'] = a[1] * 1000; if (a[2]) m.out = a[2] * 1000; });
         saveS(); try { localStorage.setItem(RK, JSON.stringify(R)); } catch (x) {}
-        d.list.forEach(function (x) { if (x.photo) { var im = new Image(); im.src = x.photo; } }); // photos ready before the card
-      }).catch(function (e) { if (e && e.login) { loggedOut = true; netShow(); } });
+      }).catch(function (e) { loading = false; if (e && e.login) { loggedOut = true; netShow(); } });
   }
   function local(k, s, now) { // the same rules as the server: 1st scan in; again after the set minutes out; else wait / done
     var m = S.st[k] || (S.st[k] = {}), card = { reg: s.reg, name: s.name, 'class': s['class'], batches: s.batches, father: s.father, mobile: s.mobile, photo: s.photo, due: s.due, due_text: s.due_text };
     var d = { ok: false, kind: 'done', time: hm(now), student: card };
-    if (s.hol) { d.kind = 'error'; d.msg = 'Today is a holiday for ' + s.name + "'s batch."; return d; }
+    if (s.hol && R.day === DAY) { d.kind = 'error'; d.msg = 'Today is a holiday for ' + s.name + "'s batch."; return d; }
     if (!m['in']) { m['in'] = now; d.ok = true; d.kind = 'in'; d.msg = 'Checked in at ' + hm(now); }
     else if (!m.out) {
       var open = m['in'] + R.min * 60000;
@@ -231,7 +250,7 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Ari
     if (s) {
       var d = local(k, s, now + srvOff);
       it.local = d.kind; it.name = s.name;
-      beep(d.ok || d.kind === 'wait'); addRecent(d, k); shown = it.seq; show(d, c);
+      beep(d.ok || d.kind === 'wait'); shown = it.seq; show(d, c); // the slider below gets the name once the server has saved it
       clearTimeout(idleT); idleT = setTimeout(idle, 9000);
       if (d.kind !== 'in' && d.kind !== 'out') return; // nothing to save
     } else { st.className = 'st idle'; st.textContent = 'Checking ' + c + '…'; }
@@ -275,10 +294,10 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Ari
   }
   function result(d, it) {
     if (EMBED && window.parent !== window) try { window.parent.postMessage({ ciScan: d }, location.origin); } catch (x) {}
-    if (it.local) { // already shown: only a refusal from the server is shown (e.g. a holiday added a minute ago)
+    if (it.local) { // already shown: the slider gets the name now that it is saved; a refusal (e.g. a holiday added a minute ago) is shown
+      if (d.kind === 'in') addRecent(d, norm(it.code));
       if (d.kind === 'error') {
         var k = norm(it.code), m = S.st[k]; if (m) { if (it.local === 'in') delete m['in']; if (it.local === 'out') delete m.out; saveS(); }
-        var chip = rec.querySelector('[data-k="' + k + '"]'); if (chip) chip.classList.add('bad');
         beep(false); st.className = 'st error'; st.textContent = '⚠ Not saved — ' + (it.name || it.code) + ': ' + (d.msg || 'error');
         clearTimeout(idleT); idleT = setTimeout(idle, 9000);
       }
@@ -305,7 +324,7 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Ari
       .catch(function (e) { pinging = false; if (e && e.login) loggedOut = true; else fails = Math.max(fails, 2); netShow(); });
   }
   setInterval(refreshToken, 20000);
-  loadRoster(); setInterval(loadRoster, 180000); // the students' list: now and every 3 minutes
+  loadRoster(); setInterval(loadRoster, 60000); // the students' list: now and every minute ("same" when nothing changed)
   setInterval(function () { if (Q.length) pump(); }, 5000);
   window.addEventListener('online', function () { fails = 0; Q.forEach(function (x) { x.next = 0; }); refreshToken(true); pump(); });
   window.addEventListener('offline', netShow);
