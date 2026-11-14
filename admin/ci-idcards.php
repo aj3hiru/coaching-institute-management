@@ -1,7 +1,7 @@
 <?php
 // Student ID cards (Institute only) — opened from Reports → ID Cards, printed or saved as PDF from the browser.
 // Card (54 × 85.6 mm portrait, the size of a bank card): the institute's logo, name, address and phone on top; the student's
-// photo, name, admission ID, father's name, mobile and address; a Code 128 barcode of the admission ID that the
+// photo, name, admission ID, date of birth, father's name, mobile and address; a Code 128 barcode of the admission ID that the
 // attendance page's barcode scanner reads. 9 cards on an A4 page.
 require_once __DIR__ . '/components/guard.php';
 require_once INCLUDES_PATH . '/institute.php';
@@ -57,14 +57,17 @@ body{margin:0;background:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,"S
 .idc-t{background:#fcd34d;color:var(--idc);text-align:center;font-size:1.95mm;font-weight:800;letter-spacing:.24em;padding:.9mm 0} /* yellow, so it stands out; no border */
 .idc-bc{padding:1.4mm 1.4mm .4mm}
 .idc-bc svg{width:100%;height:10mm;display:block} /* full card width: thick bars (~0.42 mm) for any scanner */
-.idc-ph{width:19mm;height:24.4mm;margin:1.6mm auto 0;border:.35mm solid var(--idc);padding:.4mm;background:#fff} /* passport 7:9 */
+.idc-ph{width:17.5mm;height:22.5mm;margin:1.4mm auto 0;border:.35mm solid var(--idc);padding:.4mm;background:#fff} /* passport 7:9 */
 .idc-ph img,.idc-ph svg{width:100%;height:100%;object-fit:cover;object-position:50% 30%;display:block}
 .idc-nm{margin:1.2mm 2.6mm 0;text-align:center;font-size:3mm;font-weight:800;color:var(--idc);line-height:1.15;text-transform:uppercase;letter-spacing:.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .idc-d{margin:1.4mm 3mm 0;border-collapse:collapse;width:calc(100% - 6mm);font-size:2.05mm;line-height:1.25;table-layout:fixed}
 .idc-d th{width:17mm;padding:.35mm 0;text-align:left;font-weight:600;color:#4b5563;vertical-align:top;white-space:nowrap}
 .idc-d td{padding:.35mm 0 .35mm 1mm;font-weight:700;color:#111827;vertical-align:top;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .idc-d td::before{content:": ";font-weight:600;color:#4b5563;margin-left:-1mm}
-.idc-d td.ad{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;font-weight:600}
+.idc-d td.ad{white-space:normal;font-weight:600}
+.idc-d td.ad::before{float:left;white-space:pre}
+.idc-d td.ad span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;max-height:5.1mm} /* at most 2 lines */
+.idc>*{flex-shrink:0}
 .idc-sp{flex:1}
 .idc-f{height:1.6mm;background:var(--idc);border-top:.5mm solid var(--idc2)}
 @page{size:A4 portrait;margin:8mm 10mm} /* 3 × 3 portrait cards on a page */
@@ -91,9 +94,10 @@ body{margin:0;background:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,"S
     <div class="idc-nm"><?= ci_e($s['name']) ?></div>
     <table class="idc-d">
       <tr><th>Admission ID</th><td><?= ci_e($s['reg_no']) ?></td></tr>
+      <tr><th>Date of Birth</th><td><?= !empty($s['dob']) ? date('d/m/Y', strtotime($s['dob'])) : '—' ?></td></tr>
       <tr><th>Father's Name</th><td><?= ci_e(trim((string)($s['father_name'] ?? '')) ?: '—') ?></td></tr>
       <tr><th>Contact No.</th><td><?= ci_e($s['mobile']) ?></td></tr>
-      <?php if ($ad !== ''): ?><tr><th>Address</th><td class="ad"><?= ci_e($ad) ?></td></tr><?php endif; ?>
+      <?php if ($ad !== ''): ?><tr><th>Address</th><td class="ad"><span><?= ci_e($ad) ?></span></td></tr><?php endif; ?>
     </table>
     <div class="idc-sp"></div>
     <div class="idc-f"></div>
