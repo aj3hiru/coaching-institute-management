@@ -54,7 +54,11 @@ body{margin:0;background:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,"S
 .idc-h div{min-width:0;line-height:1.2}
 .idc-h b{display:block;font-family:Georgia,"Times New Roman",serif;font-size:3.7mm;font-weight:700;letter-spacing:.02em;text-transform:uppercase;color:var(--idc);line-height:1.05}
 .idc-h small{display:block;font-size:1.6mm;color:#4b5563;margin-top:.5mm}
-.idc-t{background:var(--idc);color:#fff;text-align:center;font-size:1.95mm;font-weight:700;letter-spacing:.24em;padding:.9mm 0;border-bottom:.6mm solid var(--idc2)}
+/* title label: a pill between two thin lines */
+.idc-t{display:flex;align-items:center;gap:1.4mm;padding:.6mm 2.6mm .2mm}
+.idc-t::before,.idc-t::after{content:"";flex:1;height:.3mm;background:linear-gradient(90deg,transparent,var(--idc2))}
+.idc-t::after{background:linear-gradient(90deg,var(--idc2),transparent)}
+.idc-t span{flex:none;padding:.75mm 2.6mm .65mm;border-radius:5mm;background:linear-gradient(135deg,var(--idc),#6a4c94);color:#fff;font-size:1.75mm;font-weight:800;letter-spacing:.16em;line-height:1;box-shadow:0 0 0 .3mm #fff,0 0 0 .55mm var(--idc2)}
 .idc-bc{padding:1.4mm 1.4mm .4mm}
 .idc-bc svg{width:100%;height:10mm;display:block} /* full card width: thick bars (~0.42 mm) for any scanner */
 .idc-ph{width:19mm;height:24.4mm;margin:1.6mm auto 0;border:.35mm solid var(--idc);padding:.4mm;background:#fff} /* passport 7:9 */
@@ -85,7 +89,7 @@ body{margin:0;background:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,"S
     <div class="idc-h"><?php if ($logo): ?><img src="<?= ci_e($logo) ?>" alt=""><?php endif; ?><div><b><?= ci_e($inst['name']) ?></b>
       <?php if ($inst['address']): ?><small><?= ci_e($inst['address']) ?></small><?php endif; ?>
       <?php if ($inst['phone']): ?><small>Ph: <?= ci_e($inst['phone']) ?></small><?php endif; ?></div></div>
-    <div class="idc-t">STUDENT IDENTITY CARD</div>
+    <div class="idc-t"><span>STUDENT IDENTITY CARD</span></div>
     <div class="idc-bc"><?= str_replace('<svg ', '<svg preserveAspectRatio="none" ', ci_barcode_svg((string)$s['reg_no'], 30, 1)) ?></div>
     <div class="idc-ph"><?= ($u = ci_photo_url($s['photo'] ?? '')) ? '<img src="' . ci_e($u) . '" alt="">' : ci_photo_blank() ?></div>
     <div class="idc-nm"><?= ci_e($s['name']) ?></div>
