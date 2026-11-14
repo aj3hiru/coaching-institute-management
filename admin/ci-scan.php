@@ -13,7 +13,8 @@ $me = ci_page_start($pdo, ['attendance'], $ping || $roster);
 if ($roster) {
     // the students' list for the instant card, kept in the browser and only sent again when it changed:
     //  · details (name, photo, class, batch, father, fee due — no mobile number, today a holiday?) carry a fingerprint (v); the browser
-    //    sends the one it has — same → "same" (a few bytes), changed → the whole list again (gzip: ~150–250 KB for 5000)
+    //    sends the one it has — same → "same" (a few bytes), changed → the whole list again (gzip: ~80–200 KB for 5000);
+    //    every time the screen is opened it asks for the whole list (v empty), so it always starts fresh
     //  · today's check-in / check-out come as changes since the browser's last call (since)
     header('Content-Type: application/json; charset=utf-8'); header('Cache-Control: no-store');
     session_write_close();
@@ -250,9 +251,9 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Ari
     if (PH.length && busy) setTimeout(photoPump, 500);
   }
   // the students' list; prog(0…1) while it downloads (counted byte by byte against the size it had last time)
-  function loadRoster(prog) {
+  function loadRoster(prog, fresh) { // fresh: the whole list and all of today's in / out (every time the screen is opened)
     if (loading) return loading;
-    var u = '/admin/ci-scan.php?roster=1&v=' + encodeURIComponent(R.v || '') + '&since=' + (R.day === DAY && R.since ? R.since : 0) + '&_=' + Date.now();
+    var u = '/admin/ci-scan.php?roster=1&v=' + (fresh ? '' : encodeURIComponent(R.v || '')) + '&since=' + (!fresh && R.day === DAY && R.since ? R.since : 0) + '&_=' + Date.now();
     var ctl = window.AbortController ? new AbortController() : null, to = setTimeout(function () { if (ctl) ctl.abort(); }, 30000);
     loading = fetch(u, { credentials: 'same-origin', cache: 'no-store', headers: { 'X-Requested-With': 'fetch' }, signal: ctl ? ctl.signal : undefined })
       .then(function (r) {
@@ -430,11 +431,10 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Ari
       ldDone('Offline — cards show when the internet is back'); return;
     }
     ldTxt(1, 'Online · logged in');
-    ldSet(15, 2, cached ? 'Checking for changes…' : 'Downloading every student (first time on this computer)…');
-    var had = R.v;
-    return loadRoster(function (f) { ldSet(15 + f * 65, 2); }).then(function (ok) {
+    ldSet(15, 2, 'Downloading the latest list of students…');
+    return loadRoster(function (f) { ldSet(15 + f * 65, 2); }, true).then(function (ok) {
       var n = Object.keys(R.by).length;
-      ldTxt(2, ok ? (had && had === R.v ? 'No changes · ' : 'Downloaded · ') + n + ' students' : 'Could not load — using the saved list of ' + n);
+      ldTxt(2, ok ? 'Up to date · ' + n + ' students' : 'Could not load — using the saved list of ' + n);
       var left = Q.length;
       ldSet(80, 3, left ? 'Saving ' + left + '…' : 'None waiting');
       if (!left) return true;
