@@ -26,6 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         else { $pdo->prepare("INSERT INTO sh_categories (name, slug, icon, description, seo_title, seo_desc, sort, status) VALUES (?,?,?,?,?,?,?,?)")->execute($v); $id = (int)$pdo->lastInsertId(); }
         admin_log('shop_category', "Saved category #$id $name"); admin_flash('Category saved.');
     } elseif ($a === 'delete' && $id) {
+        if ($me['role'] !== 'admin') { admin_flash('Only an admin can delete.', 'error'); header('Location: /admin/shop-categories.php'); exit; }
         $icon = (string)$pdo->query("SELECT icon FROM sh_categories WHERE id = $id")->fetchColumn();
         $pdo->prepare("UPDATE sh_products SET category_id = NULL WHERE category_id = ?")->execute([$id]);
         $pdo->prepare("UPDATE hm_free SET category_id = NULL WHERE category_id = ?")->execute([$id]);
@@ -99,7 +100,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
 <td><b><?= ci_e($c['name']) ?></b><small class="ci-muted" style="display:block">/category/<?= ci_e($c['slug']) ?><?= $c['seo_title'] ? ' · SEO set' : '' ?></small></td>
 <td><?= (int)$c['items'] ?></td><td><?= (int)$c['sort'] ?></td>
 <td><?= $c['status'] === 'active' ? '<span class="ci-badge ci-b-green">Shown</span>' : '<span class="ci-badge ci-b-grey">Hidden</span>' ?></td>
-<td><div class="ci-icos"><?= ci_ico('eye', sh_cat_url($c['slug']), 'View', 'link', ' target="_blank"') ?><?= ci_ico('edit', '/admin/shop-categories.php?edit=' . (int)$c['id'], 'Edit', 'link', ' data-mopen="#scgForm" data-mtitle="Edit category" data-fill="' . $cf($c) . '" data-icon="' . $ci_url($c) . '"') ?><?= ci_post_ico('trash', 'Delete', ['action' => 'delete', 'id' => $c['id']], 'Delete this category? Its courses stay, without a category.') ?></div></td></tr>
+<td><div class="ci-icos"><?= ci_ico('eye', sh_cat_url($c['slug']), 'View', 'link', ' target="_blank"') ?><?= ci_ico('edit', '/admin/shop-categories.php?edit=' . (int)$c['id'], 'Edit', 'link', ' data-mopen="#scgForm" data-mtitle="Edit category" data-fill="' . $cf($c) . '" data-icon="' . $ci_url($c) . '"') ?><?= ($me['role'] === 'admin' ? ci_post_ico('trash', 'Delete', ['action' => 'delete', 'id' => $c['id']], 'Delete this category? Its courses stay, without a category.') : '') ?></div></td></tr>
 <?php endforeach; ?>
 </tbody></table></div></div>
 </div>

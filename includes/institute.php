@@ -719,19 +719,13 @@ function ci_session_purge(PDO $pdo, int $sid): array
 {
     $plan = ci_session_plan($pdo, $sid);
     $in = fn(array $x) => $x ? implode(',', $x) : '0';
-    $photos = $plan['students'] ? $pdo->query("SELECT photo FROM ci_students WHERE id IN (" . $in($plan['students']) . ") AND photo IS NOT NULL")->fetchAll(PDO::FETCH_COLUMN) : [];
+    $photos = [];
     $pdo->beginTransaction();
-    try {
-        $pdo->exec("DELETE FROM ci_payments WHERE enrollment_id IN (" . $in($plan['enrollments']) . ")");
-        $pdo->exec("DELETE FROM ci_installments WHERE enrollment_id IN (" . $in($plan['enrollments']) . ")");
-        $pdo->exec("DELETE FROM ci_enrollments WHERE id IN (" . $in($plan['enrollments']) . ")");
-        if ($plan['students']) {
-            $pdo->exec("DELETE FROM ci_payments WHERE student_id IN (" . $in($plan['students']) . ")"); // nothing should be left, but never keep orphans
-            $pdo->exec("DELETE FROM ci_class_history WHERE student_id IN (" . $in($plan['students']) . ")");
-            $pdo->exec("DELETE FROM ci_students WHERE id IN (" . $in($plan['students']) . ")");
-        }
-        $pdo->exec("DELETE FROM ci_batches WHERE id IN (" . $in($plan['batches']) . ")");
-        $pdo->exec("DELETE FROM ci_courses WHERE id IN (" . $in($plan['courses']) . ")");
+    try { // the same pieces as every other delete: attendance, holidays and online accounts go too
+        ci_del_enrollments($pdo, $plan['enrollments']);
+        $photos = ci_del_students($pdo, $plan['students']);
+        ci_del_batches($pdo, $plan['batches']);
+        if ($plan['courses']) { $pdo->exec("DELETE FROM ci_holidays WHERE course_id IN (" . $in($plan['courses']) . ")"); $pdo->exec("DELETE FROM ci_courses WHERE id IN (" . $in($plan['courses']) . ")"); }
         $pdo->exec("UPDATE ci_class_history SET session_id = NULL WHERE session_id = " . (int)$sid);
         $pdo->prepare("DELETE FROM ci_sessions WHERE id = ?")->execute([$sid]);
         $pdo->commit();
@@ -1047,3 +1041,130 @@ function ci_att_student(PDO $pdo, int $sid, string $from, string $to): array
     return ['days' => $days, 'count' => $c];
 }
 
+
+// ─── Deleting (admins only): one place, so every delete takes along everything that belongs to it ──────────────
+// student  → their payments (receipts), installment plans, course / batch entries, attendance, class history,
+//            the online account linked to them (its course access, orders, progress, doubts, discussion, reviews, reports, blocks), photo
+// batch    → the course / batch entries in it with their payments and installment plans, its attendance and holidays (students stay)
+// course   → every batch of it (as above), its course entries with their payments, its holidays (students stay)
+// class    → students, courses, store items and class history keep everything, just without that class
+// session  → see ci_session_purge (uses the same pieces)
+function ci_is_admin(array $u): bool { return ($u['role'] ?? '') === 'admin'; }
+
+/** Stops a request that deletes something when the user is not an admin. */
+function ci_admin_only(array $u): void
+{
+    if (ci_is_admin($u)) return;
+    throw new RuntimeException('Only an admin can delete.');
+}
+
+/** "a, b and c" counts for the confirm popup, leaving out zeros. */
+function ci_del_text(array $parts): string
+{
+    $p = array_values(array_filter($parts, fn($x) => $x !== ''));
+    if (!$p) return '';
+    return count($p) === 1 ? $p[0] : implode(', ', array_slice($p, 0, -1)) . ' and ' . end($p);
+}
+function ci_del_n(int $n, string $one, string $many = ''): string { return $n ? $n . ' ' . ($n === 1 ? $one : ($many ?: $one . 's')) : ''; }
+
+/** Course / batch entries with their payments and installment plans. */
+function ci_del_enrollments(PDO $pdo, array $eids): void
+{
+    $eids = array_values(array_unique(array_filter(array_map('intval', $eids)))); if (!$eids) return;
+    $in = implode(',', $eids);
+    $pdo->exec("DELETE FROM ci_payments WHERE enrollment_id IN ($in)");
+    $pdo->exec("DELETE FROM ci_installments WHERE enrollment_id IN ($in)");
+    $pdo->exec("DELETE FROM ci_enrollments WHERE id IN ($in)");
+}
+
+/** Online accounts (store) with everything that hangs on them. */
+function ci_del_online_users(PDO $pdo, array $uids): void
+{
+    $uids = array_values(array_unique(array_filter(array_map('intval', $uids)))); if (!$uids) return;
+    $in = implode(',', $uids);
+    foreach (['sh_access', 'sh_orders', 'sh_progress', 'sh_doubts', 'sh_discuss', 'sh_reviews', 'sh_reports', 'sh_bans'] as $t)
+        try { $pdo->exec("DELETE FROM $t WHERE user_id IN ($in)"); } catch (Throwable) {} // a table that does not exist yet
+    $pdo->exec("DELETE FROM sh_users WHERE id IN ($in)");
+}
+
+/** What deleting students takes along (for the confirm popup). */
+function ci_del_student_impact(PDO $pdo, int $sid): array
+{
+    $one = fn(string $q) => (int)$pdo->query($q)->fetchColumn();
+    $r = ['pays' => $one("SELECT COUNT(*) FROM ci_payments WHERE student_id = $sid"), 'paid' => (float)$pdo->query("SELECT COALESCE(SUM(amount),0) FROM ci_payments WHERE student_id = $sid")->fetchColumn(),
+        'enr' => $one("SELECT COUNT(*) FROM ci_enrollments WHERE student_id = $sid"), 'att' => $one("SELECT COUNT(*) FROM ci_attendance WHERE student_id = $sid"), 'acc' => 0, 'ord' => 0];
+    try { $u = $pdo->query("SELECT id FROM sh_users WHERE student_id = $sid")->fetchAll(PDO::FETCH_COLUMN);
+        if ($u) { $in = implode(',', array_map('intval', $u)); $r['acc'] = count($u); $r['ord'] = $one("SELECT COUNT(*) FROM sh_orders WHERE user_id IN ($in)"); $r['oc'] = $one("SELECT COUNT(*) FROM sh_access WHERE user_id IN ($in) AND source <> 'block'"); } } catch (Throwable) {}
+    $r['text'] = ci_del_text([$r['pays'] ? ci_del_n($r['pays'], 'fee receipt') . ' (' . ci_money0($r['paid']) . ')' : '', ci_del_n($r['enr'], 'course / batch entry', 'course / batch entries'),
+        ci_del_n($r['att'], 'attendance mark'), $r['acc'] ? 'the online account' . (($w = ci_del_text([ci_del_n($r['oc'] ?? 0, 'online course / notes', 'online courses / notes'), ci_del_n($r['ord'], 'online order')])) ? ' (' . $w . ')' : '') : '']);
+    return $r;
+}
+
+/** Deletes students with everything of theirs. Returns the photos to remove after the commit. */
+function ci_del_students(PDO $pdo, array $sids): array
+{
+    $sids = array_values(array_unique(array_filter(array_map('intval', $sids)))); if (!$sids) return [];
+    $in = implode(',', $sids);
+    $photos = $pdo->query("SELECT photo FROM ci_students WHERE id IN ($in) AND photo IS NOT NULL AND photo <> ''")->fetchAll(PDO::FETCH_COLUMN);
+    ci_del_enrollments($pdo, $pdo->query("SELECT id FROM ci_enrollments WHERE student_id IN ($in)")->fetchAll(PDO::FETCH_COLUMN));
+    $pdo->exec("DELETE FROM ci_payments WHERE student_id IN ($in)"); // a receipt not tied to a course entry
+    $pdo->exec("DELETE FROM ci_attendance WHERE student_id IN ($in)");
+    $pdo->exec("DELETE FROM ci_class_history WHERE student_id IN ($in)");
+    try { ci_del_online_users($pdo, $pdo->query("SELECT id FROM sh_users WHERE student_id IN ($in)")->fetchAll(PDO::FETCH_COLUMN)); } catch (Throwable $e) { if (!str_contains($e->getMessage(), "doesn't exist")) throw $e; }
+    $pdo->exec("DELETE FROM ci_students WHERE id IN ($in)");
+    return $photos;
+}
+
+/** What deleting a batch / course takes along. */
+function ci_del_batch_impact(PDO $pdo, array $bids, ?int $courseId = null): array
+{
+    $bids = array_map('intval', $bids); $in = $bids ? implode(',', $bids) : '0';
+    $enrW = $courseId ? "(batch_id IN ($in) OR course_id = $courseId)" : "batch_id IN ($in)";
+    $one = fn(string $q) => (int)$pdo->query($q)->fetchColumn();
+    $r = ['batches' => count($bids), 'enr' => $one("SELECT COUNT(*) FROM ci_enrollments WHERE $enrW"),
+        'pays' => $one("SELECT COUNT(*) FROM ci_payments p JOIN ci_enrollments e ON e.id = p.enrollment_id WHERE " . str_replace(['batch_id', 'course_id'], ['e.batch_id', 'e.course_id'], $enrW)),
+        'paid' => (float)$pdo->query("SELECT COALESCE(SUM(p.amount),0) FROM ci_payments p JOIN ci_enrollments e ON e.id = p.enrollment_id WHERE " . str_replace(['batch_id', 'course_id'], ['e.batch_id', 'e.course_id'], $enrW))->fetchColumn(),
+        'att' => $one("SELECT COUNT(*) FROM ci_attendance WHERE batch_id IN ($in)"), 'hol' => $one("SELECT COUNT(*) FROM ci_holidays WHERE batch_id IN ($in)" . ($courseId ? " OR course_id = $courseId" : ''))];
+    $r['text'] = ci_del_text([$courseId ? ci_del_n($r['batches'], 'batch', 'batches') : '', ci_del_n($r['enr'], 'student entry', 'student entries'),
+        $r['pays'] ? ci_del_n($r['pays'], 'fee receipt') . ' (' . ci_money0($r['paid']) . ')' : '', ci_del_n($r['att'], 'attendance mark'), ci_del_n($r['hol'], 'holiday')]);
+    return $r;
+}
+
+/** Deletes batches with their course entries (and payments), attendance and holidays. */
+function ci_del_batches(PDO $pdo, array $bids): void
+{
+    $bids = array_values(array_unique(array_filter(array_map('intval', $bids)))); if (!$bids) return;
+    $in = implode(',', $bids);
+    ci_del_enrollments($pdo, $pdo->query("SELECT id FROM ci_enrollments WHERE batch_id IN ($in)")->fetchAll(PDO::FETCH_COLUMN));
+    $pdo->exec("DELETE FROM ci_attendance WHERE batch_id IN ($in)");
+    $pdo->exec("DELETE FROM ci_holidays WHERE batch_id IN ($in)");
+    $pdo->exec("DELETE FROM ci_batches WHERE id IN ($in)");
+}
+
+/** Deletes a course with all its batches, course entries (and payments) and holidays. */
+function ci_del_course(PDO $pdo, int $cid): void
+{
+    ci_del_batches($pdo, $pdo->query("SELECT id FROM ci_batches WHERE course_id = $cid")->fetchAll(PDO::FETCH_COLUMN));
+    ci_del_enrollments($pdo, $pdo->query("SELECT id FROM ci_enrollments WHERE course_id = $cid")->fetchAll(PDO::FETCH_COLUMN));
+    $pdo->exec("DELETE FROM ci_holidays WHERE course_id = $cid");
+    $pdo->exec("DELETE FROM ci_courses WHERE id = $cid");
+}
+
+/** Deletes a class: students, courses, store items and class history keep everything, without that class. */
+function ci_del_class(PDO $pdo, int $kid): void
+{
+    $pdo->exec("UPDATE ci_students SET class_id = NULL WHERE class_id = $kid");
+    $pdo->exec("UPDATE ci_courses SET class_id = NULL WHERE class_id = $kid");
+    try { $pdo->exec("UPDATE sh_products SET class_id = NULL WHERE class_id = $kid"); } catch (Throwable) {}
+    $pdo->exec("UPDATE ci_class_history SET from_class = NULL WHERE from_class = $kid");
+    $pdo->exec("UPDATE ci_class_history SET to_class = NULL WHERE to_class = $kid");
+    $pdo->exec("DELETE FROM ci_classes WHERE id = $kid");
+}
+
+/** Runs a delete in one transaction (all or nothing). */
+function ci_del_tx(PDO $pdo, callable $fn)
+{
+    $pdo->beginTransaction();
+    try { $r = $fn(); $pdo->commit(); return $r; }
+    catch (Throwable $e) { if ($pdo->inTransaction()) $pdo->rollBack(); throw new RuntimeException('Could not delete — nothing was changed (' . $e->getMessage() . ').'); }
+}

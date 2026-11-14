@@ -82,12 +82,10 @@ function oa_side(array $oa, array $me): void
 function oa_main(array $oa, array $me): void
 {
     $u = $oa['u']; $s = $oa['s']; $sell = sh_perm($me, 'orders');
-    $enrollBtn = $sell ? '<button type="button" class="ci-btn ci-sm ci-noprint" data-enroll="Enroll ' . ci_e($s['name']) . '" data-enroll-sid="' . (int)$s['id'] . '" data-enroll-name="' . ci_e($s['name']) . '"><i class="fas fa-laptop"></i> Enroll in a course / notes (paid)</button>' : '';
+    if (!$oa['acc'] && !$oa['ord']) return; // not in any online course / notes and no orders: nothing to show (Enroll is on the top card)
+    $enrollBtn = $sell ? '<button type="button" class="ci-btn ci-sm ci-noprint" data-enroll="Enroll ' . ci_e($s['name']) . '" data-enroll-sid="' . (int)$s['id'] . '" data-enroll-name="' . ci_e($s['name']) . '"><i class="fas fa-plus"></i> Add to Course</button>' : '';
     echo '<div class="ci-sec-h" id="online" data-ds="Online courses &amp; notes"><h3>Online courses &amp; notes <span class="ci-muted">(' . count(array_filter($oa['acc'], fn($x) => $x['source'] !== 'block')) . ')</span></h3>' . $enrollBtn . '</div>';
-    if (!$u && !$oa['acc'] && !$oa['ord']) { // nothing online yet: one short line instead of two empty tables
-        echo '<div class="ci-card"><div class="ci-card-b ci-empty" style="padding:14px 16px">No online course, notes or orders yet.</div></div>';
-        return;
-    }
+
     echo '<div class="ci-card">';
     if ($u) {
         echo '<div class="ci-card-b ci-noprint"><form method="post" action="/admin/shop-customers.php" class="oa-give">' . oa_hidden($oa, 'grant')
@@ -98,7 +96,7 @@ function oa_main(array $oa, array $me): void
             . '<div class="ci-f"><label>&nbsp;</label><button class="ci-btn" type="submit"><i class="fas fa-key"></i> Give access</button></div></form></div>';
     }
     echo '<div class="ci-card-b ci-p0 ci-table-wrap"><table class="ci-table" data-sheet="off"><thead><tr><th>Item</th><th>How</th><th>Since</th><th>Access</th><th class="ci-noprint">Action</th></tr></thead><tbody>';
-    if (!$oa['acc']) echo '<tr><td colspan="5" class="ci-empty">No online course or notes yet.' . ($sell ? ' Use <b>Enroll in a course / notes (paid)</b> above.' : '') . '</td></tr>';
+    if (!$oa['acc']) echo '<tr><td colspan="5" class="ci-empty">No online course or notes yet.' . ($sell ? ' Use <b>+ Add to Course</b> above.' : '') . '</td></tr>';
     foreach ($oa['acc'] as $x) {
         $how = ['purchase' => 'Bought', 'admin' => 'Given' . ($x['by_name'] ? ' by ' . ci_e($x['by_name']) : ''), 'free' => 'Free', 'block' => 'Never had it'][$x['source']] ?? ci_e($x['source']);
         $act = !empty($x['blocked']) ? ci_ico('ban', null, 'Change the block', 'button', ' data-block="' . (int)$u['id'] . '"')

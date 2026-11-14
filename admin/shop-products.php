@@ -121,17 +121,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else { $pdo->prepare("DELETE FROM hm_free WHERE id = ?")->execute([$id]); admin_flash('Playlist course removed.'); }
             if (function_exists('sh_home_refresh')) sh_home_refresh();
         } elseif ($a === 'delete' && $id) {
-            $sold = (int)$pdo->query("SELECT (SELECT COUNT(*) FROM sh_access WHERE product_id = $id) + (SELECT COUNT(*) FROM sh_orders WHERE product_id = $id AND status = 'paid')")->fetchColumn();
-            if ($sold) throw new RuntimeException('People have bought or been given this item, so it cannot be deleted. Set it to Hidden instead.');
+            if ($me['role'] !== 'admin') throw new RuntimeException('Only an admin can delete.'); // admins: with its access, orders, progress, discussion …
             $media = [];
             foreach ($pdo->query("SELECT video_file, variants, pdf_file FROM sh_lessons WHERE product_id = $id")->fetchAll(PDO::FETCH_ASSOC) as $l) foreach (array_filter(array_merge([$l['video_file'], $l['pdf_file']], array_values(sh_variants($l)))) as $f) $media[] = $f;
             foreach ($pdo->query("SELECT file FROM sh_files WHERE product_id = $id")->fetchAll(PDO::FETCH_COLUMN) as $f) $media[] = $f;
-            foreach (['sh_lessons', 'sh_sections', 'sh_units', 'sh_files', 'sh_orders', 'sh_reviews', 'sh_doubts'] as $t) $pdo->exec("DELETE FROM $t WHERE product_id = $id");
+            $pdo->beginTransaction();
+            $pdo->exec("DELETE FROM sh_progress WHERE lesson_id IN (SELECT id FROM sh_lessons WHERE product_id = $id)");
+            foreach (['sh_access', 'sh_discuss', 'sh_lessons', 'sh_sections', 'sh_units', 'sh_files', 'sh_orders', 'sh_reviews', 'sh_doubts'] as $t) $pdo->exec("DELETE FROM $t WHERE product_id = $id");
             $pdo->exec("DELETE FROM sh_products WHERE id = $id");
+            $pdo->commit();
             foreach ($media as $f) sh_media_unlink($f);
             admin_log('shop_product', "Deleted store product #$id");
             admin_flash('Deleted.');
         }
+    } catch (PDOException $e) { // a failed delete changes nothing
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        admin_flash('Could not finish: ' . $e->getMessage(), 'error');
     } catch (RuntimeException $e) {
         admin_flash($e->getMessage(), 'error');
         if ($a === 'save') $back = '/admin/shop-products.php?' . ($id ? 'edit=' . $id : 'new=1&type=' . (($_POST['type'] ?? '') === 'notes' ? 'notes' : 'course'));
@@ -338,7 +343,7 @@ $tchF = ['0' => 'All teachers', '-1' => 'No teacher']; foreach ($teachers as $k 
 <td class="ci-nw"><?= (int)$p['validity_days'] ? (int)$p['validity_days'] . ' days' : 'Lifetime' ?></td>
 <td class="ci-num"><?= (int)$p['buyers'] ?></td><td class="ci-num"><?= ci_money0($p['sales']) ?></td><td><?= $badge($p['status']) ?></td>
 <td><div class="ci-icos"><?= ci_ico('edit', '?edit=' . (int)$p['id'], 'Edit') ?><?= $p['type'] === 'course' ? ci_ico('plus', '/admin/shop-lectures.php?course=' . (int)$p['id'], 'Lectures') : '' ?><?= ci_ico('book-plus', '/admin/shop-products.php?edit=' . (int)$p['id'] . '&type=' . $p['type'] . '#lectures', $p['type'] === 'course' ? 'Chapters & lectures' : 'PDFs') ?><?= ci_ico('eye', sh_url($p) . '&preview=1', 'View on the store', 'link', ' target="_blank"') ?>
-<?php if (!(int)$p['buyers']): ?><?= ci_post_ico('trash', 'Delete', ['action' => 'delete', 'id' => $p['id']], 'Delete ' . $p['title'] . ' with all its videos and PDFs?') ?><?php endif; ?></div></td></tr>
+<?php if ($me['role'] === 'admin'): ?><?= ci_post_ico('trash', 'Delete', ['action' => 'delete', 'id' => $p['id']], 'Delete ' . $p['title'] . ' with all its videos and PDFs?' . ((int)$p['buyers'] ? "\n\n" . (int)$p['buyers'] . ' student(s) have it — their access, orders and progress for it are deleted too.' : '') . "\nThis cannot be undone.") ?><?php endif; ?></div></td></tr>
 <?php endforeach; ?>
 </tbody></table></div></div>
 <?php endif; ?>

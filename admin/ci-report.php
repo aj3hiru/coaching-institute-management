@@ -53,6 +53,42 @@ $summary = fn(array $t) => [['Students (all time)', (string)$t['n']], ['Studying
 
 if (in_array($type, ['ostudents', 'ocourses', 'ocourse', 'onotes'], true)) require __DIR__ . '/components/online-reports.php';
 
+if ($type === 'student_att') { // one student's attendance for one month (?id=&month=YYYY-MM) — the same document as every other report
+    $q = $pdo->prepare("SELECT s.*, c.name AS class_name FROM ci_students s LEFT JOIN ci_classes c ON c.id = s.class_id WHERE s.id = ?");
+    $q->execute([$id]);
+    $s = $q->fetch(PDO::FETCH_ASSOC) ?: $fail('Student not found');
+    if (!ci_scope_ok($me, $s['stype'] ?? 'institute')) $fail('Student not found');
+    $m = preg_match('/^\d{4}-\d{2}$/', (string)($_GET['month'] ?? '')) ? (string)$_GET['month'] : date('Y-m');
+    if ($m > date('Y-m')) $m = date('Y-m');
+    $from = $m . '-01'; $to = min(date('Y-m-t', strtotime($from)), date('Y-m-d'));
+    $A = ci_att_student($pdo, $id, $from, $to); $c = $A['count'];
+    $bq = $pdo->prepare("SELECT GROUP_CONCAT(DISTINCT b.name ORDER BY b.name SEPARATOR ', ') FROM ci_enrollments e JOIN ci_batches b ON b.id = e.batch_id WHERE e.student_id = ? AND e.status <> 'dropped'");
+    $bq->execute([$id]);
+    $label = ['present' => 'Present', 'absent' => 'Absent', 'leave' => 'Leave', 'holiday' => 'Holiday'];
+    $rows = []; $n = 0;
+    for ($t = strtotime($from); $t <= strtotime($to); $t += 86400) {
+        $dd = date('Y-m-d', $t); $x = $A['days'][$dd] ?? null;
+        $rows[] = [++$n, $d($dd), date('D', $t), $x ? $label[$x['status']] : (date('N', $t) === '7' ? 'Sunday' : '-'),
+            $x && $x['in'] ? date('h:i A', strtotime($x['in'])) : '-', $x && $x['out'] ? date('h:i A', strtotime($x['out'])) : '-',
+            $x ? ($x['title'] ?: ($x['batch'] ?: '-')) : '-'];
+    }
+    $mName = date('F Y', strtotime($from));
+    $out(['title' => 'ATTENDANCE REPORT', 'subtitle' => 'Month: ' . $mName, 'no' => 'AT-' . $s['reg_no'] . '-' . str_replace('-', '', $m), 'file' => 'attendance_' . $s['reg_no'] . '_' . $m,
+        'boxes' => [
+            ['head' => 'STUDENT', 'rows' => [['Name', $s['name']], ['Adm. ID', $s['reg_no']], ['Class', $s['class_name'] ?: '-'], ["Father's name", $s['father_name'] ?: '-'], ['Batch', (string)$bq->fetchColumn() ?: '-']]],
+            ['head' => 'SUMMARY', 'rows' => [['Month', $mName . ($to < date('Y-m-t', strtotime($from)) ? ' (till ' . $d($to) . ')' : '')], ['Class days', (string)$c['days']], ['Present', $c['present'] . ' day(s)'],
+                ['Absent / Leave', $c['absent'] . ' / ' . $c['leave'] . ' day(s)'], ['Holidays', $c['holiday'] . ' day(s)'], ['Attendance', $c['pct'] === null ? '-' : $c['pct'] . '%']]],
+        ],
+        'sections' => [
+            ['title' => 'Day by day', 'right_text' => $mName, 'head' => ['No.', 'Date', 'Day', 'Status', 'In', 'Out', 'Batch / note'], 'body' => $rows, 'small' => true,
+                'foot' => [['', '', '', 'Present ' . $c['present'], '', '', 'Attendance ' . ($c['pct'] === null ? '-' : $c['pct'] . '%')]]],
+        ],
+        'notes' => array_values(array_filter([
+            $c['days'] ? 'Present ' . $c['present'] . ' of ' . $c['days'] . ' class day(s) (' . $c['pct'] . '%), ' . $c['absent'] . ' absent, ' . $c['leave'] . ' on leave.' : 'No class day marked in ' . $mName . '.',
+            $c['holiday'] ? $c['holiday'] . ' holiday(s) are not counted as class days.' : '',
+            'In / Out are the check-in and check-out times from the ID card scan.',
+        ]))]);
+}
 if ($type === 'student') {
     $q = $pdo->prepare("SELECT s.*, c.name AS class_name FROM ci_students s LEFT JOIN ci_classes c ON c.id = s.class_id WHERE s.id = ?");
     $q->execute([$id]);

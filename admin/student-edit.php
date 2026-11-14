@@ -99,8 +99,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!$remove) {
             if ($final < $paid - 0.004) $errors[] = "For $cname the fee is less than what is already paid (" . ci_money($paid) . ').';
             if ($pay > $final + 0.004) $errors[] = "For $cname the amount paid now is more than its fee (" . ci_money($final) . ').';
-        } elseif ($paid > 0) {
-            $errors[] = "$cname has payments, so it cannot be removed; set it to Dropped instead.";
+        } elseif ($paid > 0 && !ci_is_admin($me)) { // an admin may remove it with its payments
+            $errors[] = "$cname has payments, so it cannot be removed; set it to Dropped instead (or ask an admin).";
         }
         $rows[] = ['idx' => $i, 'id' => $eid, 'course_id' => $c, 'batch_id' => $b, 'session_id' => $b ? ((int)$L['batches'][$b]['session_id'] ?: $curSession) : $curSession,
             'type' => $type, 'list' => $list, 'final' => $final, 'fee' => max($list, $final), 'discount' => max(0, round($list - $final, 2)),
@@ -172,7 +172,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             foreach ($rows as $r) {
                 $eid = $r['id'];
                 if ($eid && $r['remove']) {
-                    $pdo->prepare("DELETE FROM ci_enrollments WHERE id = ? AND student_id = ? AND NOT EXISTS (SELECT 1 FROM ci_payments p WHERE p.enrollment_id = ?)")->execute([$eid, $id, $eid]);
+                    if (ci_is_admin($me)) { if ((int)$pdo->query("SELECT COUNT(*) FROM ci_enrollments WHERE id = " . (int)$eid . " AND student_id = " . (int)$id)->fetchColumn()) ci_del_enrollments($pdo, [$eid]); } // with its payments
+                    else $pdo->prepare("DELETE FROM ci_enrollments WHERE id = ? AND student_id = ? AND NOT EXISTS (SELECT 1 FROM ci_payments p WHERE p.enrollment_id = ?)")->execute([$eid, $id, $eid]);
                     ci_plan_clear($pdo, $eid);
                     continue;
                 }

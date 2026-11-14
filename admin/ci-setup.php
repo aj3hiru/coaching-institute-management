@@ -34,6 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pdo->prepare("UPDATE ci_sessions SET is_current = 1 WHERE id = ?")->execute([$id]);
             admin_flash('Current session changed.');
         } elseif ($a === 'session_delete' && $id) {
+            ci_admin_only($me);
             // deletes the session with its batches, its students' courses and payments, the students who were only in it,
             // and the courses that only it used — after the user typed the session's name on the confirm screen
             if ($me['role'] !== 'admin') throw new RuntimeException('Only an admin can delete a session.');
@@ -52,11 +53,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($id) $pdo->prepare("UPDATE ci_classes SET name = ?, sort = ? WHERE id = ?")->execute([$name, $sort, $id]);
             else $pdo->prepare("INSERT INTO ci_classes (name, sort) VALUES (?, ?)")->execute([$name, $sort]);
             admin_flash('Class saved.');
-        } elseif ($a === 'class_delete' && $id) {
+        } elseif ($a === 'class_delete' && $id) { // admins only: students, courses and history keep everything, without this class
+            ci_admin_only($me);
+            $nm = (string)$pdo->query("SELECT name FROM ci_classes WHERE id = $id")->fetchColumn();
             $used = (int)$pdo->query("SELECT COUNT(*) FROM ci_students WHERE class_id = $id")->fetchColumn();
-            if ($used) throw new RuntimeException("$used students are in this class, so it cannot be deleted.");
-            $pdo->prepare("DELETE FROM ci_classes WHERE id = ?")->execute([$id]);
-            admin_flash('Class deleted.');
+            ci_del_tx($pdo, fn() => ci_del_class($pdo, $id));
+            admin_log('ci_class_delete', "Deleted class #$id $nm ($used students now without a class)");
+            admin_flash('Class ' . $nm . ' deleted.' . ($used ? ' Its ' . ($used === 1 ? '1 student stays' : "$used students stay") . ', without a class — choose the new class when you edit them.' : ''));
         }
     } catch (PDOException $e) {
         admin_flash($e->getCode() === '23000' ? 'That name is already in the list.' : 'Could not save, please try again.', 'error');
@@ -156,7 +159,7 @@ if ($tab === 'sessions' && $ps && !$ps['is_current'] && $me['role'] === 'admin')
 <?php foreach ($classes as $c): ?>
 <tr><td class="ci-muted"><?= (int)$c['sort'] ?></td><td><b><?= ci_e($c['name']) ?></b></td><td class="ci-num"><?= (int)$c['students'] ?></td>
 <td><div class="ci-icos"><?= ci_ico('edit', null, 'Edit class', 'button', ' data-mopen="#kmForm" data-mtitle="Edit class" data-fill="' . $cf($c) . '"') ?><?= ci_ico('pdf', null, 'Class report (PDF)', 'button', ' data-report="class" data-id="' . (int)$c['id'] . '"') ?>
-<?php if (!$c['students']): ?><?= ci_post_ico('trash', 'Delete class', ['action' => 'class_delete', 'id' => $c['id']], 'Delete class ' . $c['name'] . '?') ?><?php endif; ?>
+<?php if (ci_is_admin($me)): ?><?= ci_post_ico('trash', 'Delete class', ['action' => 'class_delete', 'id' => $c['id']], 'Delete class ' . $c['name'] . '?' . ((int)$c['students'] ? "\n\nIts " . ((int)$c['students'] === 1 ? '1 student is' : (int)$c['students'] . ' students are') . " NOT deleted — they stay, without a class." : '') . "\nThis cannot be undone.") ?><?php endif; ?>
 </div></td></tr>
 <?php endforeach; ?>
 </tbody></table></div></div>

@@ -52,11 +52,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $n = ci_complete_batch($pdo, $id);
             admin_log('ci_batch', "Completed batch #$id");
             admin_flash('Batch completed — it ends today (' . date('d M Y') . ')' . ($n ? "; $n students' course marked completed, their dues stay" : '') . '.');
-        } elseif ($a === 'delete' && $id) {
-            $used = (int)$pdo->query("SELECT COUNT(*) FROM ci_enrollments WHERE batch_id = $id")->fetchColumn();
-            if ($used) throw new RuntimeException('This batch has students. Mark it Completed or Inactive instead of deleting.');
-            $pdo->prepare("DELETE FROM ci_batches WHERE id = ?")->execute([$id]);
-            admin_flash('Batch deleted.');
+        } elseif ($a === 'delete' && $id) { // admins only: the batch with its student entries (and their payments), attendance and holidays
+            ci_admin_only($me);
+            $nm = (string)$pdo->query("SELECT name FROM ci_batches WHERE id = $id")->fetchColumn();
+            $imp = ci_del_batch_impact($pdo, [$id]);
+            ci_del_tx($pdo, fn() => ci_del_batches($pdo, [$id]));
+            admin_log('ci_batch_delete', "Deleted batch #$id $nm" . ($imp['text'] ? ' with ' . $imp['text'] : ''));
+            admin_flash('Batch ' . $nm . ' deleted' . ($imp['text'] ? ' with ' . $imp['text'] : '') . '. The students stay.');
         }
     } catch (RuntimeException $e) {
         admin_flash($e->getMessage(), 'error');
@@ -148,7 +150,7 @@ $curSession = ci_current_session($pdo);
 <td><?= ci_status_badge($b['status']) ?></td>
 <td><div class="ci-icos"><?= ci_ico('edit', null, 'Edit batch', 'button', ' data-mopen="#bmForm" data-mtitle="Edit batch" data-mmode="edit" data-fill="' . $bf($b) . '"') ?><?php if ($b['status'] === 'active'): ?><?= ci_ico('user-plus', null, 'Add student to this batch', 'button', ' data-addto-batch="' . (int)$b['id'] . '" data-addto-course="' . (int)$b['course_id'] . '" data-addto-name="' . ci_e($b['name'] . ' (' . ($b['course_name'] ?? '') . ')') . '"') ?><?php endif; ?><?= ci_ico('pdf', null, 'PDF report', 'button', ' data-report="batch" data-id="' . (int)$b['id'] . '"') ?>
 <?php if ($b['status'] === 'active'): ?><?= ci_post_ico('check', 'Mark batch completed', ['action' => 'complete', 'id' => $b['id']], 'Complete batch ' . $b['name'] . '? It ends today (' . date('d M Y') . '), and its students\' course in this batch is marked completed (dues stay).') ?><?php endif; ?>
-<?php if (!(int)$pdo->query("SELECT COUNT(*) FROM ci_enrollments WHERE batch_id = " . (int)$b['id'])->fetchColumn()): ?><?= ci_post_ico('trash', 'Delete batch', ['action' => 'delete', 'id' => $b['id']], 'Delete batch ' . $b['name'] . '?') ?><?php endif; ?>
+<?php if (ci_is_admin($me)): $imp = ci_del_batch_impact($pdo, [(int)$b['id']]); ?><?= ci_post_ico('trash', 'Delete batch', ['action' => 'delete', 'id' => $b['id']], 'Delete batch ' . $b['name'] . '?' . ($imp['text'] ? "\n\nThis also deletes " . $imp['text'] . '.' : '') . "\nThe students stay. This cannot be undone.") ?><?php endif; ?>
 </div></td></tr>
 <?php endforeach; ?>
 </tbody></table></div>

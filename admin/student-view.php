@@ -94,28 +94,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header('Location: ' . $back('payments'));
         exit;
     }
-    if ($a === 'delete' && ci_perm($me, 'edit_student')) {
-        $n = (int)$pdo->query("SELECT COUNT(*) FROM ci_payments WHERE student_id = $id")->fetchColumn();
-        if ($n) { admin_flash('This student has fee payments, so they cannot be deleted. Set the status to Left instead.', 'error'); header('Location: ' . $back()); exit; }
-        // an online account with courses or orders stays (suspend it instead); an empty one goes with the student
-        $oaIds = [];
-        try { $oaIds = $pdo->query("SELECT id FROM sh_users WHERE student_id = $id")->fetchAll(PDO::FETCH_COLUMN); } catch (Throwable) {}
-        if ($oaIds) {
-            $inU = implode(',', array_map('intval', $oaIds));
-            if ((int)$pdo->query("SELECT (SELECT COUNT(*) FROM sh_access WHERE user_id IN ($inU) AND source <> 'block') + (SELECT COUNT(*) FROM sh_orders WHERE user_id IN ($inU))")->fetchColumn()) {
-                admin_flash('This student has online courses or orders, so they cannot be deleted. Suspend the online account or set the status to Left instead.', 'error'); header('Location: ' . $back()); exit;
-            }
-        }
-        $pdo->beginTransaction();
-        if ($oaIds) { $pdo->exec("DELETE FROM sh_access WHERE user_id IN ($inU)"); $pdo->exec("DELETE FROM sh_users WHERE id IN ($inU)"); }
-        $pdo->prepare("DELETE i FROM ci_installments i JOIN ci_enrollments e ON e.id = i.enrollment_id WHERE e.student_id = ?")->execute([$id]);
-        $pdo->prepare("DELETE FROM ci_class_history WHERE student_id = ?")->execute([$id]);
-        $pdo->prepare("DELETE FROM ci_enrollments WHERE student_id = ?")->execute([$id]);
-        $pdo->prepare("DELETE FROM ci_students WHERE id = ?")->execute([$id]);
-        $pdo->commit();
-        ci_delete_photo($s['photo'] ?? null);
-        admin_log('ci_student_delete', "Deleted student {$s['reg_no']} {$s['name']}");
-        admin_flash('Student ' . $s['reg_no'] . ' deleted.');
+    if ($a === 'delete' && ci_is_admin($me)) { // admins only: the student with everything of theirs (see ci_del_students)
+        $imp = ci_del_student_impact($pdo, $id);
+        try { $photos = ci_del_tx($pdo, fn() => ci_del_students($pdo, [$id])); }
+        catch (RuntimeException $e) { admin_flash($e->getMessage(), 'error'); header('Location: ' . $back()); exit; }
+        foreach ($photos as $ph) ci_delete_photo($ph);
+        admin_log('ci_student_delete', "Deleted student {$s['reg_no']} {$s['name']}" . ($imp['text'] ? ' with ' . $imp['text'] : ''));
+        admin_flash('Student ' . $s['reg_no'] . ' ' . $s['name'] . ' deleted' . ($imp['text'] ? ' with ' . $imp['text'] : '') . '.');
         header('Location: /admin/students.php');
         exit;
     }
@@ -189,7 +174,6 @@ $tel = fn(?string $m) => ci_tel($m);
 .sv-cal-d.is-leave{background:#fffbeb;border-color:#fcd34d}.sv-cal-d.is-leave em{color:#b45309}
 .sv-cal-d.is-holiday{background:#f5f3ff;border-color:#c4b5fd}.sv-cal-d.is-holiday em{color:#6d28d9}.sv-cal-d.is-holiday small{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 @media (max-width:640px){.sv-cal-d{min-height:44px;padding:3px}.sv-cal-d small{display:none}.sv-cal-d em{top:auto;bottom:3px;right:4px}}
-.sv-att-print{display:none}
 /* Student details / Online account: closed by default, the title opens them */
 .sv-fold>.ci-card-h{cursor:pointer;user-select:none}
 .sv-fold>.ci-card-h h3{display:flex;align-items:center;gap:8px;flex:1}
@@ -232,9 +216,9 @@ $tel = fn(?string $m) => ci_tel($m);
     <?php if ($s['mobile']): ?><?= ci_ico('phone', 'tel:' . $s['mobile'], 'Call') ?><?php endif; ?>
     <?php if ($wa): ?><a class="ci-ico ci-ico-ok" href="<?= ci_e($wa) ?>" target="_blank" rel="noopener" aria-label="WhatsApp"><i class="fab fa-whatsapp" style="font-size:16px"></i></a><?php endif; ?>
     <?= ci_ico('pdf', null, 'Student report (PDF)', 'button', ' data-report="student" data-id="' . $id . '"') ?>
-    <?php if (ci_perm($me, 'edit_student')): ?><?= ci_ico('edit', '/admin/student-edit.php?id=' . $id, 'Edit student') ?><button type="button" class="ci-btn ci-ghost" data-open="ci-addc"><?= ci_svg('book-plus') ?> Add to course / batch</button><?php endif; ?>
-    <?php if (function_exists('sh_perm') && sh_perm($me, 'orders')): ?><button type="button" class="ci-btn ci-ghost" data-enroll="Enroll <?= ci_e($s['name']) ?>" data-enroll-sid="<?= $id ?>" data-enroll-name="<?= ci_e($s['name']) ?>"><i class="fas fa-laptop"></i> Enroll in a course / notes (paid)</button><?php endif; ?>
-    <?php if (!$pays && ci_perm($me, 'edit_student')): ?><?= ci_post_ico('trash', 'Delete student', ['action' => 'delete', 'id' => $id], 'Delete student ' . $s['name'] . '? This cannot be undone.') ?><?php endif; ?>
+    <?php if (ci_perm($me, 'edit_student')): ?><?= ci_ico('edit', '/admin/student-edit.php?id=' . $id, 'Edit student') ?><button type="button" class="ci-btn ci-ghost" data-open="ci-addc" title="Add to an institute course and batch (offline classes)"><i class="fas fa-plus"></i> Add to Batch</button><?php endif; ?>
+    <?php if (function_exists('sh_perm') && sh_perm($me, 'orders')): ?><button type="button" class="ci-btn ci-ghost" data-enroll="Enroll <?= ci_e($s['name']) ?>" data-enroll-sid="<?= $id ?>" data-enroll-name="<?= ci_e($s['name']) ?>" title="Give an online course or PDF notes (paid)"><i class="fas fa-plus"></i> Add to Course</button><?php endif; ?>
+    <?php if (ci_is_admin($me)): $imp = ci_del_student_impact($pdo, $id); ?><?= ci_post_ico('trash', 'Delete student', ['action' => 'delete', 'id' => $id], 'Delete student ' . $s['name'] . ' (' . $s['reg_no'] . ')?' . ($imp['text'] ? "\n\nThis also deletes " . $imp['text'] . '.' : '') . "\nThis cannot be undone.") ?><?php endif; ?>
     <?php if ($payable && ci_perm($me, 'fees')): ?><button type="button" class="ci-btn" data-collect="<?= (int)$payable[0]['id'] ?>"><i class="fas fa-indian-rupee-sign"></i> Collect Fee</button><?php endif; ?>
   </div>
 </div></div>
@@ -274,7 +258,7 @@ if (function_exists('sh_perm') && sh_perm($me, 'customers')) { sh_tables($pdo); 
     </div></div>
   </aside>
   <div class="ci-pf-main">
-    <div class="ci-sec-h" data-ds="Courses &amp; batches"><h3>Institute courses &amp; batches <span class="ci-muted">(<?= count($enr) ?>)</span></h3><?php if (ci_perm($me, 'edit_student') || ci_perm($me, 'add_student')): ?><button type="button" class="ci-btn ci-sm ci-noprint" data-open="ci-addc"><?= ci_svg('book-plus') ?> Add to course / batch</button><?php endif; ?></div>
+    <div class="ci-sec-h" data-ds="Courses &amp; batches"><h3>Institute courses &amp; batches <span class="ci-muted">(<?= count($enr) ?>)</span></h3><?php if (ci_perm($me, 'edit_student') || ci_perm($me, 'add_student')): ?><button type="button" class="ci-btn ci-sm ci-noprint" data-open="ci-addc"><i class="fas fa-plus"></i> Add to Batch</button><?php endif; ?></div>
     <?php if (!$enr): ?><div class="ci-card"><div class="ci-card-b ci-empty">Not in any institute course / batch yet.</div></div><?php endif; ?>
     <?php $payModals = []; $enrIds = array_flip(array_map('intval', array_column($enr, 'id')));
       $invIco = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h14v18l-2.3-1.5L14.3 21 12 19.5 9.7 21l-2.4-1.5L5 21z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>'; ?>
@@ -313,12 +297,9 @@ if (function_exists('sh_perm') && sh_perm($me, 'customers')) { sh_tables($pdo); 
       $first = strtotime($am . '-01'); $lead = (int)date('N', $first) - 1; $nd = (int)date('t', $first); $todayD = date('Y-m-d');
       $instInfo = ci_institute(); ?>
     <div class="ci-card sv-att" id="attendance" data-ds="Attendance" style="margin-top:16px">
-      <div class="sv-att-print"><b><?= ci_e($instInfo['name']) ?></b><span><?= ci_e(implode(' · ', array_filter([$instInfo['address'], $instInfo['phone'], $instInfo['email']]))) ?></span>
-        <h2>Attendance — <?= ci_e($months[$am] ?? date('F Y', $first)) ?></h2>
-        <p><?= ci_e($s['name']) ?> · Adm. ID <?= ci_e($s['reg_no']) ?><?= $s['class_name'] ? ' · Class ' . ci_e($s['class_name']) : '' ?></p></div>
       <div class="ci-card-h"><h3>Attendance</h3><div class="ci-actions ci-noprint">
         <form method="get" action="#attendance" style="display:inline-flex;gap:6px;align-items:center" onchange="this.submit()"><input type="hidden" name="id" value="<?= $id ?>"><select name="att" aria-label="Month"><?php foreach ($months as $k => $l): ?><option value="<?= $k ?>"<?= $k === $am ? ' selected' : '' ?>><?= $l ?></option><?php endforeach; ?></select></form>
-        <button type="button" class="ci-btn ci-ghost ci-sm" id="svAttPrint"><i class="fas fa-print"></i> Print</button></div></div>
+        <button type="button" class="ci-btn ci-ghost ci-sm" data-report="student_att" data-src="/admin/ci-report.php?type=student_att&amp;id=<?= $id ?>&amp;month=<?= ci_e($am) ?>"><?= ci_svg('pdf') ?> PDF</button></div></div>
       <div class="ci-card-b">
         <div class="sv-att-sum"><span class="p">Present <b><?= $cnt['present'] ?></b></span><span class="a">Absent <b><?= $cnt['absent'] ?></b></span><span class="l">Leave <b><?= $cnt['leave'] ?></b></span><span class="h">Holiday <b><?= $cnt['holiday'] ?></b></span><span>Attendance <b><?= $pc === null ? '—' : $pc . '%' ?></b></span></div>
         <div class="sv-cal" role="table" aria-label="Attendance calendar">
@@ -335,19 +316,8 @@ if (function_exists('sh_perm') && sh_perm($me, 'customers')) { sh_tables($pdo); 
         <?php if (!$marked): ?><p class="ci-muted" style="margin:10px 0 0">No attendance marked in <?= ci_e($months[$am] ?? '') ?>.</p><?php endif; ?>
       </div>
     </div>
-    <script>
-    document.getElementById('svAttPrint').addEventListener('click', function () { // only this card, on its own page
-      var card = document.getElementById('attendance').cloneNode(true), css = document.getElementById('svAttCss').textContent;
-      card.querySelector('.ci-card-h').remove(); card.querySelector('.sv-att-print').style.display = 'block';
-      var w = window.open('', '_blank', 'width=900,height=1000'); if (!w) return;
-      w.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>Attendance</title><style>' + css + 'body{margin:0;padding:12mm;font-family:Arial,sans-serif;color:#111827;-webkit-print-color-adjust:exact;print-color-adjust:exact}'
-        + '.sv-att-print{margin:0 0 10px;padding:0 0 8px;border-bottom:1px solid #111}.sv-att-print b{font-size:18px}.sv-att-print span{display:block;font-size:11px;color:#374151}.sv-att-print h2{margin:10px 0 2px;font-size:16px}.sv-att-print p{margin:0;font-size:12px}'
-        + '.ci-muted{color:#6b7280}@page{size:A4;margin:0}</style></head><body>' + card.innerHTML + '</body></html>');
-      w.document.close(); w.focus(); setTimeout(function () { w.print(); }, 250);
-    });
-    </script>
     <?php endif; ?>
-    <?php if ($oa) { echo '<div style="height:20px"></div>'; oa_main($oa, $me); } ?>
+    <?php if ($oa && ($oa['acc'] || $oa['ord'])) { echo '<div style="height:20px"></div>'; oa_main($oa, $me); } ?>
   </div>
 </div>
 <?php if ($oa) oa_modals($oa); ?>
