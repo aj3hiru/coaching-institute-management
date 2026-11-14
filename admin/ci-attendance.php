@@ -227,14 +227,14 @@ tr.at-hl td{background:#fefce8}
 </div>
 
 <div class="ci-card" data-ds="Students"><div class="ci-card-b ci-p0 ci-table-wrap"><table class="ci-table" id="atT" data-sheet="off">
-  <thead><tr><th class="at-sn">S.No.</th><th>Adm. ID</th><th>Student</th><th>Class</th><th>Batch</th><th>Attendance</th><th>Check-in / out</th></tr></thead>
+  <thead><tr><th class="at-sn">S.No.</th><th>Student</th><th>Adm. ID</th><th>Class</th><th>Batch</th><th>Attendance</th><th>Check-in / out</th></tr></thead>
   <tbody>
   <?php if (!$rows): ?><tr><td colspan="7" class="ci-empty">No students for these filters. Students show here when they are in an active batch / course.</td></tr><?php endif; ?>
   <?php foreach ($rows as $i => $r): ?>
   <tr data-sid="<?= (int)$r['id'] ?>" data-bid="<?= (int)$r['batch_id'] ?>" data-reg="<?= ci_e($r['reg_no']) ?>">
     <td class="at-sn"><?= $i + 1 ?></td>
-    <td class="ci-nw"><b><?= ci_e($r['reg_no']) ?></b></td>
     <td><div class="at-name"><?= ci_avatar($r, 34) ?><div><a href="/admin/student-view.php?id=<?= (int)$r['id'] ?>#attendance"><?= ci_e($r['name']) ?></a><small><?= ci_e($r['mobile']) ?></small></div></div></td>
+    <td class="ci-nw"><b><?= ci_e($r['reg_no']) ?></b></td>
     <td class="ci-nw"><?= ci_e($r['class_name'] ?: '—') ?></td>
     <td><?= $r['batch_name'] ? ci_e($r['batch_name']) . ($r['timing'] ? '<small class="ci-muted" style="display:block">' . ci_e($r['timing']) . '</small>' : '') : '<span class="ci-muted">' . ci_e($r['course_name'] ?: 'No batch') . '</span>' ?></td>
     <td><div class="at-st" role="group" aria-label="Attendance of <?= ci_e($r['name']) ?>"><?php foreach (['present' => 'P', 'absent' => 'A', 'leave' => 'L', 'holiday' => 'H'] as $k => $l): ?><button type="button" data-s="<?= $k ?>" class="<?= $r['status'] === $k ? 'on' : '' ?>" title="<?= $ST[$k] ?>"><?= $l ?></button><?php endforeach; ?></div><?= $r['hol'] ? '<span class="at-hol"><i class="fas fa-umbrella-beach"></i> ' . ci_e($r['hol']) . '</span>' : '' ?></td>
