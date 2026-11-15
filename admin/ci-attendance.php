@@ -274,7 +274,7 @@ $checkedIn = count(array_filter($rows, fn($r) => $r['status'] === 'present' && $
 @media (max-width:1359px){.top-nav .at-run>span:nth-of-type(2){display:none}} /* less room: the class name before its time (the time is in the hover) */
 @media (max-width:767px){.at-run-m{display:flex;width:auto;margin:0 0 12px;flex-wrap:wrap;white-space:normal}}
 .at-t{font-size:12.5px;color:#374151;white-space:nowrap}.at-t small{display:block;color:#9ca3af}
-.at-bulk{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-left:auto}.at-bulk em{font-style:normal}.at-bulk b.at-con{font-weight:inherit}
+.at-bulk{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-left:auto}.at-bulk em{font-style:normal}.at-bulk .at-cs{display:none}.at-bulk b.at-con{font-weight:inherit}
 .at-name{display:flex;align-items:center;gap:10px}.at-name a{font-weight:600;color:#111827;text-decoration:none}.at-name small{display:block;color:#6b7280;font-size:12px}
 tr.at-hl td{background:#fefce8}
 .at-past{padding:8px 12px;margin:0 0 12px;border:1px solid #fde68a;background:#fffbeb;color:#92400e;font-size:13px}
@@ -289,7 +289,7 @@ tr.at-hl td{background:#fefce8}
   .at-pills a{flex:none;padding:6px 10px;font-size:12.5px}.at-pills a b{font-size:14px}
   .at-bulk{margin:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
   .at-bulk .ci-btn{min-width:0;height:38px;padding:0 6px!important;justify-content:center;font-size:12px;gap:5px;white-space:nowrap}
-  .at-bulk .ci-btn span{overflow:hidden;text-overflow:ellipsis}.at-bulk .at-cw{display:none}
+  .at-bulk .ci-btn span{overflow:hidden;text-overflow:ellipsis}.at-bulk .at-cw{display:none}.at-bulk .at-cs{display:inline}
   #atT thead{display:none}
   #atT,#atT tbody{display:block;width:100%}
   #atT tr[data-sid]{display:grid;grid-template-columns:24px minmax(0,1fr) auto;gap:4px 10px;align-items:center;padding:12px 12px 14px;border-bottom:1px solid #eef0f3}
@@ -360,7 +360,7 @@ $atHm = '<div class="at-hm" data-ds="This month (header)" data-ds-extra title="T
   <div class="at-bulk">
     <button type="button" class="ci-btn ci-ghost" data-bulk="present"><i class="fas fa-check-double"></i> <span>All present</span></button>
     <button type="button" class="ci-btn ci-ghost" data-bulk="absent-rest"><i class="fas fa-user-xmark"></i> <span>Rest absent</span></button>
-    <?php if ($isToday): ?><button type="button" class="ci-btn" id="atOutAll"<?= $checkedIn || array_filter($rows, fn($r) => $r['status'] === 'present') ? '' : ' disabled' ?>><i class="fas fa-right-from-bracket"></i> <span><em class="at-cw">Check </em>out all (<b class="at-con"><?= $checkedIn ?></b>)</span></button><?php endif; ?>
+    <?php if ($isToday): ?><button type="button" class="ci-btn" id="atOutAll"<?= $checkedIn || array_filter($rows, fn($r) => $r['status'] === 'present') ? '' : ' disabled' ?>><i class="fas fa-right-from-bracket"></i> <span><em class="at-cw">Check out</em><em class="at-cs">Out</em> all (<b class="at-con"><?= $checkedIn ?></b>)</span></button><?php endif; ?>
   </div>
 </div>
 
