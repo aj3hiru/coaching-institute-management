@@ -82,11 +82,11 @@ body{margin:0;background:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,"S
 .sheet.land{grid-template-columns:repeat(2,85.6mm);gap:2.5mm 6mm}
 .idl{position:relative;width:85.6mm;height:54mm;border:.3mm solid #c9ced6;border-radius:3mm;overflow:hidden;display:flex;flex-direction:column;background:#fff;break-inside:avoid;page-break-inside:avoid}
 .idl>*{flex-shrink:0}
-.idl-h{display:flex;align-items:center;gap:2mm;padding:1.6mm 3mm;background:linear-gradient(120deg,var(--idc),#6a4c94);color:#fff}
-.idl-h img{width:8.5mm;height:8.5mm;object-fit:contain;background:#fff;border-radius:50%;padding:.5mm;flex:none}
+.idl-h{display:flex;align-items:center;gap:2mm;padding:1.6mm 3mm;background:#fff;color:var(--idc)}
+.idl-h img{width:9mm;height:9mm;object-fit:contain;flex:none}
 .idl-h div{min-width:0;line-height:1.15}
 .idl-h b{display:block;font-family:Georgia,"Times New Roman",serif;font-size:3.6mm;letter-spacing:.02em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.idl-h small{display:block;font-size:1.65mm;opacity:.9;margin-top:.3mm;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.idl-h small{display:block;font-size:1.65mm;color:#4b5563;margin-top:.3mm;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .idl-t{background:#fcd34d;color:var(--idc);text-align:center;font-size:1.8mm;font-weight:800;letter-spacing:.26em;padding:.6mm 0}
 .idl-b{flex:1;display:flex;align-items:stretch;gap:4.6mm;padding:1.8mm 2.6mm 1.2mm;min-height:0} /* column 1: the photo; column 2: barcode, name, details */
 .idl-ph{flex:none;align-self:center;width:19mm;height:24.4mm;border:.35mm solid var(--idc);padding:.4mm;background:#fff}
@@ -138,7 +138,6 @@ body{margin:0;background:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,"S
         </table>
       </div>
     </div>
-    <div class="idl-f"></div>
   </div>
 <?php continue; endif; ?>
   <div class="idc">
@@ -157,7 +156,6 @@ body{margin:0;background:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,"S
       <?php if ($ad !== ''): ?><tr><th>Address</th><td class="ad"><span><?= ci_e($ad) ?></span></td></tr><?php endif; ?>
     </table>
     <div class="idc-sp"></div>
-    <div class="idc-f"></div>
   </div>
 <?php endforeach; ?>
 </div><?php endif; ?>
