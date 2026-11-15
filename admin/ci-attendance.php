@@ -200,10 +200,26 @@ $checkedIn = count(array_filter($rows, fn($r) => $r['status'] === 'present' && $
 .at-io{display:inline-flex;align-items:center;gap:4px;height:26px;margin-top:3px;padding:0 9px;border:1px solid #d1d5db;background:#fff;color:#374151;font:inherit;font-size:12px;font-weight:600;cursor:pointer}
 .at-io.out{border-color:#93c5fd;color:#1d4ed8}.at-io:disabled{opacity:.5;cursor:wait}
 .at-hol{display:block;font-size:11.5px;color:#6d28d9;margin-top:3px}
-.at-month{display:flex;flex-wrap:wrap;align-items:stretch;gap:0;margin:0 0 14px;border:1px solid #e5e7eb;background:#fff}
-.at-month>div{flex:1 1 110px;padding:10px 14px;border-left:1px solid #f1f5f9}.at-month>div:first-child{border-left:0;flex:1.6 1 180px;background:#faf9fc}
-.at-month small{display:block;font-size:11.5px;color:#6b7280;text-transform:uppercase;letter-spacing:.04em}.at-month b{font-size:19px;color:#111827}
-.at-month .p b{color:#15803d}.at-month .a b{color:#b91c1c}.at-month .l b{color:#b45309}.at-month .h b{color:#6d28d9}
+.at-left{display:flex;flex-direction:column;gap:14px;min-width:0}
+/* this month: % ring, month name and days, four coloured tiles */
+.at-mc{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:14px 16px;background:#fff;border:1px solid #e5e7eb;border-radius:5px!important}
+.at-mc-ring{position:relative;flex:none;width:64px;height:64px}
+.at-mc-ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.at-mc-ring circle{fill:none;stroke-width:5}.at-mc-ring circle:first-child{stroke:#eef0f3}
+.at-mc-ring circle+circle{stroke:var(--t);stroke-linecap:round;transition:stroke-dasharray .6s}
+.at-mc-ring.ok{--t:#16a34a}.at-mc-ring.mid{--t:#d97706}.at-mc-ring.low{--t:#dc2626}.at-mc-ring.na{--t:#d1d5db}
+.at-mc-ring b{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:#111827}.at-mc-ring b small{font-size:10px;margin-left:1px;color:#6b7280}
+.at-mc-t{flex:1 1 150px;min-width:0;line-height:1.3}
+.at-mc-t small{display:block;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.05em}
+.at-mc-t b{display:block;font-size:17px;color:#111827;margin:1px 0}
+.at-mc-t span{font-size:12.5px;color:#6b7280}
+.at-mc-g{display:grid;grid-template-columns:repeat(4,minmax(78px,1fr));gap:8px;flex:2 1 340px}
+.at-mc-g>*{display:block;padding:8px 10px;border-radius:5px!important;background:var(--bg);border-left:3px solid var(--c);text-decoration:none;line-height:1.2}
+.at-mc-g b{display:block;font-size:20px;font-weight:800;color:var(--c)}
+.at-mc-g small{display:block;font-size:12px;font-weight:600;color:#4b5563;white-space:nowrap}.at-mc-g small i{font-size:10px;margin-left:2px}
+.at-mc-g .p{--c:#15803d;--bg:#f0fdf4}.at-mc-g .a{--c:#b91c1c;--bg:#fef2f2}.at-mc-g .l{--c:#b45309;--bg:#fffbeb}.at-mc-g .h{--c:#6d28d9;--bg:#f5f3ff}
+.at-mc-g a.h:hover{background:#ede9fe}
+@media (max-width:560px){.at-mc-g{grid-template-columns:repeat(2,1fr);flex-basis:100%}}
 /* class on now: a second line under the date in the page header; phones (no room in the header) get it above the filters */
 .page-heading p:has(.at-run){white-space:normal;max-width:none;overflow:visible}
 .at-run{display:flex;align-items:center;flex-wrap:wrap;gap:4px;width:fit-content;margin:4px 0 0;padding:3px 8px;border-radius:5px;background:#f5f3ff;color:#4c1d95;font-size:12.5px;line-height:1.35}
@@ -222,6 +238,7 @@ tr.at-hl td{background:#fefce8}
 <div class="ci">
 <?php if ($running): ?><div class="at-run at-run-m"><i class="fas fa-bell"></i> Class on now: <b><?= ci_e($running['name']) ?></b> (<?= ci_e(ci_time_range($running['start_time'], $running['end_time'])) ?>)<a href="?all=1">Show all batches</a></div><?php endif; ?>
 <div class="at-top">
+  <div class="at-left">
   <form class="ci-filters" method="get" id="atF" data-ds="Filters" style="margin:0">
     <div class="ci-f"><label>Date</label><input type="date" name="date" value="<?= ci_e($f['date']) ?>" max="<?= $today ?>"></div>
     <div class="ci-f"><label>Course</label><select name="course"><option value="0">All courses</option><?php foreach ($courses as $id => $n): ?><option value="<?= (int)$id ?>"<?= $f['course'] === (int)$id ? ' selected' : '' ?>><?= ci_e($n) ?></option><?php endforeach; ?></select></div>
@@ -230,18 +247,22 @@ tr.at-hl td{background:#fefce8}
     <div class="ci-f"><label>Name / admission ID / mobile</label><input type="search" name="q" value="<?= ci_e($f['q']) ?>" placeholder="Search"></div>
     <?php if ($f['show']): ?><input type="hidden" name="show" value="<?= ci_e($f['show']) ?>"><?php endif; ?>
   </form>
+  <div class="at-mc" data-ds="This month" data-ds-section><?php $pc = $mPct ?? 0; $tone = $mPct === null ? 'na' : ($pc >= 75 ? 'ok' : ($pc >= 50 ? 'mid' : 'low')); ?>
+    <div class="at-mc-ring <?= $tone ?>"><svg viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="18"/><circle cx="22" cy="22" r="18" pathLength="100" style="stroke-dasharray:<?= $pc ?> 100"/></svg><b><?= $mPct !== null ? $mPct . '<small>%</small>' : '—' ?></b></div>
+    <div class="at-mc-t"><small>This month<?= $f['batch'] || $f['course'] || $f['class'] || $f['q'] ? ' · this list' : '' ?></small><b><?= date('F Y', strtotime($f['date'])) ?></b><span><?= $mon['days'] ?> class day<?= $mon['days'] === 1 ? '' : 's' ?> · attendance <?= $mPct !== null ? $mPct . '%' : '—' ?></span></div>
+    <div class="at-mc-g">
+      <div class="p"><b><?= $mon['present'] ?></b><small>Present</small></div>
+      <div class="a"><b><?= $mon['absent'] ?></b><small>Absent</small></div>
+      <div class="l"><b><?= $mon['leave'] ?></b><small>Leave</small></div>
+      <a class="h" href="/admin/ci-holidays.php" title="Manage holidays"><b><?= $mon['hol'] ?></b><small>Holidays <i class="fas fa-arrow-right"></i></small></a>
+    </div>
+  </div>
+  </div>
   <div class="at-scan" data-ds="Scan ID card or enter admission ID">
     <h3><i class="fas fa-barcode"></i> Scan ID card or enter Admission ID</h3>
     <form class="at-scan-row" id="atScanF"><input type="text" id="atScan" inputmode="text" autocomplete="off" aria-label="Admission ID" placeholder="<?= $isToday ? 'Admission ID' : 'Switch the date to today' ?>"<?= $isToday ? ' autofocus' : ' disabled' ?>><button type="submit"<?= $isToday ? '' : ' disabled' ?>><i class="fas fa-check"></i> Mark</button></form>
     <div class="at-last" id="atLast" hidden></div>
   </div>
-</div>
-<div class="at-month" data-ds="This month">
-  <div><small><?= date('F Y', strtotime($f['date'])) ?><?= $f['batch'] || $f['course'] || $f['class'] || $f['q'] ? ' · this list' : '' ?></small><b><?= $mon['days'] ?></b> class day<?= $mon['days'] === 1 ? '' : 's' ?><?= $mPct !== null ? ' · ' . $mPct . '%' : '' ?></div>
-  <div class="p"><small>Present</small><b><?= $mon['present'] ?></b></div>
-  <div class="a"><small>Absent</small><b><?= $mon['absent'] ?></b></div>
-  <div class="l"><small>Leave</small><b><?= $mon['leave'] ?></b></div>
-  <div class="h"><small>Holidays</small><b><?= $mon['hol'] ?></b> <a href="/admin/ci-holidays.php" style="font-size:12px">Manage</a></div>
 </div>
 <?php if (!$isToday): ?><div class="at-past"><i class="fas fa-calendar-day"></i> You are marking attendance for <b><?= ci_date($f['date']) ?></b>, not today.</div><?php endif; ?>
 
