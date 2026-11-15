@@ -57,11 +57,11 @@ body{margin:0;background:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,"S
 .empty{max-width:600px;margin:40px auto;padding:20px;background:#fff;border:1px solid #e5e7eb;text-align:center;color:#6b7280}
 /* portrait card, 54 × 85.6 mm (bank-card size) */
 .idc{position:relative;width:54mm;height:85.6mm;border:.3mm solid #c9ced6;border-radius:3mm;overflow:hidden;display:flex;flex-direction:column;background:#fff;break-inside:avoid;page-break-inside:avoid}
-.idc-h{display:flex;align-items:center;gap:2mm;padding:2.2mm 2.6mm 1.8mm;background:#fff;border-top:1.6mm solid var(--idc)}
+.idc-h{display:flex;align-items:center;gap:2mm;padding:1.8mm 2.6mm 1.4mm;background:#fff;border-top:1.6mm solid var(--idc)}
 .idc-h img{width:10.5mm;height:10.5mm;object-fit:contain;flex:none}
 .idc-h div{min-width:0;line-height:1.2}
 .idc-h b{display:block;font-family:Georgia,"Times New Roman",serif;font-size:4mm;font-weight:700;letter-spacing:.02em;text-transform:uppercase;color:var(--idc);line-height:1.05}
-.idc-h small{display:block;font-size:2mm;color:#4b5563;margin-top:.5mm}
+.idc-h small{display:block;font-size:2.45mm;color:#374151;margin-top:.4mm}
 .idc-t{background:#fcd34d;color:var(--idc);text-align:center;font-size:2.2mm;font-weight:800;letter-spacing:.24em;padding:.9mm 0} /* yellow, so it stands out; no border */
 .idc-bc{padding:1.4mm 1.4mm .4mm}
 .idc-bc svg{width:100%;height:9mm;display:block} /* full card width: thick bars (~0.42 mm) for any scanner */
@@ -82,11 +82,11 @@ body{margin:0;background:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,"S
 .sheet.land{grid-template-columns:repeat(2,85.6mm);gap:2.5mm 6mm}
 .idl{position:relative;width:85.6mm;height:54mm;border:.3mm solid #c9ced6;border-radius:3mm;overflow:hidden;display:flex;flex-direction:column;background:#fff;break-inside:avoid;page-break-inside:avoid}
 .idl>*{flex-shrink:0}
-.idl-h{display:flex;align-items:center;gap:2mm;padding:1.2mm 3mm;background:#fff;color:var(--idc)}
+.idl-h{display:flex;align-items:center;gap:2mm;padding:1mm 3mm;background:#fff;color:var(--idc)}
 .idl-h img{width:9mm;height:9mm;object-fit:contain;flex:none}
 .idl-h div{min-width:0;line-height:1.15}
 .idl-h b{display:block;font-family:Georgia,"Times New Roman",serif;font-size:4.5mm;letter-spacing:.02em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.idl-h small{display:block;font-size:2.15mm;color:#4b5563;margin-top:.4mm;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.idl-h small{display:block;font-size:2.6mm;color:#374151;margin-top:.4mm;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .idl-t{background:#fcd34d;color:var(--idc);text-align:center;font-size:2.1mm;font-weight:800;letter-spacing:.26em;padding:.6mm 0}
 .idl-b{flex:1;display:flex;align-items:stretch;gap:4.6mm;padding:1.3mm 2.6mm .8mm;min-height:0} /* column 1: the photo; column 2: barcode, name, details */
 .idl-ph{flex:none;align-self:center;width:19mm;height:24.4mm;border:.35mm solid var(--idc);padding:.4mm;background:#fff}
