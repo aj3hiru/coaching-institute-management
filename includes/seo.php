@@ -192,10 +192,18 @@ function edu_seo_head_tags(): string
     return $out;
 }
 
+/** A link written as Markdown inside an href — href="[https://x](https://x)" (pasted from an AI writer) — becomes href="https://x". */
+function edu_content_fix_md_links(string $html): string
+{
+    if (strpos($html, '="[') === false) return $html;
+    return preg_replace('~\b(href|src)=(["\'])\[[^\]"\'<>]*\]\((https?://[^)"\'<>\s]+)\)\2~i', '$1=$2$3$2', $html);
+}
+
 /** Links & images in post/page content (Advanced mode): nofollow / new tab for external links, missing alt/title. */
 // Tables scroll sideways on phones instead of squeezing: each <table> gets its own .nb-tw wrapper (nested tables too).
 function edu_content_wrap_tables(string $html): string
 {
+    $html = edu_content_fix_md_links($html);
     if (stripos($html, '<table') === false || strpos($html, 'class="nb-tw"') !== false) return $html;
     $html = preg_replace('/<table\b/i', '<div class="nb-tw"><table', $html);
     return preg_replace('#</table>#i', '</table></div>', $html);

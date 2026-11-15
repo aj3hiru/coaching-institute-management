@@ -1,7 +1,7 @@
 <?php
-define('DROOT_PATH', $_SERVER['DOCUMENT_ROOT']);
-define('ADMIN_PATH', DROOT_PATH . '/admin');
-define('ADMIN_URL', '/admin');
+defined('DROOT_PATH') || define('DROOT_PATH', $_SERVER['DOCUMENT_ROOT']);
+defined('ADMIN_PATH') || define('ADMIN_PATH', DROOT_PATH . '/admin');
+defined('ADMIN_URL') || define('ADMIN_URL', '/admin');
 require_once DROOT_PATH . '/includes/config.php';
 require_once DROOT_PATH . '/includes/functions.php';
 require_once ADMIN_PATH . '/components/guard.php';

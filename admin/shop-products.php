@@ -131,6 +131,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pdo->exec("DELETE FROM sh_products WHERE id = $id");
             $pdo->commit();
             foreach ($media as $f) sh_media_unlink($f);
+            $md = sh_media_dir() . '/' . $id; if (is_dir($md) && !array_diff(scandir($md), ['.', '..'])) @rmdir($md); // its folder too, once empty
             admin_log('shop_product', "Deleted store product #$id");
             admin_flash('Deleted.');
         }
