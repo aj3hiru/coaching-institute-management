@@ -162,6 +162,18 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Ari
 .ph svg{width:72px;height:72px}
 .ph b{font-size:clamp(18px,2.4vw,24px);color:var(--p)}
 .ph.err{border-color:#fca5a5;color:#991b1b;background:#fff5f5}.ph.err b{color:var(--bad)}
+/* "Scan your ID card" (waiting): a splash when it shows, then always a light sweep, a soft pulse and a scanning line — none on the student's card */
+.ph-idle{position:relative;overflow:hidden;isolation:isolate;animation:ph-pop .7s cubic-bezier(.2,.9,.3,1.3) both,ph-pulse 2.8s 1s ease-out infinite}
+.ph-idle::after{content:"";position:absolute;top:-10%;bottom:-10%;left:-50%;width:35%;z-index:-1;background:linear-gradient(100deg,rgba(255,255,255,0),rgba(255,255,255,.95) 50%,rgba(255,255,255,0));transform:skewX(-20deg);animation:ph-shine 2.8s .6s ease-in-out infinite;pointer-events:none}
+.ph-idle::before{content:"";position:absolute;inset:0;z-index:-2;background:linear-gradient(120deg,rgba(124,58,237,.06),rgba(252,211,77,.10));}
+.ph-ic{position:relative;display:block;width:72px;height:72px;animation:ph-ic 2.8s 1s ease-in-out infinite}
+.ph-ic svg{width:100%;height:100%}
+.ph-laser{position:absolute;left:4px;right:4px;top:22%;height:2px;border-radius:2px;background:#dc2626;box-shadow:0 0 8px 2px rgba(220,38,38,.55);animation:ph-laser 1.6s ease-in-out infinite alternate}
+@keyframes ph-pop{0%{transform:scale(.85);opacity:0;box-shadow:0 0 0 0 rgba(74,51,105,.35)}60%{transform:scale(1.025);opacity:1;box-shadow:0 0 0 14px rgba(74,51,105,.12)}100%{transform:none;opacity:1;box-shadow:0 0 0 26px rgba(74,51,105,0)}}
+@keyframes ph-pulse{0%{box-shadow:0 0 0 0 rgba(74,51,105,.28)}70%,100%{box-shadow:0 0 0 18px rgba(74,51,105,0)}}
+@keyframes ph-shine{0%{left:-50%}50%,100%{left:130%}}
+@keyframes ph-ic{0%,100%{transform:none}50%{transform:scale(1.08)}}
+@keyframes ph-laser{from{top:22%}to{top:74%}}
 /* recent scans */
 .rec{overflow:hidden;padding:0 16px 16px;-webkit-mask-image:linear-gradient(90deg,#000 88%,transparent);mask-image:linear-gradient(90deg,#000 88%,transparent)} /* one row: the newest present slides in once from the left */
 .rec-t{display:flex;flex-wrap:nowrap;gap:8px;width:max-content;will-change:transform}
@@ -286,7 +298,7 @@ body.h-s_all .sd-all{display:none}
   var HEAD = { in: 'Present', out: 'Checked out', wait: 'Already checked in', done: 'Already checked out', error: 'Not marked' };
   (function tick() { var d = new Date(); document.getElementById('clk').textContent = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }); setTimeout(tick, 1000 - d.getMilliseconds()); })();
   function beep(ok) { try { var a = new (window.AudioContext || window.webkitAudioContext)(), o = a.createOscillator(), g = a.createGain(); o.frequency.value = ok ? 990 : 220; g.gain.value = .15; o.connect(g); g.connect(a.destination); o.start(); o.stop(a.currentTime + (ok ? .1 : .25)); } catch (x) {} }
-  function idle() { st.className = 'st idle'; st.textContent = 'Ready — scan an ID card'; box.innerHTML = '<div class="ph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 8v8M10 8v8M13 8v8M17 8v8"/></svg><b>Scan your ID card</b><span>Your card shows here and the attendance is marked.</span></div>'; }
+  function idle() { st.className = 'st idle'; st.textContent = 'Ready — scan an ID card'; box.innerHTML = '<div class="ph ph-idle"><span class="ph-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 8v8M10 8v8M13 8v8M17 8v8"/></svg><i class="ph-laser"></i></span><b>Scan your ID card</b><span>Your card shows here and the attendance is marked.</span></div>'; }
   function show(d, code) {
     var s = d.student, k = d.kind || 'error';
     st.className = 'st ' + k;
