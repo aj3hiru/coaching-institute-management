@@ -171,7 +171,7 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Ari
   linear-gradient(var(--c),var(--c)) 0 100%/34px 3px,linear-gradient(var(--c),var(--c)) 0 100%/3px 34px,
   linear-gradient(var(--c),var(--c)) 100% 100%/34px 3px,linear-gradient(var(--c),var(--c)) 100% 100%/3px 34px;background-repeat:no-repeat;
   animation:ph-fr 2.4s ease-in-out infinite}
-.ph-ic{position:relative;display:flex;align-items:center;justify-content:center;width:96px;height:96px;margin-bottom:6px;border-radius:50%;background:#f5f3ff;color:var(--p)}
+.ph-ic{position:relative;display:flex;align-items:center;justify-content:center;width:96px;height:96px;margin:-30px 0 40px;border-radius:50%;background:#f5f3ff;color:var(--p)}
 .ph-ic::before,.ph-ic::after{content:"";position:absolute;inset:0;border-radius:50%;border:2px solid rgba(124,58,237,.35);animation:ph-ring 2.4s cubic-bezier(.2,.6,.3,1) infinite}
 .ph-ic::after{animation-delay:1.2s}
 .ph-idle .ph-ic svg{width:50px;height:50px}
