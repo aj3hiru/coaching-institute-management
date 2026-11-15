@@ -201,13 +201,14 @@ $checkedIn = count(array_filter($rows, fn($r) => $r['status'] === 'present' && $
 .at-io.out{border-color:#93c5fd;color:#1d4ed8}.at-io:disabled{opacity:.5;cursor:wait}
 .at-hol{display:block;font-size:11.5px;color:#6d28d9;margin-top:3px}
 /* page header: this month + icon-only buttons */
-.top-nav .nav-right{gap:10px}
+.top-nav .nav-right{gap:10px;flex-wrap:nowrap;flex-shrink:0}.top-nav .nav-left{min-width:0;flex:1 1 auto}
+.top-nav .at-ib{flex-wrap:nowrap}
 .at-hm{display:flex;align-items:center;gap:10px;padding:4px 6px 4px 4px;border:1px solid #e5e7eb;border-radius:5px!important;background:#fff}
 .at-hm .at-mc-ring b{font-size:12px}.at-hm .at-mc-ring b small{font-size:8px}.at-hm .at-mc-ring circle{stroke-width:5.5}
 .at-hm-t{line-height:1.2;white-space:nowrap}.at-hm-t b{display:block;font-size:13.5px;color:#111827}.at-hm-t small{font-size:11.5px;color:#6b7280}
-.at-hm-c{display:flex;gap:4px}
-.at-hm-c>*{min-width:52px;padding:3px 8px;border-radius:5px!important;background:var(--bg);text-align:center;text-decoration:none;line-height:1.15}
-.at-hm-c b{display:block;font-size:15px;font-weight:800;color:var(--c)}.at-hm-c small{display:block;font-size:10.5px;font-weight:600;color:#4b5563}
+.at-hm-c{display:flex;align-items:center;gap:6px}
+.at-hm-c>*{display:inline-flex;align-items:baseline;gap:5px;height:30px;padding:0 10px;border-radius:5px!important;background:var(--bg);text-decoration:none;white-space:nowrap;line-height:30px}
+.at-hm-c b{font-size:15px;font-weight:800;color:var(--c)}.at-hm-c small{font-size:12.5px;font-weight:600;color:#4b5563}
 .at-hm-c .p{--c:#15803d;--bg:#f0fdf4}.at-hm-c .a{--c:#b91c1c;--bg:#fef2f2}.at-hm-c .l{--c:#b45309;--bg:#fffbeb}.at-hm-c .h{--c:#6d28d9;--bg:#f5f3ff}.at-hm-c a.h:hover{background:#ede9fe}
 .top-nav .at-ib{gap:6px}
 .top-nav .at-ib .ci-btn{width:38px;height:38px;min-width:38px;padding:0!important;justify-content:center;gap:0!important}
@@ -236,11 +237,12 @@ $checkedIn = count(array_filter($rows, fn($r) => $r['status'] === 'present' && $
 .at-mc-g a.h:hover{background:#ede9fe}
 @media (max-width:560px){.at-mc-g{grid-template-columns:repeat(2,1fr);flex-basis:100%}}
 /* class on now: a second line under the date in the page header; phones (no room in the header) get it above the filters */
-.page-heading p:has(.at-run){white-space:normal;max-width:none;overflow:visible}
-.at-run{display:flex;align-items:center;flex-wrap:wrap;gap:4px;width:fit-content;margin:4px 0 0;padding:3px 8px;border-radius:5px;background:#f5f3ff;color:#4c1d95;font-size:12.5px;line-height:1.35}
-.at-run b{font-weight:700}.at-run a{color:#6d28d9;font-weight:700;margin-left:6px;text-decoration:underline}
+.top-nav .page-heading{min-width:0}.page-heading p:has(.at-run){white-space:normal;max-width:none;overflow:hidden}
+.at-run{display:flex;align-items:center;flex-wrap:nowrap;gap:5px;width:fit-content;max-width:100%;white-space:nowrap;margin:3px 0 0;padding:3px 8px;border-radius:5px;background:#f5f3ff;color:#4c1d95;font-size:12.5px;line-height:1.35}
+.at-run b{font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis}.at-run>span,.at-run>a,.at-run>i{flex:none}.at-run a{color:#6d28d9;font-weight:700;margin-left:6px;text-decoration:underline}
 .at-run-m{display:none}
-@media (max-width:767px){.at-run-m{display:flex;width:auto;margin:0 0 12px}}
+@media (max-width:1359px){.top-nav .at-run>span:nth-of-type(2){display:none}} /* less room: the class name before its time (the time is in the hover) */
+@media (max-width:767px){.at-run-m{display:flex;width:auto;margin:0 0 12px;flex-wrap:wrap;white-space:normal}}
 .at-t{font-size:12.5px;color:#374151;white-space:nowrap}.at-t small{display:block;color:#9ca3af}
 .at-bulk{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-left:auto}
 .at-name{display:flex;align-items:center;gap:10px}.at-name a{font-weight:600;color:#111827;text-decoration:none}.at-name small{display:block;color:#6b7280;font-size:12px}
@@ -255,7 +257,7 @@ $ring = fn(int $sz) => '<div class="at-mc-ring ' . $tone . '" style="width:' . $
 $atHm = '<div class="at-hm" data-ds="This month (header)" data-ds-extra title="This month' . ($f['batch'] || $f['course'] || $f['class'] || $f['q'] ? ' (this list)' : '') . '">' . $ring(42)
     . '<div class="at-hm-t"><b>' . date('M Y', strtotime($f['date'])) . '</b><small>' . $mon['days'] . ' class day' . ($mon['days'] === 1 ? '' : 's') . '</small></div>'
     . '<div class="at-hm-c"><div class="p"><b>' . $mon['present'] . '</b><small>Present</small></div><div class="a"><b>' . $mon['absent'] . '</b><small>Absent</small></div><div class="l"><b>' . $mon['leave'] . '</b><small>Leave</small></div><a class="h" href="/admin/ci-holidays.php" title="Manage holidays"><b>' . $mon['hol'] . '</b><small>Holidays</small></a></div></div>'; ?>
-<?php admin_shell_open('Attendance', date('l, d M Y', strtotime($f['date'])) . ($running ? '<span class="at-run"><i class="fas fa-bell"></i> Class on now: <b>' . ci_e($running['name']) . '</b> (' . ci_e(ci_time_range($running['start_time'], $running['end_time'])) . ')<a href="?all=1">Show all batches</a></span>' : ''), $atHm . '<div class="ci-top-actions at-ib">' . ($isToday ? '<button type="button" class="ci-btn" id="atScrBtn" title="Scan screen"><i class="fas fa-id-card"></i> Scan screen</button>' : '') . '<button type="button" class="ci-btn ci-ghost" id="atSetBtn" title="Check-out time"><i class="fas fa-clock"></i> Check-out time</button><a class="ci-btn ci-ghost" href="/admin/ci-reports.php?type=attendance" title="Attendance report"><i class="fas fa-file-pdf"></i> Attendance report</a></div>'); ?>
+<?php admin_shell_open('Attendance', date('l, d M Y', strtotime($f['date'])) . ($running ? '<span class="at-run" title="Class on now: ' . ci_e($running['name']) . ' (' . ci_e(ci_time_range($running['start_time'], $running['end_time'])) . ')"><i class="fas fa-bell"></i><span>Class on now:</span><b>' . ci_e($running['name']) . '</b><span>· ' . ci_e(ci_time_range($running['start_time'], $running['end_time'])) . '</span><a href="?all=1">All batches</a></span>' : ''), $atHm . '<div class="ci-top-actions at-ib">' . ($isToday ? '<button type="button" class="ci-btn" id="atScrBtn" title="Scan screen"><i class="fas fa-id-card"></i> Scan screen</button>' : '') . '<button type="button" class="ci-btn ci-ghost" id="atSetBtn" title="Check-out time"><i class="fas fa-clock"></i> Check-out time</button><a class="ci-btn ci-ghost" href="/admin/ci-reports.php?type=attendance" title="Attendance report"><i class="fas fa-file-pdf"></i> Attendance report</a></div>'); ?>
 <div class="ci">
 <?php if ($running): ?><div class="at-run at-run-m"><i class="fas fa-bell"></i> Class on now: <b><?= ci_e($running['name']) ?></b> (<?= ci_e(ci_time_range($running['start_time'], $running['end_time'])) ?>)<a href="?all=1">Show all batches</a></div><?php endif; ?>
 <div class="at-top">
