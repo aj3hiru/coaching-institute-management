@@ -200,9 +200,24 @@ $checkedIn = count(array_filter($rows, fn($r) => $r['status'] === 'present' && $
 .at-io{display:inline-flex;align-items:center;gap:4px;height:26px;margin-top:3px;padding:0 9px;border:1px solid #d1d5db;background:#fff;color:#374151;font:inherit;font-size:12px;font-weight:600;cursor:pointer}
 .at-io.out{border-color:#93c5fd;color:#1d4ed8}.at-io:disabled{opacity:.5;cursor:wait}
 .at-hol{display:block;font-size:11.5px;color:#6d28d9;margin-top:3px}
+/* page header: this month + icon-only buttons */
+.top-nav .nav-right{gap:10px}
+.at-hm{display:flex;align-items:center;gap:10px;padding:4px 6px 4px 4px;border:1px solid #e5e7eb;border-radius:5px!important;background:#fff}
+.at-hm .at-mc-ring b{font-size:12px}.at-hm .at-mc-ring b small{font-size:8px}.at-hm .at-mc-ring circle{stroke-width:5.5}
+.at-hm-t{line-height:1.2;white-space:nowrap}.at-hm-t b{display:block;font-size:13.5px;color:#111827}.at-hm-t small{font-size:11.5px;color:#6b7280}
+.at-hm-c{display:flex;gap:4px}
+.at-hm-c>*{min-width:52px;padding:3px 8px;border-radius:5px!important;background:var(--bg);text-align:center;text-decoration:none;line-height:1.15}
+.at-hm-c b{display:block;font-size:15px;font-weight:800;color:var(--c)}.at-hm-c small{display:block;font-size:10.5px;font-weight:600;color:#4b5563}
+.at-hm-c .p{--c:#15803d;--bg:#f0fdf4}.at-hm-c .a{--c:#b91c1c;--bg:#fef2f2}.at-hm-c .l{--c:#b45309;--bg:#fffbeb}.at-hm-c .h{--c:#6d28d9;--bg:#f5f3ff}.at-hm-c a.h:hover{background:#ede9fe}
+.top-nav .at-ib{gap:6px}
+.top-nav .at-ib .ci-btn{width:38px;height:38px;min-width:38px;padding:0!important;justify-content:center;gap:0!important}
+.top-nav .at-ib .nr-t{display:none}.top-nav .at-ib .ci-btn i{margin:0!important}
+.top-nav .dsp-lbl{display:none}.top-nav .dsp-btn{width:38px;height:38px;padding:0!important;justify-content:center}
+.at-mc{display:none}
+@media (max-width:1279px){.at-hm{display:none}.at-mc{display:flex}}
 .at-left{display:flex;flex-direction:column;gap:14px;min-width:0}
 /* this month: % ring, month name and days, four coloured tiles */
-.at-mc{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:14px 16px;background:#fff;border:1px solid #e5e7eb;border-radius:5px!important}
+.at-mc{align-items:center;gap:16px;flex-wrap:wrap;padding:14px 16px;background:#fff;border:1px solid #e5e7eb;border-radius:5px!important}
 .at-mc-ring{position:relative;flex:none;width:64px;height:64px}
 .at-mc-ring svg{width:100%;height:100%;transform:rotate(-90deg)}
 .at-mc-ring circle{fill:none;stroke-width:5}.at-mc-ring circle:first-child{stroke:#eef0f3}
@@ -234,12 +249,18 @@ tr.at-hl td{background:#fefce8}
 </style>
 </head>
 <body>
-<?php admin_shell_open('Attendance', date('l, d M Y', strtotime($f['date'])) . ($running ? '<span class="at-run"><i class="fas fa-bell"></i> Class on now: <b>' . ci_e($running['name']) . '</b> (' . ci_e(ci_time_range($running['start_time'], $running['end_time'])) . ')<a href="?all=1">Show all batches</a></span>' : ''), '<div class="ci-top-actions">' . ($isToday ? '<button type="button" class="ci-btn" id="atScrBtn"><i class="fas fa-id-card"></i> Scan screen</button>' : '') . '<button type="button" class="ci-btn ci-ghost" id="atSetBtn"><i class="fas fa-clock"></i> Check-out time</button><a class="ci-btn ci-ghost" href="/admin/ci-reports.php?type=attendance"><i class="fas fa-file-pdf"></i> Attendance report</a></div>'); ?>
+<?php // this month, in the page header: % ring, month, class days and the four counts (small screens: the card above the list instead)
+$pc = $mPct ?? 0; $tone = $mPct === null ? 'na' : ($pc >= 75 ? 'ok' : ($pc >= 50 ? 'mid' : 'low'));
+$ring = fn(int $sz) => '<div class="at-mc-ring ' . $tone . '" style="width:' . $sz . 'px;height:' . $sz . 'px"><svg viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="18"/><circle cx="22" cy="22" r="18" pathLength="100" style="stroke-dasharray:' . $pc . ' 100"/></svg><b>' . ($mPct !== null ? $mPct . '<small>%</small>' : '—') . '</b></div>';
+$atHm = '<div class="at-hm" data-ds="This month (header)" data-ds-extra title="This month' . ($f['batch'] || $f['course'] || $f['class'] || $f['q'] ? ' (this list)' : '') . '">' . $ring(42)
+    . '<div class="at-hm-t"><b>' . date('M Y', strtotime($f['date'])) . '</b><small>' . $mon['days'] . ' class day' . ($mon['days'] === 1 ? '' : 's') . '</small></div>'
+    . '<div class="at-hm-c"><div class="p"><b>' . $mon['present'] . '</b><small>Present</small></div><div class="a"><b>' . $mon['absent'] . '</b><small>Absent</small></div><div class="l"><b>' . $mon['leave'] . '</b><small>Leave</small></div><a class="h" href="/admin/ci-holidays.php" title="Manage holidays"><b>' . $mon['hol'] . '</b><small>Holidays</small></a></div></div>'; ?>
+<?php admin_shell_open('Attendance', date('l, d M Y', strtotime($f['date'])) . ($running ? '<span class="at-run"><i class="fas fa-bell"></i> Class on now: <b>' . ci_e($running['name']) . '</b> (' . ci_e(ci_time_range($running['start_time'], $running['end_time'])) . ')<a href="?all=1">Show all batches</a></span>' : ''), $atHm . '<div class="ci-top-actions at-ib">' . ($isToday ? '<button type="button" class="ci-btn" id="atScrBtn" title="Scan screen"><i class="fas fa-id-card"></i> Scan screen</button>' : '') . '<button type="button" class="ci-btn ci-ghost" id="atSetBtn" title="Check-out time"><i class="fas fa-clock"></i> Check-out time</button><a class="ci-btn ci-ghost" href="/admin/ci-reports.php?type=attendance" title="Attendance report"><i class="fas fa-file-pdf"></i> Attendance report</a></div>'); ?>
 <div class="ci">
 <?php if ($running): ?><div class="at-run at-run-m"><i class="fas fa-bell"></i> Class on now: <b><?= ci_e($running['name']) ?></b> (<?= ci_e(ci_time_range($running['start_time'], $running['end_time'])) ?>)<a href="?all=1">Show all batches</a></div><?php endif; ?>
 <div class="at-top">
   <div class="at-left">
-  <form class="ci-filters" method="get" id="atF" data-ds="Filters" style="margin:0">
+  <form class="ci-filters" method="get" id="atF" data-ds="Filters" data-ds-section style="margin:0">
     <div class="ci-f"><label>Date</label><input type="date" name="date" value="<?= ci_e($f['date']) ?>" max="<?= $today ?>"></div>
     <div class="ci-f"><label>Course</label><select name="course"><option value="0">All courses</option><?php foreach ($courses as $id => $n): ?><option value="<?= (int)$id ?>"<?= $f['course'] === (int)$id ? ' selected' : '' ?>><?= ci_e($n) ?></option><?php endforeach; ?></select></div>
     <div class="ci-f"><label>Batch</label><select name="batch"><option value="0">All batches</option><?php foreach ($batches as $b): ?><option value="<?= (int)$b['id'] ?>"<?= $f['batch'] === (int)$b['id'] ? ' selected' : '' ?>><?= ci_e($b['name'] . ($b['timing'] ? ' · ' . $b['timing'] : '')) ?></option><?php endforeach; ?></select></div>
@@ -247,8 +268,8 @@ tr.at-hl td{background:#fefce8}
     <div class="ci-f"><label>Name / admission ID / mobile</label><input type="search" name="q" value="<?= ci_e($f['q']) ?>" placeholder="Search"></div>
     <?php if ($f['show']): ?><input type="hidden" name="show" value="<?= ci_e($f['show']) ?>"><?php endif; ?>
   </form>
-  <div class="at-mc" data-ds="This month" data-ds-section><?php $pc = $mPct ?? 0; $tone = $mPct === null ? 'na' : ($pc >= 75 ? 'ok' : ($pc >= 50 ? 'mid' : 'low')); ?>
-    <div class="at-mc-ring <?= $tone ?>"><svg viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="18"/><circle cx="22" cy="22" r="18" pathLength="100" style="stroke-dasharray:<?= $pc ?> 100"/></svg><b><?= $mPct !== null ? $mPct . '<small>%</small>' : '—' ?></b></div>
+  <div class="at-mc" data-ds="This month" data-ds-section>
+    <?= $ring(64) ?>
     <div class="at-mc-t"><small>This month<?= $f['batch'] || $f['course'] || $f['class'] || $f['q'] ? ' · this list' : '' ?></small><b><?= date('F Y', strtotime($f['date'])) ?></b><span><?= $mon['days'] ?> class day<?= $mon['days'] === 1 ? '' : 's' ?> · attendance <?= $mPct !== null ? $mPct . '%' : '—' ?></span></div>
     <div class="at-mc-g">
       <div class="p"><b><?= $mon['present'] ?></b><small>Present</small></div>
