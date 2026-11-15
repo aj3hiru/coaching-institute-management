@@ -237,9 +237,17 @@ $checkedIn = count(array_filter($rows, fn($r) => $r['status'] === 'present' && $
 .at-mc-g a.h:hover{background:#ede9fe}
 @media (max-width:560px){.at-mc-g{grid-template-columns:repeat(2,1fr);flex-basis:100%}}
 /* class on now: a second line under the date in the page header; phones (no room in the header) get it above the filters */
-.top-nav .page-heading{min-width:0}.page-heading p:has(.at-run){white-space:normal;max-width:none;overflow:hidden}
-.at-run{display:flex;align-items:center;flex-wrap:nowrap;gap:5px;width:fit-content;max-width:100%;white-space:nowrap;margin:3px 0 0;padding:3px 8px;border-radius:5px;background:#f5f3ff;color:#4c1d95;font-size:12.5px;line-height:1.35}
+.top-nav .page-heading{min-width:0}.page-heading p:has(.at-run){white-space:normal;max-width:none;overflow:visible}
+.at-run{display:flex;align-items:center;flex-wrap:nowrap;gap:5px;width:fit-content;max-width:100%;white-space:nowrap;margin:3px 0 0;padding:3px 8px;border-radius:5px;background:#ede9fe;box-shadow:inset 0 0 0 1px #ddd6fe;color:#4c1d95;font-size:12.5px;line-height:1.35}
 .at-run b{font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis}.at-run>span,.at-run>a,.at-run>i{flex:none}.at-run a{color:#6d28d9;font-weight:700;margin-left:6px;text-decoration:underline}
+/* class on now: a splash when the page opens (pops in with a ring), then always a light sweep, a soft pulse and the bell rings */
+.at-run{position:relative;overflow:hidden;isolation:isolate;animation:atr-pop .75s cubic-bezier(.2,.9,.3,1.4) both,atr-pulse 2.8s 1.2s ease-out infinite}
+.at-run::after{content:"";position:absolute;top:0;bottom:0;left:-60%;width:45%;z-index:-1;background:linear-gradient(100deg,rgba(255,255,255,0),rgba(255,255,255,.95) 50%,rgba(255,255,255,0));transform:skewX(-20deg);animation:atr-shine 2.8s .7s ease-in-out infinite;pointer-events:none}
+.at-run .fa-bell{transform-origin:50% 0;animation:atr-bell 2.8s 1.2s ease-in-out infinite}
+@keyframes atr-pop{0%{transform:scale(.55);opacity:0;box-shadow:0 0 0 0 rgba(124,58,237,.55)}55%{transform:scale(1.07);opacity:1;box-shadow:0 0 0 6px rgba(124,58,237,.3)}100%{transform:none;opacity:1;box-shadow:0 0 0 12px rgba(124,58,237,0)}}
+@keyframes atr-pulse{0%{box-shadow:0 0 0 0 rgba(124,58,237,.45)}60%,100%{box-shadow:0 0 0 7px rgba(124,58,237,0)}}
+@keyframes atr-shine{0%{left:-60%}45%,100%{left:130%}}
+@keyframes atr-bell{0%,55%,100%{transform:none}60%{transform:rotate(16deg)}66%{transform:rotate(-14deg)}72%{transform:rotate(10deg)}78%{transform:rotate(-6deg)}84%{transform:none}}
 .at-run-m{display:none}
 @media (max-width:1359px){.top-nav .at-run>span:nth-of-type(2){display:none}} /* less room: the class name before its time (the time is in the hover) */
 @media (max-width:767px){.at-run-m{display:flex;width:auto;margin:0 0 12px;flex-wrap:wrap;white-space:normal}}
