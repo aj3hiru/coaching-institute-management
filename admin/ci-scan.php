@@ -196,6 +196,31 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Ari
 .ld-s li.ok span::after{content:"";position:absolute;left:5px;top:1px;width:5px;height:10px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
 @keyframes spin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.ld-s li.on span{animation:none}}
+/* side column: who is checked in now (not checked out yet), in the order they came — check out one by one or all */
+.main{flex:1;display:flex;min-height:0}
+.main .stage{flex:1;min-width:0}
+.side{width:340px;flex:none;display:flex;flex-direction:column;min-height:0;background:#fff;border-left:1px solid #e5e7eb}
+.sd-h{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid #e5e7eb}
+.sd-h b{font-size:15px;color:var(--p)}
+.sd-h .sd-n{min-width:26px;height:22px;padding:0 7px;border-radius:5px;background:#dcfce7;color:#166534;font-size:13px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums}
+.sd-all{margin-left:auto;height:32px;padding:0 12px;border:0;border-radius:5px;background:var(--out);color:#fff;font:inherit;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
+.sd-all.sure{background:var(--bad)}.sd-all:disabled{opacity:.45;cursor:not-allowed}
+.sd-q{padding:8px 14px;border-bottom:1px solid #f1f5f9}
+.sd-q input{width:100%;height:34px;padding:0 10px;border:1px solid #d1d5db;border-radius:5px;font:inherit;font-size:13px}
+.sd-q input:focus{outline:none;border-color:var(--p)}
+.sd-l{flex:1;overflow:auto;list-style:none;margin:0;padding:0;min-height:0}
+.sd-l li{display:flex;align-items:center;gap:10px;padding:7px 14px;border-bottom:1px solid #f1f5f9}
+.sd-l li.new{animation:sdnew 2s ease-out}
+@keyframes sdnew{from{background:#dcfce7}to{background:#fff}}
+.sd-l .no{flex:none;min-width:24px;text-align:right;color:#6b7280;font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
+.sd-l li img,.sd-l li svg{width:28px;height:36px;object-fit:cover;flex:none}
+.sd-l .nm{flex:1;min-width:0;line-height:1.25}
+.sd-l .nm b{display:block;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sd-l .nm small{display:block;font-size:12px;color:#6b7280;white-space:nowrap}
+.sd-l button{flex:none;height:30px;padding:0 10px;border:1px solid #93c5fd;border-radius:5px;background:#fff;color:#1d4ed8;font:inherit;font-size:12px;font-weight:700;cursor:pointer}
+.sd-l button:hover{background:#eff6ff}.sd-l button:disabled{opacity:.5;cursor:wait}
+.sd-e{padding:28px 16px;text-align:center;color:#9ca3af;font-size:13px}
+@media (max-width:900px){.main{flex-direction:column}.side{width:auto;border-left:0;border-top:1px solid #e5e7eb;max-height:45vh}}
 <?php if ($embed): ?>.top .nt{display:none}<?php endif; ?>
 @media (max-width:600px){.top{gap:8px;padding:10px 12px}.top b{font-size:14px}.top .clk{display:none}.net span{display:none}.net{padding:0 6px}.top a{padding:0 8px}}
 </style>
@@ -206,7 +231,10 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Ari
   <div class="clk"><span id="clk"></span><small><?= date('l, d M Y') ?></small></div>
   <?php if (!$embed): ?><a href="<?= $canAtt ? '/admin/ci-attendance.php' : '/admin/dashboard.php' ?>">← <?= $canAtt ? 'Attendance' : 'Dashboard' ?></a><?php endif; ?></div>
 <div class="inp"><form id="f" autocomplete="off"><input id="code" inputmode="text" placeholder="Scan card / admission ID" aria-label="Admission ID" autofocus><button type="submit">Mark</button></form></div>
-<div class="stage"><div class="st idle" id="st">Ready — scan an ID card</div><div id="box"></div></div>
+<div class="main"><div class="stage"><div class="st idle" id="st">Ready — scan an ID card</div><div id="box"></div></div>
+<aside class="side" aria-label="Checked in now"><div class="sd-h"><b>Checked in</b><span class="sd-n" id="sdN">0</span><button type="button" class="sd-all" id="sdAll" disabled>Check out all</button></div>
+  <div class="sd-q"><input type="search" id="sdQ" placeholder="Find a name or admission ID" aria-label="Find in checked-in list"></div>
+  <ol class="sd-l" id="sdL"></ol></aside></div>
 <div class="ld" id="ld" role="status" aria-live="polite"><div class="ld-c">
   <div class="ld-ring"><svg viewBox="0 0 110 110" aria-hidden="true"><circle class="ld-bg" cx="55" cy="55" r="48"/><circle class="ld-r" cx="55" cy="55" r="48"/><path class="ld-ok" d="M36 56l13 13 25-27"/></svg><b><span class="ld-n">0</span><small>%</small></b></div>
   <div class="ld-h">Getting the scan screen ready…</div>
@@ -320,8 +348,8 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Ari
       if (a['in'] && (!m['in'] || a['in'] < m['in'])) m['in'] = a['in'];
       if (a.out && (!m.out || a.out > m.out)) m.out = a.out; }
   }
-  function saveS() { try { mergeS(JSON.parse(localStorage.getItem(SK) || 'null')); localStorage.setItem(SK, JSON.stringify(S)); } catch (x) {} }
-  window.addEventListener('storage', function (e) { if (e.key === SK && e.newValue) try { mergeS(JSON.parse(e.newValue)); } catch (x) {} });
+  function saveS() { try { mergeS(JSON.parse(localStorage.getItem(SK) || 'null')); localStorage.setItem(SK, JSON.stringify(S)); } catch (x) {} sideSoon(); }
+  window.addEventListener('storage', function (e) { if (e.key === SK && e.newValue) try { mergeS(JSON.parse(e.newValue)); sideSoon(); } catch (x) {} });
   var loading = null;
   // photos: in the background, 4 at a time, paused while scans are being sent — they never slow the scanning
   var PH = [], phBusy = 0;
@@ -385,6 +413,61 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Ari
     card['in'] = m['in'] ? hm(m['in']) : ''; card.out = m.out ? hm(m.out) : '';
     saveS(); return d;
   }
+  // ---- side column: checked in now (not checked out yet), numbered in the order they came; check out one / all ----
+  var sdL = document.getElementById('sdL'), sdN = document.getElementById('sdN'), sdAll = document.getElementById('sdAll'), sdQ = document.getElementById('sdQ');
+  var sdSig = '', sdSeen = null, sdRaf = 0, pend = {}, outAll = false, sureT = null;
+  function sideSoon() { if (!sdRaf) sdRaf = requestAnimationFrame(function () { sdRaf = 0; sideRender(); }); }
+  function sideRender() {
+    var list = [];
+    for (var k in S.st) { var m = S.st[k]; if (m && m['in'] && !m.out) list.push([k, m['in']]); }
+    list.sort(function (a, b) { return a[1] - b[1]; });
+    var q = sdQ.value.trim().toLowerCase(), sig = q + '|' + outAll + '|' + list.map(function (x) { return x[0] + (pend[x[0]] ? '*' : '') + ((R.by[x[0]] || {}).photo ? 'p' : ''); }).join(',');
+    sdN.textContent = list.length; sdAll.disabled = !list.length || outAll;
+    if (sig === sdSig) return; sdSig = sig;
+    var atEnd = sdL.scrollHeight - sdL.scrollTop - sdL.clientHeight < 40, added = false, seen = {};
+    var html = list.map(function (x, i) {
+      var k = x[0], s = R.by[k] || { reg: k, name: k }; seen[k] = 1;
+      if (q && (String(s.name) + ' ' + String(s.reg)).toLowerCase().indexOf(q) < 0) return '';
+      var isNew = sdSeen && !sdSeen[k]; if (isNew) added = true;
+      return '<li data-k="' + esc(k) + '"' + (isNew ? ' class="new"' : '') + '><span class="no">' + (i + 1) + '</span>' + photo(s) + '<div class="nm"><b>' + esc(s.name) + '</b><small>' + esc(s.reg) + ' · In ' + hm(x[1]) + '</small></div>'
+        + '<button type="button" data-out="' + esc(k) + '"' + (pend[k] || outAll ? ' disabled' : '') + '>Check out</button></li>';
+    }).join('');
+    sdSeen = seen;
+    sdL.innerHTML = html || '<li class="sd-e">' + (list.length ? 'No one by that name in the list.' : 'No one is checked in right now.') + '</li>';
+    if (added && atEnd) sdL.scrollTop = sdL.scrollHeight; // the newest is at the bottom: keep it in view
+  }
+  sdQ.addEventListener('input', sideSoon);
+  function checkout(keys, all) {
+    keys.forEach(function (k) { pend[k] = 1; }); if (all) outAll = true; sideSoon();
+    var body = new URLSearchParams({ action: 'outreg', _csrf: CSRF });
+    if (all) body.set('all', '1'); else body.set('codes', JSON.stringify(keys.map(function (k) { return (R.by[k] || {}).reg || k; })));
+    var end = function () { keys.forEach(function (k) { delete pend[k]; }); if (all) outAll = false; sdSig = ''; sideSoon(); };
+    return fetch('/admin/ci-attendance.php', { method: 'POST', body: body, credentials: 'same-origin', cache: 'no-store', headers: { 'X-Requested-With': 'fetch' } })
+      .then(function (r) { if (r.redirected && /admin-login/.test(r.url)) throw { login: 1 }; return r.json(); })
+      .then(function (d) {
+        if (d && d.csrf) { refreshToken(true); throw { msg: 'The page token was renewed — press Check out again.' }; }
+        if (!d || !d.ok) throw { msg: (d && d.msg) || 'Could not check out.' };
+        (d.att || []).forEach(function (a) { var k = norm(a[0]), m = S.st[k] || (S.st[k] = {}); if (a[1] && !m['in']) m['in'] = a[1] * 1000; if (a[2]) m.out = a[2] * 1000; });
+        saveS(); end();
+        var still = (all ? Object.keys(S.st) : keys).filter(function (k) { var m = S.st[k]; return m && m['in'] && !m.out; });
+        var one = !all && keys.length === 1 ? (R.by[keys[0]] || {}).name || keys[0] : '';
+        beep(true); st.className = 'st out';
+        st.textContent = still.length ? '⚠ ' + (one ? one + "'s check-in is still being sent — try again in a moment" : still.length + ' check-in(s) still being sent — try again in a moment')
+          : '✓ ' + (one ? 'Checked out — ' + one + ' · ' + d.time : d.msg);
+        if (still.length) st.className = 'st wait';
+        clearTimeout(idleT); idleT = setTimeout(idle, 9000);
+      })
+      .catch(function (e) {
+        end(); if (e && e.login) { loggedOut = true; netShow(); }
+        beep(false); st.className = 'st error'; st.textContent = '⚠ Not checked out — ' + (e && e.msg ? e.msg : e && e.login ? 'please sign in again' : 'no connection, try again');
+        clearTimeout(idleT); idleT = setTimeout(idle, 9000);
+      });
+  }
+  sdL.addEventListener('click', function (e) { var b = e.target.closest('button[data-out]'); if (b && !b.disabled) { b.disabled = true; checkout([b.getAttribute('data-out')], false); } });
+  sdAll.addEventListener('click', function () { // two clicks: "Check out all" → "Sure? Check out N" (4 s)
+    if (!sdAll.classList.contains('sure')) { sdAll.classList.add('sure'); sdAll.textContent = 'Sure? Check out ' + sdN.textContent; clearTimeout(sureT); sureT = setTimeout(function () { sdAll.classList.remove('sure'); sdAll.textContent = 'Check out all'; }, 4000); return; }
+    clearTimeout(sureT); sdAll.classList.remove('sure'); sdAll.textContent = 'Check out all'; checkout([], true);
+  });
   function add(c) {
     if (window.__ldSkip) window.__ldSkip();
     var k = norm(c), now = Date.now();
@@ -491,7 +574,7 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Ari
   document.addEventListener('click', function (e) { if (!e.target.closest('a,button,input')) code.focus(); });
   window.addEventListener('focus', function () { code.focus(); });
   setInterval(function () { if (document.activeElement !== code && !document.querySelector('input:focus,select:focus,textarea:focus')) code.focus(); }, 1500);
-  idle(); netShow();
+  idle(); netShow(); sideRender();
   // ---- getting ready: connection → students' list → scans left waiting from before → Ready (photos keep coming in the background) ----
   var ld = document.getElementById('ld'), ldP = 0, ldOn = true;
   function ldSet(p, step, txt) {

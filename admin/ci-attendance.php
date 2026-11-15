@@ -4,7 +4,7 @@
 // (barcode = admission ID): the first scan checks in, a scan after the set minutes checks out.
 require_once __DIR__ . '/components/guard.php';
 require_once INCLUDES_PATH . '/institute.php';
-$isScan = ($_POST['action'] ?? '') === 'scan';
+$isScan = in_array($_POST['action'] ?? '', ['scan', 'outreg'], true); // the scan screen's actions: scan, check out by admission ID
 $me = ci_page_start($pdo, $isScan ? ['attendance', 'att_scan'] : ['attendance'], $isScan); // a scan skips the table checks (fast at 100+ a minute); "Scan screen only" staff may scan, nothing else here
 $today = date('Y-m-d');
 $ST = ['present' => 'Present', 'absent' => 'Absent', 'leave' => 'Leave', 'holiday' => 'Holiday'];
@@ -72,6 +72,27 @@ if ($act !== '') {
         $msg = ($n ? $n . ' student(s) checked out at ' . date('h:i A') : 'Nobody was checked in without a check-out') . ($na ? '; ' . $na . ' who did not come marked absent' : '') . '.';
         $out(['ok' => true, 'n' => $n, 'na' => $na, 'time' => date('h:i A'), 'msg' => $msg]);
     }
+    if ($act === 'outreg') { // scan screen: check out by admission ID — one student, or (all=1) everyone checked in today
+        if ($date !== $today) $out(['ok' => false, 'msg' => 'Check-out is for today only.']);
+        $all = !empty($_POST['all']); $ids = [];
+        if (!$all) {
+            $codes = json_decode((string)($_POST['codes'] ?? '[]'), true);
+            if (!is_array($codes) || !$codes || count($codes) > 3000) $out(['ok' => false, 'msg' => 'Nobody to check out.'], 400);
+            $codes = array_values(array_unique(array_map(fn($c) => mb_substr(trim((string)$c), 0, 40), $codes)));
+            $iq = $pdo->prepare("SELECT id FROM ci_students WHERE reg_no IN (" . implode(',', array_fill(0, count($codes), '?')) . ")");
+            $iq->execute($codes); $ids = array_map('intval', $iq->fetchAll(PDO::FETCH_COLUMN));
+            if (!$ids) $out(['ok' => false, 'msg' => 'Student not found.']);
+        }
+        $in = $ids ? ' AND student_id IN (' . implode(',', $ids) . ')' : '';
+        $up = $pdo->prepare("UPDATE ci_attendance SET out_at = NOW(), updated_at = NOW(), marked_by = ? WHERE att_date = ? AND status = 'present' AND in_at IS NOT NULL AND out_at IS NULL$in");
+        $up->execute([(int)$me['id'], $date]); $n = $up->rowCount();
+        // today's in / out of these students (all: everyone present today), the same shape as the scan screen's list
+        $aq = $pdo->prepare("SELECT s.reg_no, MIN(a.in_at) AS i, MAX(a.out_at) AS o, SUM(a.in_at IS NOT NULL AND a.out_at IS NULL) AS open FROM ci_attendance a JOIN ci_students s ON s.id = a.student_id
+            WHERE a.att_date = ? AND a.status = 'present'" . str_replace('student_id', 'a.student_id', $in) . " GROUP BY s.id, s.reg_no");
+        $aq->execute([$date]); $att = [];
+        foreach ($aq as $r) $att[] = [$r['reg_no'], $r['i'] ? strtotime($r['i']) : 0, $r['o'] && !(int)$r['open'] ? strtotime($r['o']) : 0];
+        $out(['ok' => true, 'n' => $n, 'time' => date('h:i A'), 'att' => $att, 'msg' => $n ? ($all ? $n . ' student(s) checked out at ' . date('h:i A') . '.' : 'Checked out at ' . date('h:i A') . '.') : 'Nobody was checked in without a check-out.']);
+    }
     if ($act === 'settings') {
         $min = max(0, min(720, (int)($_POST['min_out'] ?? 10)));
         edu_settings_save('institute', ['att_min_out' => $min]);
@@ -85,7 +106,7 @@ $L = ci_lists($pdo);
 $f = [
     'date' => min($today, ci_clean_date($_GET['date'] ?? '') ?: $today),
     'course' => (int)($_GET['course'] ?? 0), 'batch' => (int)($_GET['batch'] ?? 0), 'class' => (int)($_GET['class'] ?? 0),
-    'q' => mb_substr(trim((string)($_GET['q'] ?? '')), 0, 60), 'show' => in_array($_GET['show'] ?? '', ['present', 'absent', 'leave', 'holiday', 'none'], true) ? $_GET['show'] : '',
+    'q' => mb_substr(trim((string)($_GET['q'] ?? '')), 0, 60), 'show' => in_array($_GET['show'] ?? '', ['present', 'in', 'absent', 'leave', 'holiday', 'none'], true) ? $_GET['show'] : '',
 ];
 $batches = $pdo->query("SELECT b.id, b.name, b.timing, b.course_id, b.start_time, b.end_time, c.name AS course_name FROM ci_batches b LEFT JOIN ci_courses c ON c.id = b.course_id WHERE b.status = 'active' ORDER BY b.start_time IS NULL, b.start_time, c.name, b.name")->fetchAll(PDO::FETCH_ASSOC);
 ci_att_autoclose($pdo, date('Y-m-d', strtotime('-14 days')), $today); // past classes: the ones not marked are absent
@@ -118,7 +139,8 @@ $rows = array_values($rows);
 $hols = ci_holidays_between($pdo, $f['date'], $f['date']);
 foreach ($rows as &$r) { $r['hol'] = ci_holiday_on($hols, $f['date'], (int)$r['batch_id'], (int)$r['course_id']); if (!$r['status'] && $r['hol']) $r['status'] = 'holiday'; } unset($r);
 $cnt = ['all' => count($rows), 'present' => 0, 'absent' => 0, 'leave' => 0, 'holiday' => 0, 'none' => 0];
-foreach ($rows as $r) $cnt[$r['status'] ?: 'none']++;
+$cnt['in'] = 0; $isIn = fn($r) => $r['status'] === 'present' && $r['in_at'] && !$r['out_at']; // checked in, not checked out yet
+foreach ($rows as $r) { $cnt[$r['status'] ?: 'none']++; if ($isIn($r)) $cnt['in']++; }
 // this month for the same choice: class days, holidays and marks
 $mA = date('Y-m-01', strtotime($f['date'])); $mB = min($today, date('Y-m-t', strtotime($f['date'])));
 $mPairs = array_map(fn($r) => [(int)$r['id'], (int)$r['batch_id'], (int)$r['course_id']], $rows);
@@ -133,7 +155,8 @@ if ($mPairs) {
     for ($t = strtotime($mA); $t <= strtotime($mB); $t += 86400) { $dd = date('Y-m-d', $t); foreach ($mPairs as [$x, $bid, $cid]) if (ci_holiday_on($mh, $dd, $bid, $cid)) { $mon['hol']++; break; } }
 }
 $mPct = ($mon['present'] + $mon['absent'] + $mon['leave']) ? round($mon['present'] / ($mon['present'] + $mon['absent'] + $mon['leave']) * 100) : null;
-if ($f['show']) $rows = array_values(array_filter($rows, fn($r) => ($r['status'] ?: 'none') === $f['show']));
+if ($f['show'] === 'in') { $rows = array_values(array_filter($rows, $isIn)); usort($rows, fn($x, $y) => strcmp((string)$x['in_at'], (string)$y['in_at'])); } // in the order they came
+elseif ($f['show']) $rows = array_values(array_filter($rows, fn($r) => ($r['status'] ?: 'none') === $f['show']));
 $minOut = ci_att_min_out();
 $isToday = $f['date'] === $today;
 $qs = fn(array $x) => '?' . http_build_query(array_filter(array_merge($f, $x), fn($v) => $v !== '' && $v !== 0 && $v !== null));
@@ -218,7 +241,7 @@ tr.at-hl td{background:#fefce8}
 <?php if (!$isToday): ?><div class="at-past"><i class="fas fa-calendar-day"></i> You are marking attendance for <b><?= ci_date($f['date']) ?></b>, not today.</div><?php endif; ?>
 
 <div class="at-sum" data-ds="Summary">
-  <?php foreach (['' => ['All', $cnt['all']], 'present' => ['Present', $cnt['present']], 'absent' => ['Absent', $cnt['absent']], 'leave' => ['Leave', $cnt['leave']], 'holiday' => ['Holiday', $cnt['holiday']], 'none' => ['Not marked', $cnt['none']]] as $k => [$l, $n]): ?>
+  <?php foreach (['' => ['All', $cnt['all']], 'present' => ['Present', $cnt['present']], 'in' => ['Checked in', $cnt['in']], 'absent' => ['Absent', $cnt['absent']], 'leave' => ['Leave', $cnt['leave']], 'holiday' => ['Holiday', $cnt['holiday']], 'none' => ['Not marked', $cnt['none']]] as $k => [$l, $n]): ?>
   <a href="<?= ci_e($qs(['show' => $k])) ?>" class="<?= $f['show'] === $k ? 'on' : '' ?>"><?= $l ?> <b><?= $n ?></b></a>
   <?php endforeach; ?>
   <div class="at-bulk">
