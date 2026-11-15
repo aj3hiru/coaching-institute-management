@@ -216,6 +216,24 @@ $checkedIn = count(array_filter($rows, fn($r) => $r['status'] === 'present' && $
 .top-nav .dsp-lbl{display:none}.top-nav .dsp-btn{width:38px;height:38px;padding:0!important;justify-content:center}
 .at-mc{display:none}
 @media (max-width:1279px){.at-hm{display:none}.at-mc{display:flex}}
+/* preview of the student's ID card while the admission ID is typed by hand (faded until Mark) */
+.at-pv{margin-top:12px}
+.at-pv-l{display:flex;align-items:center;gap:6px;margin-bottom:6px;font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.04em}
+.at-pv-l.none{text-transform:none;letter-spacing:0;font-size:13px;color:#b91c1c}
+.at-idc{opacity:.5;filter:saturate(.7);border:1px solid #e5e7eb;border-radius:8px!important;overflow:hidden;background:#fff;box-shadow:0 6px 18px rgba(41,24,66,.10);animation:atpv .2s ease-out}
+@keyframes atpv{from{opacity:0}to{opacity:.5}}
+.at-idc-h{display:flex;align-items:center;gap:8px;padding:6px 10px;background:linear-gradient(120deg,#4a3369,#6a4c94);color:#fff}
+.at-idc-h img{width:22px;height:22px;object-fit:contain;background:#fff;border-radius:50%;padding:2px}
+.at-idc-h b{font-family:Georgia,"Times New Roman",serif;font-size:12.5px;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.at-idc-t{background:#fcd34d;color:#4a3369;text-align:center;font-size:9px;font-weight:800;letter-spacing:.24em;padding:2px 0}
+.at-idc-b{display:flex;gap:10px;padding:8px 10px}
+.at-idc-ph{flex:none;width:52px;height:67px;border:2px solid #4a3369;padding:1px;background:#fff}
+.at-idc-ph img,.at-idc-ph svg{width:100%;height:100%;object-fit:cover;object-position:50% 30%;display:block}
+.at-idc-d{min-width:0;flex:1;font-size:12px;line-height:1.35}
+.at-idc-d b{display:block;font-size:13.5px;color:#4a3369;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px}
+.at-idc-d div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.at-idc-d span{color:#6b7280;display:inline-block;width:92px}
+.at-idc-f{display:flex;justify-content:space-between;align-items:center;padding:0 10px 8px;font-size:11.5px}
+.at-idc-f em{font-style:normal;font-weight:800;padding:2px 8px;border-radius:99px!important}.at-idc-f em.due{background:#fee2e2;color:#991b1b}.at-idc-f em.paid{background:#dcfce7;color:#166534}
 .at-left{display:flex;flex-direction:column;gap:14px;min-width:0}
 /* this month: % ring, month name and days, four coloured tiles */
 .at-mc{align-items:center;gap:16px;flex-wrap:wrap;padding:14px 16px;background:#fff;border:1px solid #e5e7eb;border-radius:5px!important}
@@ -292,7 +310,7 @@ $atHm = '<div class="at-hm" data-ds="This month (header)" data-ds-extra title="T
   <div class="at-scan" data-ds="Scan ID card or enter admission ID">
     <h3><i class="fas fa-barcode"></i> Scan ID card or enter Admission ID</h3>
     <form class="at-scan-row" id="atScanF"><input type="text" id="atScan" inputmode="text" autocomplete="off" aria-label="Admission ID" placeholder="<?= $isToday ? 'Admission ID' : 'Switch the date to today' ?>"<?= $isToday ? ' autofocus' : ' disabled' ?>><button type="submit"<?= $isToday ? '' : ' disabled' ?>><i class="fas fa-check"></i> Mark</button></form>
-    <div class="at-last" id="atLast" hidden></div>
+    <div class="at-pv" id="atPv" hidden></div><div class="at-last" id="atLast" hidden></div>
   </div>
 </div>
 <?php if (!$isToday): ?><div class="at-past"><i class="fas fa-calendar-day"></i> You are marking attendance for <b><?= ci_date($f['date']) ?></b>, not today.</div><?php endif; ?>
@@ -444,9 +462,36 @@ $atHm = '<div class="at-hm" data-ds="This month (header)" data-ds-extra title="T
   // barcode scanner (types the admission ID + Enter) or typing by hand
   var scan = document.getElementById('atScan'), last = document.getElementById('atLast');
   function esc(t) { return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  var INST = <?= json_encode(['name' => ci_institute()['name'], 'logo' => (($lg = ci_institute()['logo']) ? (preg_match('~^https?://~', $lg) ? $lg : '/' . ltrim($lg, '/')) : '')], JSON_HEX_TAG | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>, BLANK = <?= json_encode(ci_photo_blank(), JSON_HEX_TAG) ?>;
+  // typing an admission ID by hand: a faded preview of the student's ID card under the box before Mark (the scan screen's
+  // students' list, kept in this browser; a scanner types too fast for it to show)
+  var pv = document.getElementById('atPv'), pvT = null, RB = null, RL = null;
+  function rnorm(c) { c = String(c).trim().toUpperCase(); return /^\d{1,5}$/.test(c) ? ('000000' + c).slice(-6) : c; }
+  try { var r0 = JSON.parse(localStorage.getItem('ciScanRoster') || 'null'); if (r0 && r0.by) RB = r0.by; } catch (x) {}
+  function roster() {
+    if (!RL) RL = fetch('/admin/ci-scan.php?roster=1&v=&since=0&_=' + Date.now(), { credentials: 'same-origin', cache: 'no-store' }).then(function (r) { return r.json(); })
+      .then(function (d) { if (d && d.list) { var by = {}; d.list.forEach(function (x) { by[rnorm(x.reg)] = x; }); RB = by; } return RB; }).catch(function () { return RB; });
+    return RL;
+  }
+  function pvDraw() {
+    var c = scan.value.trim(); if (!c) { pv.hidden = true; return; }
+    var s = RB && RB[rnorm(c)];
+    if (!s) { if (c.length < 3 && RB) { pv.hidden = true; return; } pv.hidden = false; pv.innerHTML = '<div class="at-pv-l none">' + (RB ? 'No student with Admission ID ' + esc(c) + ' in a running batch' : 'Looking…') + '</div>'; return; }
+    pv.hidden = false;
+    pv.innerHTML = '<div class="at-pv-l"><i class="fas fa-eye"></i> Preview — press Mark to confirm</div><div class="at-idc">'
+      + '<div class="at-idc-h">' + (INST.logo ? '<img src="' + esc(INST.logo) + '" alt="">' : '') + '<b>' + esc(INST.name) + '</b></div><div class="at-idc-t">STUDENT IDENTITY CARD</div>'
+      + '<div class="at-idc-b"><div class="at-idc-ph">' + (s.photo ? '<img src="' + esc(s.photo) + '" alt="">' : BLANK) + '</div><div class="at-idc-d"><b>' + esc(s.name) + '</b>'
+      + '<div><span>Admission ID</span>' + esc(s.reg) + '</div><div><span>Class</span>' + esc(s['class'] || '—') + '</div><div><span>Batch</span>' + esc(s.batches || '—') + '</div><div><span>Father\'s Name</span>' + esc(s.father || '—') + '</div></div></div>'
+      + '<div class="at-idc-f">' + (s.due > 0 ? '<em class="due">DUE · ' + esc(s.due_text) + '</em>' : '<em class="paid">✓ FULL PAID</em>') + (s.hol ? '<span style="color:#6d28d9;font-weight:700">Holiday today</span>' : '') + '</div></div>';
+  }
+  if (scan) {
+    scan.addEventListener('focus', function () { roster(); }, { once: true });
+    scan.addEventListener('input', function () { clearTimeout(pvT); pvT = setTimeout(function () { if (!scan.value.trim()) { pv.hidden = true; return; } if (RB) pvDraw(); roster().then(pvDraw); }, 220); });
+  }
   var scanF = document.getElementById('atScanF');
   if (scanF) scanF.addEventListener('submit', function (e) {
     e.preventDefault();
+    clearTimeout(pvT); pv.hidden = true;
     var code = scan.value.trim(); if (!code) return; scan.value = ''; // no waiting: fast scans each go at once
     post({ action: 'scan', code: code, batch: BATCH }).then(function (d) { applyScan(d, code, true); }).catch(function () { toast('Could not reach the server — scan again.', false); }).then(function () { scan.focus(); });
   });

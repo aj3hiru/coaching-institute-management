@@ -183,6 +183,10 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Ari
 @keyframes ph-ring{0%{transform:scale(1);opacity:.9}100%{transform:scale(1.75);opacity:0}}
 @keyframes ph-laser{from{top:30px}to{top:64px}}
 @media (prefers-reduced-motion:reduce){.ph-idle,.ph-fr,.ph-ic::before,.ph-ic::after,.ph-laser{animation:none}}
+/* preview while an admission ID is typed by hand: the card faded, nothing marked yet */
+.card.pv{opacity:.45;filter:saturate(.6);animation:pvin .25s ease-out}
+@keyframes pvin{from{opacity:0}to{opacity:.45}}
+.st.pv{color:#6b7280;font-weight:700}
 /* recent scans */
 .rec{overflow:hidden;padding:0 16px 16px;-webkit-mask-image:linear-gradient(90deg,#000 88%,transparent);mask-image:linear-gradient(90deg,#000 88%,transparent)} /* one row: the newest present slides in once from the left */
 .rec-t{display:flex;flex-wrap:nowrap;gap:8px;width:max-content;will-change:transform}
@@ -520,6 +524,19 @@ body.h-s_all .sd-all{display:none}
     if (!sdAll.classList.contains('sure')) { sdAll.classList.add('sure'); sdAll.textContent = 'Sure? Check out ' + sdN.textContent; clearTimeout(sureT); sureT = setTimeout(function () { sdAll.classList.remove('sure'); sdAll.textContent = 'Check out all'; }, 4000); return; }
     clearTimeout(sureT); sdAll.classList.remove('sure'); sdAll.textContent = 'Check out all'; checkout([], true);
   });
+  // ---- typing an admission ID by hand: a faded preview of the card before Mark (a scanner types too fast to show it) ----
+  var pvT = null;
+  function preview() {
+    var c = code.value.trim(); if (!c) { if (box.querySelector('.card.pv') || st.classList.contains('pv')) idle(); return; }
+    var k = norm(c), s = R.by[k];
+    clearTimeout(idleT);
+    if (!s) { if (c.length >= 3) { st.className = 'st pv'; st.textContent = 'No student with Admission ID ' + c; if (box.querySelector('.card')) idle(), st.className = 'st pv', st.textContent = 'No student with Admission ID ' + c; } return; }
+    var m = S.st[k] || {};
+    show({ kind: 'pv', msg: '', time: '', student: { reg: s.reg, name: s.name, 'class': s['class'], batches: s.batches, father: s.father, photo: s.photo, due: s.due, due_text: s.due_text, 'in': m['in'] ? hm(m['in']) : '', out: m.out ? hm(m.out) : '' } }, c);
+    var cd = box.querySelector('.card'); if (cd) { cd.classList.remove('pop'); cd.classList.add('pv'); var mk = cd.querySelector('.mk'); if (mk) mk.remove(); }
+    st.className = 'st pv'; st.textContent = 'Preview — press Mark if this is the student';
+  }
+  code.addEventListener('input', function () { clearTimeout(pvT); pvT = setTimeout(preview, 220); });
   function add(c) {
     if (window.__ldSkip) window.__ldSkip();
     var k = norm(c), now = Date.now();
@@ -621,7 +638,7 @@ body.h-s_all .sd-all{display:none}
   function keepAwake() { try { if (navigator.wakeLock && !lock) navigator.wakeLock.request('screen').then(function (l) { lock = l; l.addEventListener('release', function () { lock = null; }); }).catch(function () {}); } catch (x) {} }
   keepAwake();
   window.addEventListener('beforeunload', function (e) { if (Q.length) { e.preventDefault(); e.returnValue = ''; } });
-  f.addEventListener('submit', function (e) { e.preventDefault(); var c = code.value.trim(); code.value = ''; if (c) add(c); code.focus(); });
+  f.addEventListener('submit', function (e) { e.preventDefault(); clearTimeout(pvT); var c = code.value.trim(); code.value = ''; if (c) add(c); code.focus(); });
   // the scanner types into the box: keep it focused
   document.addEventListener('click', function (e) { if (!e.target.closest('a,button,input,label,.dso-p')) code.focus(); });
   window.addEventListener('focus', function () { code.focus(); });
