@@ -119,7 +119,40 @@
     }
     draw();
   }
-  function run() { [].forEach.call(document.querySelectorAll('table.ci-table'), setup); [].forEach.call(document.querySelectorAll('table[data-sno]'), snoAdd); }
+  // ---- phones: every row of a wide list becomes a card (each value with its column's name), filters fold behind a button ----
+  function txt(e) { return (e.textContent || '').replace(/\s+/g, ' ').trim(); }
+  function cards(t) {
+    if (t.id === 'atT' || t.dataset.cards === 'off' || t.closest('[data-cards=off]')) return;
+    var head = t.tHead && t.tHead.rows[0]; if (!head) return;
+    var ths = [].slice.call(head.cells); if (ths.length < 4) return; // small tables fit as they are
+    var lab = ths.map(function (th) { var c = th.cloneNode(true); c.querySelectorAll('.ci-sort,i,svg,button').forEach(function (x) { x.remove(); }); return txt(c); });
+    var sno = lab.findIndex(function (l) { return /^(s\.?\s?no\.?|#)$/i.test(l); });
+    var title = -1; for (var i = 0; i < lab.length; i++) if (i !== sno) { title = i; break; }
+    var act = lab.length - 1; if (!(lab[act] === '' || /^actions?$/i.test(lab[act]))) act = -1;
+    t.classList.add('rt');
+    [].forEach.call(t.tBodies, function (tb) { [].forEach.call(tb.rows, function (tr) {
+      if (tr.cells.length !== lab.length) { tr.classList.add('rt-full'); return; } // "nothing here" / totals spanning columns
+      [].forEach.call(tr.cells, function (td, i) {
+        td.setAttribute('data-label', lab[i]);
+        if (i === sno) td.classList.add('rt-sno'); else if (i === title) td.classList.add('rt-title'); else if (i === act) td.classList.add('rt-act'); else if (!lab[i]) td.classList.add('rt-nolab');
+      });
+    }); });
+  }
+  function fold(f) {
+    if (f.id === 'atF' || f.dataset.fold === 'off' || f.previousElementSibling && f.previousElementSibling.classList.contains('ci-ff')) return;
+    var fields = [].filter.call(f.querySelectorAll('select, input:not([type=hidden]):not([type=submit]):not([type=button]):not([type=checkbox]):not([type=radio])'), function (x) { return x.name; });
+    if (fields.length < 3) return;
+    var n = fields.filter(function (x) { return x.tagName === 'SELECT' ? x.selectedIndex > 0 && x.value !== '' && x.value !== '0' : (x.type !== 'date' && x.value.trim() !== ''); }).length;
+    var b = document.createElement('button'); b.type = 'button'; b.className = 'ci-ff'; b.setAttribute('aria-expanded', 'false');
+    b.innerHTML = '<i class="fas fa-filter"></i> Filters' + (n ? ' <b>' + n + '</b>' : '') + '<i class="fas fa-chevron-down ci-ff-a"></i>';
+    f.parentNode.insertBefore(b, f); f.classList.add('ci-ff-off');
+    b.addEventListener('click', function () { var on = f.classList.toggle('ci-ff-off'); b.setAttribute('aria-expanded', on ? 'false' : 'true'); });
+  }
+  function run() {
+    [].forEach.call(document.querySelectorAll('table.ci-table'), setup); [].forEach.call(document.querySelectorAll('table[data-sno]'), snoAdd);
+    [].forEach.call(document.querySelectorAll('.main-content table'), function (t) { if (!t.parentElement.closest('table') && !t.closest('[contenteditable],.mce-content-body,.ci-plan,.sheet')) cards(t); });
+    [].forEach.call(document.querySelectorAll('.main-content form.ci-filters, .main-content form[data-fold]'), fold);
+  }
   window.ciSnoRenumber = function (t) { snoNum(t); }; // for pages that filter rows themselves
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run); else run();
 })();

@@ -394,3 +394,12 @@ small .ci-tel{font-weight:400!important;color:inherit!important} /* under a name
 
 /* S.No. column (admin-table.js adds it to tables marked data-sno) */
 .ci-sno{width:1%;white-space:nowrap;text-align:center!important;color:#6b7280;font-variant-numeric:tabular-nums;padding-left:12px!important;padding-right:6px!important}
+/* phones: list rows shown as cards (admin-table.js adds .rt) — no grid lines, no fixed row height inside a card */
+@media (max-width:700px){
+  .ci-sheet .ci-table.rt td,.ci-table.rt td{border:0!important;height:auto!important;padding:5px 0!important;background:transparent!important}
+  .ci-sheet .ci-table.rt td.rt-title,.ci-table.rt td.rt-title{padding:0 34px 8px 0!important;border-bottom:1px solid #f1f5f9!important}
+  .ci-sheet .ci-table.rt td.rt-act,.ci-table.rt td.rt-act{padding-top:10px!important;border-top:1px solid #f1f5f9!important}
+  .ci-sheet .ci-table.rt td.rt-sno,.ci-table.rt td.rt-sno{padding:0!important}
+  .ci-sheet .ci-table.rt tr.rt-full td{padding:18px 8px!important}
+  .ci-sheet .ci-table-wrap:has(.rt){overflow:visible}
+}

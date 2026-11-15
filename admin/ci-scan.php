@@ -21,7 +21,7 @@ if ($roster) {
     session_write_close();
     if (!headers_sent() && str_contains((string)($_SERVER['HTTP_ACCEPT_ENCODING'] ?? ''), 'gzip') && !ini_get('zlib.output_compression')) ob_start('ob_gzhandler');
     $today = date('Y-m-d'); $now = time();
-    $rows = $pdo->query("SELECT s.id, s.reg_no, s.name, s.father_name, s.photo, c.name AS class_name,
+    $rows = $pdo->query("SELECT s.id, s.reg_no, s.name, s.father_name, s.photo, s.address, s.city, s.state, s.pincode, c.name AS class_name,
             (SELECT COALESCE(SUM(" . CI_DUE_SQL . "), 0) FROM ci_enrollments e WHERE e.student_id = s.id) AS due
         FROM ci_students s LEFT JOIN ci_classes c ON c.id = s.class_id
         WHERE s.status = 'active' AND s.stype <> 'online'
@@ -36,7 +36,7 @@ if ($roster) {
         $open = array_filter($bs, fn($b) => !ci_holiday_on($hols, $today, (int)$b['id'], (int)$b['course_id']));
         $regOf[(int)$r['id']] = $r['reg_no'];
         $list[] = ['reg' => $r['reg_no'], 'name' => $r['name'], 'class' => $r['class_name'], 'batches' => implode(', ', array_unique(array_column($bs, 'name'))),
-            'father' => (string)($r['father_name'] ?? ''), 'photo' => ci_photo_url($r['photo'] ?? ''),
+            'father' => (string)($r['father_name'] ?? ''), 'addr' => ci_address_line($r), 'photo' => ci_photo_url($r['photo'] ?? ''),
             'due' => round((float)$r['due'], 2), 'due_text' => (float)$r['due'] > 0 ? ci_money0($r['due']) : '', 'hol' => $bs && !$open ? 1 : 0];
     }
     $v = substr(md5($today . ci_att_min_out() . json_encode($list)), 0, 16);
@@ -143,6 +143,7 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Ari
 .c-d table{border-collapse:collapse;margin-top:1.6cqw;width:100%;table-layout:fixed;font-size:2.55cqw;line-height:1.3}
 .c-d th{width:21cqw;text-align:left;font-weight:600;color:#6b7280;padding:.35cqw 0;vertical-align:top;white-space:nowrap}
 .c-d td{font-weight:700;padding:.35cqw 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.c-d tr[data-r=addr] td{white-space:normal;font-weight:600;line-height:1.25} /* the address may take 2 lines */
 .c-f{display:flex;align-items:center;gap:2cqw;padding:2cqw 3.6cqw 2.6cqw}
 .fee{display:inline-flex;white-space:nowrap;flex:none;align-items:center;gap:1cqw;padding:1cqw 2.4cqw;border-radius:99px;font-size:2.7cqw;font-weight:800;letter-spacing:.04em}
 .fee.paid{background:#dcfce7;color:#166534}.fee.due{background:#fee2e2;color:#991b1b}
@@ -275,7 +276,7 @@ body.h-card #box{display:none}
 body.h-side .side{display:none}
 body.h-rec .rec{display:none}
 body.h-c_photo .c-ph{display:none}
-body.h-c_reg .c-d tr[data-r=reg],body.h-c_class .c-d tr[data-r=class],body.h-c_batch .c-d tr[data-r=batch],body.h-c_father .c-d tr[data-r=father]{display:none}
+body.h-c_reg .c-d tr[data-r=reg],body.h-c_class .c-d tr[data-r=class],body.h-c_batch .c-d tr[data-r=batch],body.h-c_father .c-d tr[data-r=father],body.h-c_addr .c-d tr[data-r=addr]{display:none}
 body.h-c_fee .c-f .fee{display:none}
 body.h-c_time .c-f .tm{display:none}
 body.h-s_photo .sd-l li>img,body.h-s_photo .sd-l li>svg{display:none}
@@ -283,6 +284,38 @@ body.h-s_find .sd-q{display:none}
 body.h-s_all .sd-all{display:none}
 <?php if ($embed): ?>.top .nt{display:none}<?php endif; ?>
 @media (max-width:600px){.top{gap:8px;padding:10px 12px}.top b{font-size:14px}.top .clk{display:none}.net span{display:none}.net{padding:0 6px}.top a{padding:0 8px}}
+/* phones: smaller scanner icon (its rings stay inside the box), back link as an arrow only */
+@media (max-width:600px){
+  .top .bk-t{display:none}.top a{width:34px;justify-content:center;padding:0}
+  .ph-fr{inset:12px}
+  .ph-ic{width:66px;height:66px;margin:0 0 14px}
+  .ph-idle .ph-ic svg{width:34px;height:34px}
+  .ph-ic::before,.ph-ic::after{animation-name:ph-ring-s}
+  .ph-laser{left:18px;right:18px;animation-name:ph-laser-s}
+  .ph-idle b{font-size:18px}.ph-idle span:not(.ph-ic){font-size:13px;padding:0 18px}
+  /* one scrolling page: header, scan box, card right under it, then the checked-in list (no empty space, no inner scroll) */
+  html,body{height:auto;min-height:100%}
+  .top{position:sticky;top:0}
+  .top b{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .inp{position:sticky;top:57px;z-index:20;padding:10px 12px;background:rgba(246,244,250,.96);backdrop-filter:blur(4px)}
+  .inp input,.inp button{height:44px}
+  .main{flex:none}
+  .stage{flex:none;justify-content:flex-start;padding:6px 12px 14px}
+  .st{font-size:16px;min-height:0;margin:4px 0 10px}
+  .side{max-height:none;border-top:1px solid #e5e7eb;margin-top:4px}
+  .sd-l{overflow:visible}
+  .rec{display:none} /* the same names are in the checked-in list */
+  /* the student's card: taller instead of tiny text */
+  .card{aspect-ratio:auto}
+  .c-h b{font-size:5cqw}.c-h small{font-size:2.8cqw}.c-t{font-size:2.8cqw}
+  .c-b{gap:3cqw}.c-ph{width:24cqw}
+  .c-nm{font-size:5.4cqw}
+  .c-d table{font-size:3.5cqw;margin-top:2cqw}.c-d th{width:27cqw}
+  .fee{font-size:3.4cqw}.c-f .tm{font-size:3.2cqw}
+  .mk{width:14cqw;height:14cqw;top:22cqw}
+}
+@keyframes ph-ring-s{0%{transform:scale(1);opacity:.9}100%{transform:scale(1.45);opacity:0}}
+@keyframes ph-laser-s{from{top:20px}to{top:44px}}
 </style>
 </head>
 <body>
@@ -291,7 +324,7 @@ body.h-s_all .sd-all{display:none}
   <div class="net" id="net" role="status" aria-live="polite"><i class="n-ico"></i><span><em>Status:</em> Connecting</span></div>
   <div class="clk"><span id="clk"></span><small><?= date('l, d M Y') ?></small></div>
   <div class="dso"><button type="button" class="dso-b" id="dsoB" aria-label="Display options" title="Display options" aria-expanded="false"><svg viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg></button><div class="dso-p" id="dsoP" hidden></div></div>
-  <?php if (!$embed): ?><a href="<?= $canAtt ? '/admin/ci-attendance.php' : '/admin/dashboard.php' ?>">← <?= $canAtt ? 'Attendance' : 'Dashboard' ?></a><?php endif; ?></div>
+  <?php if (!$embed): ?><a href="<?= $canAtt ? '/admin/ci-attendance.php' : '/admin/dashboard.php' ?>" title="Back to <?= $canAtt ? 'Attendance' : 'Dashboard' ?>" aria-label="Back to <?= $canAtt ? 'Attendance' : 'Dashboard' ?>">←<span class="bk-t"> <?= $canAtt ? 'Attendance' : 'Dashboard' ?></span></a><?php endif; ?></div>
 <div class="inp"><form id="f" autocomplete="off"><input id="code" inputmode="text" placeholder="Scan card / admission ID" aria-label="Admission ID" autofocus><button type="submit">Mark</button></form></div>
 <div class="main"><div class="stage"><div class="st idle" id="st">Ready — scan an ID card</div><div id="box"></div></div>
 <aside class="side" aria-label="Checked in now"><div class="sd-h"><b>Checked in</b><span class="sd-n" id="sdN">0</span><button type="button" class="sd-all" id="sdAll" disabled>Check out all</button></div>
@@ -324,6 +357,7 @@ body.h-s_all .sd-all{display:none}
     st.textContent = (k === 'in' ? '✓ ' : k === 'out' ? '✓ ' : '') + HEAD[k] + (s ? ' — ' + s.name : '') + (k === 'in' || k === 'out' ? ' · ' + d.time : '');
     if (!s) { box.innerHTML = '<div class="ph err"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></svg><b>' + esc(d.msg || 'Not found') + '</b><span>' + esc(code) + '</span></div>'; return; }
     var rows = [['reg', 'Admission ID', s.reg], ['class', 'Class', s['class'] || '—'], ['batch', 'Batch', s.batches || '—'], ['father', "Father's Name", s.father || '—']]; // no mobile number on the scan screen's card
+    if (s.addr) rows.push(['addr', 'Address', s.addr]);
     var fee = s.due > 0 ? '<span class="fee due">DUE · ' + esc(s.due_text) + '</span>' : '<span class="fee paid">✓ FULL PAID</span>';
     var tm = (s['in'] ? 'In <b>' + esc(s['in']) + '</b>' : '') + (s.out ? ' · Out <b>' + esc(s.out) + '</b>' : '');
     box.innerHTML = '<div class="card pop"><div class="c-h">' + (LOGO ? '<img src="' + esc(LOGO) + '" alt="">' : '') + '<div><b>' + esc(INST.name) + '</b>' + (INST.address ? '<small>' + esc(INST.address) + '</small>' : '') + '</div></div>'
@@ -463,7 +497,7 @@ body.h-s_all .sd-all{display:none}
     return loading;
   }
   function local(k, s, now) { // the same rules as the server: 1st scan in; again after the set minutes out; else wait / done
-    var m = S.st[k] || (S.st[k] = {}), card = { reg: s.reg, name: s.name, 'class': s['class'], batches: s.batches, father: s.father, photo: s.photo, due: s.due, due_text: s.due_text };
+    var m = S.st[k] || (S.st[k] = {}), card = { reg: s.reg, name: s.name, 'class': s['class'], batches: s.batches, father: s.father, addr: s.addr, photo: s.photo, due: s.due, due_text: s.due_text };
     var d = { ok: false, kind: 'done', time: hm(now), student: card };
     if (s.hol && R.day === DAY) { d.kind = 'error'; d.msg = 'Today is a holiday for ' + s.name + "'s batch."; return d; }
     if (!m['in']) { m['in'] = now; d.ok = true; d.kind = 'in'; d.msg = 'Checked in at ' + hm(now); }
@@ -538,7 +572,7 @@ body.h-s_all .sd-all{display:none}
     clearTimeout(idleT);
     if (!s) { if (c.length >= 3) { st.className = 'st pv'; st.textContent = 'No student with Admission ID ' + c; if (box.querySelector('.card')) idle(), st.className = 'st pv', st.textContent = 'No student with Admission ID ' + c; } return; }
     var m = S.st[k] || {};
-    show({ kind: 'pv', msg: '', time: '', student: { reg: s.reg, name: s.name, 'class': s['class'], batches: s.batches, father: s.father, photo: s.photo, due: s.due, due_text: s.due_text, 'in': m['in'] ? hm(m['in']) : '', out: m.out ? hm(m.out) : '' } }, c);
+    show({ kind: 'pv', msg: '', time: '', student: { reg: s.reg, name: s.name, 'class': s['class'], batches: s.batches, father: s.father, addr: s.addr, photo: s.photo, due: s.due, due_text: s.due_text, 'in': m['in'] ? hm(m['in']) : '', out: m.out ? hm(m.out) : '' } }, c);
     var cd = box.querySelector('.card'); if (cd) { cd.classList.remove('pop'); cd.classList.add('pv'); var mk = cd.querySelector('.mk'); if (mk) mk.remove(); }
     st.className = 'st pv'; st.textContent = 'Preview — press Mark if this is the student';
   }
@@ -652,7 +686,7 @@ body.h-s_all .sd-all{display:none}
   // ---- display options (header icon): show / hide parts of this screen; kept in this browser ----
   (function () {
     var OPT = [['brand', 'Logo & institute name'], ['net', 'Status (Live / Offline)'], ['clk', 'Clock & date'], ['inp', 'Scan box (the scanner still works)'],
-      ['st', 'Message line (Present — name)'], ['card', 'ID card', [['c_photo', 'Photo'], ['c_reg', 'Admission ID'], ['c_class', 'Class'], ['c_batch', 'Batch'], ['c_father', "Father's Name"], ['c_fee', 'Fee status (Full paid / Due)'], ['c_time', 'In / out time']]],
+      ['st', 'Message line (Present — name)'], ['card', 'ID card', [['c_photo', 'Photo'], ['c_reg', 'Admission ID'], ['c_class', 'Class'], ['c_batch', 'Batch'], ['c_father', "Father's Name"], ['c_addr', 'Address'], ['c_fee', 'Fee status (Full paid / Due)'], ['c_time', 'In / out time']]],
       ['side', 'Checked-in column', [['s_photo', 'Photos'], ['s_find', 'Search box'], ['s_all', 'Check out all button']]], ['rec', 'Recent names (bottom row)']];
     var b = document.getElementById('dsoB'), p = document.getElementById('dsoP'), H = {};
     try { (JSON.parse(localStorage.getItem('ciScanView') || '[]') || []).forEach(function (k) { H[k] = 1; }); } catch (x) {}

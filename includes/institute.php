@@ -889,6 +889,18 @@ function ci_barcode_svg(string $text, int $height = 40, float $module = 1.4): st
     return '<svg class="ci-barcode" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' . $w . ' ' . $height . '" width="' . $w . '" height="' . $height . '" role="img" aria-label="Barcode ' . htmlspecialchars($text, ENT_QUOTES) . '" shape-rendering="crispEdges"><rect width="100%" height="100%" fill="#fff"/><g fill="#000">' . $bars . '</g></svg>';
 }
 
+/** The student's address in one line: address, city, state, PIN (the parts that are filled; a part already inside the address is not repeated). */
+function ci_address_line(array $s): string
+{
+    $parts = []; $seen = '';
+    foreach (['address', 'city', 'state', 'pincode'] as $k) {
+        $v = trim((string)($s[$k] ?? ''));
+        if ($v === '' || ($seen !== '' && stripos($seen, $v) !== false)) continue;
+        $parts[] = $v; $seen .= ' ' . $v;
+    }
+    return implode(', ', $parts);
+}
+
 /**
  * One scan of an ID card (or a typed admission ID) on the attendance page: the first scan of the day checks the student in
  * (present), a scan after the set minutes checks them out. $batch limits it to one batch; otherwise every active batch of

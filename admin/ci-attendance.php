@@ -32,7 +32,7 @@ if ($act !== '') {
         }
         $out(['ok' => $r['ok'], 'kind' => $r['kind'], 'msg' => $r['msg'], 'student' => $s ? ['id' => (int)$s['id'], 'name' => $s['name'], 'reg' => $s['reg_no'],
             'class' => $s['class_name'], 'photo' => ci_photo_url($s['photo'] ?? ''), 'avatar' => ci_avatar($s, 56),
-            'father' => (string)($s['father_name'] ?? ''), 'mobile' => (string)$s['mobile'], 'batches' => (string)($more['batches'] ?? ''),
+            'father' => (string)($s['father_name'] ?? ''), 'addr' => ci_address_line($s), 'mobile' => (string)$s['mobile'], 'batches' => (string)($more['batches'] ?? ''),
             'due' => round((float)($more['due'] ?? 0), 2), 'due_text' => (float)($more['due'] ?? 0) > 0 ? ci_money0($more['due']) : '',
             'in' => !empty($more['in_at']) ? date('h:i A', strtotime($more['in_at'])) : '', 'out' => !empty($more['out_at']) ? date('h:i A', strtotime($more['out_at'])) : ''] : null,
             'time' => date('h:i A', $r['ts'] ?? time())]);
@@ -231,12 +231,13 @@ $checkedIn = count(array_filter($rows, fn($r) => $r['status'] === 'present' && $
 .at-idc-ph img,.at-idc-ph svg{width:100%;height:100%;object-fit:cover;object-position:50% 30%;display:block}
 .at-idc-d{min-width:0;flex:1;font-size:12px;line-height:1.35}
 .at-idc-d b{display:block;font-size:13.5px;color:#4a3369;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px}
-.at-idc-d div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.at-idc-d span{color:#6b7280;display:inline-block;width:92px}
+.at-idc-d div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.at-idc-d div.ad{display:flex;white-space:normal}.at-idc-d div.ad span{flex:none}.at-idc-d div.ad em{font-style:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.at-idc-d span{color:#6b7280;display:inline-block;width:92px}
 .at-idc-f{display:flex;justify-content:space-between;align-items:center;padding:0 10px 8px;font-size:11.5px}
 .at-idc-f em{font-style:normal;font-weight:800;padding:2px 8px;border-radius:99px!important}
 .at-idc-f em.due{position:relative;overflow:hidden;isolation:isolate;box-shadow:inset 0 0 0 1px #fecaca}
 .at-idc-f em.due::after{content:"";position:absolute;top:0;bottom:0;left:-60%;width:45%;z-index:-1;background:linear-gradient(100deg,rgba(255,255,255,0),rgba(255,255,255,.95) 50%,rgba(255,255,255,0));transform:skewX(-20deg);animation:due-shine 2.4s .5s ease-in-out infinite}
 @keyframes due-shine{0%{left:-60%}45%,100%{left:130%}}
+.at-pills{display:contents}
 .at-left{display:flex;flex-direction:column;gap:14px;min-width:0}
 /* this month: % ring, month name and days, four coloured tiles */
 .at-mc{align-items:center;gap:16px;flex-wrap:wrap;padding:14px 16px;background:#fff;border:1px solid #e5e7eb;border-radius:5px!important}
@@ -256,7 +257,7 @@ $checkedIn = count(array_filter($rows, fn($r) => $r['status'] === 'present' && $
 .at-mc-g small{display:block;font-size:12px;font-weight:600;color:#4b5563;white-space:nowrap}.at-mc-g small i{font-size:10px;margin-left:2px}
 .at-mc-g .p{--c:#15803d;--bg:#f0fdf4}.at-mc-g .a{--c:#b91c1c;--bg:#fef2f2}.at-mc-g .l{--c:#b45309;--bg:#fffbeb}.at-mc-g .h{--c:#6d28d9;--bg:#f5f3ff}
 .at-mc-g a.h:hover{background:#ede9fe}
-@media (max-width:560px){.at-mc-g{grid-template-columns:repeat(2,1fr);flex-basis:100%}}
+
 /* class on now: a second line under the date in the page header; phones (no room in the header) get it above the filters */
 .top-nav .page-heading{min-width:0}.page-heading p:has(.at-run){white-space:normal;max-width:none;overflow:visible}
 .at-run{display:flex;align-items:center;flex-wrap:nowrap;gap:5px;width:fit-content;max-width:100%;white-space:nowrap;margin:3px 0 0;padding:3px 8px;border-radius:5px;background:#ede9fe;box-shadow:inset 0 0 0 1px #ddd6fe;color:#4c1d95;font-size:12.5px;line-height:1.35}
@@ -273,10 +274,44 @@ $checkedIn = count(array_filter($rows, fn($r) => $r['status'] === 'present' && $
 @media (max-width:1359px){.top-nav .at-run>span:nth-of-type(2){display:none}} /* less room: the class name before its time (the time is in the hover) */
 @media (max-width:767px){.at-run-m{display:flex;width:auto;margin:0 0 12px;flex-wrap:wrap;white-space:normal}}
 .at-t{font-size:12.5px;color:#374151;white-space:nowrap}.at-t small{display:block;color:#9ca3af}
-.at-bulk{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-left:auto}
+.at-bulk{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-left:auto}.at-bulk em{font-style:normal}.at-bulk b.at-con{font-weight:inherit}
 .at-name{display:flex;align-items:center;gap:10px}.at-name a{font-weight:600;color:#111827;text-decoration:none}.at-name small{display:block;color:#6b7280;font-size:12px}
 tr.at-hl td{background:#fefce8}
 .at-past{padding:8px 12px;margin:0 0 12px;border:1px solid #fde68a;background:#fffbeb;color:#92400e;font-size:13px}
+/* phones: filters tighter, the counts in one row that slides sideways, the three buttons in one row, and every student
+   as a card — name, admission ID · class, batch, big P / A / L / H buttons, check-in / out — nothing off the screen */
+@media (max-width:700px){
+  .at-top{gap:12px;margin-bottom:12px}
+  #atF{gap:10px}#atF .ci-f:last-of-type{grid-column:1/-1}
+  .at-sum{display:block;min-width:0;max-width:100%}
+  .at-pills{display:flex;gap:6px;overflow-x:auto;min-width:0;width:auto;margin:0 -16px 10px;padding:0 16px 2px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .at-pills::-webkit-scrollbar{display:none}
+  .at-pills a{flex:none;padding:6px 10px;font-size:12.5px}.at-pills a b{font-size:14px}
+  .at-bulk{margin:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+  .at-bulk .ci-btn{min-width:0;height:38px;padding:0 6px!important;justify-content:center;font-size:12px;gap:5px;white-space:nowrap}
+  .at-bulk .ci-btn span{overflow:hidden;text-overflow:ellipsis}.at-bulk .at-cw{display:none}
+  #atT thead{display:none}
+  #atT,#atT tbody{display:block;width:100%}
+  #atT tr[data-sid]{display:grid;grid-template-columns:24px minmax(0,1fr) auto;gap:4px 10px;align-items:center;padding:12px 12px 14px;border-bottom:1px solid #eef0f3}
+  #atT tr[data-sid]>td{display:block;padding:0!important;border:0!important;min-width:0}
+  #atT td.at-sn{grid-row:1;grid-column:1;width:auto;text-align:left;font-size:12px}
+  #atT tr[data-sid]>td:nth-child(2){grid-row:1;grid-column:2/4}
+  #atT td.at-reg{grid-row:2;grid-column:2;font-size:12.5px;color:#4b5563}#atT td.at-reg::before{content:"ID ";color:#9ca3af;font-weight:600}
+  #atT td.at-cls{grid-row:2;grid-column:3;font-size:12.5px;color:#4b5563;text-align:right}#atT td.at-cls::before{content:"Class ";color:#9ca3af}
+  #atT td.at-bat{grid-row:3;grid-column:2/4;font-size:12.5px;color:#374151}#atT td.at-bat small{display:inline!important;margin-left:4px}
+  #atT td.at-stc{grid-row:4;grid-column:1/4;margin-top:6px}
+  #atT .at-st{display:grid;grid-template-columns:repeat(4,1fr);width:100%}
+  #atT .at-st button{height:40px;font-size:14px}
+  #atT td.at-t{grid-row:5;grid-column:1/4;display:flex!important;align-items:center;flex-wrap:wrap;gap:4px 10px;font-size:12.5px}
+  #atT td.at-t:empty{display:none!important}
+  #atT td.at-t small{display:inline;color:#6b7280}#atT td.at-t br{display:none}
+  #atT td.at-t .at-io{margin:0 0 0 auto;height:32px;padding:0 12px}
+  .at-mc{gap:10px;padding:12px}
+  .at-mc .at-mc-ring{width:52px!important;height:52px!important}.at-mc .at-mc-ring b{font-size:13px}
+  .at-mc-t b{font-size:15px}.at-mc-t span{font-size:12px}
+  .at-mc-g{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:6px;flex-basis:100%}
+  .at-mc-g>*{padding:6px 6px 6px 8px}.at-mc-g b{font-size:16px}.at-mc-g small{font-size:11px}
+}
 </style>
 </head>
 <body>
@@ -319,13 +354,13 @@ $atHm = '<div class="at-hm" data-ds="This month (header)" data-ds-extra title="T
 <?php if (!$isToday): ?><div class="at-past"><i class="fas fa-calendar-day"></i> You are marking attendance for <b><?= ci_date($f['date']) ?></b>, not today.</div><?php endif; ?>
 
 <div class="at-sum" data-ds="Summary">
-  <?php foreach (['' => ['All', $cnt['all']], 'present' => ['Present', $cnt['present']], 'in' => ['Checked in', $cnt['in']], 'absent' => ['Absent', $cnt['absent']], 'leave' => ['Leave', $cnt['leave']], 'holiday' => ['Holiday', $cnt['holiday']], 'none' => ['Not marked', $cnt['none']]] as $k => [$l, $n]): ?>
+  <div class="at-pills"><?php foreach (['' => ['All', $cnt['all']], 'present' => ['Present', $cnt['present']], 'in' => ['Checked in', $cnt['in']], 'absent' => ['Absent', $cnt['absent']], 'leave' => ['Leave', $cnt['leave']], 'holiday' => ['Holiday', $cnt['holiday']], 'none' => ['Not marked', $cnt['none']]] as $k => [$l, $n]): ?>
   <a href="<?= ci_e($qs(['show' => $k])) ?>" class="<?= $f['show'] === $k ? 'on' : '' ?>"><?= $l ?> <b><?= $n ?></b></a>
-  <?php endforeach; ?>
+  <?php endforeach; ?></div>
   <div class="at-bulk">
-    <button type="button" class="ci-btn ci-ghost" data-bulk="present"><i class="fas fa-check-double"></i> All present</button>
-    <button type="button" class="ci-btn ci-ghost" data-bulk="absent-rest"><i class="fas fa-user-xmark"></i> Rest absent</button>
-    <?php if ($isToday): ?><button type="button" class="ci-btn" id="atOutAll"<?= $checkedIn || array_filter($rows, fn($r) => $r['status'] === 'present') ? '' : ' disabled' ?>><i class="fas fa-right-from-bracket"></i> <span>Check out all (<?= $checkedIn ?>)</span></button><?php endif; ?>
+    <button type="button" class="ci-btn ci-ghost" data-bulk="present"><i class="fas fa-check-double"></i> <span>All present</span></button>
+    <button type="button" class="ci-btn ci-ghost" data-bulk="absent-rest"><i class="fas fa-user-xmark"></i> <span>Rest absent</span></button>
+    <?php if ($isToday): ?><button type="button" class="ci-btn" id="atOutAll"<?= $checkedIn || array_filter($rows, fn($r) => $r['status'] === 'present') ? '' : ' disabled' ?>><i class="fas fa-right-from-bracket"></i> <span><em class="at-cw">Check </em>out all (<b class="at-con"><?= $checkedIn ?></b>)</span></button><?php endif; ?>
   </div>
 </div>
 
@@ -337,10 +372,10 @@ $atHm = '<div class="at-hm" data-ds="This month (header)" data-ds-extra title="T
   <tr data-sid="<?= (int)$r['id'] ?>" data-bid="<?= (int)$r['batch_id'] ?>" data-reg="<?= ci_e($r['reg_no']) ?>">
     <td class="at-sn"><?= $i + 1 ?></td>
     <td><div class="at-name"><?= ci_avatar($r, 34) ?><div><a href="/admin/student-view.php?id=<?= (int)$r['id'] ?>"><?= ci_e($r['name']) ?></a><small><?= ci_tel($r['mobile']) ?></small></div></div></td>
-    <td class="ci-nw"><b><?= ci_e($r['reg_no']) ?></b></td>
-    <td class="ci-nw"><?= ci_e($r['class_name'] ?: '—') ?></td>
-    <td><?= $r['batch_name'] ? ci_e($r['batch_name']) . ($r['timing'] ? '<small class="ci-muted" style="display:block">' . ci_e($r['timing']) . '</small>' : '') : '<span class="ci-muted">' . ci_e($r['course_name'] ?: 'No batch') . '</span>' ?></td>
-    <td><div class="at-st" role="group" aria-label="Attendance of <?= ci_e($r['name']) ?>"><?php foreach (['present' => 'P', 'absent' => 'A', 'leave' => 'L', 'holiday' => 'H'] as $k => $l): ?><button type="button" data-s="<?= $k ?>" class="<?= $r['status'] === $k ? 'on' : '' ?>" title="<?= $ST[$k] ?>"><?= $l ?></button><?php endforeach; ?></div><?= $r['hol'] ? '<span class="at-hol"><i class="fas fa-umbrella-beach"></i> ' . ci_e($r['hol']) . '</span>' : '' ?></td>
+    <td class="ci-nw at-reg"><b><?= ci_e($r['reg_no']) ?></b></td>
+    <td class="ci-nw at-cls"><?= ci_e($r['class_name'] ?: '—') ?></td>
+    <td class="at-bat"><?= $r['batch_name'] ? ci_e($r['batch_name']) . ($r['timing'] ? '<small class="ci-muted" style="display:block">' . ci_e($r['timing']) . '</small>' : '') : '<span class="ci-muted">' . ci_e($r['course_name'] ?: 'No batch') . '</span>' ?></td>
+    <td class="at-stc"><div class="at-st" role="group" aria-label="Attendance of <?= ci_e($r['name']) ?>"><?php foreach (['present' => 'P', 'absent' => 'A', 'leave' => 'L', 'holiday' => 'H'] as $k => $l): ?><button type="button" data-s="<?= $k ?>" class="<?= $r['status'] === $k ? 'on' : '' ?>" title="<?= $ST[$k] ?>"><?= $l ?></button><?php endforeach; ?></div><?= $r['hol'] ? '<span class="at-hol"><i class="fas fa-umbrella-beach"></i> ' . ci_e($r['hol']) . '</span>' : '' ?></td>
     <td class="at-t" data-in="<?= $r['in_at'] ? date('h:i A', strtotime($r['in_at'])) : '' ?>" data-out="<?= $r['out_at'] ? date('h:i A', strtotime($r['out_at'])) : '' ?>" data-st="<?= ci_e((string)$r['status']) ?>"></td>
   </tr>
   <?php endforeach; ?>
@@ -407,7 +442,7 @@ $atHm = '<div class="at-hm" data-ds="This month (header)" data-ds-extra title="T
     }
     t.innerHTML = h || '<span class="ci-muted">—</span>';
   }
-  function countIn() { var n = [].filter.call(document.querySelectorAll('#atT .at-t'), function (t) { return t.dataset.in && !t.dataset.out && t.dataset.st === 'present'; }).length, b = document.getElementById('atOutAll'); if (b) { b.querySelector('span').textContent = 'Check out all (' + n + ')'; b.disabled = !n && !document.querySelector('#atT .at-t[data-st="present"]'); } return n; }
+  function countIn() { var n = [].filter.call(document.querySelectorAll('#atT .at-t'), function (t) { return t.dataset.in && !t.dataset.out && t.dataset.st === 'present'; }).length, b = document.getElementById('atOutAll'); if (b) { b.querySelector('.at-con').textContent = n; b.disabled = !n && !document.querySelector('#atT .at-t[data-st="present"]'); } return n; }
   document.querySelectorAll('#atT .at-t').forEach(drawT);
   document.getElementById('atT').addEventListener('click', function (e) {
     var io = e.target.closest('.at-io'); if (!io) return;
@@ -484,7 +519,7 @@ $atHm = '<div class="at-hm" data-ds="This month (header)" data-ds-extra title="T
     pv.innerHTML = '<div class="at-pv-l"><i class="fas fa-eye"></i> Preview — press Mark to confirm</div><div class="at-idc">'
       + '<div class="at-idc-h">' + (INST.logo ? '<img src="' + esc(INST.logo) + '" alt="">' : '') + '<b>' + esc(INST.name) + '</b></div><div class="at-idc-t">STUDENT IDENTITY CARD</div>'
       + '<div class="at-idc-b"><div class="at-idc-ph">' + (s.photo ? '<img src="' + esc(s.photo) + '" alt="">' : BLANK) + '</div><div class="at-idc-d"><b>' + esc(s.name) + '</b>'
-      + '<div><span>Admission ID</span>' + esc(s.reg) + '</div><div><span>Class</span>' + esc(s['class'] || '—') + '</div><div><span>Batch</span>' + esc(s.batches || '—') + '</div><div><span>Father\'s Name</span>' + esc(s.father || '—') + '</div></div></div>'
+      + '<div><span>Admission ID</span>' + esc(s.reg) + '</div><div><span>Class</span>' + esc(s['class'] || '—') + '</div><div><span>Batch</span>' + esc(s.batches || '—') + '</div><div><span>Father\'s Name</span>' + esc(s.father || '—') + '</div>' + (s.addr ? '<div class="ad"><span>Address</span><em>' + esc(s.addr) + '</em></div>' : '') + '</div></div>'
       + '<div class="at-idc-f">' + (s.due > 0 ? '<em class="due">DUE · ' + esc(s.due_text) + '</em>' : '<em class="paid">✓ FULL PAID</em>') + (s.hol ? '<span style="color:#6d28d9;font-weight:700">Holiday today</span>' : '') + '</div></div>';
   }
   if (scan) {
