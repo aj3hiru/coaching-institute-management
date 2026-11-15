@@ -204,7 +204,12 @@ $checkedIn = count(array_filter($rows, fn($r) => $r['status'] === 'present' && $
 .at-month>div{flex:1 1 110px;padding:10px 14px;border-left:1px solid #f1f5f9}.at-month>div:first-child{border-left:0;flex:1.6 1 180px;background:#faf9fc}
 .at-month small{display:block;font-size:11.5px;color:#6b7280;text-transform:uppercase;letter-spacing:.04em}.at-month b{font-size:19px;color:#111827}
 .at-month .p b{color:#15803d}.at-month .a b{color:#b91c1c}.at-month .l b{color:#b45309}.at-month .h b{color:#6d28d9}
-.at-run{padding:8px 12px;margin:0 0 12px;border:1px solid #c4b5fd;background:#f5f3ff;color:#4c1d95;font-size:13px}.at-run a{color:inherit;font-weight:700;margin-left:6px}
+/* class on now: a second line under the date in the page header; phones (no room in the header) get it above the filters */
+.page-heading p:has(.at-run){white-space:normal;max-width:none;overflow:visible}
+.at-run{display:flex;align-items:center;flex-wrap:wrap;gap:4px;width:fit-content;margin:4px 0 0;padding:3px 8px;border-radius:5px;background:#f5f3ff;color:#4c1d95;font-size:12.5px;line-height:1.35}
+.at-run b{font-weight:700}.at-run a{color:#6d28d9;font-weight:700;margin-left:6px;text-decoration:underline}
+.at-run-m{display:none}
+@media (max-width:767px){.at-run-m{display:flex;width:auto;margin:0 0 12px}}
 .at-t{font-size:12.5px;color:#374151;white-space:nowrap}.at-t small{display:block;color:#9ca3af}
 .at-bulk{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-left:auto}
 .at-name{display:flex;align-items:center;gap:10px}.at-name a{font-weight:600;color:#111827;text-decoration:none}.at-name small{display:block;color:#6b7280;font-size:12px}
@@ -213,8 +218,9 @@ tr.at-hl td{background:#fefce8}
 </style>
 </head>
 <body>
-<?php admin_shell_open('Attendance', date('l, d M Y', strtotime($f['date'])), '<div class="ci-top-actions">' . ($isToday ? '<button type="button" class="ci-btn" id="atScrBtn"><i class="fas fa-id-card"></i> Scan screen</button>' : '') . '<button type="button" class="ci-btn ci-ghost" id="atSetBtn"><i class="fas fa-clock"></i> Check-out time</button><a class="ci-btn ci-ghost" href="/admin/ci-reports.php?type=attendance"><i class="fas fa-file-pdf"></i> Attendance report</a></div>'); ?>
+<?php admin_shell_open('Attendance', date('l, d M Y', strtotime($f['date'])) . ($running ? '<span class="at-run"><i class="fas fa-bell"></i> Class on now: <b>' . ci_e($running['name']) . '</b> (' . ci_e(ci_time_range($running['start_time'], $running['end_time'])) . ')<a href="?all=1">Show all batches</a></span>' : ''), '<div class="ci-top-actions">' . ($isToday ? '<button type="button" class="ci-btn" id="atScrBtn"><i class="fas fa-id-card"></i> Scan screen</button>' : '') . '<button type="button" class="ci-btn ci-ghost" id="atSetBtn"><i class="fas fa-clock"></i> Check-out time</button><a class="ci-btn ci-ghost" href="/admin/ci-reports.php?type=attendance"><i class="fas fa-file-pdf"></i> Attendance report</a></div>'); ?>
 <div class="ci">
+<?php if ($running): ?><div class="at-run at-run-m"><i class="fas fa-bell"></i> Class on now: <b><?= ci_e($running['name']) ?></b> (<?= ci_e(ci_time_range($running['start_time'], $running['end_time'])) ?>)<a href="?all=1">Show all batches</a></div><?php endif; ?>
 <div class="at-top">
   <form class="ci-filters" method="get" id="atF" data-ds="Filters" style="margin:0">
     <div class="ci-f"><label>Date</label><input type="date" name="date" value="<?= ci_e($f['date']) ?>" max="<?= $today ?>"></div>
@@ -230,7 +236,6 @@ tr.at-hl td{background:#fefce8}
     <div class="at-last" id="atLast" hidden></div>
   </div>
 </div>
-<?php if ($running): ?><div class="at-run"><i class="fas fa-bell"></i> Class on now: <b><?= ci_e($running['name']) ?></b> (<?= ci_e(ci_time_range($running['start_time'], $running['end_time'])) ?>) — showing this batch.<a href="?all=1">Show all batches</a></div><?php endif; ?>
 <div class="at-month" data-ds="This month">
   <div><small><?= date('F Y', strtotime($f['date'])) ?><?= $f['batch'] || $f['course'] || $f['class'] || $f['q'] ? ' · this list' : '' ?></small><b><?= $mon['days'] ?></b> class day<?= $mon['days'] === 1 ? '' : 's' ?><?= $mPct !== null ? ' · ' . $mPct . '%' : '' ?></div>
   <div class="p"><small>Present</small><b><?= $mon['present'] ?></b></div>

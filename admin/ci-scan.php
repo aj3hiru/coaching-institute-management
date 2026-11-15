@@ -221,14 +221,45 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Ari
 .sd-l button:hover{background:#eff6ff}.sd-l button:disabled{opacity:.5;cursor:wait}
 .sd-e{padding:28px 16px;text-align:center;color:#9ca3af;font-size:13px}
 @media (max-width:900px){.main{flex-direction:column}.side{width:auto;border-left:0;border-top:1px solid #e5e7eb;max-height:45vh}}
+/* display options: an icon in the header; what is hidden is kept in this browser */
+.dso{position:relative}
+.dso-b{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;padding:0;border:1px solid #d1d5db;border-radius:5px;background:#fff;color:#374151;cursor:pointer}
+.dso-b:hover,.dso-b[aria-expanded=true]{border-color:var(--p);color:var(--p)}
+.dso-b svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+.dso-p{position:absolute;right:0;top:calc(100% + 6px);z-index:40;width:270px;max-height:min(560px,calc(100vh - 80px));overflow:auto;background:#fff;border:1px solid #e5e7eb;border-radius:5px;box-shadow:0 12px 32px rgba(0,0,0,.14);padding:6px 0;font-size:13px}
+.dso-p[hidden]{display:none}
+.dso-h{display:flex;align-items:center;justify-content:space-between;padding:6px 12px 8px;border-bottom:1px solid #f1f5f9}
+.dso-h b{font-family:inherit;font-size:14px;color:#111827;text-transform:none;letter-spacing:0}.dso-h button{border:0;background:none;color:var(--p);font:inherit;font-weight:700;cursor:pointer;padding:0}
+.dso-p label{display:flex;align-items:center;gap:8px;padding:6px 12px;cursor:pointer;color:#111827;font-weight:600}
+.dso-p label.sub{padding-left:32px;font-weight:500;color:#374151}
+.dso-p label.off{opacity:.45;pointer-events:none}
+.dso-p label:hover{background:#f9fafb}
+.dso-p input{width:15px;height:15px;margin:0;accent-color:var(--p)}
+body.h-brand .top>img,body.h-brand .top>b{display:none}
+body.h-net #net{display:none}
+body.h-clk .top .clk{display:none}
+body.h-inp .inp{position:absolute;left:-9999px;top:0;width:300px;opacity:0;pointer-events:none} /* still takes the scanner's typing */
+body.h-st #st{display:none}
+body.h-card #box{display:none}
+body.h-side .side{display:none}
+body.h-rec .rec{display:none}
+body.h-c_photo .c-ph{display:none}
+body.h-c_reg .c-d tr[data-r=reg],body.h-c_class .c-d tr[data-r=class],body.h-c_batch .c-d tr[data-r=batch],body.h-c_father .c-d tr[data-r=father]{display:none}
+body.h-c_fee .c-f .fee{display:none}
+body.h-c_time .c-f .tm{display:none}
+body.h-s_photo .sd-l li>img,body.h-s_photo .sd-l li>svg{display:none}
+body.h-s_find .sd-q{display:none}
+body.h-s_all .sd-all{display:none}
 <?php if ($embed): ?>.top .nt{display:none}<?php endif; ?>
 @media (max-width:600px){.top{gap:8px;padding:10px 12px}.top b{font-size:14px}.top .clk{display:none}.net span{display:none}.net{padding:0 6px}.top a{padding:0 8px}}
 </style>
 </head>
 <body>
+<script>try { (JSON.parse(localStorage.getItem('ciScanView') || '[]') || []).forEach(function (k) { document.body.classList.add('h-' + k); }); } catch (x) {}</script>
 <div class="top"><?php if ($logo): ?><img src="<?= ci_e($logo) ?>" alt=""><?php endif; ?><b><?= ci_e($inst['name']) ?></b><span class="sp"></span>
   <div class="net" id="net" role="status" aria-live="polite"><i class="n-ico"></i><span><em>Status:</em> Connecting</span></div>
   <div class="clk"><span id="clk"></span><small><?= date('l, d M Y') ?></small></div>
+  <div class="dso"><button type="button" class="dso-b" id="dsoB" aria-label="Display options" title="Display options" aria-expanded="false"><svg viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg></button><div class="dso-p" id="dsoP" hidden></div></div>
   <?php if (!$embed): ?><a href="<?= $canAtt ? '/admin/ci-attendance.php' : '/admin/dashboard.php' ?>">← <?= $canAtt ? 'Attendance' : 'Dashboard' ?></a><?php endif; ?></div>
 <div class="inp"><form id="f" autocomplete="off"><input id="code" inputmode="text" placeholder="Scan card / admission ID" aria-label="Admission ID" autofocus><button type="submit">Mark</button></form></div>
 <div class="main"><div class="stage"><div class="st idle" id="st">Ready — scan an ID card</div><div id="box"></div></div>
@@ -261,13 +292,13 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Ari
     st.className = 'st ' + k;
     st.textContent = (k === 'in' ? '✓ ' : k === 'out' ? '✓ ' : '') + HEAD[k] + (s ? ' — ' + s.name : '') + (k === 'in' || k === 'out' ? ' · ' + d.time : '');
     if (!s) { box.innerHTML = '<div class="ph err"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></svg><b>' + esc(d.msg || 'Not found') + '</b><span>' + esc(code) + '</span></div>'; return; }
-    var rows = [['Admission ID', s.reg], ['Class', s['class'] || '—'], ['Batch', s.batches || '—'], ["Father's Name", s.father || '—']]; // no mobile number on the scan screen's card
+    var rows = [['reg', 'Admission ID', s.reg], ['class', 'Class', s['class'] || '—'], ['batch', 'Batch', s.batches || '—'], ['father', "Father's Name", s.father || '—']]; // no mobile number on the scan screen's card
     var fee = s.due > 0 ? '<span class="fee due">DUE · ' + esc(s.due_text) + '</span>' : '<span class="fee paid">✓ FULL PAID</span>';
     var tm = (s['in'] ? 'In <b>' + esc(s['in']) + '</b>' : '') + (s.out ? ' · Out <b>' + esc(s.out) + '</b>' : '');
     box.innerHTML = '<div class="card pop"><div class="c-h">' + (LOGO ? '<img src="' + esc(LOGO) + '" alt="">' : '') + '<div><b>' + esc(INST.name) + '</b>' + (INST.address ? '<small>' + esc(INST.address) + '</small>' : '') + '</div></div>'
       + '<div class="c-t">STUDENT IDENTITY CARD</div>'
       + '<div class="c-b"><div class="c-ph">' + photo(s) + '</div><div class="c-d"><div class="c-nm">' + esc(s.name) + '</div><table>'
-      + rows.map(function (r) { return '<tr><th>' + r[0] + '</th><td>' + esc(r[1]) + '</td></tr>'; }).join('') + '</table></div></div>'
+      + rows.map(function (r) { return '<tr data-r="' + r[0] + '"><th>' + r[1] + '</th><td>' + esc(r[2]) + '</td></tr>'; }).join('') + '</table></div></div>'
       + '<div class="c-f">' + fee + '<span class="tm">' + (k === 'wait' || k === 'done' ? esc(d.msg) : tm) + '</span></div><div class="c-bar"></div>'
       + '<div class="mk ' + k + '" title="' + esc(d.msg) + '"><svg viewBox="0 0 54 54"><circle cx="27" cy="27" r="23.5"/><path d="' + MARK[k] + '"/></svg></div></div>';
   }
@@ -571,9 +602,26 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Ari
   window.addEventListener('beforeunload', function (e) { if (Q.length) { e.preventDefault(); e.returnValue = ''; } });
   f.addEventListener('submit', function (e) { e.preventDefault(); var c = code.value.trim(); code.value = ''; if (c) add(c); code.focus(); });
   // the scanner types into the box: keep it focused
-  document.addEventListener('click', function (e) { if (!e.target.closest('a,button,input')) code.focus(); });
+  document.addEventListener('click', function (e) { if (!e.target.closest('a,button,input,label,.dso-p')) code.focus(); });
   window.addEventListener('focus', function () { code.focus(); });
   setInterval(function () { if (document.activeElement !== code && !document.querySelector('input:focus,select:focus,textarea:focus')) code.focus(); }, 1500);
+  // ---- display options (header icon): show / hide parts of this screen; kept in this browser ----
+  (function () {
+    var OPT = [['brand', 'Logo & institute name'], ['net', 'Status (Live / Offline)'], ['clk', 'Clock & date'], ['inp', 'Scan box (the scanner still works)'],
+      ['st', 'Message line (Present — name)'], ['card', 'ID card', [['c_photo', 'Photo'], ['c_reg', 'Admission ID'], ['c_class', 'Class'], ['c_batch', 'Batch'], ['c_father', "Father's Name"], ['c_fee', 'Fee status (Full paid / Due)'], ['c_time', 'In / out time']]],
+      ['side', 'Checked-in column', [['s_photo', 'Photos'], ['s_find', 'Search box'], ['s_all', 'Check out all button']]], ['rec', 'Recent names (bottom row)']];
+    var b = document.getElementById('dsoB'), p = document.getElementById('dsoP'), H = {};
+    try { (JSON.parse(localStorage.getItem('ciScanView') || '[]') || []).forEach(function (k) { H[k] = 1; }); } catch (x) {}
+    function apply() { OPT.forEach(function (o) { document.body.classList.toggle('h-' + o[0], !!H[o[0]]); (o[2] || []).forEach(function (c) { document.body.classList.toggle('h-' + c[0], !!H[c[0]]); }); });
+      try { localStorage.setItem('ciScanView', JSON.stringify(Object.keys(H))); } catch (x) {} }
+    function box(k, l, sub, off) { return '<label class="' + (sub ? 'sub' : '') + (off ? ' off' : '') + '"><input type="checkbox" data-k="' + k + '"' + (H[k] ? '' : ' checked') + (off ? ' disabled' : '') + '>' + esc(l) + '</label>'; }
+    function draw() { p.innerHTML = '<div class="dso-h"><b>Display options</b><button type="button" data-all>Show all</button></div>' + OPT.map(function (o) { return box(o[0], o[1]) + (o[2] || []).map(function (c) { return box(c[0], c[1], 1, H[o[0]]); }).join(''); }).join(''); }
+    b.addEventListener('click', function (e) { e.stopPropagation(); if (p.hidden) draw(); p.hidden = !p.hidden; b.setAttribute('aria-expanded', p.hidden ? 'false' : 'true'); if (p.hidden) code.focus(); });
+    document.addEventListener('click', function (e) { if (!p.hidden && !e.target.closest('.dso')) { p.hidden = true; b.setAttribute('aria-expanded', 'false'); } });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !p.hidden) { p.hidden = true; b.setAttribute('aria-expanded', 'false'); code.focus(); } });
+    p.addEventListener('click', function (e) { if (e.target.closest('[data-all]')) { H = {}; apply(); draw(); } });
+    p.addEventListener('change', function (e) { var k = e.target.getAttribute('data-k'); if (!k) return; if (e.target.checked) delete H[k]; else H[k] = 1; apply(); draw(); });
+  })();
   idle(); netShow(); sideRender();
   // ---- getting ready: connection → students' list → scans left waiting from before → Ready (photos keep coming in the background) ----
   var ld = document.getElementById('ld'), ldP = 0, ldOn = true;
