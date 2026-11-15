@@ -60,21 +60,21 @@ body{margin:0;background:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,"S
 .idc-h{display:flex;align-items:center;gap:2mm;padding:2.2mm 2.6mm 1.8mm;background:#fff;border-top:1.6mm solid var(--idc)}
 .idc-h img{width:10.5mm;height:10.5mm;object-fit:contain;flex:none}
 .idc-h div{min-width:0;line-height:1.2}
-.idc-h b{display:block;font-family:Georgia,"Times New Roman",serif;font-size:3.7mm;font-weight:700;letter-spacing:.02em;text-transform:uppercase;color:var(--idc);line-height:1.05}
-.idc-h small{display:block;font-size:1.6mm;color:#4b5563;margin-top:.5mm}
-.idc-t{background:#fcd34d;color:var(--idc);text-align:center;font-size:1.95mm;font-weight:800;letter-spacing:.24em;padding:.9mm 0} /* yellow, so it stands out; no border */
+.idc-h b{display:block;font-family:Georgia,"Times New Roman",serif;font-size:4mm;font-weight:700;letter-spacing:.02em;text-transform:uppercase;color:var(--idc);line-height:1.05}
+.idc-h small{display:block;font-size:2mm;color:#4b5563;margin-top:.5mm}
+.idc-t{background:#fcd34d;color:var(--idc);text-align:center;font-size:2.2mm;font-weight:800;letter-spacing:.24em;padding:.9mm 0} /* yellow, so it stands out; no border */
 .idc-bc{padding:1.4mm 1.4mm .4mm}
-.idc-bc svg{width:100%;height:10mm;display:block} /* full card width: thick bars (~0.42 mm) for any scanner */
-.idc-ph{width:17.5mm;height:22.5mm;margin:1.4mm auto 0;border:.35mm solid var(--idc);padding:.4mm;background:#fff} /* passport 7:9 */
+.idc-bc svg{width:100%;height:9mm;display:block} /* full card width: thick bars (~0.42 mm) for any scanner */
+.idc-ph{width:16.4mm;height:21.1mm;margin:1.1mm auto 0;border:.35mm solid var(--idc);padding:.4mm;background:#fff} /* passport 7:9 */
 .idc-ph img,.idc-ph svg{width:100%;height:100%;object-fit:cover;object-position:50% 30%;display:block}
-.idc-nm{margin:1.2mm 2.6mm 0;text-align:center;font-size:3mm;font-weight:800;color:var(--idc);line-height:1.15;text-transform:uppercase;letter-spacing:.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.idc-d{margin:1.4mm 3mm 0;border-collapse:collapse;width:calc(100% - 6mm);font-size:2.05mm;line-height:1.25;table-layout:fixed}
-.idc-d th{width:17mm;padding:.35mm 0;text-align:left;font-weight:600;color:#4b5563;vertical-align:top;white-space:nowrap}
+.idc-nm{margin:1mm 2.6mm 0;text-align:center;font-size:3.6mm;font-weight:800;color:var(--idc);line-height:1.15;text-transform:uppercase;letter-spacing:.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.idc-d{margin:.8mm 2.6mm 0;border-collapse:collapse;width:calc(100% - 5.2mm);font-size:2.55mm;line-height:1.25;table-layout:fixed}
+.idc-d th{width:19.5mm;padding:.35mm 0;text-align:left;font-weight:600;color:#4b5563;vertical-align:top;white-space:nowrap}
 .idc-d td{padding:.35mm 0 .35mm 1mm;font-weight:700;color:#111827;vertical-align:top;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .idc-d td::before{content:": ";font-weight:600;color:#4b5563;margin-left:-1mm}
 .idc-d td.ad{white-space:normal;font-weight:600}
 .idc-d td.ad::before{float:left;white-space:pre}
-.idc-d td.ad span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;max-height:5.1mm} /* at most 2 lines */
+.idc-d td.ad span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;max-height:6.4mm} /* at most 2 lines */
 .idc>*{flex-shrink:0}
 .idc-sp{flex:1}
 .idc-f{height:1.6mm;background:var(--idc);border-top:.5mm solid var(--idc2)}
@@ -82,24 +82,24 @@ body{margin:0;background:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,"S
 .sheet.land{grid-template-columns:repeat(2,85.6mm);gap:2.5mm 6mm}
 .idl{position:relative;width:85.6mm;height:54mm;border:.3mm solid #c9ced6;border-radius:3mm;overflow:hidden;display:flex;flex-direction:column;background:#fff;break-inside:avoid;page-break-inside:avoid}
 .idl>*{flex-shrink:0}
-.idl-h{display:flex;align-items:center;gap:2mm;padding:1.6mm 3mm;background:#fff;color:var(--idc)}
+.idl-h{display:flex;align-items:center;gap:2mm;padding:1.2mm 3mm;background:#fff;color:var(--idc)}
 .idl-h img{width:9mm;height:9mm;object-fit:contain;flex:none}
 .idl-h div{min-width:0;line-height:1.15}
-.idl-h b{display:block;font-family:Georgia,"Times New Roman",serif;font-size:3.6mm;letter-spacing:.02em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.idl-h small{display:block;font-size:1.65mm;color:#4b5563;margin-top:.3mm;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.idl-t{background:#fcd34d;color:var(--idc);text-align:center;font-size:1.8mm;font-weight:800;letter-spacing:.26em;padding:.6mm 0}
-.idl-b{flex:1;display:flex;align-items:stretch;gap:4.6mm;padding:1.8mm 2.6mm 1.2mm;min-height:0} /* column 1: the photo; column 2: barcode, name, details */
+.idl-h b{display:block;font-family:Georgia,"Times New Roman",serif;font-size:4.1mm;letter-spacing:.02em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.idl-h small{display:block;font-size:1.95mm;color:#4b5563;margin-top:.15mm;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.idl-t{background:#fcd34d;color:var(--idc);text-align:center;font-size:2.1mm;font-weight:800;letter-spacing:.26em;padding:.6mm 0}
+.idl-b{flex:1;display:flex;align-items:stretch;gap:4.6mm;padding:1.6mm 2.6mm 1mm;min-height:0} /* column 1: the photo; column 2: barcode, name, details */
 .idl-ph{flex:none;align-self:center;width:19mm;height:24.4mm;border:.35mm solid var(--idc);padding:.4mm;background:#fff}
 .idl-ph img,.idl-ph svg{width:100%;height:100%;object-fit:cover;object-position:50% 30%;display:block}
 .idl-d{flex:1;min-width:0}
-.idl-bc{background:#fff}.idl-bc svg{width:calc(100% - 3mm);height:10.5mm;display:block} /* starts where the name starts; ~5 mm of white on both sides for the scanner */
-.idl-nm{margin-top:.8mm;font-size:3.1mm;font-weight:800;color:var(--idc);text-transform:uppercase;line-height:1.1;letter-spacing:.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.idl-d table{margin-top:.8mm;border-collapse:collapse;width:100%;table-layout:fixed;font-size:1.95mm;line-height:1.22}
-.idl-d th{width:15.5mm;padding:.2mm 0;text-align:left;font-weight:600;color:#4b5563;white-space:nowrap;vertical-align:top}
+.idl-bc{background:#fff}.idl-bc svg{width:calc(100% - 3mm);height:9.5mm;display:block} /* starts where the name starts; ~5 mm of white on both sides for the scanner */
+.idl-nm{margin-top:.7mm;font-size:3.7mm;font-weight:800;color:var(--idc);text-transform:uppercase;line-height:1.1;letter-spacing:.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.idl-d table{margin-top:.5mm;border-collapse:collapse;width:100%;table-layout:fixed;font-size:2.5mm;line-height:1.2}
+.idl-d th{width:19.5mm;padding:.2mm 0;text-align:left;font-weight:600;color:#4b5563;white-space:nowrap;vertical-align:top}
 .idl-d td{padding:.2mm 0 .2mm 1mm;font-weight:700;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:top}
 .idl-d td::before{content:": ";font-weight:600;color:#4b5563;margin-left:-1mm}
 .idl-d td.ad{white-space:normal;font-weight:600}.idl-d td.ad::before{float:left;white-space:pre}
-.idl-d td.ad span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.idl-d td.ad span{display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden} /* one line: no room for two at this size */
 .idl-f{height:1.4mm;background:var(--idc);border-top:.5mm solid var(--idc2);margin-top:auto}
 .dz{display:inline-flex;border:1px solid #d1d5db}
 .dz a{height:34px!important;border:0!important;border-left:1px solid #d1d5db!important;font-weight:600}.dz a:first-child{border-left:0!important}
@@ -122,7 +122,7 @@ body{margin:0;background:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,"S
 <?php foreach ($list as $s): $ad = $addr($s); if ($design === 'landscape'): ?>
   <div class="idl">
     <div class="idl-h"><?php if ($logo): ?><img src="<?= ci_e($logo) ?>" alt=""><?php endif; ?><div><b><?= ci_e($inst['name']) ?></b>
-      <?php if ($inst['address'] || $inst['phone']): ?><small><?= ci_e(implode(' · ', array_filter([$inst['address'], $inst['phone'] ? 'Ph: ' . $inst['phone'] : '']))) ?></small><?php endif; ?></div></div>
+      <?php if ($inst['address']): ?><small><?= ci_e($inst['address']) ?></small><?php endif; ?><?php if ($inst['phone']): ?><small>Ph: <?= ci_e($inst['phone']) ?></small><?php endif; ?></div></div>
     <div class="idl-t">STUDENT IDENTITY CARD</div>
     <div class="idl-b">
       <div class="idl-ph"><?= ($u = ci_photo_url($s['photo'] ?? '')) ? '<img src="' . ci_e($u) . '" alt="">' : ci_photo_blank() ?></div>
