@@ -33,6 +33,9 @@ $title = $f['student'] && $list ? $list[0]['name'] : ($names ? implode(' · ', $
 // the last one chosen is remembered in this browser
 $design = in_array($_GET['design'] ?? '', ['portrait', 'landscape'], true) ? $_GET['design'] : (in_array($_COOKIE['idc_design'] ?? '', ['portrait', 'landscape'], true) ? $_COOKIE['idc_design'] : 'portrait');
 if (isset($_GET['design'])) setcookie('idc_design', $design, ['expires' => time() + 31536000, 'path' => '/admin/', 'samesite' => 'Lax', 'secure' => !empty($_SERVER['HTTPS']), 'httponly' => true]);
+// landscape: the barcode's bars start exactly where the name starts (its white margins are cut off the drawing; the white
+// space a scanner needs is given by the layout instead: the gap after the photo and the space on the right)
+$bars = fn(string $reg) => preg_replace_callback('~viewBox="0 0 ([\d.]+) ([\d.]+)"~', fn($m) => 'viewBox="10 0 ' . ((float)$m[1] - 20) . ' ' . $m[2] . '"', str_replace('<svg ', '<svg preserveAspectRatio="none" ', ci_barcode_svg($reg, 30, 1)), 1);
 $dq = fn(string $d) => '?' . http_build_query(array_merge(array_filter($f), ['design' => $d]));
 $addr = fn(array $s) => implode(', ', array_filter([trim((string)$s['address']), trim((string)$s['city']), trim((string)$s['state']), trim((string)$s['pincode'])]));
 ?>
@@ -85,11 +88,11 @@ body{margin:0;background:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,"S
 .idl-h b{display:block;font-family:Georgia,"Times New Roman",serif;font-size:3.6mm;letter-spacing:.02em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .idl-h small{display:block;font-size:1.65mm;opacity:.9;margin-top:.3mm;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .idl-t{background:#fcd34d;color:var(--idc);text-align:center;font-size:1.8mm;font-weight:800;letter-spacing:.26em;padding:.6mm 0}
-.idl-b{flex:1;display:flex;align-items:stretch;gap:2.4mm;padding:1.8mm 2.6mm 1.2mm;min-height:0} /* column 1: the photo; column 2: barcode, name, details */
+.idl-b{flex:1;display:flex;align-items:stretch;gap:4.6mm;padding:1.8mm 2.6mm 1.2mm;min-height:0} /* column 1: the photo; column 2: barcode, name, details */
 .idl-ph{flex:none;align-self:center;width:19mm;height:24.4mm;border:.35mm solid var(--idc);padding:.4mm;background:#fff}
 .idl-ph img,.idl-ph svg{width:100%;height:100%;object-fit:cover;object-position:50% 30%;display:block}
 .idl-d{flex:1;min-width:0}
-.idl-bc{background:#fff}.idl-bc svg{width:100%;height:10.5mm;display:block} /* the second column's full width, right above the name */
+.idl-bc{background:#fff}.idl-bc svg{width:calc(100% - 3mm);height:10.5mm;display:block} /* starts where the name starts; ~5 mm of white on both sides for the scanner */
 .idl-nm{margin-top:.8mm;font-size:3.1mm;font-weight:800;color:var(--idc);text-transform:uppercase;line-height:1.1;letter-spacing:.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .idl-d table{margin-top:.8mm;border-collapse:collapse;width:100%;table-layout:fixed;font-size:1.95mm;line-height:1.22}
 .idl-d th{width:15.5mm;padding:.2mm 0;text-align:left;font-weight:600;color:#4b5563;white-space:nowrap;vertical-align:top}
@@ -124,7 +127,7 @@ body{margin:0;background:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,"S
     <div class="idl-b">
       <div class="idl-ph"><?= ($u = ci_photo_url($s['photo'] ?? '')) ? '<img src="' . ci_e($u) . '" alt="">' : ci_photo_blank() ?></div>
       <div class="idl-d">
-        <div class="idl-bc"><?= str_replace('<svg ', '<svg preserveAspectRatio="none" ', ci_barcode_svg((string)$s['reg_no'], 30, 1)) ?></div>
+        <div class="idl-bc"><?= $bars((string)$s['reg_no']) ?></div>
         <div class="idl-nm"><?= ci_e($s['name']) ?></div>
         <table>
           <tr><th>Admission ID</th><td><?= ci_e($s['reg_no']) ?></td></tr>
