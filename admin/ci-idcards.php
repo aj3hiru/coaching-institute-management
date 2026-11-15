@@ -85,12 +85,12 @@ body{margin:0;background:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,"S
 .idl-h b{display:block;font-family:Georgia,"Times New Roman",serif;font-size:3.6mm;letter-spacing:.02em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .idl-h small{display:block;font-size:1.65mm;opacity:.9;margin-top:.3mm;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .idl-t{background:#fcd34d;color:var(--idc);text-align:center;font-size:1.8mm;font-weight:800;letter-spacing:.26em;padding:.6mm 0}
-.idl-b{flex:1;display:flex;gap:2.6mm;padding:1.2mm 3mm 0;min-height:0}
-.idl-ph{flex:none;width:16.5mm;height:21.2mm;border:.35mm solid var(--idc);padding:.4mm;background:#fff}
+.idl-b{flex:1;display:flex;align-items:stretch;gap:2.4mm;padding:1.8mm 2.6mm 1.2mm;min-height:0} /* column 1: the photo; column 2: barcode, name, details */
+.idl-ph{flex:none;align-self:center;width:19mm;height:24.4mm;border:.35mm solid var(--idc);padding:.4mm;background:#fff}
 .idl-ph img,.idl-ph svg{width:100%;height:100%;object-fit:cover;object-position:50% 30%;display:block}
 .idl-d{flex:1;min-width:0}
-.idl-bc{padding:1.2mm 2mm 0}.idl-bc svg{width:100%;height:9.5mm;display:block} /* full card width, right above the name: thick bars for any scanner */
-.idl-nm{margin-top:0;font-size:3.1mm;font-weight:800;color:var(--idc);text-transform:uppercase;line-height:1.1;letter-spacing:.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.idl-bc{background:#fff}.idl-bc svg{width:100%;height:10.5mm;display:block} /* the second column's full width, right above the name */
+.idl-nm{margin-top:.8mm;font-size:3.1mm;font-weight:800;color:var(--idc);text-transform:uppercase;line-height:1.1;letter-spacing:.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .idl-d table{margin-top:.8mm;border-collapse:collapse;width:100%;table-layout:fixed;font-size:1.95mm;line-height:1.22}
 .idl-d th{width:15.5mm;padding:.2mm 0;text-align:left;font-weight:600;color:#4b5563;white-space:nowrap;vertical-align:top}
 .idl-d td{padding:.2mm 0 .2mm 1mm;font-weight:700;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:top}
@@ -121,10 +121,10 @@ body{margin:0;background:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,"S
     <div class="idl-h"><?php if ($logo): ?><img src="<?= ci_e($logo) ?>" alt=""><?php endif; ?><div><b><?= ci_e($inst['name']) ?></b>
       <?php if ($inst['address'] || $inst['phone']): ?><small><?= ci_e(implode(' · ', array_filter([$inst['address'], $inst['phone'] ? 'Ph: ' . $inst['phone'] : '']))) ?></small><?php endif; ?></div></div>
     <div class="idl-t">STUDENT IDENTITY CARD</div>
-    <div class="idl-bc"><?= str_replace('<svg ', '<svg preserveAspectRatio="none" ', ci_barcode_svg((string)$s['reg_no'], 30, 1)) ?></div>
     <div class="idl-b">
       <div class="idl-ph"><?= ($u = ci_photo_url($s['photo'] ?? '')) ? '<img src="' . ci_e($u) . '" alt="">' : ci_photo_blank() ?></div>
       <div class="idl-d">
+        <div class="idl-bc"><?= str_replace('<svg ', '<svg preserveAspectRatio="none" ', ci_barcode_svg((string)$s['reg_no'], 30, 1)) ?></div>
         <div class="idl-nm"><?= ci_e($s['name']) ?></div>
         <table>
           <tr><th>Admission ID</th><td><?= ci_e($s['reg_no']) ?></td></tr>
