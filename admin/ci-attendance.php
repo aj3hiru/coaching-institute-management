@@ -233,7 +233,12 @@ $checkedIn = count(array_filter($rows, fn($r) => $r['status'] === 'present' && $
 .at-idc-d b{display:block;font-size:13.5px;color:#4a3369;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px}
 .at-idc-d div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.at-idc-d span{color:#6b7280;display:inline-block;width:92px}
 .at-idc-f{display:flex;justify-content:space-between;align-items:center;padding:0 10px 8px;font-size:11.5px}
-.at-idc-f em{font-style:normal;font-weight:800;padding:2px 8px;border-radius:99px!important}.at-idc-f em.due{background:#fee2e2;color:#991b1b}.at-idc-f em.paid{background:#dcfce7;color:#166534}
+.at-idc-f em{font-style:normal;font-weight:800;padding:2px 8px;border-radius:99px!important}
+.at-idc-f em.due{position:relative;overflow:hidden;isolation:isolate;animation:due-ring 1.8s .6s ease-out infinite,due-beat 1.8s .6s ease-in-out infinite}
+.at-idc-f em.due::after{content:"";position:absolute;top:0;bottom:0;left:-60%;width:40%;z-index:-1;background:linear-gradient(100deg,rgba(255,255,255,0),rgba(255,255,255,.85) 50%,rgba(255,255,255,0));transform:skewX(-20deg);animation:due-shine 1.8s .8s ease-in-out infinite}
+@keyframes due-ring{0%{box-shadow:0 0 0 0 rgba(220,38,38,.55)}70%,100%{box-shadow:0 0 0 6px rgba(220,38,38,0)}}
+@keyframes due-beat{0%,40%,100%{transform:none}15%{transform:scale(1.08)}}
+@keyframes due-shine{0%{left:-60%}50%,100%{left:130%}}.at-idc-f em.due{background:#fee2e2;color:#991b1b}.at-idc-f em.paid{background:#dcfce7;color:#166534}
 .at-left{display:flex;flex-direction:column;gap:14px;min-width:0}
 /* this month: % ring, month name and days, four coloured tiles */
 .at-mc{align-items:center;gap:16px;flex-wrap:wrap;padding:14px 16px;background:#fff;border:1px solid #e5e7eb;border-radius:5px!important}
