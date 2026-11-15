@@ -129,7 +129,7 @@
     var sno = lab.findIndex(function (l) { return /^(s\.?\s?no\.?|#)$/i.test(l); });
     var title = -1; for (var i = 0; i < lab.length; i++) if (i !== sno) { title = i; break; }
     var act = lab.length - 1; if (!(lab[act] === '' || /^actions?$/i.test(lab[act]))) act = -1;
-    t.classList.add('rt');
+    t.classList.add('rt'); fit(t); rts.push(t);
     [].forEach.call(t.tBodies, function (tb) { [].forEach.call(tb.rows, function (tr) {
       if (tr.cells.length !== lab.length) { tr.classList.add('rt-full'); return; } // "nothing here" / totals spanning columns
       [].forEach.call(tr.cells, function (td, i) {
@@ -138,6 +138,15 @@
       });
     }); });
   }
+  // cards when the list does not fit: always on phones; elsewhere when the table is wider than its space (checked again on resize)
+  var rts = [], rtT = null;
+  function fit(t) {
+    if (window.innerWidth <= 700) { t.classList.add('rt-on'); return; }
+    t.classList.remove('rt-on');
+    var box = t.closest('.ci-table-wrap, .table-responsive, .table-wrap') || t.parentElement;
+    if (t.scrollWidth > box.clientWidth + 2) t.classList.add('rt-on');
+  }
+  window.addEventListener('resize', function () { clearTimeout(rtT); rtT = setTimeout(function () { rts.forEach(fit); }, 150); });
   function fold(f) {
     if (f.id === 'atF' || f.dataset.fold === 'off' || f.previousElementSibling && f.previousElementSibling.classList.contains('ci-ff')) return;
     var fields = [].filter.call(f.querySelectorAll('select, input:not([type=hidden]):not([type=submit]):not([type=button]):not([type=checkbox]):not([type=radio])'), function (x) { return x.name; });
@@ -148,7 +157,19 @@
     f.parentNode.insertBefore(b, f); f.classList.add('ci-ff-off');
     b.addEventListener('click', function () { var on = f.classList.toggle('ci-ff-off'); b.setAttribute('aria-expanded', on ? 'false' : 'true'); });
   }
+  // page header: when its buttons do not fit on one line next to the page name, they show their icons only
+  function hdr() {
+    var tn = document.querySelector('.top-nav'), nav = tn && tn.querySelector('.nav-right'); if (!nav) return;
+    tn.classList.remove('nr-compact');
+    if (window.innerWidth <= 767) return; // phones already show icons only
+    var kids = [].filter.call(nav.querySelectorAll('.nr-ico, .dsp-btn, .ci-btn, details > summary'), function (k) { return k.offsetParent; });
+    var h1 = tn.querySelector('.page-heading h1');
+    var wrapped = kids.some(function (k) { return Math.abs(k.getBoundingClientRect().top - kids[0].getBoundingClientRect().top) > 4; });
+    if (wrapped || nav.scrollWidth > nav.clientWidth + 2 || (h1 && h1.scrollWidth > h1.clientWidth + 1)) { tn.classList.add('nr-compact'); nav.querySelectorAll('.nr-ico[aria-label]:not([title])').forEach(function (b) { b.title = b.getAttribute('aria-label'); }); }
+  }
+  var hdrT = null; window.addEventListener('resize', function () { clearTimeout(hdrT); hdrT = setTimeout(hdr, 150); });
   function run() {
+    hdr(); setTimeout(hdr, 400);
     [].forEach.call(document.querySelectorAll('table.ci-table'), setup); [].forEach.call(document.querySelectorAll('table[data-sno]'), snoAdd);
     [].forEach.call(document.querySelectorAll('.main-content table'), function (t) { if (!t.parentElement.closest('table') && !t.closest('[contenteditable],.mce-content-body,.ci-plan,.sheet')) cards(t); });
     [].forEach.call(document.querySelectorAll('.main-content form.ci-filters, .main-content form[data-fold]'), fold);

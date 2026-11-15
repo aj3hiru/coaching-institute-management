@@ -172,26 +172,39 @@ input.dk-date.dk-date-bad{border-color:#dc2626!important;background:#fff7f7;box-
   .ci-ff b{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 6px;border-radius:5px!important;background:var(--primary,#7c3aed);color:#fff;font-size:12px}
   .ci-ff .ci-ff-a{margin-left:auto;font-size:12px;color:#9ca3af;transition:transform .2s}.ci-ff[aria-expanded=true] .ci-ff-a{transform:rotate(180deg)}
   form.ci-ff-off{display:none!important}
-  table.rt{display:block;width:100%!important;min-width:0!important;border:0!important}
-  table.rt thead{display:none}
-  table.rt tbody,table.rt tfoot{display:block}
-  table.rt tr{display:block;position:relative;padding:12px 14px;border:1px solid #e5e7eb;border-radius:5px!important;background:#fff;margin:0 0 10px}
-  table.rt tr[hidden],table.rt tr.ci-sheet-hide{display:none!important}
-  table.rt td{display:block;overflow:hidden;padding:5px 0!important;border:0!important;text-align:right;min-width:0;white-space:normal!important;width:auto!important;font-size:13.5px}
-  table.rt td::before{content:attr(data-label);float:left;max-width:45%;margin-right:12px;text-align:left;color:#6b7280;font-size:12.5px;font-weight:600}
-  table.rt td.rt-nolab::before,table.rt td.rt-title::before,table.rt td.rt-act::before,table.rt td.rt-sno::before{content:none}
-  table.rt td.rt-title{display:block;text-align:left;padding:0 34px 8px 0!important;margin-bottom:4px;border-bottom:1px solid #f1f5f9!important;font-size:14.5px}
-  table.rt td.rt-sno{position:absolute;top:12px;right:14px;padding:0!important;font-size:12px;color:#9ca3af;display:block}
-  table.rt td.rt-sno:not(:empty)::after{content:""}
-  table.rt td.rt-act{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;padding-top:10px!important;margin-top:4px;border-top:1px solid #f1f5f9!important}
-  table.rt td.rt-act:empty{display:none}
-  table.rt tr.rt-full{padding:14px}table.rt tr.rt-full td{display:block;text-align:center}table.rt tr.rt-full td::before{content:none}
-  table.rt td>*{min-width:0}
-  .ci-table-wrap:has(table.rt){overflow:visible;border:0!important;background:transparent!important}
-  .ci-card-b.ci-p0:has(table.rt){padding:10px!important;background:#f8fafc}
+}
+/* lists that do not fit their space (any phone; a tablet or small laptop when the list is wide) show each row as a card —
+   admin-table.js adds .rt-on; on wider screens the cards sit side by side */
+table.rt.rt-on{display:block;width:100%!important;min-width:0!important;border:0!important}
+table.rt.rt-on thead{display:none}
+table.rt.rt-on tbody,table.rt.rt-on tfoot{display:block}
+table.rt.rt-on tr{display:block;position:relative;padding:12px 14px;border:1px solid #e5e7eb;border-radius:5px!important;background:#fff;margin:0 0 10px}
+table.rt.rt-on tr[hidden],table.rt.rt-on tr.ci-sheet-hide{display:none!important}
+table.rt.rt-on td{display:block;overflow:hidden;padding:5px 0!important;border:0!important;text-align:right;min-width:0;white-space:normal!important;width:auto!important;font-size:13.5px}
+table.rt.rt-on td::before{content:attr(data-label);float:left;max-width:45%;margin-right:12px;text-align:left;color:#6b7280;font-size:12.5px;font-weight:600}
+table.rt.rt-on td.rt-nolab::before,table.rt.rt-on td.rt-title::before,table.rt.rt-on td.rt-act::before,table.rt.rt-on td.rt-sno::before{content:none}
+table.rt.rt-on td.rt-title{display:block;text-align:left;padding:0 34px 8px 0!important;margin-bottom:4px;border-bottom:1px solid #f1f5f9!important;font-size:14.5px}
+table.rt.rt-on td.rt-sno{position:absolute;top:12px;right:14px;padding:0!important;font-size:12px;color:#9ca3af;display:block}
+table.rt.rt-on td.rt-sno:not(:empty)::after{content:""}
+table.rt.rt-on td.rt-act{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;padding-top:10px!important;margin-top:4px;border-top:1px solid #f1f5f9!important}
+table.rt.rt-on td.rt-act:empty{display:none}
+table.rt.rt-on tr.rt-full{padding:14px}table.rt.rt-on tr.rt-full td{display:block;text-align:center}table.rt.rt-on tr.rt-full td::before{content:none}
+table.rt.rt-on td>*{min-width:0}
+.ci-table-wrap:has(table.rt.rt-on){overflow:visible;border:0!important;background:transparent!important}
+.ci-card-b.ci-p0:has(table.rt.rt-on){padding:10px!important;background:#f8fafc}
+@media (min-width:701px){
+  table.rt.rt-on tbody{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px;align-items:start}
+  table.rt.rt-on tbody tr{margin:0}
+  table.rt.rt-on tbody tr.rt-full{grid-column:1/-1}
 }
 @media (max-width:420px){
   .top-nav .nav-right{gap:6px!important}
   .top-nav .nav-right .nr-ico,.top-nav .dsp-btn{width:34px!important;height:34px!important;min-width:34px!important}
   .top-nav .nav-left{gap:8px}
 }
+/* header buttons that do not fit (tablets, small laptops): icons only — the name stays as the hover label (admin-table.js) */
+.top-nav.nr-compact .nav-right .nr-ico{width:38px;height:38px;min-width:38px;padding:0!important;justify-content:center;gap:0!important}
+.top-nav.nr-compact .nav-right .nr-ico .nr-t,.top-nav.nr-compact .dsp-lbl{display:none}
+.top-nav.nr-compact .nav-right .nr-ico svg,.top-nav.nr-compact .nav-right .nr-ico i{margin:0!important}
+.top-nav.nr-compact .dsp-btn{width:38px;height:38px;padding:0!important;justify-content:center}
+.top-nav.nr-compact .nav-right{flex-wrap:nowrap}

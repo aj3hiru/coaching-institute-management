@@ -259,7 +259,7 @@ $checkedIn = count(array_filter($rows, fn($r) => $r['status'] === 'present' && $
 .at-mc-g a.h:hover{background:#ede9fe}
 
 /* class on now: a second line under the date in the page header; phones (no room in the header) get it above the filters */
-.top-nav .page-heading{min-width:0}.page-heading p:has(.at-run){white-space:normal;max-width:none;overflow:visible}
+.top-nav .page-heading{min-width:0}.top-nav:has(.at-run){height:auto!important;padding-top:8px!important;padding-bottom:8px!important}.page-heading p:has(.at-run){white-space:normal;max-width:none;overflow:visible}
 .at-run{display:flex;align-items:center;flex-wrap:nowrap;gap:5px;width:fit-content;max-width:100%;white-space:nowrap;margin:3px 0 0;padding:3px 8px;border-radius:5px;background:#ede9fe;box-shadow:inset 0 0 0 1px #ddd6fe;color:#4c1d95;font-size:12.5px;line-height:1.35}
 .at-run b{font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis}.at-run>span,.at-run>a,.at-run>i{flex:none}.at-run a{color:#6d28d9;font-weight:700;margin-left:6px;text-decoration:underline}
 /* class on now: a splash when the page opens (pops in with a ring), then always a light sweep, a soft pulse and the bell rings */
@@ -280,7 +280,7 @@ tr.at-hl td{background:#fefce8}
 .at-past{padding:8px 12px;margin:0 0 12px;border:1px solid #fde68a;background:#fffbeb;color:#92400e;font-size:13px}
 /* phones: filters tighter, the counts in one row that slides sideways, the three buttons in one row, and every student
    as a card — name, admission ID · class, batch, big P / A / L / H buttons, check-in / out — nothing off the screen */
-@media (max-width:700px){
+@media (max-width:900px){
   .at-top{gap:12px;margin-bottom:12px}
   #atF{gap:10px}#atF .ci-f:last-of-type{grid-column:1/-1}
   .at-sum{display:block;min-width:0;max-width:100%}
@@ -311,6 +311,11 @@ tr.at-hl td{background:#fefce8}
   .at-mc-t b{font-size:15px}.at-mc-t span{font-size:12px}
   .at-mc-g{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:6px;flex-basis:100%}
   .at-mc-g>*{padding:6px 6px 6px 8px}.at-mc-g b{font-size:16px}.at-mc-g small{font-size:11px}
+}
+@media (min-width:701px) and (max-width:900px){
+  #atT tbody{display:grid!important;grid-template-columns:1fr 1fr;gap:10px;padding:10px;background:#f8fafc}
+  #atT tr[data-sid]{border:1px solid #e5e7eb;border-radius:5px;background:#fff}
+  .at-pills{margin:0 0 10px;padding:0}
 }
 </style>
 </head>
