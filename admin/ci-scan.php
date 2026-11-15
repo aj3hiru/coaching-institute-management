@@ -183,12 +183,12 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Ari
 @keyframes ph-ring{0%{transform:scale(1);opacity:.9}100%{transform:scale(1.75);opacity:0}}
 @keyframes ph-laser{from{top:30px}to{top:64px}}
 @media (prefers-reduced-motion:reduce){.ph-idle,.ph-fr,.ph-ic::before,.ph-ic::after,.ph-laser{animation:none}}
-/* fee due on the card: calm but clear — the chip fades in, a red dot in front sends a soft ripple (like a "live" light) */
-.fee.due{background:#fef2f2;color:#b91c1c;box-shadow:inset 0 0 0 .25cqw #fecaca;gap:1.3cqw;animation:due-in .45s .3s ease-out both}
-.fee.due::before{content:"";flex:none;width:1.3cqw;height:auto;aspect-ratio:1/1;align-self:center;border-radius:50%;background:#dc2626;animation:due-dot 1.6s .8s ease-out infinite}
+/* fee due on the card: a splash — a band of light sweeps across the chip again and again (no ripple) */
+.fee.due{position:relative;overflow:hidden;isolation:isolate;background:#fee2e2;color:#991b1b;box-shadow:inset 0 0 0 .25cqw #fecaca;animation:due-in .45s .3s ease-out both}
+.fee.due::after{content:"";position:absolute;top:0;bottom:0;left:-60%;width:45%;z-index:-1;background:linear-gradient(100deg,rgba(255,255,255,0),rgba(255,255,255,.95) 50%,rgba(255,255,255,0));transform:skewX(-20deg);animation:due-shine 2.4s .7s ease-in-out infinite}
 @keyframes due-in{from{opacity:0;transform:translateY(.8cqw)}to{opacity:1;transform:none}}
-@keyframes due-dot{0%{box-shadow:0 0 0 0 rgba(220,38,38,.55)}80%,100%{box-shadow:0 0 0 1.2cqw rgba(220,38,38,0)}}
-@media (prefers-reduced-motion:reduce){.fee.due,.fee.due::before{animation:none}}
+@keyframes due-shine{0%{left:-60%}45%,100%{left:130%}}
+@media (prefers-reduced-motion:reduce){.fee.due,.fee.due::after{animation:none}}
 /* preview while an admission ID is typed by hand: the card faded, nothing marked yet */
 .card.pv{opacity:.45;filter:saturate(.6);animation:pvin .25s ease-out}
 @keyframes pvin{from{opacity:0}to{opacity:.45}}
